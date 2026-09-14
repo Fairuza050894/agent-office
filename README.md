@@ -1,287 +1,310 @@
-# Superpowers
+# Agent Office
 
-Superpowers is a complete software development methodology for your coding agents, built on top of a set of composable skills and some initial instructions that make sure your agent uses them.
+Agent Office is a local-first, multi-project engineering control plane for orchestrating AI-assisted software development across multiple repositories and multiple executor runtimes.
 
+The product is designed to coordinate engineering roles such as Architect, Explorer, Backend Developer, Frontend Developer, QA Reviewer, Security Reviewer, UX Reviewer, and Documentation Writer while keeping executor-specific behavior behind provider adapters.
 
-## We're Hiring!
+Agent Office is an engineering operations product first. The virtual Office View is an optional projection of real execution state, not the source of truth.
 
-We're hiring someone to help out full time with Superpowers community and code work. 
-You can read about the job at https://primeradiant.com/jobs/superpowers-community-engineer/
-If this sounds like someone you know, definitely send them our way.
+## Product Principles
 
-## Quickstart
+Agent Office is built around several non-negotiable principles:
 
-Give your agent Superpowers: [Claude Code](#claude-code), [Antigravity](#antigravity), [Codex App](#codex-app), [Codex CLI](#codex-cli), [Cursor](#cursor), [Factory Droid](#factory-droid), [Gemini CLI](#gemini-cli), [GitHub Copilot CLI](#github-copilot-cli), [Kimi Code](#kimi-code), [OpenCode](#opencode), [Pi](#pi).
+- truthful execution state
+- provider-neutral orchestration
+- multi-project isolation
+- controlled parallelism
+- isolated Git worktrees for write-capable agents
+- durable Run, AgentRun, Event, Finding, and Evidence history
+- independent review and remediation
+- explicit executor capabilities
+- no destructive Git operations by default
+- no silent executor fallback for high-risk work
+- no fabricated progress, test results, quota, cost, or agent activity
+- operations UI before Office visualization
 
-## How it works
+## Conceptual Architecture
 
-It starts from the moment you fire up your coding agent. As soon as it sees that you're building something, it *doesn't* just jump into trying to write code. Instead, it steps back and asks you what you're really trying to do. 
+```text
+                         Agent Office
 
-Once it's teased a spec out of the conversation, it shows it to you in chunks short enough to actually read and digest. 
+                  Engineering Control Plane
+                            │
+        ┌───────────────────┼───────────────────┐
+        │                   │                   │
+        ▼                   ▼                   ▼
+     Project A           Project B           Project C
+        │                   │                   │
+        ▼                   ▼                   ▼
+      Tasks               Tasks               Tasks
+        │                   │                   │
+        ▼                   ▼                   ▼
+       Runs                Runs                Runs
+        │                   │                   │
+        └──────────────┬────┴────┬──────────────┘
+                       │         │
+                       ▼         ▼
+                 Workflow    AgentRuns
+                       │         │
+                       ▼         ▼
+                   Events   Executor Port
+                               │
+                 ┌─────────────┼─────────────┐
+                 ▼             ▼             ▼
+             CodexAdapter  Antigravity   OpenClaw
+                              Adapter       Adapter
+                 │             │             │
+                 ▼             ▼             ▼
+               Codex      Antigravity     OpenClaw
 
-After you've signed off on the design, your agent puts together an implementation plan that's clear enough for an enthusiastic junior engineer with poor taste, no judgement, no project context, and an aversion to testing to follow. It emphasizes true red/green TDD, YAGNI (You Aren't Gonna Need It), and DRY. 
-
-Next up, once you say "go", it launches a *subagent-driven-development* process, having agents work through each engineering task, inspecting and reviewing their work, and continuing forward. It's not uncommon for your agent to work autonomously for a couple hours at a time without deviating from the plan you put together.
-
-There's a bunch more to it, but that's the core of the system. And because the skills trigger automatically, you don't need to do anything special. Your coding agent just has Superpowers.
-
-## Commercial Services
-
-If you're using Superpowers in enterprise and could benefit from commercial support, additional tooling, or managed spending, please don't hesitate to drop us a line at sales@primeradiant.com.
-
-## Installation
-
-Installation differs by harness. If you use more than one, install Superpowers separately for each one.
-
-### Claude Code
-
-Superpowers is available via the [official Claude plugin marketplace](https://claude.com/plugins/superpowers)
-
-#### Official Marketplace
-
-- Install the plugin from Anthropic's official marketplace:
-
-  ```bash
-  /plugin install superpowers@claude-plugins-official
-  ```
-
-#### Superpowers Marketplace
-
-The Superpowers marketplace provides Superpowers and some other related plugins for Claude Code.
-
-- Register the marketplace:
-
-  ```bash
-  /plugin marketplace add obra/superpowers-marketplace
-  ```
-
-- Install the plugin from this marketplace:
-
-  ```bash
-  /plugin install superpowers@superpowers-marketplace
-  ```
-
-### Antigravity
-
-Install Superpowers as a plugin from this repository:
-
-```bash
-agy plugin install https://github.com/obra/superpowers
+Write-capable AgentRuns
+        │
+        ▼
+Isolated Git Worktrees
 ```
 
-Antigravity runs the plugin's session-start hook, so Superpowers is active from
-the first message. Reinstall with the same command to update.
+## Core Domain
 
-### Codex App
-
-Superpowers is available via the [official Codex plugin marketplace](https://github.com/openai/plugins).
-
-- In the Codex app, click on Plugins in the sidebar.
-- You should see `Superpowers` in the Coding section.
-- Click the `+` next to Superpowers and follow the prompts.
-
-### Codex CLI
-
-Superpowers is available via the [official Codex plugin marketplace](https://github.com/openai/plugins).
-
-- Open the plugin search interface:
-
-  ```bash
-  /plugins
-  ```
-
-- Search for Superpowers:
-
-  ```bash
-  superpowers
-  ```
-
-- Select `Install Plugin`.
-
-### Cursor
-
-- In Cursor Agent chat, install from marketplace:
-
-  ```text
-  /add-plugin superpowers
-  ```
-
-- Or search for "superpowers" in the plugin marketplace.
-
-### Factory Droid
-
-- Register the marketplace:
-
-  ```bash
-  droid plugin marketplace add https://github.com/obra/superpowers
-  ```
-
-- Install the plugin:
-
-  ```bash
-  droid plugin install superpowers@superpowers
-  ```
-
-### Gemini CLI
-
-- Install the extension:
-
-  ```bash
-  gemini extensions install https://github.com/obra/superpowers
-  ```
-
-- Update later:
-
-  ```bash
-  gemini extensions update superpowers
-  ```
-
-### GitHub Copilot CLI
-
-- Register the marketplace:
-
-  ```bash
-  copilot plugin marketplace add obra/superpowers-marketplace
-  ```
-
-- Install the plugin:
-
-  ```bash
-  copilot plugin install superpowers@superpowers-marketplace
-  ```
-
-### Kimi Code
-
-Superpowers is available in Kimi Code's plugin marketplace.
-
-- Open Kimi Code's plugin manager:
-
-  ```text
-  /plugins
-  ```
-
-- Go to `Marketplace` > `Superpowers` and install it.
-
-- Or install directly from this repository:
-
-  ```text
-  /plugins install https://github.com/obra/superpowers
-  ```
-
-- Detailed docs: [docs/README.kimi.md](docs/README.kimi.md)
-
-### OpenCode
-
-OpenCode uses its own plugin install; install Superpowers separately even if you
-already use it in another harness.
-
-- Tell OpenCode:
-
-  ```
-  Fetch and follow instructions from https://raw.githubusercontent.com/obra/superpowers/refs/heads/main/.opencode/INSTALL.md
-  ```
-
-- Detailed docs: [docs/README.opencode.md](docs/README.opencode.md)
-
-### Pi
-
-Install Superpowers as a Pi package from this repository:
-
-```bash
-pi install git:github.com/obra/superpowers
+```text
+Project
+  └── Task
+       └── Run
+            ├── WorkflowSnapshot
+            ├── RunStageState
+            ├── AgentRun
+            │    ├── AgentProfile
+            │    ├── Executor
+            │    └── Workspace
+            ├── Event
+            ├── Finding
+            └── Evidence
 ```
 
-For local development, run Pi with this checkout loaded as a temporary package:
+A Task represents user intent.
 
-```bash
-pi -e /path/to/superpowers
+A Run represents one execution attempt.
+
+An AgentProfile defines responsibility.
+
+An Executor defines how an AgentRun is executed.
+
+These concepts must remain separate.
+
+## Repository Structure
+
+```text
+agent-office/
+├── README.md
+├── AGENTS.md
+├── backend/
+├── frontend/
+├── agents/
+├── executors/
+├── workflows/
+└── docs/
+    ├── product/
+    │   ├── PRD.md
+    │   └── MVP_ACCEPTANCE.md
+    ├── architecture/
+    │   ├── SYSTEM_ARCHITECTURE.md
+    │   └── DOMAIN_MODEL.md
+    ├── contracts/
+    │   ├── EVENT_CONTRACT.md
+    │   ├── EXECUTOR_ADAPTER.md
+    │   └── WORKFLOW_CONTRACT.md
+    ├── security/
+    │   ├── SECURITY_MODEL.md
+    │   └── WORKTREE_POLICY.md
+    └── ux/
+        └── INFORMATION_ARCHITECTURE.md
 ```
 
-The Pi package loads the Superpowers skills and a small extension that injects the `using-superpowers` bootstrap at session startup and again after compaction. Pi has native skills, so no compatibility `Skill` tool is required. Subagent and task-list tools remain optional Pi companion packages.
+The `agents/`, `executors/`, and `workflows/` directories are reserved for implementation assets and reusable definitions introduced during later phases.
 
-## The Basic Workflow
+## Specification Map
 
-1. **brainstorming** - Activates before writing code. Refines rough ideas through questions, explores alternatives, presents design in sections for validation. Saves design document.
+Read the documents in this order before substantial implementation:
 
-2. **using-git-worktrees** - Activates after design approval. Creates isolated workspace on new branch, runs project setup, verifies clean test baseline.
+1. `docs/product/PRD.md`
+2. `docs/architecture/SYSTEM_ARCHITECTURE.md`
+3. `docs/architecture/DOMAIN_MODEL.md`
+4. `docs/contracts/WORKFLOW_CONTRACT.md`
+5. `docs/contracts/EVENT_CONTRACT.md`
+6. `docs/contracts/EXECUTOR_ADAPTER.md`
+7. `docs/security/WORKTREE_POLICY.md`
+8. `docs/security/SECURITY_MODEL.md`
+9. `docs/ux/INFORMATION_ARCHITECTURE.md`
+10. `docs/product/MVP_ACCEPTANCE.md`
 
-3. **writing-plans** - Activates with approved design. Breaks work into bite-sized tasks (2-5 minutes each). Every task has exact file paths, complete code, verification steps.
+`MVP_ACCEPTANCE.md` is the implementation acceptance gate. A phase is not complete merely because the application starts or a screen renders.
 
-4. **subagent-driven-development** or **executing-plans** - Activates with plan. Dispatches fresh subagent per task with two-stage review (spec compliance, then code quality), or executes in batches with human checkpoints.
+## Implementation Phases
 
-5. **test-driven-development** - Activates during implementation. Enforces RED-GREEN-REFACTOR: write failing test, watch it fail, write minimal code, watch it pass, commit. Deletes code written before tests.
+```text
+Phase 0  Specification Baseline
+Phase 1  Application Foundation
+Phase 2  Project / Task / Run Persistence
+Phase 3  Workflow + ReferenceExecutor + Events
+Phase 4  Worktree Safety + Evidence + Review
+Phase 5  Operational Frontend
+Phase 6  First Real Executor
+Phase 7  Multi-Executor / Second Project Dogfood
+Phase 8  Office View
+```
 
-6. **requesting-code-review** - Activates between tasks. Reviews against plan, reports issues by severity. Critical issues block progress.
+The first real AI executor must not be integrated for write-capable work until the ReferenceExecutor, workflow state model, events, worktree safety, cancellation handling, and security controls are established.
 
-7. **finishing-a-development-branch** - Activates when tasks complete. Verifies tests, presents options (merge/PR/keep/discard), cleans up worktree.
+## Initial Technical Direction
 
-**The agent checks for relevant skills before any task.** Mandatory workflows, not suggestions.
+Backend:
 
-## What's Inside
+```text
+Python 3.12+
+FastAPI
+Pydantic
+SQLite
+pytest
+```
 
-### Skills Library
+Frontend:
 
-**Testing**
-- **test-driven-development** - RED-GREEN-REFACTOR cycle (includes testing anti-patterns reference)
+```text
+React
+TypeScript
+Vite
+Vitest
+React Testing Library
+ESLint
+```
 
-**Debugging**
-- **systematic-debugging** - 4-phase root cause process (includes root-cause-tracing, defense-in-depth, condition-based-waiting techniques)
-- **verification-before-completion** - Ensure it's actually fixed
+Realtime:
 
-**Collaboration** 
-- **brainstorming** - Socratic design refinement
-- **writing-plans** - Detailed implementation plans
-- **executing-plans** - Batch execution with checkpoints
-- **dispatching-parallel-agents** - Concurrent subagent workflows
-- **requesting-code-review** - Pre-review checklist
-- **receiving-code-review** - Responding to feedback
-- **using-git-worktrees** - Parallel development branches
-- **finishing-a-development-branch** - Merge/PR decision workflow
-- **subagent-driven-development** - Fast iteration with two-stage review (spec compliance, then code quality)
+```text
+REST for commands and canonical reads
+SSE for server-to-browser operational events
+```
 
-**Meta**
-- **writing-skills** - Create new skills following best practices (includes testing methodology)
-- **using-superpowers** - Introduction to the skills system
+Architecture:
 
-## Philosophy
+```text
+Local-first modular monolith
+Adapter-based executor integration
+Git worktree isolation
+```
 
-- **Test-Driven Development** - Write tests first, always
-- **Systematic over ad-hoc** - Process over guessing
-- **Complexity reduction** - Simplicity as primary goal
-- **Evidence over claims** - Verify before declaring success
+Distributed infrastructure such as Kafka, Redis, Celery, Kubernetes, or microservices is intentionally outside the initial architecture unless measured requirements justify it later.
 
-Read [the original release announcement](https://blog.fsck.com/2025/10/09/superpowers/).
+## Safety Defaults
 
-## Contributing
+MVP defaults:
 
-The general contribution process for Superpowers is below. Keep in mind that we don't generally accept contributions of new skills and that any updates to skills must work across all of the coding agents we support.
+```text
+bind host                127.0.0.1
+auto commit              false
+auto merge               false
+silent executor fallback false
+force push               forbidden
+destructive Git reset    forbidden
+raw provider retention   off
+production deployment    out of scope
+risk acceptance          human only
+```
 
-1. Fork the repository
-2. Switch to the 'dev' branch
-3. Create a branch for your work
-4. Follow the `writing-skills` skill for creating and testing new and modified skills
-5. Submit a PR, being sure to fill in the pull request template.
+The user's main working tree must never be cleaned, reset, stashed, committed, or overwritten automatically.
 
-Skill-behavior tests use the drill eval harness from [superpowers-evals](https://github.com/prime-radiant-inc/superpowers-evals/), cloned into `evals/` — see `evals/README.md` for setup. Plugin-infrastructure tests live at `tests/` and run via the relevant `run-*.sh` or `npm test`.
+## Operations View
 
-See `skills/writing-skills/SKILL.md` for the complete guide.
+The primary Run detail is expected to expose:
 
-## Updating
+```text
+Overview
+Workflow
+Agents
+Activity
+Changes
+Tests
+Findings
+Evidence
+Office
+```
 
-Superpowers updates are somewhat coding-agent dependent, but are often automatic.
+The first eight operational surfaces are authoritative product functionality.
 
-## License
+Office View is optional presentation over the same canonical Run, AgentRun, and Event state.
 
-MIT License - see LICENSE file for details
+## Executor Model
 
-## Visual companion telemetry
+Initial executor kinds:
 
-Because skills and plugins don't provide any feedback to creators, we have no idea how many of you are using Superpowers. By default, the Prime Radiant logo on brainstorming's optional visual companion feature is loaded from our website. It includes the version of Superpowers in use. It does not include any details about your project, prompt, or coding agent. We don't see your clicks or anything about what you're building. This helps us have a rough idea of how many folks are using Superpowers and which version of Superpowers they're using. It's 100% optional. To disable this, set the environment variable `SUPERPOWERS_DISABLE_TELEMETRY` to any true value. Superpowers also honors Claude Code's `DISABLE_TELEMETRY` and `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` opt-outs.
+```text
+REFERENCE
+CODEX
+ANTIGRAVITY
+OPENCLAW
+```
 
-## Community
+Executor capability support is explicit:
 
-Superpowers is built by [Jesse Vincent](https://blog.fsck.com) and the rest of the folks at [Prime Radiant](https://primeradiant.com).
+```text
+SUPPORTED
+UNSUPPORTED
+UNKNOWN
+```
 
-- **Discord**: [Join us](https://discord.gg/35wsABTejz) for community support, questions, and sharing what you're building with Superpowers
-- **Issues**: https://github.com/obra/superpowers/issues
-- **Release announcements**: [Sign up](https://primeradiant.com/superpowers/) to get notified about new versions
+Missing capability data must never be fabricated.
+
+## Development Foundation
+
+Phase 1A establishes the backend and frontend development toolchains only.
+
+### Backend
+
+```bash
+cd backend
+
+python3.12 -m venv .venv
+source .venv/bin/activate
+
+python -m pip install -e '.[dev]'
+
+pytest
+ruff check .
+ruff format --check .
+mypy src
+```
+
+### Frontend
+
+```bash
+cd frontend
+
+npm install
+
+npm test
+npm run lint
+npm run typecheck
+npm run build
+npm run dev
+```
+
+Real Agent Office domain behavior, persistence, orchestration, executor integrations, and Office View are intentionally deferred to later milestones.
+
+## Development Status
+
+Current status:
+
+```text
+Phase 1A — Repository & Tooling Foundation
+```
+
+The next implementation milestone after Phase 1A acceptance is:
+
+```text
+Phase 1B — FastAPI Backend Shell
+```
+
+## Contribution and Agent Instructions
+
+All coding agents must read `AGENTS.md` before modifying this repository.
+
+The implementation must remain consistent with the specifications under `docs/`.

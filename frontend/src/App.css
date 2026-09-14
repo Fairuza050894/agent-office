@@ -1,0 +1,26 @@
+.foundation-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+}
+
+.foundation-shell section {
+  width: min(100%, 42rem);
+}
+
+.foundation-shell h1 {
+  margin: 0.25rem 0 0.75rem;
+  font-size: 2rem;
+}
+
+.foundation-shell p {
+  margin: 0;
+}
+
+.eyebrow {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
