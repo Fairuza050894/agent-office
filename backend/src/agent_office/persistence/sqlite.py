@@ -13,7 +13,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 BUSY_TIMEOUT_MS = 5000
-LATEST_SCHEMA_VERSION: int = 1
+LATEST_SCHEMA_VERSION: int = 2
 
 SCHEMA_VERSION_KEY = "schema_version"
 
@@ -39,8 +39,38 @@ def _migration_v1(connection: sqlite3.Connection) -> None:
     )
 
 
+def _migration_v2(connection: sqlite3.Connection) -> None:
+    """Create Project Registry persistence."""
+
+    connection.execute(
+        """
+        CREATE TABLE projects (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            repository_path TEXT NOT NULL,
+            canonical_path TEXT NOT NULL UNIQUE,
+            git_common_dir TEXT NOT NULL UNIQUE,
+            default_branch TEXT NOT NULL,
+            preferred_executor_id TEXT,
+            default_workflow_id TEXT,
+            status TEXT NOT NULL
+                CHECK (status IN ('ACTIVE', 'ARCHIVED')),
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            archived_at TEXT,
+            CHECK (
+                (status = 'ACTIVE' AND archived_at IS NULL)
+                OR
+                (status = 'ARCHIVED' AND archived_at IS NOT NULL)
+            )
+        )
+        """
+    )
+
+
 MIGRATIONS: dict[int, Callable[[sqlite3.Connection], None]] = {
     1: _migration_v1,
+    2: _migration_v2,
 }
 
 

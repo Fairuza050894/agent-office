@@ -19,7 +19,9 @@ from agent_office.domain.identifiers import (
     WorkspaceId,
 )
 from agent_office.domain.project import (
+    Project,
     ProjectStatus,
+    RepositoryIdentity,
     ensure_project_allows_new_run,
 )
 from agent_office.domain.run import (
@@ -41,8 +43,10 @@ __all__ = [
     "EvidenceId",
     "ExecutorId",
     "FindingId",
+    "Project",
     "ProjectId",
     "ProjectStatus",
+    "RepositoryIdentity",
     "RunId",
     "RunStatus",
     "TERMINAL_RUN_STATUSES",
