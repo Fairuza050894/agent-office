@@ -1,14 +1,16 @@
+import { Router } from './router/Router'
+import { AppShell } from './layouts/AppShell'
 import './App.css'
 
-function App() {
+export interface AppProps {
+  initialPath?: string
+}
+
+function App({ initialPath }: AppProps) {
   return (
-    <main className="foundation-shell">
-      <section>
-        <p className="eyebrow">Engineering Control Plane</p>
-        <h1>Agent Office</h1>
-        <p>Foundation ready.</p>
-      </section>
-    </main>
+    <Router initialPath={initialPath}>
+      <AppShell />
+    </Router>
   )
 }
 
