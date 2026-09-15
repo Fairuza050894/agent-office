@@ -1,14 +1,80 @@
+import { useCallback, useEffect, useState } from 'react'
+
+import { api } from '../api'
 import { useRouter } from '../router/useRouter'
 import { NAV_ITEMS } from '../types/navigation'
 
 export interface HeaderProps {
   onToggleNav: () => void
   isNavOpen: boolean
+  initialStatus?: 'checking' | 'connected' | 'disconnected'
 }
 
-export function Header({ onToggleNav, isNavOpen }: HeaderProps) {
+export function Header({
+  onToggleNav,
+  isNavOpen,
+  initialStatus,
+}: HeaderProps) {
   const { currentPath } = useRouter()
   const activeItem = NAV_ITEMS.find((item) => item.path === currentPath)
+
+  const [status, setStatus] = useState<
+    'checking' | 'connected' | 'disconnected'
+  >(initialStatus ?? 'checking')
+
+  const checkHealth = useCallback(async () => {
+    setStatus('checking')
+
+    try {
+      const response = await api.getHealth()
+      setStatus(response.status === 'ok' ? 'connected' : 'disconnected')
+    } catch {
+      setStatus('disconnected')
+    }
+  }, [])
+
+  useEffect(() => {
+    if (initialStatus !== undefined) {
+      return
+    }
+
+    let active = true
+
+    api
+      .getHealth()
+      .then((response) => {
+        if (active) {
+          setStatus(
+            response.status === 'ok'
+              ? 'connected'
+              : 'disconnected',
+          )
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setStatus('disconnected')
+        }
+      })
+
+    return () => {
+      active = false
+    }
+  }, [initialStatus])
+
+  const statusText =
+    status === 'connected'
+      ? 'Backend Reachable'
+      : status === 'checking'
+        ? 'Connecting...'
+        : 'Backend Disconnected'
+
+  const statusSubtext =
+    status === 'connected'
+      ? '(/health ok)'
+      : status === 'checking'
+        ? '(Checking)'
+        : '(Offline)'
 
   return (
     <header className="app-header" role="banner">
@@ -27,7 +93,10 @@ export function Header({ onToggleNav, isNavOpen }: HeaderProps) {
 
         <div className="header-breadcrumb" aria-label="Breadcrumb">
           <span className="breadcrumb-root">Agent Office</span>
-          <span className="breadcrumb-separator" aria-hidden="true">
+          <span
+            className="breadcrumb-separator"
+            aria-hidden="true"
+          >
             /
           </span>
           <span className="breadcrumb-current">
@@ -37,10 +106,35 @@ export function Header({ onToggleNav, isNavOpen }: HeaderProps) {
       </div>
 
       <div className="header-right">
-        <div className="system-pill" title="Control plane status">
-          <span className="status-dot disconnected" aria-hidden="true" />
-          <span className="status-text">Phase 1G Shell</span>
-          <span className="status-subtext">(No backend connected)</span>
+        <div
+          className={`system-pill ${status}`}
+          title={
+            status === 'connected'
+              ? 'Agent Office backend reachable'
+              : status === 'checking'
+                ? 'Checking backend reachability...'
+                : 'Backend unreachable'
+          }
+          role="status"
+          aria-live="polite"
+        >
+          <span
+            className={`status-dot ${status}`}
+            aria-hidden="true"
+          />
+          <span className="status-text">{statusText}</span>
+          <span className="status-subtext">{statusSubtext}</span>
+
+          {status === 'disconnected' && (
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={checkHealth}
+              aria-label="Retry backend health check"
+            >
+              Retry
+            </button>
+          )}
         </div>
       </div>
     </header>

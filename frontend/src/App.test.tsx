@@ -1,12 +1,42 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import App from './App'
 
+beforeEach(() => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url =
+        typeof input === 'string'
+          ? input
+          : input instanceof URL
+            ? input.toString()
+            : input.url
+
+      const method = init?.method?.toUpperCase() ?? 'GET'
+
+      if (method === 'GET' && url.endsWith('/api/projects')) {
+        return new Response(JSON.stringify([]), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+      }
+
+      throw new Error(`Unexpected fetch call in test: ${method} ${url}`)
+    }),
+  )
+})
+
+afterEach(() => {
+  cleanup()
+  vi.unstubAllGlobals()
+  vi.restoreAllMocks()
+})
+
 describe('Agent Office Operations Shell (Phase 1G)', () => {
-  afterEach(() => {
-    cleanup()
-  })
 
   it('renders application shell landmarks and identity', () => {
     render(<App />)
@@ -27,7 +57,6 @@ describe('Agent Office Operations Shell (Phase 1G)', () => {
     expect(within(sidebar).getByText('Control Plane')).toBeInTheDocument()
     expect(within(sidebar).getByText('Local-First')).toBeInTheDocument()
     expect(within(sidebar).getByText('1G Shell')).toBeInTheDocument()
-    expect(screen.getByText('Phase 1G Shell')).toBeInTheDocument()
   })
 
   it('renders primary navigation with all four sections and items per IA', () => {
@@ -73,7 +102,7 @@ describe('Agent Office Operations Shell (Phase 1G)', () => {
     expect(projectsLink).not.toHaveAttribute('aria-current')
   })
 
-  it('navigates to Projects and displays truthful empty state', () => {
+  it('navigates to Projects and displays truthful empty state', async () => {
     render(<App initialPath="/overview" />)
 
     const nav = screen.getByRole('navigation', { name: 'Primary Navigation' })
@@ -83,7 +112,7 @@ describe('Agent Office Operations Shell (Phase 1G)', () => {
 
     expect(projectsLink).toHaveAttribute('aria-current', 'page')
     expect(screen.getByRole('heading', { level: 1, name: 'Projects' })).toBeInTheDocument()
-    expect(screen.getByText('No projects registered yet.')).toBeInTheDocument()
+    expect(await screen.findByText('No projects registered yet.')).toBeInTheDocument()
 
     // Table headers per IA
     expect(screen.getByRole('columnheader', { name: 'Project' })).toBeInTheDocument()
