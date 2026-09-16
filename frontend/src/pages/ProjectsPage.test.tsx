@@ -14,6 +14,7 @@ import {
 } from 'vitest'
 
 import type { Project } from '../api'
+import { Router } from '../router/Router'
 import { ProjectsPage } from './ProjectsPage'
 
 const ACTIVE_PROJECT: Project = {
@@ -57,6 +58,15 @@ function requestUrl(
   return input.url
 }
 
+
+function renderProjectsPage() {
+  return render(
+    <Router initialPath="/projects">
+      <ProjectsPage />
+    </Router>,
+  )
+}
+
 afterEach(() => {
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
@@ -74,7 +84,7 @@ describe('ProjectsPage backend integration', () => {
       ),
     )
 
-    render(<ProjectsPage />)
+    renderProjectsPage()
 
     expect(
       screen.getByText('Loading project registry...'),
@@ -87,7 +97,7 @@ describe('ProjectsPage backend integration', () => {
       vi.fn().mockResolvedValue(jsonResponse([])),
     )
 
-    render(<ProjectsPage />)
+    renderProjectsPage()
 
     expect(
       await screen.findByText(
@@ -106,7 +116,7 @@ describe('ProjectsPage backend integration', () => {
         ),
     )
 
-    render(<ProjectsPage />)
+    renderProjectsPage()
 
     expect(
       await screen.findByText('Agent Office'),
@@ -129,7 +139,7 @@ describe('ProjectsPage backend integration', () => {
 
     vi.stubGlobal('fetch', fetchMock)
 
-    render(<ProjectsPage />)
+    renderProjectsPage()
 
     expect(
       await screen.findByRole('alert'),
@@ -187,7 +197,7 @@ describe('ProjectsPage backend integration', () => {
 
     vi.stubGlobal('fetch', fetchMock)
 
-    render(<ProjectsPage />)
+    renderProjectsPage()
 
     await screen.findByText(
       'No projects registered yet.',
@@ -309,7 +319,7 @@ describe('ProjectsPage backend integration', () => {
 
       vi.stubGlobal('fetch', fetchMock)
 
-      render(<ProjectsPage />)
+      renderProjectsPage()
 
       await screen.findByText(
         'No projects registered yet.',
@@ -364,6 +374,25 @@ describe('ProjectsPage backend integration', () => {
     },
   )
 
+  it('navigates from a project to its scoped Task registry', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(jsonResponse([ACTIVE_PROJECT])),
+    )
+
+    renderProjectsPage()
+    await screen.findByText('Agent Office')
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'View tasks for Agent Office',
+      }),
+    )
+
+    expect(window.location.pathname).toBe('/tasks')
+    expect(window.location.search).toBe(`?project=${ACTIVE_PROJECT.id}`)
+  })
+
   it('archives a project without deleting its history row', async () => {
     const archivedProject: Project = {
       ...ACTIVE_PROJECT,
@@ -409,7 +438,7 @@ describe('ProjectsPage backend integration', () => {
 
     vi.stubGlobal('fetch', fetchMock)
 
-    render(<ProjectsPage />)
+    renderProjectsPage()
 
     await screen.findByText('Agent Office')
 

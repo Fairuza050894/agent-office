@@ -7,22 +7,50 @@ export interface RouterProps {
   initialPath?: string
 }
 
+interface RouteLocation {
+  path: string
+  search: string
+  href: string
+}
+
+function parseLocation(value: string): RouteLocation {
+  const clean = value.trim().split('#')[0]
+  const queryIndex = clean.indexOf('?')
+  const rawPath = queryIndex >= 0 ? clean.slice(0, queryIndex) : clean
+  const rawSearch = queryIndex >= 0 ? clean.slice(queryIndex + 1) : ''
+  const path = normalizePath(rawPath)
+  const params = new URLSearchParams(rawSearch)
+  const query = params.toString()
+  const search = query ? `?${query}` : ''
+
+  return {
+    path,
+    search,
+    href: `${path}${search}`,
+  }
+}
+
 export function Router({ children, initialPath }: RouterProps) {
-  const [currentPath, setCurrentPath] = useState<string>(() => {
+  const initialLocation = (() => {
     if (initialPath) {
-      return normalizePath(initialPath)
+      return parseLocation(initialPath)
     }
     if (typeof window !== 'undefined' && window.location) {
-      return normalizePath(window.location.pathname)
+      return parseLocation(`${window.location.pathname}${window.location.search}`)
     }
-    return '/overview'
-  })
+    return parseLocation('/overview')
+  })()
+
+  const [currentPath, setCurrentPath] = useState(initialLocation.path)
+  const [currentSearch, setCurrentSearch] = useState(initialLocation.search)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
 
     const handlePopState = () => {
-      setCurrentPath(normalizePath(window.location.pathname))
+      const location = parseLocation(`${window.location.pathname}${window.location.search}`)
+      setCurrentPath(location.path)
+      setCurrentSearch(location.search)
     }
 
     window.addEventListener('popstate', handlePopState)
@@ -31,16 +59,17 @@ export function Router({ children, initialPath }: RouterProps) {
     }
   }, [])
 
-  const navigate = (path: string) => {
-    const normalized = normalizePath(path)
+  const navigate = (target: string) => {
+    const location = parseLocation(target)
     if (typeof window !== 'undefined' && window.history) {
-      window.history.pushState({}, '', normalized)
+      window.history.pushState({}, '', location.href)
     }
-    setCurrentPath(normalized)
+    setCurrentPath(location.path)
+    setCurrentSearch(location.search)
   }
 
   return (
-    <RouterContext.Provider value={{ currentPath, navigate }}>
+    <RouterContext.Provider value={{ currentPath, currentSearch, navigate }}>
       {children}
     </RouterContext.Provider>
   )

@@ -8,6 +8,16 @@ export interface LinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
   activeClassName?: string
 }
 
+function extractSearch(href: string): string {
+  const clean = href.trim().split('#')[0]
+  const queryIndex = clean.indexOf('?')
+  if (queryIndex < 0) return ''
+
+  const params = new URLSearchParams(clean.slice(queryIndex + 1))
+  const query = params.toString()
+  return query ? `?${query}` : ''
+}
+
 export function Link({
   href,
   children,
@@ -16,23 +26,31 @@ export function Link({
   onClick,
   ...rest
 }: LinkProps) {
-  const { currentPath, navigate } = useRouter()
+  const { currentPath, currentSearch, navigate } = useRouter()
   const normalizedHref = normalizePath(href)
+  const targetSearch = extractSearch(href)
+  const targetHref = `${normalizedHref}${targetSearch}`
   const isActive = currentPath === normalizedHref
+  const isSameLocation = isActive && currentSearch === targetSearch
 
-  const handleClick = (e: MouseEvent<HTMLAnchorElement>) => {
+  const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
     if (onClick) {
-      onClick(e)
+      onClick(event)
     }
 
-    // Allow default behavior for modifier keys (open in new tab/window)
-    if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
+    if (
+      event.defaultPrevented ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
       return
     }
 
-    e.preventDefault()
-    if (!isActive) {
-      navigate(normalizedHref)
+    event.preventDefault()
+    if (!isSameLocation) {
+      navigate(targetHref)
     }
   }
 
@@ -45,7 +63,7 @@ export function Link({
 
   return (
     <a
-      href={normalizedHref}
+      href={targetHref}
       className={combinedClassName}
       aria-current={isActive ? 'page' : undefined}
       onClick={handleClick}

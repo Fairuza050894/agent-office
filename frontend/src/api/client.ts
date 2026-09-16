@@ -1,7 +1,11 @@
 import type {
+  CreateRunRequest,
+  CreateTaskRequest,
   HealthResponse,
   Project,
   RegisterProjectRequest,
+  Run,
+  Task,
   VersionResponse,
 } from './types'
 
@@ -78,13 +82,16 @@ async function request<T>(
 
     switch (response.status) {
       case 400:
-        errorMessage = errorDetail || 'Invalid request or invalid Git repository.'
+        errorMessage = errorDetail || 'Invalid request.'
+        break
+      case 403:
+        errorMessage = errorDetail || 'The requested operation is not permitted.'
         break
       case 404:
         errorMessage = errorDetail || 'Resource not found.'
         break
       case 409:
-        errorMessage = errorDetail || 'A project is already registered for this repository.'
+        errorMessage = errorDetail || 'Request conflicts with the current resource state.'
         break
       case 422:
         errorMessage = errorDetail || 'Validation failed for request data.'
@@ -130,6 +137,36 @@ export const api = {
   archiveProject(projectId: string): Promise<Project> {
     return request<Project>(`/api/projects/${encodeURIComponent(projectId)}/archive`, {
       method: 'POST',
+    })
+  },
+
+  listTasks(projectId: string): Promise<Task[]> {
+    return request<Task[]>(`/api/projects/${encodeURIComponent(projectId)}/tasks`)
+  },
+
+  getTask(taskId: string): Promise<Task> {
+    return request<Task>(`/api/tasks/${encodeURIComponent(taskId)}`)
+  },
+
+  createTask(projectId: string, data: CreateTaskRequest): Promise<Task> {
+    return request<Task>(`/api/projects/${encodeURIComponent(projectId)}/tasks`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  },
+
+  listRuns(taskId: string): Promise<Run[]> {
+    return request<Run[]>(`/api/tasks/${encodeURIComponent(taskId)}/runs`)
+  },
+
+  getRun(runId: string): Promise<Run> {
+    return request<Run>(`/api/runs/${encodeURIComponent(runId)}`)
+  },
+
+  createRun(taskId: string, data: CreateRunRequest = {}): Promise<Run> {
+    return request<Run>(`/api/tasks/${encodeURIComponent(taskId)}/runs`, {
+      method: 'POST',
+      body: JSON.stringify(data),
     })
   },
 }

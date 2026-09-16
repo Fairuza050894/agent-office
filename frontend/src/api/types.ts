@@ -27,6 +27,40 @@ export interface RegisterProjectRequest {
   repository_path: string
 }
 
+export interface Task {
+  id: string
+  project_id: string
+  title: string
+  objective: string
+  constraints: string | null
+  requested_workflow_id: string | null
+  requested_executor_id: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateTaskRequest {
+  title: string
+  objective: string
+  constraints?: string | null
+  requested_workflow_id?: string | null
+  requested_executor_id?: string | null
+}
+
+export interface Run {
+  id: string
+  project_id: string
+  task_id: string
+  status: string
+  requested_executor_id: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateRunRequest {
+  requested_executor_id?: string | null
+}
+
 export interface HealthResponse {
   status: string
 }

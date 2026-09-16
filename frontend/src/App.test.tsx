@@ -36,7 +36,7 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('Agent Office Operations Shell (Phase 1G)', () => {
+describe('Agent Office Operations Shell (Phase 2)', () => {
 
   it('renders application shell landmarks and identity', () => {
     render(<App />)
@@ -56,7 +56,7 @@ describe('Agent Office Operations Shell (Phase 1G)', () => {
     expect(within(sidebar).getByText('Agent Office')).toBeInTheDocument()
     expect(within(sidebar).getByText('Control Plane')).toBeInTheDocument()
     expect(within(sidebar).getByText('Local-First')).toBeInTheDocument()
-    expect(within(sidebar).getByText('1G Shell')).toBeInTheDocument()
+    expect(within(sidebar).getByText('Phase 2')).toBeInTheDocument()
   })
 
   it('renders primary navigation with all four sections and items per IA', () => {
@@ -120,12 +120,11 @@ describe('Agent Office Operations Shell (Phase 1G)', () => {
     expect(screen.getByRole('columnheader', { name: 'Default branch' })).toBeInTheDocument()
     expect(screen.getByRole('columnheader', { name: 'Preferred executor' })).toBeInTheDocument()
     expect(screen.getByRole('columnheader', { name: 'Default workflow' })).toBeInTheDocument()
-    expect(screen.getByRole('columnheader', { name: 'Active runs' })).toBeInTheDocument()
     expect(screen.getByRole('columnheader', { name: 'Status' })).toBeInTheDocument()
     expect(screen.getByRole('columnheader', { name: 'Action' })).toBeInTheDocument()
   })
 
-  it('navigates to Runs and displays truthful empty state', () => {
+  it('navigates to Runs and displays truthful empty state', async () => {
     render(<App initialPath="/overview" />)
 
     const nav = screen.getByRole('navigation', { name: 'Primary Navigation' })
@@ -135,13 +134,12 @@ describe('Agent Office Operations Shell (Phase 1G)', () => {
 
     expect(runsLink).toHaveAttribute('aria-current', 'page')
     expect(screen.getByRole('heading', { level: 1, name: 'Runs' })).toBeInTheDocument()
-    expect(screen.getByText('No runs have been created.')).toBeInTheDocument()
+    expect(await screen.findByText('No runs have been created.')).toBeInTheDocument()
 
     // Table headers per IA
     expect(screen.getByRole('columnheader', { name: 'Run' })).toBeInTheDocument()
-    expect(screen.getByRole('columnheader', { name: 'Stage' })).toBeInTheDocument()
     expect(screen.getByRole('columnheader', { name: 'State' })).toBeInTheDocument()
-    expect(screen.getByRole('columnheader', { name: 'Primary executor' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Requested executor' })).toBeInTheDocument()
   })
 
   it('navigates to Executors and displays truthful unintegrated state', () => {
@@ -201,7 +199,7 @@ describe('Agent Office Operations Shell (Phase 1G)', () => {
     expect(screen.getByText('Executor information will be available after backend integration')).toBeInTheDocument()
   })
 
-  it('navigates to Tasks, Agents, Workflows, Activity, Evidence, and Audit pages with truthful empty states', () => {
+  it('navigates to Tasks, Agents, Workflows, Activity, Evidence, and Audit pages with truthful empty states', async () => {
     render(<App initialPath="/overview" />)
 
     const nav = screen.getByRole('navigation', { name: 'Primary Navigation' })
@@ -209,7 +207,7 @@ describe('Agent Office Operations Shell (Phase 1G)', () => {
     // Tasks
     fireEvent.click(within(nav).getByRole('link', { name: 'Tasks' }))
     expect(screen.getByRole('heading', { level: 1, name: 'Tasks' })).toBeInTheDocument()
-    expect(screen.getByText('No tasks created yet.')).toBeInTheDocument()
+    expect(await screen.findByText('No tasks created yet.')).toBeInTheDocument()
 
     // Agents
     fireEvent.click(within(nav).getByRole('link', { name: 'Agents' }))

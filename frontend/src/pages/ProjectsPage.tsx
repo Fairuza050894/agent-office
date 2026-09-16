@@ -5,6 +5,7 @@ import { EmptyState } from '../components/EmptyState'
 import { RegisterProjectModal } from '../components/RegisterProjectModal'
 import { ArchiveProjectModal } from '../components/ArchiveProjectModal'
 import { api, type Project } from '../api'
+import { useRouter } from '../router/useRouter'
 
 const COLUMNS = [
   'Project',
@@ -12,12 +13,12 @@ const COLUMNS = [
   'Default branch',
   'Preferred executor',
   'Default workflow',
-  'Active runs',
   'Status',
   'Action',
 ]
 
 export function ProjectsPage() {
+  const { navigate } = useRouter()
   const [projects, setProjects] = useState<Project[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -139,7 +140,6 @@ export function ProjectsPage() {
           </td>
           <td>{project.preferred_executor_id ?? '—'}</td>
           <td>{project.default_workflow_id ?? '—'}</td>
-          <td>—</td>
           <td>
             <span
               className={`badge ${isArchived ? 'badge-archived' : 'badge-active'}`}
@@ -148,20 +148,26 @@ export function ProjectsPage() {
             </span>
           </td>
           <td>
-            {isArchived ? (
-              <span className="cell-action-disabled" title="Project is archived">
-                —
-              </span>
-            ) : (
+            <div className="table-actions">
               <button
                 type="button"
                 className="btn btn-secondary btn-sm"
-                onClick={() => setProjectToArchive(project)}
-                aria-label={`Archive project ${project.name}`}
+                onClick={() => navigate(`/tasks?project=${encodeURIComponent(project.id)}`)}
+                aria-label={`View tasks for ${project.name}`}
               >
-                Archive
+                Tasks
               </button>
-            )}
+              {!isArchived && (
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setProjectToArchive(project)}
+                  aria-label={`Archive project ${project.name}`}
+                >
+                  Archive
+                </button>
+              )}
+            </div>
           </td>
         </tr>
       )
