@@ -1,6 +1,8 @@
-import { Router } from './router/Router'
-import { AppShell } from './layouts/AppShell'
 import './App.css'
+
+import { ErrorBoundary } from './components/ErrorBoundary'
+import { AppShell } from './layouts/AppShell'
+import { Router } from './router/Router'
 
 export interface AppProps {
   initialPath?: string
@@ -8,9 +10,11 @@ export interface AppProps {
 
 function App({ initialPath }: AppProps) {
   return (
-    <Router initialPath={initialPath}>
-      <AppShell />
-    </Router>
+    <ErrorBoundary>
+      <Router initialPath={initialPath}>
+        <AppShell />
+      </Router>
+    </ErrorBoundary>
   )
 }
 

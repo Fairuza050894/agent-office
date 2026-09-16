@@ -12,6 +12,7 @@ from agent_office.infrastructure.git import GitRepositoryInspector
 from agent_office.infrastructure.persistence import (
     SQLiteProjectRepository,
 )
+from agent_office.logging_config import configure_logging
 from agent_office.persistence import SQLiteDatabase
 
 
@@ -24,6 +25,7 @@ def get_package_version() -> str:
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     resolved_settings = settings or get_settings()
+    configure_logging(resolved_settings.log_level)
 
     app = FastAPI(
         title=resolved_settings.app_name,
