@@ -1,8 +1,7 @@
 """SQLite persistence foundation for Agent Office.
 
 Provides a small, restart-safe SQLite abstraction with explicit schema
-versioning. This module creates no business tables -- only infrastructure
-metadata required for schema versioning.
+versioning and deterministic local control-plane persistence.
 """
 
 from __future__ import annotations
@@ -13,7 +12,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 BUSY_TIMEOUT_MS = 5000
-LATEST_SCHEMA_VERSION: int = 2
+LATEST_SCHEMA_VERSION: int = 3
 
 SCHEMA_VERSION_KEY = "schema_version"
 
@@ -68,9 +67,52 @@ def _migration_v2(connection: sqlite3.Connection) -> None:
     )
 
 
+def _migration_v3(connection: sqlite3.Connection) -> None:
+    """Create Task and Run persistence."""
+
+    connection.execute(
+        """
+        CREATE TABLE tasks (
+            id TEXT PRIMARY KEY,
+            project_id TEXT NOT NULL REFERENCES projects(id),
+            title TEXT NOT NULL,
+            objective TEXT NOT NULL,
+            constraints TEXT,
+            requested_workflow_id TEXT,
+            requested_executor_id TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            UNIQUE (project_id, id)
+        )
+        """
+    )
+
+    connection.execute(
+        """
+        CREATE TABLE runs (
+            id TEXT PRIMARY KEY,
+            project_id TEXT NOT NULL REFERENCES projects(id),
+            task_id TEXT NOT NULL,
+            status TEXT NOT NULL
+                CHECK (status IN (
+                    'CREATED', 'PLANNING', 'READY', 'RUNNING',
+                    'REVIEWING', 'REMEDIATING', 'VERIFYING',
+                    'COMPLETED', 'BLOCKED', 'FAILED', 'CANCELLED'
+                )),
+            requested_executor_id TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (project_id, task_id)
+                REFERENCES tasks(project_id, id)
+        )
+        """
+    )
+
+
 MIGRATIONS: dict[int, Callable[[sqlite3.Connection], None]] = {
     1: _migration_v1,
     2: _migration_v2,
+    3: _migration_v3,
 }
 
 

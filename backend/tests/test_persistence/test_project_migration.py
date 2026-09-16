@@ -26,7 +26,7 @@ def _table_exists(
     return row is not None
 
 
-def test_database_upgrades_from_v1_to_project_schema_v2(
+def test_database_upgrades_from_v1_to_latest_schema(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
@@ -49,7 +49,7 @@ def test_database_upgrades_from_v1_to_project_schema_v2(
     )
     database.initialize()
 
-    assert database.current_schema_version() == 2
+    assert database.current_schema_version() == LATEST_SCHEMA_VERSION
     assert _table_exists(database, "projects")
 
     with database.connection() as connection:
@@ -73,7 +73,7 @@ def test_database_upgrades_from_v1_to_project_schema_v2(
     } <= columns
 
 
-def test_schema_v2_reinitialization_is_idempotent(
+def test_latest_schema_reinitialization_is_idempotent(
     tmp_path: Path,
 ) -> None:
     database = SQLiteDatabase(tmp_path / "idempotent.sqlite")
@@ -81,5 +81,5 @@ def test_schema_v2_reinitialization_is_idempotent(
     database.initialize()
     database.initialize()
 
-    assert database.current_schema_version() == 2
+    assert database.current_schema_version() == LATEST_SCHEMA_VERSION
     assert _table_exists(database, "projects")

@@ -47,10 +47,12 @@ from agent_office.domain.project import (
 )
 from agent_office.domain.run import (
     TERMINAL_RUN_STATUSES,
+    Run,
     RunStatus,
     ensure_run_transition_allowed,
     is_terminal_run_status,
 )
+from agent_office.domain.task import Task
 from agent_office.domain.timestamps import to_utc, utc_now
 
 __all__ = [
@@ -83,12 +85,14 @@ __all__ = [
     "ProjectStatus",
     "ReconciliationResult",
     "RepositoryIdentity",
+    "Run",
     "RunId",
     "RunStatus",
     "SafeMetadata",
     "StartExecutionOutcome",
     "StartExecutionRequest",
     "StartExecutionResult",
+    "Task",
     "TERMINAL_RUN_STATUSES",
     "TaskId",
     "WorkflowDefinitionId",
