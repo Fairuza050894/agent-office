@@ -1,0 +1,129 @@
+"""Audit primitives for manual control-plane interventions.
+
+An AuditRecord is the durable, append-only record of an intervention applied to
+canonical state. DOMAIN_MODEL §36 defines the shape and states that audit records
+differ from operational Events: an Event is the normalized operational history of
+what a Run's execution did, while an AuditRecord answers "which manual
+intervention was applied, when, and to which target".
+
+Agent Office does not authenticate operators in the local MVP. ``AuditActorType``
+therefore records only where a request originated; ``actor_id`` stays unset
+rather than naming a human that was never identified.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import datetime
+from enum import StrEnum
+from uuid import UUID
+
+from agent_office.domain.errors import DomainInvariantError
+from agent_office.domain.executor import SafeMetadata, validate_safe_metadata
+from agent_office.domain.identifiers import AuditRecordId, ProjectId, RunId
+from agent_office.domain.timestamps import to_utc
+
+# An audit record states what happened, not a request dump. The bound keeps a
+# caller from persisting an unbounded payload through the audit path.
+MAX_AUDIT_METADATA_ENTRIES = 8
+
+
+class AuditActorType(StrEnum):
+    """Where an audited intervention originated (DOMAIN_MODEL §36).
+
+    ``USER`` claims only that a request arrived from outside the orchestrator. It
+    never claims a named human, because no such identity exists locally. ``AGENT``
+    and ``EXECUTOR`` are canonical but unused in Phase 3: no agent or executor
+    initiates an audited control-plane intervention in this scope.
+    """
+
+    USER = "USER"
+    SYSTEM = "SYSTEM"
+    AGENT = "AGENT"
+    EXECUTOR = "EXECUTOR"
+
+
+class AuditAction(StrEnum):
+    """The closed set of auditable Phase 3 manual interventions.
+
+    DOMAIN_MODEL §36 does not enumerate actions, so Phase 3 defines only the
+    interventions it actually supports. The taxonomy is closed: an unlisted
+    action cannot be audited, so no caller can inject an arbitrary audited fact.
+    """
+
+    RUN_CANCELLATION_REQUESTED = "RUN_CANCELLATION_REQUESTED"
+    RUN_RESUME_REQUESTED = "RUN_RESUME_REQUESTED"
+    RUN_RECONCILIATION_REQUESTED = "RUN_RECONCILIATION_REQUESTED"
+    RUN_EXECUTOR_SELECTED = "RUN_EXECUTOR_SELECTED"
+
+
+class AuditTargetType(StrEnum):
+    """The canonical entity an audited action was applied to."""
+
+    RUN = "RUN"
+    EXECUTOR = "EXECUTOR"
+
+
+def _validated_identifier(value: str, *, field: str) -> str:
+    """Return a canonical identifier, rejecting arbitrary text.
+
+    Audit targets and actors are always Agent Office-generated identifiers.
+    Rejecting anything else keeps operator-visible strings from smuggling a
+    filesystem path or a provider value into durable audit history.
+    """
+
+    try:
+        return str(UUID(value))
+    except (ValueError, AttributeError, TypeError) as exc:
+        raise DomainInvariantError(
+            f"Audit {field} must be a canonical Agent Office identifier"
+        ) from exc
+
+
+@dataclass(frozen=True, slots=True)
+class AuditRecord:
+    """One append-only record of a manual control-plane intervention.
+
+    ``project_id`` and ``run_id`` carry ownership. Every Phase 3 intervention is
+    Run-scoped, so both are always populated even though DOMAIN_MODEL §36 marks
+    them optional for future control-plane actions that are not Run-scoped.
+    """
+
+    id: AuditRecordId
+    actor_type: AuditActorType
+    action: AuditAction
+    target_type: AuditTargetType
+    occurred_at: datetime
+    project_id: ProjectId | None = None
+    run_id: RunId | None = None
+    actor_id: str | None = None
+    target_id: str | None = None
+    safe_metadata: SafeMetadata = ()
+
+    def __post_init__(self) -> None:
+        if len(self.safe_metadata) > MAX_AUDIT_METADATA_ENTRIES:
+            raise DomainInvariantError("Audit record declares too many metadata entries")
+
+        if self.actor_id is not None:
+            object.__setattr__(
+                self,
+                "actor_id",
+                _validated_identifier(self.actor_id, field="actor id"),
+            )
+
+        if self.target_id is not None:
+            object.__setattr__(
+                self,
+                "target_id",
+                _validated_identifier(self.target_id, field="target id"),
+            )
+
+        if self.target_type is AuditTargetType.RUN and self.run_id is None:
+            raise DomainInvariantError("A Run-targeted audit record must reference its Run")
+
+        object.__setattr__(
+            self,
+            "safe_metadata",
+            validate_safe_metadata(self.safe_metadata),
+        )
+        object.__setattr__(self, "occurred_at", to_utc(self.occurred_at))

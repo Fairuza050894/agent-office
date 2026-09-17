@@ -8,6 +8,7 @@ from datetime import datetime
 
 from agent_office.application.runs.errors import RunPersistenceError
 from agent_office.domain import (
+    TERMINAL_RUN_STATUSES,
     ChangeArea,
     ExecutorId,
     ProjectId,
@@ -127,6 +128,22 @@ class SQLiteRunRepository:
                 ORDER BY created_at ASC, id ASC
                 """,
                 (str(task_id),),
+            ).fetchall()
+
+        return tuple(self._hydrate(row) for row in rows)
+
+    def list_non_terminal(self) -> tuple[Run, ...]:
+        terminal = tuple(status.value for status in TERMINAL_RUN_STATUSES)
+
+        with self._database.connection() as connection:
+            rows = connection.execute(
+                f"""
+                SELECT *
+                FROM runs
+                WHERE status NOT IN ({", ".join("?" * len(terminal))})
+                ORDER BY created_at ASC, id ASC
+                """,
+                terminal,
             ).fetchall()
 
         return tuple(self._hydrate(row) for row in rows)

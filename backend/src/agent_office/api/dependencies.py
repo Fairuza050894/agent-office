@@ -4,9 +4,11 @@ from typing import cast
 
 from fastapi import Request
 
+from agent_office.application.audit import AuditService
 from agent_office.application.events import EventService
 from agent_office.application.orchestration import RunOrchestrator
 from agent_office.application.projects import ProjectService
+from agent_office.application.recovery import RecoveryService
 from agent_office.application.runs import RunService, RunStageService
 from agent_office.application.tasks import TaskService
 from agent_office.application.workflows import WorkflowService
@@ -112,3 +114,29 @@ def get_orchestrator(request: Request) -> RunOrchestrator:
     database.initialize()
     workflows.ensure_built_in_definitions()
     return orchestrator
+
+
+def get_audit_service(request: Request) -> AuditService:
+    """Return the append-only AuditRecord service."""
+
+    database = _database(request)
+    service = cast(
+        AuditService,
+        request.app.state.audit_service,
+    )
+
+    database.initialize()
+    return service
+
+
+def get_recovery_service(request: Request) -> RecoveryService:
+    """Return the restart recovery discovery service."""
+
+    database = _database(request)
+    service = cast(
+        RecoveryService,
+        request.app.state.recovery_service,
+    )
+
+    database.initialize()
+    return service

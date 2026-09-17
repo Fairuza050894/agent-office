@@ -137,6 +137,10 @@ class RunService:
         """Return all Runs for a Task."""
         return self._run_repository.list_by_task(task_id)
 
+    def list_non_terminal_runs(self) -> tuple[Run, ...]:
+        """Return every Run that may still require operator attention."""
+        return self._run_repository.list_non_terminal()
+
     def validate_run_ownership(
         self,
         run_id: RunId,

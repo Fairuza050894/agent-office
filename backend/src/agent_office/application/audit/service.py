@@ -1,0 +1,89 @@
+"""Audit application service.
+
+Records manual control-plane interventions. Recording is additive only: an
+intervention that succeeded produces a record, and nothing in this service can
+modify or remove a record afterwards.
+
+Semantics chosen for Phase 3: **one AuditRecord per successful control-plane
+action performed**. A repeated idempotent request is a distinct operator action
+and therefore produces its own record, because the audit trail answers "what did
+an operator do", not "how many times did canonical state change". A resume that
+also changes the Run's Executor performs two actions and records both.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Callable
+from datetime import datetime
+
+from agent_office.application.audit.ports import AuditRecordRepository
+from agent_office.domain import (
+    AuditAction,
+    AuditActorType,
+    AuditRecord,
+    AuditRecordId,
+    AuditTargetType,
+    Run,
+    RunId,
+    SafeMetadata,
+    utc_now,
+)
+
+Clock = Callable[[], datetime]
+
+AuditRecordIdFactory = Callable[[], AuditRecordId]
+
+
+class AuditService:
+    """Create and query durable AuditRecords."""
+
+    def __init__(
+        self,
+        repository: AuditRecordRepository,
+        *,
+        clock: Clock = utc_now,
+        audit_record_id_factory: AuditRecordIdFactory = AuditRecordId.new,
+    ) -> None:
+        self._repository = repository
+        self._clock = clock
+        self._audit_record_id_factory = audit_record_id_factory
+
+    def record_run_intervention(
+        self,
+        run: Run,
+        action: AuditAction,
+        *,
+        target_type: AuditTargetType = AuditTargetType.RUN,
+        target_id: str | None = None,
+        safe_metadata: SafeMetadata = (),
+        actor_type: AuditActorType = AuditActorType.USER,
+    ) -> AuditRecord:
+        """Record one successful manual intervention on a Run.
+
+        ``actor_type`` defaults to ``USER``: the interventions this service
+        records all originate from an operator-initiated control-plane request.
+        No actor identity is recorded, because Agent Office does not identify
+        operators in the local MVP.
+        """
+
+        now = utc_now(self._clock)
+
+        record = AuditRecord(
+            id=self._audit_record_id_factory(),
+            project_id=run.project_id,
+            run_id=run.id,
+            actor_type=actor_type,
+            action=action,
+            target_type=target_type,
+            target_id=str(run.id) if target_id is None else target_id,
+            occurred_at=now,
+            safe_metadata=safe_metadata,
+        )
+
+        self._repository.append(record)
+        return record
+
+    def list_for_run(self, run_id: RunId) -> tuple[AuditRecord, ...]:
+        """Return the audit history of one Run."""
+
+        return self._repository.list_by_run(run_id)

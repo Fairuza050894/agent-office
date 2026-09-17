@@ -16,6 +16,7 @@ from collections.abc import Callable, Sequence
 from datetime import datetime
 
 from agent_office.application.agents.service import AgentRunService
+from agent_office.application.audit.service import AuditService
 from agent_office.application.events.errors import EventScopeError
 from agent_office.application.events.ports import EventProcessingResult
 from agent_office.application.events.service import EventService
@@ -35,6 +36,8 @@ from agent_office.domain import (
     AgentRun,
     AgentRunReasonCode,
     AgentRunStatus,
+    AuditAction,
+    AuditTargetType,
     CancellationOutcome,
     CapabilityReport,
     CapabilitySupport,
@@ -60,6 +63,7 @@ from agent_office.domain import (
     RunStageState,
     RunStageStatus,
     RunStatus,
+    SafeMetadata,
     StageExecutionMode,
     StageKey,
     StageReasonCode,
@@ -223,6 +227,7 @@ class RunOrchestrator:
         agent_run_service: AgentRunService,
         event_service: EventService,
         executor_registry: ExecutorRegistry,
+        audit_service: AuditService,
         clock: Clock = utc_now,
     ) -> None:
         self._runs = run_service
@@ -233,6 +238,7 @@ class RunOrchestrator:
         self._agent_runs = agent_run_service
         self._events = event_service
         self._executors = executor_registry
+        self._audit = audit_service
         self._clock = clock
 
     # ------------------------------------------------------------------
@@ -1042,6 +1048,37 @@ class RunOrchestrator:
             AgentRunReasonCode.EXECUTION_RESULT_UNKNOWN,
             result.summary,
         )
+
+    def _audit_run_intervention(
+        self,
+        run: Run,
+        action: AuditAction,
+        *,
+        target_type: AuditTargetType = AuditTargetType.RUN,
+        target_id: str | None = None,
+        safe_metadata: SafeMetadata = (),
+    ) -> Run:
+        """Record one accepted manual intervention and return the Run unchanged.
+
+        The Run is returned so a caller can audit and return in one expression,
+        which keeps every exit path of an operator method audited instead of
+        relying on a caller to remember.
+        """
+
+        metadata: SafeMetadata = (("status", run.status.value),)
+
+        if run.failure_code is not None:
+            metadata = metadata + (("reason_code", run.failure_code.value),)
+
+        self._audit.record_run_intervention(
+            run,
+            action,
+            target_type=target_type,
+            target_id=target_id,
+            safe_metadata=metadata + safe_metadata,
+        )
+
+        return run
 
     def _emit_agent_run_transition(
         self,
@@ -1888,7 +1925,7 @@ class RunOrchestrator:
         run = self._runs.get_run(run_id)
 
         if is_terminal_run_status(run.status):
-            return run
+            return self._audit_run_intervention(run, AuditAction.RUN_CANCELLATION_REQUESTED)
 
         all_agent_runs = self._agent_runs.list_for_run(run.id)
         unresolved_cancellation = any(
@@ -1912,9 +1949,13 @@ class RunOrchestrator:
         if not active:
             if unresolved_cancellation:
                 # The Run must not claim CANCELLED while cancellation is unproven.
-                return self._runs.get_run(run.id)
+                return self._audit_run_intervention(
+                    self._runs.get_run(run.id), AuditAction.RUN_CANCELLATION_REQUESTED
+                )
 
-            return self._cancel_run_internal(run)
+            return self._audit_run_intervention(
+                self._cancel_run_internal(run), AuditAction.RUN_CANCELLATION_REQUESTED
+            )
 
         unknown = False
         unconfirmed = False
@@ -1931,26 +1972,36 @@ class RunOrchestrator:
                 unconfirmed = True
 
         if unknown:
-            return self._block(
-                run,
-                RunReasonCode.CANCELLATION_UNKNOWN,
-                "Cancellation outcome is unknown; the Run cannot claim to be cancelled.",
+            return self._audit_run_intervention(
+                self._block(
+                    run,
+                    RunReasonCode.CANCELLATION_UNKNOWN,
+                    "Cancellation outcome is unknown; the Run cannot claim to be cancelled.",
+                ),
+                AuditAction.RUN_CANCELLATION_REQUESTED,
             )
 
         if unsupported:
-            return self._block(
-                run,
-                RunReasonCode.CANCELLATION_UNSUPPORTED,
-                "The resolved Executor does not report support for cancellation; the Run "
-                "cannot claim to be cancelled.",
+            return self._audit_run_intervention(
+                self._block(
+                    run,
+                    RunReasonCode.CANCELLATION_UNSUPPORTED,
+                    "The resolved Executor does not report support for cancellation; the Run "
+                    "cannot claim to be cancelled.",
+                ),
+                AuditAction.RUN_CANCELLATION_REQUESTED,
             )
 
         if unconfirmed:
             # Cancellation was requested but not acknowledged. The Run must not
             # claim CANCELLED, and the persisted Run is returned unchanged.
-            return self._runs.get_run(run.id)
+            return self._audit_run_intervention(
+                self._runs.get_run(run.id), AuditAction.RUN_CANCELLATION_REQUESTED
+            )
 
-        return self._cancel_run_internal(run)
+        return self._audit_run_intervention(
+            self._cancel_run_internal(run), AuditAction.RUN_CANCELLATION_REQUESTED
+        )
 
     async def _request_agent_run_cancellation(
         self,
@@ -2115,11 +2166,48 @@ class RunOrchestrator:
         executor_id: ExecutorId | None = None,
         changed_areas: tuple[ChangeArea, ...] | None = None,
     ) -> Run:
-        """Resume a BLOCKED Run after re-validating that it may continue.
+        """Resume a BLOCKED Run and audit the intervention.
 
         Raises:
-            RunNotResumableError: if any precondition is unmet.
+            RunNotResumableError: if any precondition is unmet, in which case no
+                audit record is written because no intervention was applied.
         """
+
+        before = self._runs.get_run(run_id)
+
+        resumed = await self._resume_run(
+            run_id,
+            executor_id=executor_id,
+            changed_areas=changed_areas,
+        )
+
+        if executor_id is not None and before.resolved_executor_id != executor_id:
+            selection_metadata: SafeMetadata = (
+                ()
+                if before.resolved_executor_id is None
+                else (("previous_executor_id", str(before.resolved_executor_id)),)
+            )
+
+            # Recorded against the state the operator changed FROM, so the
+            # audit trail shows what the selection replaced.
+            self._audit_run_intervention(
+                before,
+                AuditAction.RUN_EXECUTOR_SELECTED,
+                target_type=AuditTargetType.EXECUTOR,
+                target_id=str(executor_id),
+                safe_metadata=selection_metadata,
+            )
+
+        return self._audit_run_intervention(resumed, AuditAction.RUN_RESUME_REQUESTED)
+
+    async def _resume_run(
+        self,
+        run_id: RunId,
+        *,
+        executor_id: ExecutorId | None = None,
+        changed_areas: tuple[ChangeArea, ...] | None = None,
+    ) -> Run:
+        """Apply a resume after re-validating that the Run may continue."""
 
         run = self._runs.get_run(run_id)
 
@@ -2263,7 +2351,18 @@ class RunOrchestrator:
         AgentRun: it only records what the Executor can prove. An AgentRun whose
         external state cannot be proven is left unresolved and the Run is
         blocked rather than resumed blindly.
+
+        Every accepted request is audited, including a request that finds nothing
+        to change: the operator did intervene, and that is the auditable fact.
         """
+
+        return self._audit_run_intervention(
+            await self._reconcile_run(run_id),
+            AuditAction.RUN_RECONCILIATION_REQUESTED,
+        )
+
+    async def _reconcile_run(self, run_id: RunId) -> Run:
+        """Apply reconciliation and return the resulting Run."""
 
         run = self._runs.get_run(run_id)
 

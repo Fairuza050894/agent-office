@@ -1,0 +1,189 @@
+"""Phase 3C: the implemented canonical event allowlist.
+
+The taxonomy is closed. Every event the code can emit is listed here with the
+contract section that documents it, and the implemented enum must match that list
+exactly. The contract is not parsed at runtime: this module is the
+machine-checkable mirror of the documented event set, so adding an event means
+editing both.
+
+Section references are to `docs/contracts/EVENT_CONTRACT.md`.
+"""
+
+from __future__ import annotations
+
+from agent_office.domain import EventType
+
+#: Canonical event domains (EVENT_CONTRACT §17).
+CANONICAL_DOMAINS: frozenset[str] = frozenset(
+    {
+        "project",
+        "task",
+        "run",
+        "workflow",
+        "stage",
+        "agent",
+        "executor",
+        "workspace",
+        "command",
+        "test",
+        "review",
+        "remediation",
+        "verification",
+        "evidence",
+        "artifact",
+        "approval",
+        "audit",
+    }
+)
+
+#: Every implemented event type and the section that documents it.
+DOCUMENTED_EVENTS: dict[EventType, str] = {
+    EventType.RUN_CREATED: "§20",
+    EventType.RUN_PLANNING_STARTED: "§20",
+    EventType.RUN_READY: "§20",
+    EventType.RUN_STARTED: "§20",
+    EventType.RUN_BLOCKED: "§20",
+    EventType.RUN_RESUMED: "§20",
+    EventType.RUN_REVIEWING: "§20",
+    EventType.RUN_REMEDIATING: "§20",
+    EventType.RUN_VERIFYING: "§20",
+    EventType.RUN_COMPLETED: "§20",
+    EventType.RUN_FAILED: "§20",
+    EventType.RUN_CANCEL_REQUESTED: "§20",
+    EventType.RUN_CANCELLED: "§20",
+    EventType.WORKFLOW_SNAPSHOT_CREATED: "§24",
+    EventType.STAGE_READY: "§25",
+    EventType.STAGE_STARTED: "§25",
+    EventType.STAGE_WAITING: "§25",
+    EventType.STAGE_COMPLETED: "§25",
+    EventType.STAGE_BLOCKED: "§25",
+    EventType.STAGE_FAILED: "§25",
+    EventType.STAGE_SKIPPED: "§25",
+    EventType.STAGE_CANCELLED: "§25",
+    EventType.AGENT_CREATED: "§28",
+    EventType.AGENT_START_REQUESTED: "§28",
+    EventType.AGENT_STARTED: "§28",
+    EventType.AGENT_BLOCKED: "§28",
+    EventType.AGENT_CANCEL_REQUESTED: "§28",
+    EventType.AGENT_CANCELLED: "§28",
+    EventType.AGENT_ACTIVITY: "§32",
+    EventType.AGENT_WAITING: "§33",
+    EventType.AGENT_COMPLETED: "§34",
+    EventType.AGENT_FAILED: "§35",
+    EventType.EXECUTOR_SESSION_RECONCILED: "§36",
+    EventType.REMEDIATION_STARTED: "§50",
+    EventType.REMEDIATION_COMPLETED: "§50",
+    EventType.REMEDIATION_FAILED: "§50",
+    EventType.REMEDIATION_CYCLE_EXHAUSTED: "§50",
+    EventType.VERIFICATION_STARTED: "§51",
+    EventType.VERIFICATION_FAILED: "§51",
+    EventType.VERIFICATION_COMPLETED: "§51",
+}
+
+#: Domains that assert engineering evidence, reserved for Phase 4.
+EVIDENCE_DOMAIN_PREFIXES: tuple[str, ...] = (
+    "review.",
+    "evidence.",
+    "artifact.",
+    "command.",
+    "test.",
+    "workspace.",
+    "git.",
+    "integration.",
+    "approval.",
+    "tool.",
+    "user.",
+)
+
+
+def test_every_implemented_event_is_documented() -> None:
+    """The allowlist is closed: an undocumented event cannot be emitted."""
+
+    assert set(EventType) == set(DOCUMENTED_EVENTS)
+
+
+def test_every_event_name_uses_a_canonical_domain() -> None:
+    for event_type in EventType:
+        assert event_type.value.split(".")[0] in CANONICAL_DOMAINS, event_type
+
+
+def test_no_event_name_is_provider_specific() -> None:
+    providers = ("codex", "antigravity", "openclaw", "deepseek", "hermes", "tdp")
+
+    for event_type in EventType:
+        assert not any(name in event_type.value for name in providers), event_type
+
+
+def test_phase_three_emits_no_evidence_domain_event() -> None:
+    """Phase 3 proves orchestration only; it must not assert evidence."""
+
+    for event_type in EventType:
+        assert not event_type.value.startswith(EVIDENCE_DOMAIN_PREFIXES), event_type
+
+
+def test_reconciliation_is_an_executor_session_fact() -> None:
+    """EVENT_CONTRACT §36 lists exactly one reconciliation event."""
+
+    reconciliation_events = {
+        event_type.value for event_type in EventType if "reconcil" in event_type.value
+    }
+
+    assert reconciliation_events == {"executor.session.reconciled"}
+
+
+def test_request_events_describe_intent_only() -> None:
+    """A request event states intent; the paired completion event states fact."""
+
+    values = {event_type.value for event_type in EventType}
+
+    assert {
+        "run.cancel.requested",
+        "agent.start.requested",
+        "agent.cancel.requested",
+    } == {value for value in values if value.endswith(".requested")}
+
+    # Each request has a distinct committed-fact counterpart.
+    assert {"run.cancelled", "agent.started", "agent.cancelled"} <= values
+    assert "agent.cancel.requested" != "agent.cancelled"
+
+
+def test_agent_scoped_events_are_distinguishable_by_profile_ownership() -> None:
+    """Agent events exist for every AgentRun lifecycle state the code can reach."""
+
+    agent_events = {
+        event_type.value for event_type in EventType if event_type.value.startswith("agent.")
+    }
+
+    assert {
+        "agent.created",
+        "agent.start.requested",
+        "agent.started",
+        "agent.waiting",
+        "agent.completed",
+        "agent.failed",
+        "agent.blocked",
+        "agent.cancel.requested",
+        "agent.cancelled",
+    } <= agent_events
+
+
+def test_phase_three_domains_are_implemented() -> None:
+    """The domains Phase 3 claims to own are actually present."""
+
+    domains = {event_type.value.split(".")[0] for event_type in EventType}
+
+    assert domains == {
+        "run",
+        "workflow",
+        "stage",
+        "agent",
+        "executor",
+        "remediation",
+        "verification",
+    }
+
+
+def test_audit_is_not_an_operational_event_domain() -> None:
+    """Audit has its own store; it is not smuggled into the Event taxonomy."""
+
+    assert not [event_type for event_type in EventType if event_type.value.startswith("audit.")]

@@ -19,6 +19,13 @@ from agent_office.domain.agent_run import (
     ensure_agent_run_transition_allowed,
     is_terminal_agent_run_status,
 )
+from agent_office.domain.audit import (
+    MAX_AUDIT_METADATA_ENTRIES,
+    AuditAction,
+    AuditActorType,
+    AuditRecord,
+    AuditTargetType,
+)
 from agent_office.domain.errors import DomainInvariantError
 from agent_office.domain.event import (
     EVENT_SCHEMA_VERSION,
@@ -51,6 +58,7 @@ from agent_office.domain.executor import (
     StartExecutionOutcome,
     StartExecutionRequest,
     StartExecutionResult,
+    validate_safe_metadata,
 )
 from agent_office.domain.identifiers import (
     AgentProfileId,
@@ -127,6 +135,12 @@ from agent_office.domain.workflow_validation import (
 )
 
 __all__ = [
+    "MAX_AUDIT_METADATA_ENTRIES",
+    "AuditAction",
+    "AuditActorType",
+    "AuditRecord",
+    "AuditTargetType",
+    "validate_safe_metadata",
     "review_verdict_metadata",
     "review_verdict_from_metadata",
     "classify_failure_retryability",

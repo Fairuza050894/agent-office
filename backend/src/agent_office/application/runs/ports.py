@@ -24,6 +24,10 @@ class RunRepository(Protocol):
         """Return all Runs for a Task, ordered by creation time."""
         ...
 
+    def list_non_terminal(self) -> tuple[Run, ...]:
+        """Return every Run that has not reached a terminal status."""
+        ...
+
 
 class RunStageRepository(Protocol):
     """Persistence boundary for stage runtime state."""

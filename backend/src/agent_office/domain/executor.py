@@ -192,7 +192,7 @@ class ExecutorSessionRef:
         if not session_id:
             raise DomainInvariantError("Executor session ID must not be empty")
 
-        metadata = _validate_safe_metadata(self.safe_metadata)
+        metadata = validate_safe_metadata(self.safe_metadata)
 
         object.__setattr__(
             self,
@@ -229,7 +229,7 @@ class StartExecutionRequest:
         object.__setattr__(
             self,
             "safe_context",
-            _validate_safe_metadata(self.safe_context),
+            validate_safe_metadata(self.safe_context),
         )
 
 
@@ -271,11 +271,11 @@ class ExecutionResult:
         object.__setattr__(
             self,
             "safe_metadata",
-            _validate_safe_metadata(self.safe_metadata),
+            validate_safe_metadata(self.safe_metadata),
         )
 
 
-def _validate_safe_metadata(
+def validate_safe_metadata(
     metadata: SafeMetadata,
 ) -> SafeMetadata:
     seen: set[str] = set()

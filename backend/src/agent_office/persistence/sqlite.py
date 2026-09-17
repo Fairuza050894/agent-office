@@ -12,7 +12,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 BUSY_TIMEOUT_MS = 5000
-LATEST_SCHEMA_VERSION: int = 5
+LATEST_SCHEMA_VERSION: int = 6
 
 SCHEMA_VERSION_KEY = "schema_version"
 
@@ -387,12 +387,65 @@ def _migration_v5(connection: sqlite3.Connection) -> None:
     )
 
 
+def _migration_v6(connection: sqlite3.Connection) -> None:
+    """Create append-only AuditRecord persistence.
+
+    Append-only is enforced by the storage layer, not only by convention: the
+    UPDATE and DELETE triggers abort, so durable audit history cannot be
+    rewritten even by a direct SQL caller.
+    """
+
+    connection.execute(
+        """
+        CREATE TABLE audit_records (
+            id TEXT PRIMARY KEY,
+            project_id TEXT REFERENCES projects(id),
+            run_id TEXT REFERENCES runs(id),
+            actor_type TEXT NOT NULL,
+            action TEXT NOT NULL,
+            target_type TEXT NOT NULL,
+            target_id TEXT,
+            occurred_at TEXT NOT NULL,
+            safe_metadata_json TEXT NOT NULL
+        )
+        """
+    )
+
+    connection.execute(
+        """
+        CREATE INDEX audit_records_run_idx
+        ON audit_records (run_id, occurred_at, id)
+        """
+    )
+
+    connection.execute(
+        """
+        CREATE TRIGGER audit_records_append_only_update
+        BEFORE UPDATE ON audit_records
+        BEGIN
+            SELECT RAISE(ABORT, 'audit_records is append-only');
+        END
+        """
+    )
+
+    connection.execute(
+        """
+        CREATE TRIGGER audit_records_append_only_delete
+        BEFORE DELETE ON audit_records
+        BEGIN
+            SELECT RAISE(ABORT, 'audit_records is append-only');
+        END
+        """
+    )
+
+
 MIGRATIONS: dict[int, Callable[[sqlite3.Connection], None]] = {
     1: _migration_v1,
     2: _migration_v2,
     3: _migration_v3,
     4: _migration_v4,
     5: _migration_v5,
+    6: _migration_v6,
 }
 
 

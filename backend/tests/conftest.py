@@ -375,6 +375,18 @@ class Harness:
     def reconcile_raw(self, run_id: str) -> Any:
         return self.client.post(f"/api/runs/{run_id}/reconcile")
 
+    def audit(self, run_id: str) -> list[dict[str, Any]]:
+        response = self.client.get(f"/api/runs/{run_id}/audit")
+        assert response.status_code == 200, response.text
+
+        return response.json()
+
+    def recovery_candidates(self) -> list[dict[str, Any]]:
+        response = self.client.get("/api/recovery/runs")
+        assert response.status_code == 200, response.text
+
+        return response.json()
+
     def completion_gates(self, run_id: str) -> dict[str, Any]:
         response = self.client.get(f"/api/runs/{run_id}/completion-gates")
         assert response.status_code == 200, response.text
