@@ -17,9 +17,13 @@ class Settings(BaseModel):
         default=Path("data/artifacts"),
         description="Root directory for generated artifacts.",
     )
-    workspace_root: Path = Field(
-        default=Path("data/workspaces"),
-        description="Root directory for managed workspaces.",
+    workspace_root: Path | None = Field(
+        default=None,
+        description=(
+            "Root directory for managed Agent Office worktrees. Defaults to "
+            "`data_root/workspaces`, so managed worktrees never live inside a "
+            "registered Project repository."
+        ),
     )
     database_path: Path = Field(
         default=Path("data/agent-office.sqlite"),
@@ -30,6 +34,17 @@ class Settings(BaseModel):
         default="INFO",
         description="Application log level.",
     )
+
+    @property
+    def managed_workspace_root(self) -> Path:
+        """Return the root that managed Worktrees are created under.
+
+        Defaulting to ``data_root/workspaces`` keeps generated worktrees inside
+        Agent Office's own storage rather than inside a registered Project
+        repository (WORKTREE_POLICY §12).
+        """
+
+        return self.workspace_root or (self.data_root / "workspaces")
 
 
 def get_settings() -> Settings:

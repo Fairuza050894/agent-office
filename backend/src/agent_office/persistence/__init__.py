@@ -2,6 +2,7 @@
 
 from agent_office.persistence.sqlite import (
     LATEST_SCHEMA_VERSION,
+    MIGRATIONS,
     DatabaseVersionError,
     SQLiteDatabase,
 )
@@ -9,5 +10,6 @@ from agent_office.persistence.sqlite import (
 __all__ = [
     "DatabaseVersionError",
     "LATEST_SCHEMA_VERSION",
+    "MIGRATIONS",
     "SQLiteDatabase",
 ]

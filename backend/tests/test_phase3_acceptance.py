@@ -895,7 +895,9 @@ def test_m_manual_interventions_are_audited_separately_from_events(
     }
 
     for run_id, actions in expected.items():
-        records = harness.audit(run_id)
+        # Only operator-attributed records: a Run may also carry SYSTEM-attributed
+        # workspace lifecycle records.
+        records = harness.operator_audit(run_id)
         assert [record["action"] for record in records] == actions
 
         # Audit is separate from the operational event history: an audit action

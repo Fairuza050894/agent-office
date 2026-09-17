@@ -74,16 +74,20 @@ def _reconcile_blocked_run(
     return reopened, run, project
 
 
-def test_a_run_without_intervention_has_no_audit_history(
+def test_a_run_without_intervention_has_no_operator_audit_history(
     harness_factory: HarnessFactory,
 ) -> None:
-    """Orchestration progress is not a manual intervention."""
+    """Orchestration progress is not a manual intervention.
+
+    A workflow that allocates worktrees does record SYSTEM-attributed workspace
+    actions, but no operator intervention, so nothing is attributed to a USER.
+    """
 
     harness = harness_factory()
     run, started = harness.start_workflow("bug-fix", changed_areas=[])
 
     assert started["status"] == "COMPLETED"
-    assert harness.audit(run["id"]) == []
+    assert harness.operator_audit(run["id"]) == []
 
 
 def test_cancellation_request_is_audited(harness_factory: HarnessFactory) -> None:
@@ -170,7 +174,7 @@ def test_executor_selection_during_resume_is_audited(
 
     harness.resume_raw(run["id"], executor_id=str(REFERENCE_EXECUTOR_ID), changed_areas=[])
 
-    records = harness.audit(run["id"])
+    records = harness.operator_audit(run["id"])
     assert [record["action"] for record in records] == [
         "RUN_EXECUTOR_SELECTED",
         "RUN_RESUME_REQUESTED",
@@ -285,13 +289,14 @@ def test_audit_history_is_scoped_to_one_run(harness_factory: HarnessFactory) -> 
 
     harness.reconcile_raw(first_run["id"])
 
-    records = harness.audit(first_run["id"])
+    records = harness.operator_audit(first_run["id"])
     assert len(records) == 1
     assert records[0]["run_id"] == first_run["id"]
     assert records[0]["project_id"] == first_project["id"]
+    assert records[0]["action"] == "RUN_RECONCILIATION_REQUESTED"
 
-    assert harness.audit(sibling_run["id"]) == []
-    assert harness.audit(other_run["id"]) == []
+    assert harness.operator_audit(sibling_run["id"]) == []
+    assert harness.operator_audit(other_run["id"]) == []
 
 
 def test_audit_query_of_an_unknown_run_is_not_found(

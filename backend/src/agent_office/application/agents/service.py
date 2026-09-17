@@ -21,6 +21,7 @@ from agent_office.domain import (
     AgentRunReasonCode,
     AgentRunStatus,
     CapabilityReport,
+    DomainInvariantError,
     ExecutionOutcome,
     ExecutorId,
     ExecutorSessionRef,
@@ -28,6 +29,7 @@ from agent_office.domain import (
     Run,
     RunId,
     StageKey,
+    WorkspaceId,
     ensure_agent_run_transition_allowed,
     is_terminal_agent_run_status,
     utc_now,
@@ -119,6 +121,7 @@ class AgentRunService:
         result_summary: str | None = None,
         review_verdict: ReviewVerdict | None = None,
         failure_retryable: bool | None = None,
+        workspace_id: WorkspaceId | None = None,
     ) -> AgentRun:
         """Apply a validated lifecycle transition and persist the result."""
 
@@ -153,8 +156,32 @@ class AgentRunService:
             failure_retryable=(
                 agent_run.failure_retryable if failure_retryable is None else failure_retryable
             ),
+            workspace_id=agent_run.workspace_id if workspace_id is None else workspace_id,
             reason_code=reason_code,
             reason_summary=reason_summary,
+        )
+
+        self._repository.update(updated)
+        return updated
+
+    def attach_workspace(self, agent_run: AgentRun, workspace_id: WorkspaceId) -> AgentRun:
+        """Record the Workspace an AgentRun executes in.
+
+        This is not a lifecycle transition: the AgentRun keeps its status, but a
+        write-capable assignment must durably reference the isolated Worktree it
+        was granted before any executor call.
+        """
+
+        if agent_run.workspace_id == workspace_id:
+            return agent_run
+
+        if is_terminal_agent_run_status(agent_run.status):
+            raise DomainInvariantError("A terminal AgentRun cannot change its Workspace")
+
+        updated = replace(
+            agent_run,
+            workspace_id=workspace_id,
+            updated_at=utc_now(self._clock),
         )
 
         self._repository.update(updated)

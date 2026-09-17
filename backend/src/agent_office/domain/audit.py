@@ -55,6 +55,11 @@ class AuditAction(StrEnum):
     RUN_RESUME_REQUESTED = "RUN_RESUME_REQUESTED"
     RUN_RECONCILIATION_REQUESTED = "RUN_RECONCILIATION_REQUESTED"
     RUN_EXECUTOR_SELECTED = "RUN_EXECUTOR_SELECTED"
+    WORKSPACE_ALLOCATED = "WORKSPACE_ALLOCATED"
+    WORKSPACE_RELEASE_REQUESTED = "WORKSPACE_RELEASE_REQUESTED"
+    WORKSPACE_RELEASED = "WORKSPACE_RELEASED"
+    WORKSPACE_RECONCILIATION_REQUESTED = "WORKSPACE_RECONCILIATION_REQUESTED"
+    WORKSPACE_BRANCH_DELETED = "WORKSPACE_BRANCH_DELETED"
 
 
 class AuditTargetType(StrEnum):
@@ -62,6 +67,7 @@ class AuditTargetType(StrEnum):
 
     RUN = "RUN"
     EXECUTOR = "EXECUTOR"
+    WORKSPACE = "WORKSPACE"
 
 
 def _validated_identifier(value: str, *, field: str) -> str:
@@ -78,6 +84,12 @@ def _validated_identifier(value: str, *, field: str) -> str:
         raise DomainInvariantError(
             f"Audit {field} must be a canonical Agent Office identifier"
         ) from exc
+
+
+#: Targets that are always scoped to exactly one Run, so `run_id` is required.
+RUN_SCOPED_AUDIT_TARGETS: frozenset[AuditTargetType] = frozenset(
+    {AuditTargetType.RUN, AuditTargetType.WORKSPACE}
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -118,8 +130,10 @@ class AuditRecord:
                 _validated_identifier(self.target_id, field="target id"),
             )
 
-        if self.target_type is AuditTargetType.RUN and self.run_id is None:
-            raise DomainInvariantError("A Run-targeted audit record must reference its Run")
+        if self.target_type in RUN_SCOPED_AUDIT_TARGETS and self.run_id is None:
+            raise DomainInvariantError(
+                f"A {self.target_type}-targeted audit record must reference its Run"
+            )
 
         object.__setattr__(
             self,

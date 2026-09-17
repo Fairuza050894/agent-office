@@ -12,6 +12,7 @@ from agent_office.application.recovery import RecoveryService
 from agent_office.application.runs import RunService, RunStageService
 from agent_office.application.tasks import TaskService
 from agent_office.application.workflows import WorkflowService
+from agent_office.application.workspaces import WorkspaceService
 from agent_office.persistence import SQLiteDatabase
 
 
@@ -136,6 +137,19 @@ def get_recovery_service(request: Request) -> RecoveryService:
     service = cast(
         RecoveryService,
         request.app.state.recovery_service,
+    )
+
+    database.initialize()
+    return service
+
+
+def get_workspace_service(request: Request) -> WorkspaceService:
+    """Return the Workspace coordination service."""
+
+    database = _database(request)
+    service = cast(
+        WorkspaceService,
+        request.app.state.workspace_service,
     )
 
     database.initialize()

@@ -26,6 +26,7 @@ from agent_office.domain import (
     Run,
     RunId,
     SafeMetadata,
+    Workspace,
     utc_now,
 )
 
@@ -78,6 +79,48 @@ class AuditService:
             target_id=str(run.id) if target_id is None else target_id,
             occurred_at=now,
             safe_metadata=safe_metadata,
+        )
+
+        self._repository.append(record)
+        return record
+
+    def record_workspace_intervention(
+        self,
+        workspace: Workspace,
+        action: AuditAction,
+        *,
+        actor_type: AuditActorType = AuditActorType.SYSTEM,
+        target_type: AuditTargetType = AuditTargetType.WORKSPACE,
+        target_id: str | None = None,
+        safe_metadata: SafeMetadata = (),
+    ) -> AuditRecord:
+        """Record one Workspace lifecycle action.
+
+        ``actor_type`` defaults to ``SYSTEM``: allocation, branch cleanup, and
+        release are performed by Agent Office, whereas an operator-initiated
+        release or reconciliation request passes ``USER``.
+        """
+
+        now = utc_now(self._clock)
+
+        metadata: SafeMetadata = (
+            ("status", workspace.status.value),
+            ("kind", workspace.kind.value),
+        )
+
+        if workspace.reason_code is not None:
+            metadata = metadata + (("reason_code", workspace.reason_code.value),)
+
+        record = AuditRecord(
+            id=self._audit_record_id_factory(),
+            project_id=workspace.project_id,
+            run_id=workspace.run_id,
+            actor_type=actor_type,
+            action=action,
+            target_type=target_type,
+            target_id=str(workspace.id) if target_id is None else target_id,
+            occurred_at=now,
+            safe_metadata=metadata + safe_metadata,
         )
 
         self._repository.append(record)

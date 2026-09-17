@@ -47,6 +47,7 @@ def test_event_types_are_provider_neutral() -> None:
         "executor",
         "remediation",
         "verification",
+        "workspace",
     }
     provider_names = ("codex", "antigravity", "openclaw", "deepseek", "hermes")
 

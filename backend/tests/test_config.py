@@ -14,7 +14,10 @@ def test_default_settings_are_local_and_safe() -> None:
 
     assert settings.data_root == Path("data")
     assert settings.artifact_root == Path("data/artifacts")
-    assert settings.workspace_root == Path("data/workspaces")
+    # Managed worktrees default under the Agent Office data root so they never
+    # land inside a registered Project repository.
+    assert settings.workspace_root is None
+    assert settings.managed_workspace_root == Path("data/workspaces")
     assert settings.database_path == Path("data/agent-office.sqlite")
 
     assert settings.log_level == "INFO"

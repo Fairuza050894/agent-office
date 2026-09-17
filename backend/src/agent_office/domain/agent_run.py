@@ -23,6 +23,7 @@ from agent_office.domain.identifiers import (
     ExecutorId,
     ProjectId,
     RunId,
+    WorkspaceId,
 )
 from agent_office.domain.review import ReviewVerdict
 from agent_office.domain.timestamps import to_utc
@@ -65,6 +66,7 @@ class AgentRunReasonCode(StrEnum):
     CANCELLATION_CONFIRMED = "CANCELLATION_CONFIRMED"
     CANCELLATION_UNKNOWN = "CANCELLATION_UNKNOWN"
     CANCELLATION_UNSUPPORTED = "CANCELLATION_UNSUPPORTED"
+    WORKSPACE_UNAVAILABLE = "WORKSPACE_UNAVAILABLE"
 
 
 class FailureRetryability(StrEnum):
@@ -243,6 +245,7 @@ class AgentRun:
     started_at: datetime | None = None
     completed_at: datetime | None = None
     retry_of_agent_run_id: AgentRunId | None = None
+    workspace_id: WorkspaceId | None = None
     remediation_cycle: int = 0
     review_verdict: ReviewVerdict | None = None
     # The Executor's explicit retryability claim, recorded verbatim. A missing

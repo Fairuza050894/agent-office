@@ -19,6 +19,9 @@ from agent_office.infrastructure.persistence.workflow_repository import (
     SQLiteWorkflowDefinitionRepository,
     SQLiteWorkflowSnapshotRepository,
 )
+from agent_office.infrastructure.persistence.workspace_repository import (
+    SQLiteWorkspaceRepository,
+)
 
 __all__ = [
     "SQLiteAgentRunRepository",
@@ -30,4 +33,5 @@ __all__ = [
     "SQLiteTaskRepository",
     "SQLiteWorkflowDefinitionRepository",
     "SQLiteWorkflowSnapshotRepository",
+    "SQLiteWorkspaceRepository",
 ]

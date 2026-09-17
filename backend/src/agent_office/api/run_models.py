@@ -163,6 +163,7 @@ class AgentRunResponse(BaseModel):
     retry_of_agent_run_id: str | None
     remediation_cycle: int
     review_verdict: ReviewVerdict | None
+    workspace_id: str | None
     result_outcome: ExecutionOutcome | None
     result_summary: str | None
     reason_code: AgentRunReasonCode | None
@@ -193,6 +194,7 @@ class AgentRunResponse(BaseModel):
             ),
             remediation_cycle=agent_run.remediation_cycle,
             review_verdict=agent_run.review_verdict,
+            workspace_id=(None if agent_run.workspace_id is None else str(agent_run.workspace_id)),
             result_outcome=agent_run.result_outcome,
             result_summary=agent_run.result_summary,
             reason_code=agent_run.reason_code,

@@ -11,6 +11,7 @@ from agent_office.api.recovery import router as recovery_router
 from agent_office.api.runs import router as runs_router
 from agent_office.api.tasks import router as tasks_router
 from agent_office.api.workflows import router as workflows_router
+from agent_office.api.workspaces import router as workspaces_router
 from agent_office.api_models import HealthResponse, VersionResponse
 from agent_office.application.agents import AgentRunService
 from agent_office.application.audit import AuditService
@@ -21,6 +22,7 @@ from agent_office.application.recovery import RecoveryService
 from agent_office.application.runs import RunService, RunStageService
 from agent_office.application.tasks import TaskService
 from agent_office.application.workflows import WorkflowService
+from agent_office.application.workspaces import WorkspaceService
 from agent_office.config import Settings, get_settings
 from agent_office.domain import AgentProfileCatalog
 from agent_office.infrastructure.executors import (
@@ -28,7 +30,7 @@ from agent_office.infrastructure.executors import (
     ReferenceExecutor,
     RegisteredExecutor,
 )
-from agent_office.infrastructure.git import GitRepositoryInspector
+from agent_office.infrastructure.git import GitRepositoryInspector, GitWorktreeManager
 from agent_office.infrastructure.persistence import (
     SQLiteAgentRunRepository,
     SQLiteAuditRecordRepository,
@@ -39,6 +41,7 @@ from agent_office.infrastructure.persistence import (
     SQLiteTaskRepository,
     SQLiteWorkflowDefinitionRepository,
     SQLiteWorkflowSnapshotRepository,
+    SQLiteWorkspaceRepository,
 )
 from agent_office.logging_config import configure_logging
 from agent_office.persistence import SQLiteDatabase
@@ -136,6 +139,14 @@ def create_app(
         app.state.run_service,
         agent_run_service,
     )
+    app.state.workspace_service = WorkspaceService(
+        SQLiteWorkspaceRepository(database),
+        GitWorktreeManager(resolved_settings.managed_workspace_root),
+        project_service=app.state.project_service,
+        run_service=app.state.run_service,
+        event_service=event_service,
+        audit_service=app.state.audit_service,
+    )
     app.state.orchestrator = RunOrchestrator(
         run_service=app.state.run_service,
         task_service=app.state.task_service,
@@ -146,6 +157,7 @@ def create_app(
         event_service=event_service,
         executor_registry=executor_registry,
         audit_service=app.state.audit_service,
+        workspace_service=app.state.workspace_service,
     )
 
     @app.get("/health", response_model=HealthResponse)
@@ -166,6 +178,7 @@ def create_app(
     app.include_router(events_router)
     app.include_router(audit_router)
     app.include_router(recovery_router)
+    app.include_router(workspaces_router)
 
     return app
 

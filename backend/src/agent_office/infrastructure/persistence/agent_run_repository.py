@@ -26,6 +26,7 @@ from agent_office.domain import (
     RunId,
     SafeMetadata,
     StageKey,
+    WorkspaceId,
     to_utc,
 )
 from agent_office.persistence import SQLiteDatabase
@@ -55,10 +56,11 @@ _COLUMNS = """
     retry_of_agent_run_id,
     remediation_cycle,
     review_verdict,
-    failure_retryable
+    failure_retryable,
+    workspace_id
 """
 
-_COLUMN_COUNT = 25
+_COLUMN_COUNT = 26
 
 
 class SQLiteAgentRunRepository:
@@ -88,6 +90,7 @@ class SQLiteAgentRunRepository:
                 """
                 UPDATE agent_runs
                 SET status = ?,
+                    workspace_id = ?,
                     executor_session_ref_json = ?,
                     capability_snapshot_json = ?,
                     result_outcome = ?,
@@ -103,6 +106,7 @@ class SQLiteAgentRunRepository:
                 """,
                 (
                     agent_run.status.value,
+                    None if agent_run.workspace_id is None else str(agent_run.workspace_id),
                     _serialize_session(agent_run.executor_session_ref),
                     _serialize_capabilities(agent_run.capability_snapshot),
                     None if agent_run.result_outcome is None else agent_run.result_outcome.value,
@@ -195,6 +199,7 @@ class SQLiteAgentRunRepository:
             agent_run.remediation_cycle,
             None if agent_run.review_verdict is None else agent_run.review_verdict.value,
             (None if agent_run.failure_retryable is None else int(agent_run.failure_retryable)),
+            None if agent_run.workspace_id is None else str(agent_run.workspace_id),
         )
 
 
@@ -233,6 +238,9 @@ def _hydrate(row: sqlite3.Row) -> AgentRun:
         review_verdict=None if raw_verdict is None else ReviewVerdict(raw_verdict),
         failure_retryable=(
             None if row["failure_retryable"] is None else bool(row["failure_retryable"])
+        ),
+        workspace_id=(
+            None if row["workspace_id"] is None else WorkspaceId.parse(row["workspace_id"])
         ),
     )
 

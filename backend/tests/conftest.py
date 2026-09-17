@@ -381,6 +381,11 @@ class Harness:
 
         return response.json()
 
+    def operator_audit(self, run_id: str) -> list[dict[str, Any]]:
+        """Return only the audit records an operator intervention produced."""
+
+        return [record for record in self.audit(run_id) if record["actor_type"] == "USER"]
+
     def recovery_candidates(self) -> list[dict[str, Any]]:
         response = self.client.get("/api/recovery/runs")
         assert response.status_code == 200, response.text
@@ -435,6 +440,8 @@ def harness_factory(tmp_path: Path) -> Iterator[HarnessFactory]:
             nonlocal created
             created += 1
 
+            data_root = tmp_path / "agent-office-data"
+
             resolved = registry if registry is not None else reference_registry(scenario)
             app = create_app(
                 Settings(
@@ -442,7 +449,14 @@ def harness_factory(tmp_path: Path) -> Iterator[HarnessFactory]:
                         database_path
                         if database_path is not None
                         else tmp_path / f"agent-office-{created}.sqlite"
-                    )
+                    ),
+                    # Managed worktrees always live under the test temp root, so
+                    # no test can create storage outside it. The root is shared
+                    # across harness instances of one test, which is what a real
+                    # restart does.
+                    data_root=data_root,
+                    artifact_root=data_root / "artifacts",
+                    workspace_root=data_root / "workspaces",
                 ),
                 executor_registry=resolved,
                 agent_profiles=agent_profiles,

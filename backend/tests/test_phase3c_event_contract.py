@@ -78,16 +78,26 @@ DOCUMENTED_EVENTS: dict[EventType, str] = {
     EventType.VERIFICATION_STARTED: "§51",
     EventType.VERIFICATION_FAILED: "§51",
     EventType.VERIFICATION_COMPLETED: "§51",
+    # Workspace lifecycle (EVENT_CONTRACT §38), introduced by Phase 4A.
+    EventType.WORKSPACE_ALLOCATION_REQUESTED: "§38",
+    EventType.WORKSPACE_CREATED: "§38",
+    EventType.WORKSPACE_READY: "§38",
+    EventType.WORKSPACE_CHANGED: "§38",
+    EventType.WORKSPACE_CONFLICT_DETECTED: "§38",
+    EventType.WORKSPACE_RELEASE_REQUESTED: "§38",
+    EventType.WORKSPACE_RELEASED: "§38",
+    EventType.WORKSPACE_FAILED: "§38",
+    EventType.WORKSPACE_ORPHANED: "§38",
 }
 
-#: Domains that assert engineering evidence, reserved for Phase 4.
+#: Domains that assert engineering evidence. These stay unimplemented until
+#: real repository mutation, review, and command execution exist.
 EVIDENCE_DOMAIN_PREFIXES: tuple[str, ...] = (
     "review.",
     "evidence.",
     "artifact.",
     "command.",
     "test.",
-    "workspace.",
     "git.",
     "integration.",
     "approval.",
@@ -114,8 +124,8 @@ def test_no_event_name_is_provider_specific() -> None:
         assert not any(name in event_type.value for name in providers), event_type
 
 
-def test_phase_three_emits_no_evidence_domain_event() -> None:
-    """Phase 3 proves orchestration only; it must not assert evidence."""
+def test_no_evidence_domain_event_is_implemented() -> None:
+    """Orchestration truth may not assert engineering evidence."""
 
     for event_type in EventType:
         assert not event_type.value.startswith(EVIDENCE_DOMAIN_PREFIXES), event_type
@@ -140,6 +150,8 @@ def test_request_events_describe_intent_only() -> None:
         "run.cancel.requested",
         "agent.start.requested",
         "agent.cancel.requested",
+        "workspace.allocation.requested",
+        "workspace.release.requested",
     } == {value for value in values if value.endswith(".requested")}
 
     # Each request has a distinct committed-fact counterpart.
@@ -167,8 +179,8 @@ def test_agent_scoped_events_are_distinguishable_by_profile_ownership() -> None:
     } <= agent_events
 
 
-def test_phase_three_domains_are_implemented() -> None:
-    """The domains Phase 3 claims to own are actually present."""
+def test_implemented_domains_are_exactly_these() -> None:
+    """The implemented event domains are closed and known."""
 
     domains = {event_type.value.split(".")[0] for event_type in EventType}
 
@@ -180,6 +192,7 @@ def test_phase_three_domains_are_implemented() -> None:
         "executor",
         "remediation",
         "verification",
+        "workspace",
     }
 
 

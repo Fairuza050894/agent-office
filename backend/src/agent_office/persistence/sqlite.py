@@ -12,7 +12,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 BUSY_TIMEOUT_MS = 5000
-LATEST_SCHEMA_VERSION: int = 6
+LATEST_SCHEMA_VERSION: int = 7
 
 SCHEMA_VERSION_KEY = "schema_version"
 
@@ -439,6 +439,67 @@ def _migration_v6(connection: sqlite3.Connection) -> None:
     )
 
 
+def _migration_v7(connection: sqlite3.Connection) -> None:
+    """Create Phase 4A Workspace persistence.
+
+    Additive only: the new table and the new AgentRun column are created without
+    touching any object introduced by v1-v6, so every earlier row stays valid and
+    readable.
+
+    ``path_ref`` is an opaque, relative storage reference. The absolute
+    filesystem location is never persisted and is recomputed from the configured
+    workspace root on every infrastructure operation.
+    """
+
+    connection.execute(
+        """
+        CREATE TABLE workspaces (
+            id TEXT PRIMARY KEY,
+            project_id TEXT NOT NULL REFERENCES projects(id),
+            run_id TEXT NOT NULL REFERENCES runs(id),
+            owner_agent_run_id TEXT REFERENCES agent_runs(id),
+            kind TEXT NOT NULL,
+            access_mode TEXT NOT NULL,
+            status TEXT NOT NULL,
+            path_ref TEXT NOT NULL,
+            base_revision TEXT,
+            git_branch TEXT,
+            reason_code TEXT,
+            reason_summary TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            released_at TEXT
+        )
+        """
+    )
+
+    connection.execute(
+        """
+        ALTER TABLE agent_runs
+        ADD COLUMN workspace_id TEXT REFERENCES workspaces(id)
+        """
+    )
+
+    connection.execute(
+        """
+        CREATE INDEX workspaces_run_idx
+        ON workspaces (run_id, created_at)
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX workspaces_owner_idx
+        ON workspaces (owner_agent_run_id)
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX workspaces_status_idx
+        ON workspaces (status)
+        """
+    )
+
+
 MIGRATIONS: dict[int, Callable[[sqlite3.Connection], None]] = {
     1: _migration_v1,
     2: _migration_v2,
@@ -446,6 +507,7 @@ MIGRATIONS: dict[int, Callable[[sqlite3.Connection], None]] = {
     4: _migration_v4,
     5: _migration_v5,
     6: _migration_v6,
+    7: _migration_v7,
 }
 
 

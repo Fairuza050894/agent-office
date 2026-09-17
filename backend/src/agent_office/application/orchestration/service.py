@@ -31,6 +31,12 @@ from agent_office.application.runs.service import RunService
 from agent_office.application.runs.stages import RunStageService
 from agent_office.application.tasks.service import TaskService
 from agent_office.application.workflows.service import WorkflowService
+from agent_office.application.workspaces import (
+    WRITE_ACCESS_MODES,
+    WorkspaceAllocationError,
+    WorkspaceOwnershipError,
+    WorkspaceService,
+)
 from agent_office.domain import (
     AgentAccessMode,
     AgentRun,
@@ -158,6 +164,10 @@ NON_AUTONOMOUS_BLOCK_REASONS: frozenset[RunReasonCode] = frozenset(
         RunReasonCode.CANCELLATION_UNKNOWN,
         RunReasonCode.CANCELLATION_UNSUPPORTED,
         RunReasonCode.ORCHESTRATION_STEP_LIMIT,
+        # A blocked workspace cannot be re-driven in place: the AgentRun state
+        # machine never returns a BLOCKED assignment to a pre-start state, so
+        # resolving it requires an explicit operator decision.
+        RunReasonCode.WORKSPACE_UNAVAILABLE,
     }
 )
 
@@ -169,6 +179,41 @@ UNRESOLVED_CANCELLATION_REASONS: frozenset[AgentRunReasonCode] = frozenset(
         AgentRunReasonCode.CANCELLATION_REQUESTED_UNCONFIRMED,
     }
 )
+
+# Blocked AgentRun reasons that prove no external call was ever made, so the
+# assignment is safe to continue after the blocking cause is resolved. An
+# UNKNOWN start outcome is deliberately absent: external work may already exist.
+NO_EXTERNAL_EFFECT_BLOCK_REASONS: frozenset[AgentRunReasonCode] = frozenset(
+    {AgentRunReasonCode.WORKSPACE_UNAVAILABLE}
+)
+
+# A blocked AgentRun reason code determines which canonical Stage and Run reason
+# describes the block. An unresolved workspace must never be reported as an
+# unknown execution state, because the two need different operator responses.
+_BLOCK_REASON_CODES: dict[AgentRunReasonCode, tuple[StageReasonCode, RunReasonCode]] = {
+    AgentRunReasonCode.WORKSPACE_UNAVAILABLE: (
+        StageReasonCode.WORKSPACE_UNAVAILABLE,
+        RunReasonCode.WORKSPACE_UNAVAILABLE,
+    ),
+}
+
+
+def _block_reason_codes(
+    agent_run_reason: AgentRunReasonCode | None,
+) -> tuple[StageReasonCode, RunReasonCode]:
+    """Return the Stage and Run reasons describing a blocked assignment."""
+
+    if agent_run_reason is None:
+        return (
+            StageReasonCode.UNKNOWN_EXECUTION_STATE,
+            RunReasonCode.UNKNOWN_EXECUTION_STATE,
+        )
+
+    return _BLOCK_REASON_CODES.get(
+        agent_run_reason,
+        (StageReasonCode.UNKNOWN_EXECUTION_STATE, RunReasonCode.UNKNOWN_EXECUTION_STATE),
+    )
+
 
 # Capabilities the Phase 3A orchestrator depends on for every assignment.
 # START_EXECUTION is required to start an assignment at all and STATUS_QUERY is
@@ -228,6 +273,7 @@ class RunOrchestrator:
         event_service: EventService,
         executor_registry: ExecutorRegistry,
         audit_service: AuditService,
+        workspace_service: WorkspaceService | None = None,
         clock: Clock = utc_now,
     ) -> None:
         self._runs = run_service
@@ -239,6 +285,7 @@ class RunOrchestrator:
         self._events = event_service
         self._executors = executor_registry
         self._audit = audit_service
+        self._workspaces = workspace_service
         self._clock = clock
 
     # ------------------------------------------------------------------
@@ -886,6 +933,46 @@ class RunOrchestrator:
         capability_report: CapabilityReport,
         cycle: int,
     ) -> AgentRun:
+        """Drive one AgentRun and settle any Workspace it held.
+
+        Write ownership is returned to the Workspace once the assignment is
+        terminal, which is what makes the Workspace releasable. Ownership is
+        never released while execution is unresolved (WORKTREE_POLICY §26).
+        """
+
+        resolved = await self._drive_agent_run(
+            run,
+            agent_run,
+            registered,
+            task_title,
+            capability_report,
+            cycle,
+        )
+
+        return self._settle_workspace(resolved)
+
+    def _settle_workspace(self, agent_run: AgentRun) -> AgentRun:
+        """Release write ownership once the owning execution is terminal."""
+
+        if agent_run.workspace_id is None or self._workspaces is None:
+            return agent_run
+
+        if not is_terminal_agent_run_status(agent_run.status):
+            return agent_run
+
+        self._workspaces.release_write_ownership(agent_run.workspace_id)
+
+        return agent_run
+
+    async def _drive_agent_run(
+        self,
+        run: Run,
+        agent_run: AgentRun,
+        registered: RegisteredExecutor,
+        task_title: str,
+        capability_report: CapabilityReport,
+        cycle: int,
+    ) -> AgentRun:
         """Drive one AgentRun through the Executor port.
 
         The capability gate is evaluated before any external start side effect,
@@ -906,6 +993,11 @@ class RunOrchestrator:
                 f"capabilities: {', '.join(capability.value for capability in gap)}.",
                 capability_snapshot=capability_report,
             )
+
+        agent_run = self._prepare_workspace(run, agent_run)
+
+        if agent_run.status is AgentRunStatus.BLOCKED:
+            return agent_run
 
         agent_run = self._agent_runs.transition(agent_run, AgentRunStatus.STARTING)
 
@@ -1079,6 +1171,56 @@ class RunOrchestrator:
         )
 
         return run
+
+    def _prepare_workspace(self, run: Run, agent_run: AgentRun) -> AgentRun:
+        """Ensure a write-capable assignment has a READY isolated Workspace.
+
+        This runs before the AgentRun is marked STARTING and before any executor
+        call, so a workspace failure produces no external start side effect at
+        all. The registered Project's main working tree is never used as the
+        write target (WORKTREE_POLICY §2.1, §2.3, §25).
+        """
+
+        if agent_run.access_mode not in WRITE_ACCESS_MODES:
+            return agent_run
+
+        if self._workspaces is None:
+            return self._block_agent_run(
+                run,
+                agent_run,
+                AgentRunReasonCode.WORKSPACE_UNAVAILABLE,
+                "A write-capable assignment requires workspace management, which is "
+                "not configured.",
+            )
+
+        try:
+            workspace = self._workspaces.allocate_for_agent_run(run, agent_run)
+            workspace = self._workspaces.acquire_write_ownership(workspace.id, agent_run)
+        except WorkspaceAllocationError as exc:
+            return self._block_agent_run(
+                run,
+                agent_run,
+                AgentRunReasonCode.WORKSPACE_UNAVAILABLE,
+                f"An isolated writable Workspace could not be allocated "
+                f"({exc.reason_code.value}); execution was not started.",
+            )
+        except WorkspaceOwnershipError as exc:
+            return self._block_agent_run(
+                run,
+                agent_run,
+                AgentRunReasonCode.WORKSPACE_UNAVAILABLE,
+                f"Write ownership of the assigned Workspace is unavailable: {exc}",
+            )
+
+        if not workspace.accepts_writes:
+            return self._block_agent_run(
+                run,
+                agent_run,
+                AgentRunReasonCode.WORKSPACE_UNAVAILABLE,
+                f"The assigned Workspace is not ready for writes ({workspace.status}).",
+            )
+
+        return self._agent_runs.attach_workspace(agent_run, workspace.id)
 
     def _emit_agent_run_transition(
         self,
@@ -1347,18 +1489,21 @@ class RunOrchestrator:
         ]
 
         if blocked:
+            blocker = blocked[0]
+            stage_reason, run_reason = _block_reason_codes(blocker.reason_code)
+
             self._transition_stage(
                 run,
                 stage,
                 RunStageStatus.BLOCKED,
-                StageReasonCode.UNKNOWN_EXECUTION_STATE,
-                blocked[0].reason_summary
+                stage_reason,
+                blocker.reason_summary
                 or "A required assignment has an unresolved execution state.",
             )
             return self._block(
                 run,
-                RunReasonCode.UNKNOWN_EXECUTION_STATE,
-                f"Stage {stage.stage_key.value} has an unresolved required assignment.",
+                run_reason,
+                f"Stage {stage.stage_key.value} has an unresolved required assignment",
             )
 
         failed = [
@@ -2330,13 +2475,23 @@ class RunOrchestrator:
     def _can_reconcile_agent_run(self, agent_run: AgentRun) -> bool:
         """Return whether an unresolved AgentRun can be reconciled safely.
 
-        A pre-start assignment that never acquired an external session cannot
-        duplicate any external work, so it is safe to continue. Anything with an
-        external session must be resolvable through a registered Executor.
+        An assignment that never acquired an external session cannot duplicate
+        any external work. That covers both an assignment still in a pre-start
+        state and one blocked *before* the start call, such as a Workspace that
+        could not be allocated. An assignment blocked for any other reason has no
+        such proof — an UNKNOWN start outcome may already have begun external
+        work — and anything holding a session must be resolvable through a
+        registered Executor.
         """
 
         if agent_run.executor_session_ref is None:
-            return agent_run.status in {AgentRunStatus.PENDING, AgentRunStatus.STARTING}
+            if agent_run.status in {AgentRunStatus.PENDING, AgentRunStatus.STARTING}:
+                return True
+
+            return (
+                agent_run.status is AgentRunStatus.BLOCKED
+                and agent_run.reason_code in NO_EXTERNAL_EFFECT_BLOCK_REASONS
+            )
 
         return self._executors.get(agent_run.executor_id) is not None
 

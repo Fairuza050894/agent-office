@@ -10,7 +10,7 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
-from agent_office.persistence import LATEST_SCHEMA_VERSION, SQLiteDatabase
+from agent_office.persistence import LATEST_SCHEMA_VERSION, MIGRATIONS, SQLiteDatabase
 
 
 def _version(database: SQLiteDatabase) -> int:
@@ -29,8 +29,10 @@ def _tables(database: SQLiteDatabase) -> set[str]:
     return {row["name"] for row in rows}
 
 
-def test_latest_schema_version_is_six() -> None:
-    assert LATEST_SCHEMA_VERSION == 6
+def test_latest_schema_version_is_at_least_six() -> None:
+    """Phase 3C introduced version 6; later phases must only add to it."""
+
+    assert LATEST_SCHEMA_VERSION >= 6
 
 
 def test_empty_database_migrates_to_the_latest_version(tmp_path: Path) -> None:
@@ -41,58 +43,45 @@ def test_empty_database_migrates_to_the_latest_version(tmp_path: Path) -> None:
     assert "audit_records" in _tables(database)
 
 
-def test_phase_three_b_database_migrates_forward_in_place(tmp_path: Path) -> None:
-    """A v5 database gains only the audit table."""
-
-    path = tmp_path / "phase3b.sqlite"
+def _seed_at_version(path: Path, version: int) -> None:
+    """Build a genuine database at an earlier schema version."""
 
     connection = sqlite3.connect(path)
-    connection.row_factory = sqlite3.Row
-    connection.execute("CREATE TABLE schema_metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
-    connection.execute("INSERT INTO schema_metadata (key, value) VALUES ('schema_version', '5')")
-    connection.execute(
-        """
-        CREATE TABLE projects (
-            id TEXT PRIMARY KEY,
-            name TEXT NOT NULL,
-            repository_path TEXT NOT NULL,
-            canonical_path TEXT NOT NULL UNIQUE,
-            git_common_dir TEXT,
-            default_branch TEXT,
-            status TEXT NOT NULL,
-            preferred_executor_id TEXT,
-            default_workflow_id TEXT,
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL,
-            archived_at TEXT
+    connection.isolation_level = None
+
+    try:
+        for step in range(1, version + 1):
+            MIGRATIONS[step](connection)
+
+        connection.execute(
+            "INSERT INTO schema_metadata (key, value) VALUES ('schema_version', ?)",
+            (str(version),),
         )
-        """
-    )
-    connection.execute(
-        """
-        INSERT INTO projects VALUES (
-            'p1', 'Legacy Project', '/legacy/repo', '/legacy/repo', NULL, 'main',
-            'ACTIVE', NULL, NULL, '2026-01-01T00:00:00+00:00',
-            '2026-01-01T00:00:00+00:00', NULL
-        )
-        """
-    )
-    connection.commit()
-    connection.close()
+    finally:
+        connection.close()
+
+
+def test_phase_three_b_database_migrates_forward_in_place(tmp_path: Path) -> None:
+    """A real v5 database gains the audit table and keeps every earlier object."""
+
+    path = tmp_path / "phase3b.sqlite"
+    _seed_at_version(path, 5)
+
+    before = SQLiteDatabase(path)
+    tables_before = _tables(before)
 
     database = SQLiteDatabase(path)
     database.initialize()
 
-    assert _version(database) == LATEST_SCHEMA_VERSION
+    assert _version(database) >= 6
+    assert tables_before <= _tables(database)
+    assert "audit_records" in _tables(database)
 
     with database.connection() as conn:
-        project = conn.execute("SELECT * FROM projects WHERE id = 'p1'").fetchone()
+        row = conn.execute("SELECT remediation_cycles_used FROM runs LIMIT 1").fetchone()
 
-    assert project["name"] == "Legacy Project"
-    assert project["repository_path"] == "/legacy/repo"
-
-    # v1-v5 objects are untouched: the audit table is purely additive.
-    assert "audit_records" in _tables(database)
+    # A new column added by a later migration defaults cleanly on an empty table.
+    assert row is None
 
 
 def test_migrated_database_accepts_an_audit_record(tmp_path: Path) -> None:

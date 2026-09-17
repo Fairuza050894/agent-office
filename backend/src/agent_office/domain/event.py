@@ -115,6 +115,19 @@ class EventType(StrEnum):
     # session, so it is never reported as a Run-domain event.
     EXECUTOR_SESSION_RECONCILED = "executor.session.reconciled"
 
+    # Canonical Workspace events (EVENT_CONTRACT §38). Phase 4A emits every one
+    # of them: allocation and lifecycle, change observation, conflict detection
+    # when a second writer is refused, and bounded cleanup outcomes.
+    WORKSPACE_ALLOCATION_REQUESTED = "workspace.allocation.requested"
+    WORKSPACE_CREATED = "workspace.created"
+    WORKSPACE_READY = "workspace.ready"
+    WORKSPACE_CHANGED = "workspace.changed"
+    WORKSPACE_CONFLICT_DETECTED = "workspace.conflict.detected"
+    WORKSPACE_RELEASE_REQUESTED = "workspace.release.requested"
+    WORKSPACE_RELEASED = "workspace.released"
+    WORKSPACE_FAILED = "workspace.failed"
+    WORKSPACE_ORPHANED = "workspace.orphaned"
+
 
 def build_payload(
     pairs: tuple[tuple[str, EventPayloadValue], ...],

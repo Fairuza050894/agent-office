@@ -60,6 +60,7 @@ class RunReasonCode(StrEnum):
     VERIFICATION_FAILED = "VERIFICATION_FAILED"
     COMPLETION_GATE_UNSATISFIED = "COMPLETION_GATE_UNSATISFIED"
     RESUME_REJECTED = "RESUME_REJECTED"
+    WORKSPACE_UNAVAILABLE = "WORKSPACE_UNAVAILABLE"
 
 
 # A Run may move freely between the non-terminal workflow phases because the
