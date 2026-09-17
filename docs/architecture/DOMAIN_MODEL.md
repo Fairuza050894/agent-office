@@ -786,11 +786,28 @@ Workspace
 ├── kind
 ├── access_mode
 ├── path_ref
+├── base_revision?
 ├── git_branch?
 ├── status
 ├── created_at
-└── released_at?
+├── updated_at
+├── released_at?
+├── reason_code?
+└── reason_summary?
 ```
+
+`base_revision` is required for every writable Workspace (WORKTREE_POLICY §10):
+it is the immutable commit SHA the isolated worktree was created from, so a
+later branch movement cannot change what a historical Workspace means.
+
+`reason_code` and `reason_summary` record why a Workspace is not ready — an
+unresolved worktree, unrecorded changes, or a failed allocation.
+
+`path_ref` answers §69.3 in favour of **opaque storage references**. It is an
+opaque, system-generated reference (three identifier segments) relative to the
+configured workspace root. The absolute filesystem location is never stored on
+the aggregate and is recomputed and containment-checked on every infrastructure
+operation, so a caller cannot substitute a path.
 
 ### WorkspaceKind
 
@@ -2058,6 +2075,11 @@ The following decisions should be finalized before persistence migrations are co
 1. Whether retry is a new AgentRun or AgentRunAttempt.
 2. Whether BLOCKED is terminal in MVP.
 3. Whether Workspace stores absolute paths internally or opaque storage references.
+
+   Resolved in Phase 4A: **opaque storage references**. `Workspace.path_ref` is a
+   relative, system-generated reference, and the absolute location is derived and
+   containment-checked per operation, so a caller can never substitute a path.
+   See §23.
 4. Whether WorkflowSnapshot is serialized JSON or normalized tables initially.
 5. Whether completion gates are normalized rows or snapshot JSON.
 6. Whether SSE cursors use Event IDs directly.
