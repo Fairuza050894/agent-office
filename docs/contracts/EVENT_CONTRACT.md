@@ -382,6 +382,26 @@ audit.*
 
 Not every domain must be implemented in MVP.
 
+Implemented-domain boundary:
+
+```text
+Phase 3 implementation  project, task, run, workflow, stage, agent,
+                        executor (executor.session.reconciled), remediation,
+                        verification
+
+Phase 4 implementation  review (review.finding.*), evidence, artifact,
+                        command, test, workspace, git, approval
+
+Phase 8 implementation  audit.*   (an operational audit domain, distinct from
+                        AuditRecord — see §56)
+```
+
+Phase 3 emits no event in the Phase 4 implementation rows. It performs no
+repository mutation, runs no command, executes no test, and creates no Finding
+or Evidence, so emitting any event in those domains would assert a fact that was
+never established. This boundary is defined in
+`docs/architecture/ADR-0001-phase3-orchestration-evidence-boundary.md`.
+
 ---
 
 ## 18. Project Events
@@ -1068,6 +1088,27 @@ USER requested cancellation of Run run_1
 ```
 
 Audit record.
+
+### Phase 3 implementation status
+
+Phase 3 implements the AuditRecord store separately from the Event store. An
+audit record is never written as an Event, and an audit record never carries
+event payload semantics.
+
+Audited interventions in Phase 3:
+
+```text
+RUN_CANCELLATION_REQUESTED
+RUN_RESUME_REQUESTED
+RUN_RECONCILIATION_REQUESTED
+RUN_EXECUTOR_SELECTED
+```
+
+Each of these is accompanied by the operational Event that §30 already defines
+for the action — for example `run.cancel.requested` — so the two histories
+describe the same intervention from different angles rather than duplicating it.
+
+No `audit.*` operational Event is introduced in Phase 3.
 
 ---
 

@@ -139,6 +139,26 @@ Owns engineering evidence metadata and artifact references.
 
 Events are append-oriented historical records and are not the sole source of current state.
 
+### AuditRecord Aggregate
+
+Owns the append-only record of manual control-plane interventions.
+
+Owns:
+
+- actor type and action
+- the target the intervention applied to
+- ownership references (`project_id`, `run_id`)
+- bounded safe metadata
+
+Does not own:
+
+- operational Run history (that is the Event Aggregate)
+- authorization decisions
+
+AuditRecords are append-only. They are never updated or deleted, including after
+the Run they reference becomes terminal. An AuditRecord is not an Event and does
+not substitute for one.
+
 ---
 
 ## 4. Project
@@ -1171,6 +1191,27 @@ SYSTEM archived project
 USER accepted risk
 ```
 
+### Phase status
+
+Phase 3 implements this aggregate for the interventions it supports:
+
+```text
+RUN_CANCELLATION_REQUESTED
+RUN_RESUME_REQUESTED
+RUN_RECONCILIATION_REQUESTED
+RUN_EXECUTOR_SELECTED
+```
+
+`actor_type` is recorded as `USER` for these, because they all originate from an
+operator-initiated control-plane request. Agent Office does not authenticate
+operators in the local MVP, so `actor_id` stays unset rather than naming a human
+that was never identified. `AGENT` and `EXECUTOR` remain canonical actor types
+for phases where an agent or executor itself triggers an audited intervention.
+
+`approved restricted command` and `accepted risk` belong to the phases that own
+command approval and risk acceptance (see
+`docs/architecture/ADR-0001-phase3-orchestration-evidence-boundary.md`).
+
 ---
 
 ## 37. CommandDecision
@@ -1748,12 +1789,33 @@ It can simulate:
 
 ```text
 agent.started
+agent.waiting
 agent.completed
-review.finding.created
-test.completed
+agent.failed
+agent.cancelled
 ```
 
 without invoking an AI runtime.
+
+It must not simulate:
+
+```text
+review.finding.created
+test.started
+test.completed
+evidence.created
+command.*
+workspace.*
+```
+
+Those events assert that a Finding, a command, a test, or a workspace mutation
+actually occurred. The ReferenceExecutor performs no repository mutation and
+executes no command, so emitting them would fabricate engineering evidence.
+Review-blocker behaviour is expressed at the orchestration level instead, as a
+bounded blocker verdict on a COMPLETED reviewer AgentRun, and verification as a
+completed deterministic verification assignment.
+
+See `docs/architecture/ADR-0001-phase3-orchestration-evidence-boundary.md`.
 
 Purpose:
 

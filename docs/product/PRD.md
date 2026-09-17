@@ -937,6 +937,30 @@ until an actual requirement justifies them.
 
 ## 25. MVP Delivery Phases
 
+> **Delivery-contract note.** This section is the original product-sequencing
+> sketch. The authoritative delivery contract is the phase map in
+> `docs/product/MVP_ACCEPTANCE.md` §6, which the accepted Phase 1 and Phase 2
+> verification records follow. The two lists differ in numbering:
+>
+> ```text
+> PRD §25                        MVP_ACCEPTANCE §6
+> Phase 1  Foundation        →   Phase 1  Application Foundation
+> Phase 2  Orchestration     →   Phase 3  Workflow + ReferenceExecutor + Events
+> Phase 3  Git Isolation     →   Phase 4  Worktree Safety + Evidence + Review
+> Phase 4  Real Executor     →   Phase 6  First Real Executor
+> Phase 5  Multi-Executor    →   Phase 7  Multi-Executor / Second Project Dogfood
+> Phase 6  Operations Maturity → Phase 5  Operational Frontend
+> Phase 7  Office View       →   Phase 8  Office View
+> ```
+>
+> Neither numbering is renumbered here. Where this section lists an outcome that
+> depends on durable Findings or Evidence — `review findings` and
+> `remediation loops` — the boundary in
+> `docs/architecture/ADR-0001-phase3-orchestration-evidence-boundary.md` applies:
+> orchestration of those loops is delivered with the ReferenceExecutor workflow
+> milestone, while the durable Finding and Evidence aggregates are delivered by
+> the worktree/evidence milestone.
+
 ### Phase 0 — Specification
 
 Produce:

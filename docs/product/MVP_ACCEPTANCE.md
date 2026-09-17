@@ -573,6 +573,17 @@ Phase 2 passes when:
 
 Prove orchestration semantics without relying on a real AI provider.
 
+Phase 3 proves **orchestration truth**: canonical state transitions, Events,
+recovery, and auditability, driven only through the Executor port by a
+deterministic ReferenceExecutor.
+
+Phase 3 does **not** prove engineering-change truth. Real repository mutation,
+durable Findings, real command/test execution, and Evidence are Phase 4
+evidence acceptance (see `docs/architecture/ADR-0001-phase3-orchestration-evidence-boundary.md`).
+
+A Phase 3 claim must never assert that a command ran, that a test passed, that a
+Finding exists, or that Evidence was produced.
+
 ---
 
 ## 34. ReferenceExecutor Requirement
@@ -753,7 +764,7 @@ Agent-scoped event includes `agent_run_id`.
 
 ## 45. Event Taxonomy Acceptance
 
-At least support:
+**Phase 3 orchestration acceptance.** At least support:
 
 ```text
 run.created
@@ -773,11 +784,25 @@ agent.started
 agent.waiting
 agent.completed
 agent.failed
+```
 
+Phase 3 also supports the extended orchestration taxonomy it exercises
+(planning/ready/resume/cancel/reviewing/remediating/verifying, stage
+waiting/blocked/failed/cancelled, remediation and verification domain events,
+and `executor.session.reconciled`).
+
+**Phase 4 evidence acceptance.** The following remain required and are emitted
+only once real review and real command/test execution exist:
+
+```text
 review.finding.created
 
 evidence.created
 ```
+
+Phase 3 must emit neither. A Phase 3 implementation that reports
+`review.finding.created` or `evidence.created` without the Phase 4 aggregates
+behind them is fabricating evidence, which §77 forbids.
 
 ---
 
@@ -864,17 +889,31 @@ SSE alone is not authoritative.
 
 ## 52. Remediation Acceptance
 
-Scenario:
+**Phase 3 orchestration acceptance.** Scenario:
 
 ```text
 Implementation complete
-→ Security Reviewer creates BLOCKER
+→ Security Reviewer completes with BLOCKER verdict
 → Run REMEDIATING
 → remediation AgentRun
 → re-review
-→ Finding RESOLVED
 → verification
 ```
+
+The reviewer AgentRun is COMPLETED, not FAILED: reporting a blocker is a
+successful review outcome. The blocker is an orchestration-level verdict on the
+completed reviewer AgentRun, bounded per cycle and counted durably.
+
+**Phase 4 evidence acceptance.** The final step:
+
+```text
+→ Finding RESOLVED
+```
+
+remains required. It requires the Phase 4 Finding aggregate (§73–§74) and is
+therefore not part of Phase 3 acceptance. Phase 3 proves the loop terminates
+correctly on a clear re-review; Phase 4 proves the finding that the loop is
+about is durable and attributable.
 
 ---
 
@@ -947,6 +986,15 @@ late events
 ```
 
 without real AI runtime.
+
+Additionally Phase 3 must demonstrate explicit operator control with durable
+audit (`cancel`, `resume`, `reconcile`), recovery discovery of non-terminal Runs
+after restart, and a provider-neutral canonical event taxonomy.
+
+"blocker" and "verification" carry the Phase 3 meanings defined in
+`docs/architecture/ADR-0001-phase3-orchestration-evidence-boundary.md` §2.2 and
+§2.3 — orchestration verdicts and deterministic assignment completion, not
+durable Findings or executed tests.
 
 ---
 
@@ -2603,6 +2651,14 @@ Visual Office accurately reflects real system state.
 
 # FINAL MVP ACCEPTANCE
 
+The scenarios below are final product acceptance. They are complete only when
+every step is proven, including the evidence steps, which are Phase 4 evidence
+acceptance per
+`docs/architecture/ADR-0001-phase3-orchestration-evidence-boundary.md`.
+Phase 3 does not partially satisfy them, and does not claim to.
+
+---
+
 ## 186. End-to-End Scenario 1 — Safe Bug Fix
 
 Given:
@@ -2661,6 +2717,11 @@ RESOLVED
 Verification runs again.
 
 Only then may Run complete.
+
+`Finding RESOLVED` and `Verification runs again` require the Phase 4 Finding
+aggregate and real command execution. Within Phase 3 the equivalent orchestration
+behaviour is a bounded remediation loop terminated by a clear re-review verdict.
+This scenario is not satisfied by Phase 3 alone.
 
 ---
 

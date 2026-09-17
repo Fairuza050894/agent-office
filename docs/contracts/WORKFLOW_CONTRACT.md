@@ -1245,6 +1245,17 @@ Do not mark a command passed because an agent claims it ran.
 
 Where possible, Agent Office should execute or independently observe verification commands.
 
+### Phase 3 implementation status
+
+Phase 3 does not execute verification commands and does not capture exit status.
+Its verification stage proves only that the configured deterministic
+ReferenceExecutor verification assignment completed.
+
+Phase 3 therefore must not report that a command passed, that a command ran, or
+that Evidence exists. No `command.*`, `test.*`, or `evidence.*` event is emitted.
+Command execution, exit-status capture, and Evidence creation are Phase 4
+evidence acceptance, at which point this section becomes fully binding.
+
 ---
 
 ## 54. Completion Gates
@@ -1262,6 +1273,26 @@ all write workspaces reconciled
 no unresolved executor state
 ```
 
+### Phase 3 implementation status
+
+Phase 3 evaluates the gates it can prove from orchestration state:
+
+```text
+all required stages completed                      Phase 3
+no unresolved executor state                       Phase 3
+required documentation stage completed or skipped  Phase 3
+no OPEN BLOCKER findings                           Phase 4 (requires Finding)
+required tests passed                              Phase 4 (requires execution)
+required lint checks passed                        Phase 4 (requires execution)
+required build passed                              Phase 4 (requires execution)
+all write workspaces reconciled                    Phase 4 (requires Workspace)
+```
+
+The Phase 3 gate additionally refuses completion while a bounded remediation loop
+is unresolved or exhausted, which is the orchestration-level expression of
+"no OPEN BLOCKER findings" that Phase 3 can actually prove. The Phase 4 gates are
+not satisfied by Phase 3 and are not claimed by it.
+
 ---
 
 ## 55. Completed Run
@@ -1275,6 +1306,16 @@ A Run may become COMPLETED only when:
 5. No required AgentRun has unresolved execution state.
 6. Required Evidence exists.
 7. Run finalization succeeds.
+
+### Phase 3 implementation status
+
+Phase 3 enforces conditions 1, 2, 3, 5, and 7. Condition 3 is evaluated against
+the Phase 3 gate subset in §54.
+
+Conditions 4 and 6 require the Phase 4 Finding and Evidence aggregates. They are
+not enforced in Phase 3 — not because they were dropped, but because Phase 3
+cannot prove them, and a gate that always passes is worse than an absent gate.
+They become mandatory when Phase 4 lands.
 
 ---
 
@@ -1296,6 +1337,16 @@ The original Finding remains durable.
 Completion gate may then treat it as resolved-by-policy.
 
 AI agents must not self-approve accepted risk in MVP.
+
+### Phase 3 implementation status
+
+Not implemented. Accepting risk requires a durable Finding to accept and an
+attributable human control-plane action. Phase 3 has no Finding aggregate and no
+operator identity, so it provides no risk-acceptance path.
+
+The Phase 3 consequence is deliberate and bounded: a Run blocked by an exhausted
+remediation bound stays BLOCKED until a human acts. It cannot be forced to
+COMPLETED, and no agent can accept the risk on the operator's behalf.
 
 ---
 
@@ -1623,6 +1674,32 @@ The user may:
 
 Manual interventions must produce AuditRecords.
 
+### Phase 3 implementation status
+
+Phase 3 implements the minimal append-only AuditRecord required by this section
+for the interventions it supports:
+
+```text
+Run cancellation request      → RUN_CANCELLATION_REQUESTED
+Run resume                    → RUN_RESUME_REQUESTED
+Run reconciliation request    → RUN_RECONCILIATION_REQUESTED
+explicit executor selection   → RUN_EXECUTOR_SELECTED
+```
+
+The remaining interventions — `approve restricted action`, `accept risk`,
+`reopen Finding`, `retry eligible AgentRun`, `archive Task/Project` — belong to
+the phases that own the underlying capability and must produce AuditRecords when
+those capabilities exist. `accept risk` additionally requires human
+control-plane authority per §56.
+
+An AuditRecord is not an Event. An Event records what Run execution did; an
+AuditRecord records that an operator intervened. A manual intervention must not
+be represented as an operational Event, and an operational Event must not be
+used as an audit trail.
+
+Audit records are append-only. They are never updated or deleted, including
+after the Run they reference reaches a terminal state.
+
 ---
 
 ## 70. Workflow Resume
@@ -1658,6 +1735,36 @@ resume orchestration only when safe
 ```
 
 Do not auto-rerun uncertain side-effecting AgentRuns.
+
+### Phase 3 implementation status
+
+Phase 3 separates two concepts that this section describes as one sequence:
+
+```text
+RECOVERY DISCOVERY
+  durable query only; no external I/O
+  identifies non-terminal Runs that may need operator action
+        ↓
+RECONCILIATION
+  bounded, explicit, operator-triggered
+  POST /api/runs/{id}/reconcile
+        ↓
+RESUME
+  only after the blocking condition is proven resolved
+```
+
+Phase 3 deliberately does **not** query or reconcile executors during process
+boot. Starting a web server is not evidence that investigating external
+sessions is side-effect-free, so reconciliation stays an explicit bounded
+action. `load non-terminal Runs`, `inspect active AgentRuns`, and `resume
+orchestration only when safe` are satisfied by recovery discovery plus explicit
+reconciliation.
+
+`reconcile Workspace status` requires the Phase 4 Workspace aggregate and is not
+part of Phase 3.
+
+Automatic startup reconciliation may be introduced once an executor integration
+can demonstrate that reconciliation is side-effect-free.
 
 ---
 
@@ -1765,6 +1872,12 @@ verification.completed
 
 run.completed
 ```
+
+This list spans the whole product, not one phase. `review.finding.created` and
+`review.finding.resolved` are Phase 4 evidence acceptance and are not emitted by
+the ReferenceExecutor workflow milestone, which proves orchestration with the
+`remediation.*` and `verification.*` events instead (see
+`docs/architecture/ADR-0001-phase3-orchestration-evidence-boundary.md`).
 
 Detailed event schema belongs in `EVENT_CONTRACT.md`.
 
@@ -2569,6 +2682,27 @@ risk accepted
 Run resumed
 Run cancelled
 ```
+
+### Phase 3 implementation status
+
+Phase 3 produces AuditRecords for the actions an operator can currently perform:
+
+```text
+executor changed   → RUN_EXECUTOR_SELECTED
+Run resumed        → RUN_RESUME_REQUESTED
+Run cancelled      → RUN_CANCELLATION_REQUESTED
+```
+
+plus `Run reconciliation request`, the explicit intervention Phase 3 adds for
+unknown external state.
+
+`workflow selected` is a Run-creation input rather than an operator intervention
+on an existing Run, and is recorded durably by the Run's frozen
+`WorkflowSnapshot`. `stage manually skipped` and `retry approved` have no manual
+path in Phase 3: stages are skipped only by evaluating a declared condition, and
+retries are automatic and bounded. `risk accepted` requires §56.
+
+Each of these must produce an AuditRecord once its capability exists.
 
 ---
 
