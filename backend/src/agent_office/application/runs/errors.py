@@ -19,3 +19,19 @@ class OwnershipError(RunServiceError):
 
 class RunPersistenceError(RunServiceError):
     """Raised when Run persistence fails safely."""
+
+
+class RunStagePersistenceError(RunServiceError):
+    """Raised when stage runtime state cannot be persisted safely."""
+
+
+class RunNotStartableError(RunServiceError):
+    """Raised when a Run cannot be started from its current lifecycle state."""
+
+
+class RunNotCancellableError(RunServiceError):
+    """Raised when cancellation is not a valid operation for the current Run."""
+
+
+class WorkflowResolutionError(RunServiceError):
+    """Raised when no usable WorkflowDefinition can be resolved for a Run."""

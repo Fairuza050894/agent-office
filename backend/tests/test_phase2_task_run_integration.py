@@ -109,7 +109,10 @@ def test_schema_v3_contains_task_and_run_ownership_constraints(
     database = SQLiteDatabase(tmp_path / "schema.sqlite")
     database.initialize()
 
-    assert database.current_schema_version() == 3
+    # The subject of this test is the v3 ownership constraints. Later
+    # migrations only add tables and nullable columns, so the schema must be at
+    # least the version that introduced these constraints.
+    assert database.current_schema_version() >= 3
 
     with database.connection() as connection:
         tables = {

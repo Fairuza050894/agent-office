@@ -38,7 +38,11 @@ from agent_office.domain import (
 
 Clock = Callable[[], datetime]
 
-_REFERENCE_EXECUTOR_ID = ExecutorId.parse("00000000-0000-4000-8000-000000000001")
+REFERENCE_EXECUTOR_ID = ExecutorId.parse("00000000-0000-4000-8000-000000000001")
+
+_REFERENCE_EXECUTOR_ID = REFERENCE_EXECUTOR_ID
+
+REFERENCE_EXECUTOR_NAME = "Reference Executor"
 
 
 class ReferenceScenario(StrEnum):
@@ -82,14 +86,19 @@ class ReferenceExecutor:
         self._next_session_number = 1
         self._sessions: dict[str, _ReferenceSession] = {}
 
-    async def describe(self) -> ExecutorDescriptor:
+    def descriptor(self) -> ExecutorDescriptor:
+        """Return the safe descriptor without awaiting the adapter."""
+
         return ExecutorDescriptor(
             id=self._executor_id,
             kind=ExecutorKind.REFERENCE,
-            name="Reference Executor",
+            name=REFERENCE_EXECUTOR_NAME,
             status=ExecutorStatus.AVAILABLE,
             runtime_version="1",
         )
+
+    async def describe(self) -> ExecutorDescriptor:
+        return self.descriptor()
 
     async def capabilities(self) -> CapabilityReport:
         now = self._now()

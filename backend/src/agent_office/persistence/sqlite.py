@@ -12,7 +12,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 BUSY_TIMEOUT_MS = 5000
-LATEST_SCHEMA_VERSION: int = 3
+LATEST_SCHEMA_VERSION: int = 4
 
 SCHEMA_VERSION_KEY = "schema_version"
 
@@ -109,10 +109,236 @@ def _migration_v3(connection: sqlite3.Connection) -> None:
     )
 
 
+def _migration_v4(connection: sqlite3.Connection) -> None:
+    """Create workflow, stage, AgentRun, and Event persistence."""
+
+    # Composite foreign keys below need a unique parent key on runs.
+    connection.execute(
+        """
+        CREATE UNIQUE INDEX runs_id_project_unique
+        ON runs (id, project_id)
+        """
+    )
+
+    connection.execute(
+        """
+        CREATE TABLE workflow_definitions (
+            id TEXT PRIMARY KEY,
+            key TEXT NOT NULL UNIQUE,
+            name TEXT NOT NULL,
+            description TEXT NOT NULL,
+            latest_version INTEGER NOT NULL CHECK (latest_version >= 1),
+            status TEXT NOT NULL
+                CHECK (status IN ('DRAFT', 'ACTIVE', 'ARCHIVED')),
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+        """
+    )
+
+    # Workflow definition versions are append-only. Once a version has been
+    # frozen into a Run snapshot it is never updated or deleted, so historical
+    # Run meaning cannot drift when the reusable definition is edited.
+    connection.execute(
+        """
+        CREATE TABLE workflow_definition_versions (
+            workflow_id TEXT NOT NULL REFERENCES workflow_definitions(id),
+            version INTEGER NOT NULL CHECK (version >= 1),
+            schema_version INTEGER NOT NULL,
+            definition_json TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            PRIMARY KEY (workflow_id, version)
+        )
+        """
+    )
+
+    connection.execute(
+        """
+        CREATE TABLE workflow_snapshots (
+            id TEXT PRIMARY KEY,
+            run_id TEXT NOT NULL,
+            project_id TEXT NOT NULL,
+            source_workflow_id TEXT REFERENCES workflow_definitions(id),
+            source_workflow_key TEXT NOT NULL,
+            source_workflow_version INTEGER NOT NULL
+                CHECK (source_workflow_version >= 1),
+            schema_version INTEGER NOT NULL,
+            definition_json TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            UNIQUE (run_id),
+            FOREIGN KEY (run_id, project_id) REFERENCES runs(id, project_id)
+        )
+        """
+    )
+
+    # Phase 3 lifecycle columns. Added columns are nullable so existing Phase 2
+    # Run rows remain valid.
+    connection.execute(
+        """
+        ALTER TABLE runs
+        ADD COLUMN workflow_snapshot_id TEXT REFERENCES workflow_snapshots(id)
+        """
+    )
+
+    for column in (
+        "resolved_executor_id TEXT",
+        "changed_areas_json TEXT",
+        "failure_code TEXT",
+        "failure_summary TEXT",
+        "started_at TEXT",
+        "completed_at TEXT",
+        "cancel_requested_at TEXT",
+    ):
+        connection.execute(f"ALTER TABLE runs ADD COLUMN {column}")
+
+    connection.execute(
+        """
+        CREATE TABLE run_stages (
+            run_id TEXT NOT NULL,
+            project_id TEXT NOT NULL,
+            stage_key TEXT NOT NULL,
+            status TEXT NOT NULL
+                CHECK (status IN (
+                    'PENDING', 'READY', 'RUNNING', 'WAITING',
+                    'COMPLETED', 'FAILED', 'BLOCKED', 'SKIPPED', 'CANCELLED'
+                )),
+            required INTEGER NOT NULL CHECK (required IN (0, 1)),
+            order_hint INTEGER NOT NULL CHECK (order_hint >= 0),
+            execution_mode TEXT NOT NULL
+                CHECK (execution_mode IN ('SEQUENTIAL', 'PARALLEL_ALLOWED')),
+            condition TEXT NOT NULL,
+            reason_code TEXT,
+            reason_summary TEXT,
+            started_at TEXT,
+            completed_at TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            PRIMARY KEY (run_id, stage_key),
+            FOREIGN KEY (run_id, project_id) REFERENCES runs(id, project_id)
+        )
+        """
+    )
+
+    connection.execute(
+        """
+        CREATE TABLE agent_runs (
+            id TEXT PRIMARY KEY,
+            run_id TEXT NOT NULL,
+            project_id TEXT NOT NULL,
+            stage_key TEXT NOT NULL,
+            agent_profile_id TEXT NOT NULL,
+            agent_profile_key TEXT NOT NULL,
+            agent_profile_version INTEGER NOT NULL
+                CHECK (agent_profile_version >= 1),
+            executor_id TEXT NOT NULL,
+            access_mode TEXT NOT NULL
+                CHECK (access_mode IN ('READ_ONLY', 'BOUNDED_WRITE', 'WRITE')),
+            status TEXT NOT NULL
+                CHECK (status IN (
+                    'PENDING', 'STARTING', 'RUNNING', 'WAITING',
+                    'COMPLETED', 'FAILED', 'BLOCKED', 'CANCELLED'
+                )),
+            attempt INTEGER NOT NULL CHECK (attempt >= 1),
+            executor_session_ref_json TEXT,
+            capability_snapshot_json TEXT,
+            result_outcome TEXT,
+            result_summary TEXT,
+            reason_code TEXT,
+            reason_summary TEXT,
+            started_at TEXT,
+            completed_at TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (run_id, stage_key)
+                REFERENCES run_stages(run_id, stage_key),
+            FOREIGN KEY (run_id, project_id) REFERENCES runs(id, project_id)
+        )
+        """
+    )
+
+    connection.execute(
+        """
+        CREATE TABLE events (
+            id TEXT PRIMARY KEY,
+            schema_version INTEGER NOT NULL,
+            event_type TEXT NOT NULL,
+            project_id TEXT NOT NULL,
+            run_id TEXT NOT NULL,
+            agent_run_id TEXT REFERENCES agent_runs(id),
+            source TEXT NOT NULL,
+            source_ref TEXT,
+            occurred_at TEXT NOT NULL,
+            recorded_at TEXT NOT NULL,
+            sequence INTEGER,
+            correlation_id TEXT,
+            causation_id TEXT,
+            payload_json TEXT NOT NULL,
+            redacted_keys_json TEXT NOT NULL,
+            external_event_id TEXT,
+            executor_id TEXT,
+            dedupe_key TEXT UNIQUE,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (project_id) REFERENCES projects(id),
+            FOREIGN KEY (run_id, project_id) REFERENCES runs(id, project_id)
+        )
+        """
+    )
+
+    connection.execute(
+        """
+        CREATE INDEX events_run_recorded_idx
+        ON events (run_id, recorded_at, id)
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX events_agent_run_recorded_idx
+        ON events (agent_run_id, recorded_at, id)
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX events_project_recorded_idx
+        ON events (project_id, recorded_at, id)
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX events_event_type_idx
+        ON events (event_type)
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX run_stages_run_idx
+        ON run_stages (run_id, order_hint)
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX agent_runs_run_idx
+        ON agent_runs (run_id, created_at)
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX agent_runs_stage_idx
+        ON agent_runs (run_id, stage_key)
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX workflow_definition_versions_idx
+        ON workflow_definition_versions (workflow_id, version)
+        """
+    )
+
+
 MIGRATIONS: dict[int, Callable[[sqlite3.Connection], None]] = {
     1: _migration_v1,
     2: _migration_v2,
     3: _migration_v3,
+    4: _migration_v4,
 }
 
 
