@@ -14,7 +14,9 @@ from agent_office.api.dependencies import (
 )
 from agent_office.api.run_models import (
     AgentRunResponse,
+    CompletionGateResponse,
     CreateRunRequest,
+    ResumeRunRequest,
     RunResponse,
     RunStageResponse,
     StartRunRequest,
@@ -25,6 +27,7 @@ from agent_office.application.runs import (
     OwnershipError,
     ProjectArchivedError,
     RunNotFoundError,
+    RunNotResumableError,
     RunNotStartableError,
     RunService,
     WorkflowResolutionError,
@@ -34,7 +37,7 @@ from agent_office.application.workflows import (
     WorkflowNotFoundError,
     WorkflowSnapshotNotFoundError,
 )
-from agent_office.domain import DomainInvariantError, RunId, TaskId
+from agent_office.domain import DomainInvariantError, RunId, RunStatus, TaskId
 from agent_office.domain.identifiers import ExecutorId
 
 router = APIRouter(tags=["runs"])
@@ -199,6 +202,110 @@ def get_run(
         ) from exc
 
     return RunResponse.from_domain(run)
+
+
+@router.post("/api/runs/{run_id}/resume", response_model=RunResponse)
+async def resume_run(
+    run_id: UUID,
+    request: ResumeRunRequest,
+    orchestrator: OrchestratorDependency,
+) -> RunResponse:
+    """Resume a BLOCKED Run after re-validating that it may continue.
+
+    Resume is not restart-from-zero: historical AgentRuns are preserved, the
+    frozen workflow snapshot is never changed, and the Run is only continued
+    when the blocking condition has actually been resolved.
+    """
+
+    executor_id: ExecutorId | None = None
+
+    if request.executor_id is not None:
+        try:
+            executor_id = ExecutorId.parse(request.executor_id)
+        except DomainInvariantError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail=str(exc),
+            ) from exc
+
+    try:
+        run = await orchestrator.resume_run(
+            RunId(run_id),
+            executor_id=executor_id,
+            changed_areas=(None if request.changed_areas is None else tuple(request.changed_areas)),
+        )
+    except RunNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+    except RunNotResumableError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
+    except DomainInvariantError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(exc),
+        ) from exc
+
+    return RunResponse.from_domain(run)
+
+
+@router.post("/api/runs/{run_id}/reconcile", response_model=RunResponse)
+async def reconcile_run(
+    run_id: UUID,
+    orchestrator: OrchestratorDependency,
+) -> RunResponse:
+    """Reconcile a non-terminal Run against the Executor's reported truth.
+
+    Reconciliation records only what the Executor can prove. It never starts new
+    execution and never recreates an AgentRun; when external state cannot be
+    proven the Run is blocked instead of being resumed blindly.
+    """
+
+    try:
+        run = await orchestrator.reconcile_run(RunId(run_id))
+    except RunNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+    except DomainInvariantError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(exc),
+        ) from exc
+
+    return RunResponse.from_domain(run)
+
+
+@router.get("/api/runs/{run_id}/completion-gates", response_model=CompletionGateResponse)
+def get_completion_gates(
+    run_id: UUID,
+    run_service: RunServiceDependency,
+    orchestrator: OrchestratorDependency,
+) -> CompletionGateResponse:
+    """Return the completion-gate failures currently blocking a Run.
+
+    This is the same authority the orchestrator uses to decide completion, so a
+    caller can see exactly why a Run has not completed.
+    """
+
+    try:
+        run = run_service.get_run(RunId(run_id))
+    except RunNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+
+    return CompletionGateResponse(
+        status=run.status,
+        complete=run.status is RunStatus.COMPLETED,
+        failures=[code.value for code in orchestrator.completion_gate_failures(RunId(run_id))],
+    )
 
 
 @router.get("/api/runs/{run_id}/snapshot", response_model=WorkflowSnapshotResponse)

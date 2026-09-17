@@ -24,10 +24,12 @@ from agent_office.domain import (
     ExecutionOutcome,
     ExecutorId,
     ExecutorSessionRef,
+    ReviewVerdict,
     Run,
     RunId,
     StageKey,
     ensure_agent_run_transition_allowed,
+    is_terminal_agent_run_status,
     utc_now,
 )
 
@@ -68,11 +70,17 @@ class AgentRunService:
         agent_profile_version: int,
         executor_id: ExecutorId,
         access_mode: AgentAccessMode,
+        attempt: int = 1,
+        retry_of_agent_run_id: AgentRunId | None = None,
+        remediation_cycle: int = 0,
     ) -> AgentRun:
         """Create a durable AgentRun in PENDING state.
 
         Profile identity and version are supplied by the caller from the frozen
         WorkflowSnapshot, never re-resolved from the live AgentProfile catalog.
+
+        A retry creates a NEW AgentRun that references the previous attempt, so
+        failed attempt history is preserved rather than overwritten.
         """
 
         now = utc_now(self._clock)
@@ -88,9 +96,11 @@ class AgentRunService:
             executor_id=executor_id,
             access_mode=access_mode,
             status=AgentRunStatus.PENDING,
-            attempt=1,
+            attempt=attempt,
             created_at=now,
             updated_at=now,
+            retry_of_agent_run_id=retry_of_agent_run_id,
+            remediation_cycle=remediation_cycle,
         )
 
         self._repository.add(agent_run)
@@ -107,6 +117,8 @@ class AgentRunService:
         capability_snapshot: CapabilityReport | None = None,
         result_outcome: ExecutionOutcome | None = None,
         result_summary: str | None = None,
+        review_verdict: ReviewVerdict | None = None,
+        failure_retryable: bool | None = None,
     ) -> AgentRun:
         """Apply a validated lifecycle transition and persist the result."""
 
@@ -137,12 +149,51 @@ class AgentRunService:
             ),
             result_outcome=agent_run.result_outcome if result_outcome is None else result_outcome,
             result_summary=agent_run.result_summary if result_summary is None else result_summary,
+            review_verdict=agent_run.review_verdict if review_verdict is None else review_verdict,
+            failure_retryable=(
+                agent_run.failure_retryable if failure_retryable is None else failure_retryable
+            ),
             reason_code=reason_code,
             reason_summary=reason_summary,
         )
 
         self._repository.update(updated)
         return updated
+
+    def record_unresolved_cancellation(
+        self,
+        agent_run: AgentRun,
+        *,
+        reason_code: AgentRunReasonCode,
+        reason_summary: str,
+        capability_snapshot: CapabilityReport | None = None,
+    ) -> AgentRun:
+        """Record an unproven cancellation attempt without changing execution status.
+
+        A control plane that cannot cancel an assignment has not proven that an
+        already-started external execution stopped or became blocked, so the last
+        authoritative status (and the executor session reference) is preserved.
+        Only the attempted-cancellation facts are recorded, and the AgentRun stays
+        non-terminal so reconciliation can still resolve it.
+        """
+
+        if is_terminal_agent_run_status(agent_run.status):
+            return agent_run
+
+        recorded = replace(
+            agent_run,
+            updated_at=utc_now(self._clock),
+            reason_code=reason_code,
+            reason_summary=reason_summary,
+            capability_snapshot=(
+                agent_run.capability_snapshot
+                if capability_snapshot is None
+                else capability_snapshot
+            ),
+        )
+
+        self._repository.update(recorded)
+        return recorded
 
     def get(self, agent_run_id: AgentRunId) -> AgentRun:
         """Return an AgentRun by ID."""

@@ -35,3 +35,7 @@ class RunNotCancellableError(RunServiceError):
 
 class WorkflowResolutionError(RunServiceError):
     """Raised when no usable WorkflowDefinition can be resolved for a Run."""
+
+
+class RunNotResumableError(RunServiceError):
+    """Raised when a Run cannot be resumed because a precondition is unmet."""

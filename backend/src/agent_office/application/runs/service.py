@@ -230,3 +230,61 @@ class RunService:
 
         self._run_repository.update(updated)
         return updated
+
+    def increment_remediation_cycles(self, run: Run) -> Run:
+        """Record that one more bounded remediation cycle has been started.
+
+        The counter is durable so the remediation bound survives restart and can
+        never be silently reset by a later resume.
+        """
+
+        now = utc_now(self._clock)
+
+        updated = replace(
+            run,
+            remediation_cycles_used=run.remediation_cycles_used + 1,
+            updated_at=now,
+        )
+
+        self._run_repository.update(updated)
+        return updated
+
+    def select_executor(self, run: Run, executor_id: ExecutorId) -> Run:
+        """Replace the resolved Executor of a Run.
+
+        Used only by an explicit operator resume after the previously resolved
+        Executor proved unusable. The workflow snapshot and every historical
+        AgentRun are left untouched.
+        """
+
+        if run.resolved_executor_id == executor_id:
+            return run
+
+        updated = replace(
+            run,
+            resolved_executor_id=executor_id,
+            updated_at=utc_now(self._clock),
+        )
+
+        self._run_repository.update(updated)
+        return updated
+
+    def clear_blocking_reason(self, run: Run) -> Run:
+        """Clear a resolved blocking reason without changing the Run status.
+
+        The Run status itself is moved by the orchestrator once it has
+        re-validated that work may continue.
+        """
+
+        if run.failure_code is None and run.failure_summary is None:
+            return run
+
+        updated = replace(
+            run,
+            failure_code=None,
+            failure_summary=None,
+            updated_at=utc_now(self._clock),
+        )
+
+        self._run_repository.update(updated)
+        return updated

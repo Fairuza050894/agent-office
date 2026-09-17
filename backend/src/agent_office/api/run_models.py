@@ -16,6 +16,7 @@ from agent_office.domain import (
     ChangeArea,
     ExecutionOutcome,
     FrozenAgentAssignment,
+    ReviewVerdict,
     Run,
     RunReasonCode,
     RunStageState,
@@ -57,6 +58,7 @@ class RunResponse(BaseModel):
     started_at: datetime | None
     completed_at: datetime | None
     cancel_requested_at: datetime | None
+    remediation_cycles_used: int
     created_at: datetime
     updated_at: datetime
 
@@ -82,9 +84,33 @@ class RunResponse(BaseModel):
             started_at=run.started_at,
             completed_at=run.completed_at,
             cancel_requested_at=run.cancel_requested_at,
+            remediation_cycles_used=run.remediation_cycles_used,
             created_at=run.created_at,
             updated_at=run.updated_at,
         )
+
+
+class ResumeRunRequest(BaseModel):
+    """Request to resume a BLOCKED Run.
+
+    ``executor_id`` is optional and only used when the previously resolved
+    Executor proved unusable. Supplying an unregistered Executor is rejected;
+    the Run is never silently redirected to a different one.
+
+    ``changed_areas`` is only used when the Run was blocked before it was ever
+    planned, and supplies the same bounded factual input that start accepts.
+    """
+
+    executor_id: str | None = None
+    changed_areas: list[ChangeArea] | None = Field(default=None, max_length=10)
+
+
+class CompletionGateResponse(BaseModel):
+    """Current completion-gate state of a Run."""
+
+    status: RunStatus
+    complete: bool
+    failures: list[str]
 
 
 class RunStageResponse(BaseModel):
@@ -134,10 +160,14 @@ class AgentRunResponse(BaseModel):
     access_mode: AgentAccessMode
     status: AgentRunStatus
     attempt: int
+    retry_of_agent_run_id: str | None
+    remediation_cycle: int
+    review_verdict: ReviewVerdict | None
     result_outcome: ExecutionOutcome | None
     result_summary: str | None
     reason_code: AgentRunReasonCode | None
     reason_summary: str | None
+    failure_retryable: bool | None
     started_at: datetime | None
     completed_at: datetime | None
     created_at: datetime
@@ -156,10 +186,18 @@ class AgentRunResponse(BaseModel):
             access_mode=agent_run.access_mode,
             status=agent_run.status,
             attempt=agent_run.attempt,
+            retry_of_agent_run_id=(
+                None
+                if agent_run.retry_of_agent_run_id is None
+                else str(agent_run.retry_of_agent_run_id)
+            ),
+            remediation_cycle=agent_run.remediation_cycle,
+            review_verdict=agent_run.review_verdict,
             result_outcome=agent_run.result_outcome,
             result_summary=agent_run.result_summary,
             reason_code=agent_run.reason_code,
             reason_summary=agent_run.reason_summary,
+            failure_retryable=agent_run.failure_retryable,
             started_at=agent_run.started_at,
             completed_at=agent_run.completed_at,
             created_at=agent_run.created_at,

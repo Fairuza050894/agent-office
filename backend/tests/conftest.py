@@ -111,6 +111,7 @@ class ScriptedExecutor:
         unknown_capabilities: frozenset[ExecutorCapability] = frozenset(),
         session_status: ExecutionStatus = ExecutionStatus.COMPLETED,
         result_outcome: ExecutionOutcome = ExecutionOutcome.SUCCESS,
+        cancel_outcome: CancellationOutcome = CancellationOutcome.CONFIRMED_CANCELLED,
         yield_on_start: bool = True,
     ) -> None:
         self._executor_id = ExecutorId.parse(executor_id)
@@ -118,10 +119,12 @@ class ScriptedExecutor:
         self._unknown = unknown_capabilities
         self._session_status = session_status
         self._result_outcome = result_outcome
+        self._cancel_outcome = cancel_outcome
         self._yield_on_start = yield_on_start
 
         self.start_calls = 0
         self.capability_calls = 0
+        self.cancel_calls = 0
         self.active_starts = 0
         self.max_concurrent_starts = 0
         self._sessions: dict[str, ExecutionStatus] = {}
@@ -192,12 +195,33 @@ class ScriptedExecutor:
             retryable=False,
         )
 
+    def set_session_status(self, status: ExecutionStatus) -> None:
+        """Change the status reported for sessions created from now on."""
+
+        self._session_status = status
+
+    def session_ids(self) -> tuple[str, ...]:
+        """Return the opaque ids of every session this executor created."""
+
+        return tuple(self._sessions)
+
+    def complete(self, session_id: str) -> None:
+        """Mark a live session as completed so reconciliation can prove it."""
+
+        if session_id in self._sessions:
+            self._sessions[session_id] = ExecutionStatus.COMPLETED
+
     async def get_status(self, session: ExecutorSessionRef) -> ExecutionStatus:
         return self._sessions.get(session.opaque_session_id, ExecutionStatus.UNKNOWN)
 
     async def cancel(self, session: ExecutorSessionRef) -> CancelExecutionResult:
+        self.cancel_calls += 1
+
         if session.opaque_session_id not in self._sessions:
             return CancelExecutionResult(outcome=CancellationOutcome.UNKNOWN)
+
+        if self._cancel_outcome is not CancellationOutcome.CONFIRMED_CANCELLED:
+            return CancelExecutionResult(outcome=self._cancel_outcome)
 
         self._sessions[session.opaque_session_id] = ExecutionStatus.CANCELLED
 
@@ -269,12 +293,14 @@ class Harness:
         self,
         run_id: str,
         *,
-        changed_areas: list[ChangeArea] | None = None,
+        changed_areas: list[ChangeArea] | list[str] | None = None,
     ) -> dict[str, Any]:
         body: dict[str, Any] = {}
 
         if changed_areas is not None:
-            body["changed_areas"] = [area.value for area in changed_areas]
+            body["changed_areas"] = [
+                area.value if isinstance(area, ChangeArea) else str(area) for area in changed_areas
+            ]
 
         response = self.client.post(f"/api/runs/{run_id}/start", json=body)
         assert response.status_code == 200, response.text
@@ -309,6 +335,58 @@ class Harness:
                 return workflow
 
         raise AssertionError(f"workflow {key} is not registered")
+
+    def start_workflow(
+        self,
+        workflow_key: str = "enterprise-engineering",
+        *,
+        changed_areas: list[ChangeArea] | list[str] | None = None,
+        project: dict[str, Any] | None = None,
+        task_title: str = "Task",
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
+        """Start a Run for a built-in workflow and return (run, started)."""
+
+        workflow = self.workflow_by_key(workflow_key)
+        resolved_project = project or self.register_project()
+        task = self.create_task(
+            resolved_project["id"],
+            title=task_title,
+            requested_workflow_id=workflow["id"],
+        )
+        run = self.create_run(task["id"])
+
+        return run, self.start_run(run["id"], changed_areas=changed_areas)
+
+    def run_by_id(self, run_id: str) -> dict[str, Any]:
+        response = self.client.get(f"/api/runs/{run_id}")
+        assert response.status_code == 200, response.text
+
+        return response.json()
+
+    def start_raw(self, run_id: str, **body: Any) -> Any:
+        return self.client.post(f"/api/runs/{run_id}/start", json=body)
+
+    def cancel_raw(self, run_id: str) -> Any:
+        return self.client.post(f"/api/runs/{run_id}/cancel")
+
+    def resume_raw(self, run_id: str, **body: Any) -> Any:
+        return self.client.post(f"/api/runs/{run_id}/resume", json=body)
+
+    def reconcile_raw(self, run_id: str) -> Any:
+        return self.client.post(f"/api/runs/{run_id}/reconcile")
+
+    def completion_gates(self, run_id: str) -> dict[str, Any]:
+        response = self.client.get(f"/api/runs/{run_id}/completion-gates")
+        assert response.status_code == 200, response.text
+
+        return response.json()
+
+    def stage(self, run_id: str, stage_key: str) -> dict[str, Any]:
+        for stage in self.stages(run_id):
+            if stage["stage_key"] == stage_key:
+                return stage
+
+        raise AssertionError(f"stage {stage_key} is missing from run {run_id}")
 
     def stage_status(self, run_id: str, stage_key: str) -> str:
         for stage in self.stages(run_id):

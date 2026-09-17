@@ -38,16 +38,35 @@ def _event(**overrides: object) -> Event:
 
 
 def test_event_types_are_provider_neutral() -> None:
+    # Canonical event domains from EVENT_CONTRACT §17.
+    canonical_domains = {
+        "run",
+        "workflow",
+        "stage",
+        "agent",
+        "executor",
+        "remediation",
+        "verification",
+    }
+    provider_names = ("codex", "antigravity", "openclaw", "deepseek", "hermes")
+
     for event_type in EventType:
-        assert event_type.value.split(".")[0] in {
-            "run",
-            "workflow",
-            "stage",
-            "agent",
-        }
-        assert "codex" not in event_type.value
-        assert "antigravity" not in event_type.value
-        assert "openclaw" not in event_type.value
+        assert event_type.value.split(".")[0] in canonical_domains
+        assert not any(name in event_type.value for name in provider_names)
+
+
+def test_canonical_taxonomy_rejects_invented_event_types() -> None:
+    """The taxonomy is closed: reconciliation is an executor-session fact."""
+
+    values = {event_type.value for event_type in EventType}
+
+    # EVENT_CONTRACT §36 lists exactly one reconciliation event.
+    assert "executor.session.reconciled" in values
+
+    # EVENT_CONTRACT §30 lists the canonical run events. A Run is never the
+    # subject of its own reconciliation event.
+    assert "run.reconciled" not in values
+    assert {"run.blocked", "run.resumed", "run.cancelled"} <= values
 
 
 def test_unsupported_schema_version_is_rejected() -> None:

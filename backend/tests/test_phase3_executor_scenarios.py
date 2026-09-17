@@ -173,9 +173,16 @@ def test_cancel_unknown_scenario_blocks_instead_of_claiming_cancelled(
     assert cancelled["status"] != "CANCELLED"
     assert cancelled["failure_code"] == "CANCELLATION_UNKNOWN"
 
+    # An unknowable cancellation outcome is not proof that the external
+    # execution stopped, so the AgentRun keeps its last authoritative status and
+    # is resolved by reconciliation rather than by a blocking claim.
     agents = harness.agent_runs(started["id"])
-    assert {agent["status"] for agent in agents} == {"BLOCKED"}
+    assert {agent["status"] for agent in agents} == {"RUNNING"}
     assert {agent["reason_code"] for agent in agents} == {"CANCELLATION_UNKNOWN"}
+
+    event_types = [event["event_type"] for event in harness.events(started["id"])]
+    assert "agent.blocked" not in event_types
+    assert "agent.cancelled" not in event_types
 
 
 @pytest.mark.parametrize(

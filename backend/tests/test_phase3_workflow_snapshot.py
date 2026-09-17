@@ -98,6 +98,8 @@ def test_built_in_workflows_are_registered(harness_factory: HarnessFactory) -> N
         "DISCOVERY",
         "IMPLEMENTATION",
         "REVIEW",
+        "REMEDIATION",
+        "VERIFICATION",
         "DOCUMENTATION",
     }
 

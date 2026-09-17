@@ -52,9 +52,10 @@ class SQLiteRunRepository:
                         failure_summary,
                         started_at,
                         completed_at,
-                        cancel_requested_at
+                        cancel_requested_at,
+                        remediation_cycles_used
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     self._parameters(run),
                 )
@@ -82,6 +83,7 @@ class SQLiteRunRepository:
                     started_at = ?,
                     completed_at = ?,
                     cancel_requested_at = ?,
+                    remediation_cycles_used = ?,
                     updated_at = ?,
                     workflow_snapshot_id = COALESCE(workflow_snapshot_id, ?)
                 WHERE id = ?
@@ -95,6 +97,7 @@ class SQLiteRunRepository:
                     _optional_datetime(run.started_at),
                     _optional_datetime(run.completed_at),
                     _optional_datetime(run.cancel_requested_at),
+                    run.remediation_cycles_used,
                     _serialize_datetime(run.updated_at),
                     None if run.workflow_snapshot_id is None else str(run.workflow_snapshot_id),
                     str(run.id),
@@ -145,6 +148,7 @@ class SQLiteRunRepository:
             _optional_datetime(run.started_at),
             _optional_datetime(run.completed_at),
             _optional_datetime(run.cancel_requested_at),
+            run.remediation_cycles_used,
         )
 
     def _hydrate(self, row: sqlite3.Row) -> Run:
@@ -172,6 +176,7 @@ class SQLiteRunRepository:
             started_at=_optional_parse_datetime(row["started_at"]),
             completed_at=_optional_parse_datetime(row["completed_at"]),
             cancel_requested_at=_optional_parse_datetime(row["cancel_requested_at"]),
+            remediation_cycles_used=int(row["remediation_cycles_used"]),
         )
 
 

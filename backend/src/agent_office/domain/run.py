@@ -50,10 +50,16 @@ class RunReasonCode(StrEnum):
     UNKNOWN_EXECUTION_STATE = "UNKNOWN_EXECUTION_STATE"
     CANCELLATION_REQUESTED = "CANCELLATION_REQUESTED"
     CANCELLATION_UNKNOWN = "CANCELLATION_UNKNOWN"
+    CANCELLATION_UNSUPPORTED = "CANCELLATION_UNSUPPORTED"
     REQUIRED_STAGE_FAILED = "REQUIRED_STAGE_FAILED"
     PROJECT_ARCHIVED = "PROJECT_ARCHIVED"
     ORCHESTRATION_STEP_LIMIT = "ORCHESTRATION_STEP_LIMIT"
     WORKFLOW_UNAVAILABLE = "WORKFLOW_UNAVAILABLE"
+    REMEDIATION_FAILED = "REMEDIATION_FAILED"
+    REMEDIATION_BOUND_EXCEEDED = "REMEDIATION_BOUND_EXCEEDED"
+    VERIFICATION_FAILED = "VERIFICATION_FAILED"
+    COMPLETION_GATE_UNSATISFIED = "COMPLETION_GATE_UNSATISFIED"
+    RESUME_REJECTED = "RESUME_REJECTED"
 
 
 # A Run may move freely between the non-terminal workflow phases because the
@@ -157,6 +163,7 @@ class Run:
     started_at: datetime | None = None
     completed_at: datetime | None = None
     cancel_requested_at: datetime | None = None
+    remediation_cycles_used: int = 0
 
     def __post_init__(self) -> None:
         created_at = to_utc(self.created_at)
@@ -164,6 +171,9 @@ class Run:
 
         if updated_at < created_at:
             raise DomainInvariantError("Run updated_at must not precede created_at")
+
+        if self.remediation_cycles_used < 0:
+            raise DomainInvariantError("Run remediation cycles must not be negative")
 
         object.__setattr__(self, "created_at", created_at)
         object.__setattr__(self, "updated_at", updated_at)

@@ -74,6 +74,7 @@ class EventType(StrEnum):
     RUN_FAILED = "run.failed"
     RUN_CANCEL_REQUESTED = "run.cancel.requested"
     RUN_CANCELLED = "run.cancelled"
+    RUN_RESUMED = "run.resumed"
 
     WORKFLOW_SNAPSHOT_CREATED = "workflow.snapshot.created"
 
@@ -85,6 +86,15 @@ class EventType(StrEnum):
     STAGE_FAILED = "stage.failed"
     STAGE_SKIPPED = "stage.skipped"
     STAGE_CANCELLED = "stage.cancelled"
+
+    REMEDIATION_STARTED = "remediation.started"
+    REMEDIATION_COMPLETED = "remediation.completed"
+    REMEDIATION_FAILED = "remediation.failed"
+    REMEDIATION_CYCLE_EXHAUSTED = "remediation.cycle.exhausted"
+
+    VERIFICATION_STARTED = "verification.started"
+    VERIFICATION_FAILED = "verification.failed"
+    VERIFICATION_COMPLETED = "verification.completed"
 
     AGENT_CREATED = "agent.created"
     AGENT_START_REQUESTED = "agent.start.requested"
@@ -99,6 +109,11 @@ class EventType(StrEnum):
     AGENT_BLOCKED = "agent.blocked"
     AGENT_CANCEL_REQUESTED = "agent.cancel.requested"
     AGENT_CANCELLED = "agent.cancelled"
+
+    # The only reconciliation event in the canonical taxonomy (EVENT_CONTRACT
+    # §36). Reconciliation is always the reconciliation of one executor
+    # session, so it is never reported as a Run-domain event.
+    EXECUTOR_SESSION_RECONCILED = "executor.session.reconciled"
 
 
 def build_payload(

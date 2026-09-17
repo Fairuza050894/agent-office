@@ -52,6 +52,12 @@ class StageReasonCode(StrEnum):
     UNKNOWN_EXECUTION_STATE = "UNKNOWN_EXECUTION_STATE"
     EXECUTOR_WAITING = "EXECUTOR_WAITING"
     RUN_CANCELLED = "RUN_CANCELLED"
+    NOT_APPLICABLE = "NOT_APPLICABLE"
+    AWAITING_REMEDIATION = "AWAITING_REMEDIATION"
+    AWAITING_REVIEW = "AWAITING_REVIEW"
+    REMEDIATION_FAILED = "REMEDIATION_FAILED"
+    REMEDIATION_BOUND_EXCEEDED = "REMEDIATION_BOUND_EXCEEDED"
+    VERIFICATION_FAILED = "VERIFICATION_FAILED"
 
 
 _ALLOWED_STAGE_TRANSITIONS: dict[RunStageStatus, frozenset[RunStageStatus]] = {
@@ -84,6 +90,9 @@ _ALLOWED_STAGE_TRANSITIONS: dict[RunStageStatus, frozenset[RunStageStatus]] = {
     ),
     RunStageStatus.WAITING: frozenset(
         {
+            # A stage waiting on review/remediation re-enters execution when the
+            # other half of the loop finishes, so READY is reachable again.
+            RunStageStatus.READY,
             RunStageStatus.RUNNING,
             RunStageStatus.COMPLETED,
             RunStageStatus.FAILED,

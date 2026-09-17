@@ -120,6 +120,15 @@ BUILT_IN_AGENT_PROFILES: tuple[AgentProfile, ...] = (
         AgentAccessMode.READ_ONLY,
     ),
     _profile(
+        "verifier",
+        "Verifier",
+        (
+            "Performs an independent Phase 3 orchestration verification pass. "
+            "Does not execute repository commands and produces no test evidence."
+        ),
+        AgentAccessMode.READ_ONLY,
+    ),
+    _profile(
         "documentation-writer",
         "Documentation Writer",
         "Updates engineering documentation for the delivered work.",

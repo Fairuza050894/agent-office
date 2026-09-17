@@ -118,11 +118,19 @@ def test_conditional_stage_is_skipped_with_a_durable_reason(
 
     assert harness.agent_statuses(run["id"], "DOCUMENTATION") == []
 
-    skipped = [
-        event for event in harness.events(run["id"]) if event["event_type"] == "stage.skipped"
-    ]
-    assert [event["payload"]["stage_key"] for event in skipped] == ["DOCUMENTATION"]
-    assert skipped[0]["payload"]["condition"] == "IF_UI_CHANGED"
+    skipped = {
+        event["payload"]["stage_key"]: event
+        for event in harness.events(run["id"])
+        if event["event_type"] == "stage.skipped"
+    }
+    assert skipped["DOCUMENTATION"]["payload"]["condition"] == "IF_UI_CHANGED"
+
+    # Remediation is likewise validly skipped when review reports no blocker.
+    remediation = next(
+        stage for stage in harness.stages(run["id"]) if stage["stage_key"] == "REMEDIATION"
+    )
+    assert remediation["status"] == "SKIPPED"
+    assert remediation["reason_code"] == "NOT_APPLICABLE"
 
 
 def test_conditional_stage_executes_when_its_condition_is_true(
@@ -300,8 +308,9 @@ def test_run_completion_event_records_completion_mode(
     assert len(completed) == 1
     payload = completed[0]["payload"]
     assert payload["completion_mode"] == "READY_FOR_REVIEW"
-    assert payload["skipped_stages"] == 0
-    assert payload["completed_stages"] == 4
+    # Remediation is validly skipped because review reported no blocker.
+    assert payload["skipped_stages"] == 1
+    assert payload["completed_stages"] == 5
 
     # No merge or deploy status is claimed anywhere.
     assert "merge_status" not in payload
@@ -354,6 +363,7 @@ def test_agent_profile_and_executor_remain_distinct_concepts(
             "qa-reviewer",
             "security-reviewer",
             "ux-reviewer",
+            "verifier",
             "documentation-writer",
         }
         # Executor identity is a separate dimension from the agent role.

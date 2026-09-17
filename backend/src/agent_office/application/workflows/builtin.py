@@ -34,6 +34,7 @@ BUG_FIX_KEY = "bug-fix"
 DEFAULT_WORKFLOW_KEY = ENTERPRISE_ENGINEERING_KEY
 
 _READ_ONLY = AgentAccessMode.READ_ONLY
+_BOUNDED_WRITE = AgentAccessMode.BOUNDED_WRITE
 _WRITE = AgentAccessMode.WRITE
 
 
@@ -45,7 +46,56 @@ def workflow_definition_id_for_key(key: str) -> WorkflowDefinitionId:
     return WorkflowDefinitionId(uuid5(NAMESPACE_URL, f"{BUILT_IN_WORKFLOW_NAMESPACE}:{normalized}"))
 
 
+def _review_loop_stages() -> tuple[StageDefinition, StageDefinition]:
+    """Return the bounded review/remediation pair shared by built-in workflows.
+
+    Remediation is optional work: it only becomes eligible when a review reports
+    a blocking outcome. When review is clear it is validly skipped with a durable
+    reason rather than being silently ignored.
+    """
+
+    review = StageDefinition(
+        key=StageKey.REVIEW,
+        name="Review",
+        order_hint=2,
+        assignments=(
+            AgentAssignment(profile_key="qa-reviewer", access_mode=_READ_ONLY),
+            AgentAssignment(profile_key="security-reviewer", access_mode=_READ_ONLY),
+        ),
+        depends_on=(StageKey.IMPLEMENTATION,),
+    )
+
+    remediation = StageDefinition(
+        key=StageKey.REMEDIATION,
+        name="Remediation",
+        order_hint=3,
+        required=False,
+        assignments=(AgentAssignment(profile_key="backend-developer", access_mode=_WRITE),),
+        depends_on=(StageKey.REVIEW,),
+    )
+
+    return review, remediation
+
+
+def _verification_stage() -> StageDefinition:
+    """Return the Phase 3 verification stage.
+
+    This stage proves verification orchestration only. It does not execute
+    repository commands, create Evidence, or claim that tests passed.
+    """
+
+    return StageDefinition(
+        key=StageKey.VERIFICATION,
+        name="Verification",
+        order_hint=4,
+        assignments=(AgentAssignment(profile_key="verifier", access_mode=_READ_ONLY),),
+        depends_on=(StageKey.REMEDIATION,),
+    )
+
+
 def _enterprise_engineering_graph() -> WorkflowGraph:
+    review, remediation = _review_loop_stages()
+
     return WorkflowGraph(
         stages=(
             StageDefinition(
@@ -72,33 +122,25 @@ def _enterprise_engineering_graph() -> WorkflowGraph:
                 ),
                 depends_on=(StageKey.DISCOVERY,),
             ),
-            StageDefinition(
-                key=StageKey.REVIEW,
-                name="Review",
-                order_hint=2,
-                assignments=(
-                    AgentAssignment(profile_key="qa-reviewer", access_mode=_READ_ONLY),
-                    AgentAssignment(profile_key="security-reviewer", access_mode=_READ_ONLY),
-                    AgentAssignment(
-                        profile_key="ux-reviewer",
-                        access_mode=_READ_ONLY,
-                        required=False,
-                    ),
-                ),
-                depends_on=(StageKey.IMPLEMENTATION,),
-            ),
+            review,
+            remediation,
+            _verification_stage(),
             StageDefinition(
                 key=StageKey.DOCUMENTATION,
                 name="Documentation",
-                order_hint=3,
-                assignments=(AgentAssignment(profile_key="documentation-writer"),),
-                depends_on=(StageKey.REVIEW,),
+                order_hint=5,
+                assignments=(
+                    AgentAssignment(profile_key="documentation-writer", access_mode=_BOUNDED_WRITE),
+                ),
+                depends_on=(StageKey.VERIFICATION,),
             ),
         )
     )
 
 
 def _bug_fix_graph() -> WorkflowGraph:
+    review, remediation = _review_loop_stages()
+
     return WorkflowGraph(
         stages=(
             StageDefinition(
@@ -121,21 +163,19 @@ def _bug_fix_graph() -> WorkflowGraph:
                 ),
                 depends_on=(StageKey.DISCOVERY,),
             ),
-            StageDefinition(
-                key=StageKey.REVIEW,
-                name="Review",
-                order_hint=2,
-                assignments=(AgentAssignment(profile_key="qa-reviewer", access_mode=_READ_ONLY),),
-                depends_on=(StageKey.IMPLEMENTATION,),
-            ),
+            review,
+            remediation,
+            _verification_stage(),
             StageDefinition(
                 key=StageKey.DOCUMENTATION,
                 name="Documentation",
-                order_hint=3,
+                order_hint=5,
                 required=False,
                 condition=StageCondition.IF_UI_CHANGED,
-                assignments=(AgentAssignment(profile_key="documentation-writer"),),
-                depends_on=(StageKey.REVIEW,),
+                assignments=(
+                    AgentAssignment(profile_key="documentation-writer", access_mode=_BOUNDED_WRITE),
+                ),
+                depends_on=(StageKey.VERIFICATION,),
             ),
         )
     )

@@ -13,7 +13,9 @@ from agent_office.domain.agent_run import (
     AgentRun,
     AgentRunReasonCode,
     AgentRunStatus,
+    FailureRetryability,
     agent_run_transition_allowed,
+    classify_failure_retryability,
     ensure_agent_run_transition_allowed,
     is_terminal_agent_run_status,
 )
@@ -73,6 +75,12 @@ from agent_office.domain.project import (
     RepositoryIdentity,
     ensure_project_allows_new_run,
 )
+from agent_office.domain.review import (
+    REVIEW_VERDICT_METADATA_KEY,
+    ReviewVerdict,
+    review_verdict_from_metadata,
+    review_verdict_metadata,
+)
 from agent_office.domain.run import (
     TERMINAL_RUN_STATUSES,
     Run,
@@ -119,6 +127,12 @@ from agent_office.domain.workflow_validation import (
 )
 
 __all__ = [
+    "review_verdict_metadata",
+    "review_verdict_from_metadata",
+    "classify_failure_retryability",
+    "ReviewVerdict",
+    "REVIEW_VERDICT_METADATA_KEY",
+    "FailureRetryability",
     "AGENT_RUN_TERMINAL_STATUSES",
     "AgentAccessMode",
     "AgentAssignment",

@@ -22,6 +22,7 @@ from agent_office.domain import (
     ExecutorId,
     ExecutorSessionRef,
     ProjectId,
+    ReviewVerdict,
     RunId,
     SafeMetadata,
     StageKey,
@@ -50,8 +51,14 @@ _COLUMNS = """
     started_at,
     completed_at,
     created_at,
-    updated_at
+    updated_at,
+    retry_of_agent_run_id,
+    remediation_cycle,
+    review_verdict,
+    failure_retryable
 """
+
+_COLUMN_COUNT = 25
 
 
 class SQLiteAgentRunRepository:
@@ -66,7 +73,7 @@ class SQLiteAgentRunRepository:
                 connection.execute(
                     f"""
                     INSERT INTO agent_runs ({_COLUMNS})
-                    VALUES ({", ".join("?" * 21)})
+                    VALUES ({", ".join("?" * _COLUMN_COUNT)})
                     """,
                     self._parameters(agent_run),
                 )
@@ -87,6 +94,8 @@ class SQLiteAgentRunRepository:
                     result_summary = ?,
                     reason_code = ?,
                     reason_summary = ?,
+                    review_verdict = ?,
+                    failure_retryable = ?,
                     started_at = ?,
                     completed_at = ?,
                     updated_at = ?
@@ -100,6 +109,12 @@ class SQLiteAgentRunRepository:
                     agent_run.result_summary,
                     None if agent_run.reason_code is None else agent_run.reason_code.value,
                     agent_run.reason_summary,
+                    None if agent_run.review_verdict is None else agent_run.review_verdict.value,
+                    (
+                        None
+                        if agent_run.failure_retryable is None
+                        else int(agent_run.failure_retryable)
+                    ),
                     _optional_datetime(agent_run.started_at),
                     _optional_datetime(agent_run.completed_at),
                     _serialize_datetime(agent_run.updated_at),
@@ -172,12 +187,22 @@ class SQLiteAgentRunRepository:
             _optional_datetime(agent_run.completed_at),
             _serialize_datetime(agent_run.created_at),
             _serialize_datetime(agent_run.updated_at),
+            (
+                None
+                if agent_run.retry_of_agent_run_id is None
+                else str(agent_run.retry_of_agent_run_id)
+            ),
+            agent_run.remediation_cycle,
+            None if agent_run.review_verdict is None else agent_run.review_verdict.value,
+            (None if agent_run.failure_retryable is None else int(agent_run.failure_retryable)),
         )
 
 
 def _hydrate(row: sqlite3.Row) -> AgentRun:
-    raw_reason_code = row["reason_code"]
+    raw_failure_code = row["reason_code"]
     raw_result_outcome = row["result_outcome"]
+    raw_retry_of = row["retry_of_agent_run_id"]
+    raw_verdict = row["review_verdict"]
 
     return AgentRun(
         id=AgentRunId.parse(row["id"]),
@@ -197,12 +222,18 @@ def _hydrate(row: sqlite3.Row) -> AgentRun:
             None if raw_result_outcome is None else ExecutionOutcome(raw_result_outcome)
         ),
         result_summary=row["result_summary"],
-        reason_code=None if raw_reason_code is None else AgentRunReasonCode(raw_reason_code),
+        reason_code=None if raw_failure_code is None else AgentRunReasonCode(raw_failure_code),
         reason_summary=row["reason_summary"],
         started_at=_optional_parse_datetime(row["started_at"]),
         completed_at=_optional_parse_datetime(row["completed_at"]),
         created_at=_parse_datetime(row["created_at"]),
         updated_at=_parse_datetime(row["updated_at"]),
+        retry_of_agent_run_id=None if raw_retry_of is None else AgentRunId.parse(raw_retry_of),
+        remediation_cycle=int(row["remediation_cycle"]),
+        review_verdict=None if raw_verdict is None else ReviewVerdict(raw_verdict),
+        failure_retryable=(
+            None if row["failure_retryable"] is None else bool(row["failure_retryable"])
+        ),
     )
 
 

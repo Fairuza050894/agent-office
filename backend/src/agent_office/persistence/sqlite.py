@@ -12,7 +12,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 BUSY_TIMEOUT_MS = 5000
-LATEST_SCHEMA_VERSION: int = 4
+LATEST_SCHEMA_VERSION: int = 5
 
 SCHEMA_VERSION_KEY = "schema_version"
 
@@ -334,11 +334,65 @@ def _migration_v4(connection: sqlite3.Connection) -> None:
     )
 
 
+def _migration_v5(connection: sqlite3.Connection) -> None:
+    """Add Phase 3B retry, remediation, and review-verdict lifecycle columns.
+
+    Every column is additive with a non-destructive default, so Phase 2 and
+    Phase 3A rows remain valid and readable without rewriting them.
+    """
+
+    connection.execute(
+        """
+        ALTER TABLE runs
+        ADD COLUMN remediation_cycles_used INTEGER NOT NULL DEFAULT 0
+        """
+    )
+
+    connection.execute(
+        """
+        ALTER TABLE agent_runs
+        ADD COLUMN retry_of_agent_run_id TEXT REFERENCES agent_runs(id)
+        """
+    )
+    connection.execute(
+        """
+        ALTER TABLE agent_runs
+        ADD COLUMN remediation_cycle INTEGER NOT NULL DEFAULT 0
+        """
+    )
+    connection.execute(
+        """
+        ALTER TABLE agent_runs
+        ADD COLUMN review_verdict TEXT
+        """
+    )
+    connection.execute(
+        """
+        ALTER TABLE agent_runs
+        ADD COLUMN failure_retryable INTEGER
+        """
+    )
+
+    connection.execute(
+        """
+        CREATE INDEX agent_runs_retry_idx
+        ON agent_runs (retry_of_agent_run_id)
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX agent_runs_attempt_idx
+        ON agent_runs (run_id, stage_key, agent_profile_key, attempt)
+        """
+    )
+
+
 MIGRATIONS: dict[int, Callable[[sqlite3.Connection], None]] = {
     1: _migration_v1,
     2: _migration_v2,
     3: _migration_v3,
     4: _migration_v4,
+    5: _migration_v5,
 }
 
 
