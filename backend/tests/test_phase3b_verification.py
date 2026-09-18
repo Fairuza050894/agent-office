@@ -112,17 +112,27 @@ def test_verification_success_permits_completion_only_when_all_gates_pass(
     }
 
 
-def test_verification_makes_no_test_or_evidence_claim(
+def test_verification_makes_no_test_claim(
     harness_factory: HarnessFactory,
 ) -> None:
-    """No evidence or test-result claim is fabricated anywhere."""
+    """No test-result claim is fabricated anywhere.
+
+    A verification stage that ran no command records no test result. The only
+    evidence Phase 4B records here is the Git-derived change summary taken at the
+    review handoff, which asserts nothing about testing.
+    """
 
     harness = harness_factory()
     run, _ = harness.start_workflow("bug-fix", changed_areas=[])
 
-    event_types = [event["event_type"] for event in harness.events(run["id"])]
-    assert not [event for event in event_types if event.startswith("evidence.")]
+    events = harness.events(run["id"], limit=200)
+    event_types = [event["event_type"] for event in events]
+
     assert not [event for event in event_types if event.startswith("test.")]
+    assert not [event for event in event_types if event.startswith("command.")]
+
+    evidence_events = [event for event in events if event["event_type"] == "evidence.created"]
+    assert {event["payload"]["kind"] for event in evidence_events} == {"DIFF_SUMMARY"}
 
     body = harness.client.get(f"/api/runs/{run['id']}/agents").text
     for forbidden in ("tests_passed", "evidence_id", "exit_status", "command"):

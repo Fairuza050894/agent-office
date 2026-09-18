@@ -67,8 +67,10 @@ def _seed_at_version(path: Path, version: int) -> None:
         connection.close()
 
 
-def test_latest_schema_version_is_seven() -> None:
-    assert LATEST_SCHEMA_VERSION == 7
+def test_latest_schema_version_is_at_least_seven() -> None:
+    """Phase 4A introduced version 7; later phases only add to it."""
+
+    assert LATEST_SCHEMA_VERSION >= 7
 
 
 def test_empty_database_migrates_to_the_latest_version(tmp_path: Path) -> None:
@@ -101,7 +103,8 @@ def test_phase_three_c_database_migrates_forward_in_place(tmp_path: Path) -> Non
     # Purely additive: nothing from v1-v6 disappeared or was rewritten.
     assert tables_before <= tables_after
     assert agent_run_columns_before <= agent_run_columns_after
-    assert tables_after - tables_before == PHASE_4A_TABLES
+    # Purely additive: the Phase 4A tables exist, and later phases may add more.
+    assert PHASE_4A_TABLES <= (tables_after - tables_before)
     assert agent_run_columns_after - agent_run_columns_before == {"workspace_id"}
 
 

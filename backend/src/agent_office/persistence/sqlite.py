@@ -12,7 +12,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 BUSY_TIMEOUT_MS = 5000
-LATEST_SCHEMA_VERSION: int = 7
+LATEST_SCHEMA_VERSION: int = 8
 
 SCHEMA_VERSION_KEY = "schema_version"
 
@@ -500,6 +500,127 @@ def _migration_v7(connection: sqlite3.Connection) -> None:
     )
 
 
+def _migration_v8(connection: sqlite3.Connection) -> None:
+    """Create Phase 4B Finding and Evidence persistence.
+
+    Additive only: no object introduced by v1-v7 is touched, so every earlier row
+    stays valid and readable.
+
+    Two durability rules are enforced by the schema rather than by convention:
+
+    * ``findings.dedupe_key`` is UNIQUE, so duplicate reviewer delivery cannot
+      create a second Finding for the same observation;
+    * Findings cannot be deleted and Evidence cannot be updated or deleted, so
+      review history and engineering proof are append-only.
+    """
+
+    connection.execute(
+        """
+        CREATE TABLE findings (
+            id TEXT PRIMARY KEY,
+            project_id TEXT NOT NULL REFERENCES projects(id),
+            run_id TEXT NOT NULL REFERENCES runs(id),
+            reviewer_agent_run_id TEXT NOT NULL REFERENCES agent_runs(id),
+            category TEXT NOT NULL,
+            severity TEXT NOT NULL,
+            title TEXT NOT NULL,
+            description TEXT NOT NULL,
+            status TEXT NOT NULL,
+            identity_key TEXT NOT NULL,
+            dedupe_key TEXT NOT NULL UNIQUE,
+            location_json TEXT,
+            remediation_owner_agent_run_id TEXT REFERENCES agent_runs(id),
+            resolution_type TEXT,
+            resolver_agent_run_id TEXT REFERENCES agent_runs(id),
+            resolution_summary TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            resolved_at TEXT
+        )
+        """
+    )
+
+    connection.execute(
+        """
+        CREATE INDEX findings_run_idx
+        ON findings (run_id, created_at)
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX findings_run_status_idx
+        ON findings (run_id, severity, status)
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX findings_identity_idx
+        ON findings (run_id, identity_key)
+        """
+    )
+
+    connection.execute(
+        """
+        CREATE TRIGGER findings_no_delete
+        BEFORE DELETE ON findings
+        BEGIN
+            SELECT RAISE(ABORT, 'findings are never deleted');
+        END
+        """
+    )
+
+    connection.execute(
+        """
+        CREATE TABLE evidence (
+            id TEXT PRIMARY KEY,
+            project_id TEXT NOT NULL REFERENCES projects(id),
+            task_id TEXT NOT NULL REFERENCES tasks(id),
+            run_id TEXT NOT NULL REFERENCES runs(id),
+            agent_run_id TEXT REFERENCES agent_runs(id),
+            kind TEXT NOT NULL,
+            status TEXT NOT NULL,
+            summary TEXT NOT NULL,
+            artifact_ref TEXT,
+            metadata_json TEXT NOT NULL,
+            schema_version INTEGER NOT NULL,
+            created_at TEXT NOT NULL
+        )
+        """
+    )
+
+    connection.execute(
+        """
+        CREATE INDEX evidence_run_idx
+        ON evidence (run_id, created_at)
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX evidence_run_kind_idx
+        ON evidence (run_id, kind)
+        """
+    )
+
+    connection.execute(
+        """
+        CREATE TRIGGER evidence_append_only_update
+        BEFORE UPDATE ON evidence
+        BEGIN
+            SELECT RAISE(ABORT, 'evidence is append-only');
+        END
+        """
+    )
+    connection.execute(
+        """
+        CREATE TRIGGER evidence_append_only_delete
+        BEFORE DELETE ON evidence
+        BEGIN
+            SELECT RAISE(ABORT, 'evidence is append-only');
+        END
+        """
+    )
+
+
 MIGRATIONS: dict[int, Callable[[sqlite3.Connection], None]] = {
     1: _migration_v1,
     2: _migration_v2,
@@ -508,6 +629,7 @@ MIGRATIONS: dict[int, Callable[[sqlite3.Connection], None]] = {
     5: _migration_v5,
     6: _migration_v6,
     7: _migration_v7,
+    8: _migration_v8,
 }
 
 

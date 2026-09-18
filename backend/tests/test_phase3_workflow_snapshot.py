@@ -13,6 +13,8 @@ from uuid import uuid4
 
 from conftest import Harness, HarnessFactory
 
+from agent_office.domain import WORKFLOW_SCHEMA_VERSION
+
 
 def _stages(*, discovery_name: str, extra_review: bool) -> list[dict[str, Any]]:
     stages: list[dict[str, Any]] = [
@@ -79,7 +81,8 @@ def test_workflow_definition_lifecycle_is_queryable(harness_factory: HarnessFact
     assert validated.status_code == 200
     assert validated.json() == {
         "valid": True,
-        "schema_version": 1,
+        # The graph schema version a new definition is created at.
+        "schema_version": WORKFLOW_SCHEMA_VERSION,
         "stage_count": 1,
         "stage_keys": ["DISCOVERY"],
         "issues": [],

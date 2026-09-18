@@ -88,13 +88,26 @@ DOCUMENTED_EVENTS: dict[EventType, str] = {
     EventType.WORKSPACE_RELEASED: "§38",
     EventType.WORKSPACE_FAILED: "§38",
     EventType.WORKSPACE_ORPHANED: "§38",
+    # Review events (EVENT_CONTRACT §47-§49), introduced by Phase 4B.
+    EventType.REVIEW_STARTED: "§47",
+    EventType.REVIEW_FINDING_CREATED: "§48",
+    EventType.REVIEW_FINDING_ACKNOWLEDGED: "§47",
+    EventType.REVIEW_FINDING_REMEDIATING: "§47",
+    EventType.REVIEW_FINDING_RESOLVED: "§49",
+    EventType.REVIEW_FINDING_ACCEPTED_RISK: "§47",
+    EventType.REVIEW_COMPLETED: "§47",
+    # Verification check events (EVENT_CONTRACT §51-§52).
+    EventType.VERIFICATION_CHECK_STARTED: "§51",
+    EventType.VERIFICATION_CHECK_COMPLETED: "§52",
+    # Evidence event (EVENT_CONTRACT §54).
+    EventType.EVIDENCE_CREATED: "§54",
 }
 
-#: Domains that assert engineering evidence. These stay unimplemented until
-#: real repository mutation, review, and command execution exist.
-EVIDENCE_DOMAIN_PREFIXES: tuple[str, ...] = (
-    "review.",
-    "evidence.",
+#: Domains still unimplemented. A Finding is a review observation and Evidence
+#: is a controlled verification fact, so neither is in this list: both are
+#: implemented in Phase 4B. Artifact storage, raw command events, and a
+#: dedicated test-runner event surface are not.
+UNIMPLEMENTED_DOMAIN_PREFIXES: tuple[str, ...] = (
     "artifact.",
     "command.",
     "test.",
@@ -124,11 +137,11 @@ def test_no_event_name_is_provider_specific() -> None:
         assert not any(name in event_type.value for name in providers), event_type
 
 
-def test_no_evidence_domain_event_is_implemented() -> None:
-    """Orchestration truth may not assert engineering evidence."""
+def test_unimplemented_domains_have_no_event() -> None:
+    """A domain with no capability behind it must not have an event type."""
 
     for event_type in EventType:
-        assert not event_type.value.startswith(EVIDENCE_DOMAIN_PREFIXES), event_type
+        assert not event_type.value.startswith(UNIMPLEMENTED_DOMAIN_PREFIXES), event_type
 
 
 def test_reconciliation_is_an_executor_session_fact() -> None:
@@ -193,6 +206,8 @@ def test_implemented_domains_are_exactly_these() -> None:
         "remediation",
         "verification",
         "workspace",
+        "review",
+        "evidence",
     }
 
 

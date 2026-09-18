@@ -23,6 +23,8 @@ from agent_office.domain import (
     AuditRecord,
     AuditRecordId,
     AuditTargetType,
+    Finding,
+    ProjectId,
     Run,
     RunId,
     SafeMetadata,
@@ -48,6 +50,40 @@ class AuditService:
         self._repository = repository
         self._clock = clock
         self._audit_record_id_factory = audit_record_id_factory
+
+    def record(
+        self,
+        *,
+        project_id: ProjectId,
+        run_id: RunId | None,
+        action: AuditAction,
+        actor_type: AuditActorType,
+        target_type: AuditTargetType,
+        target_id: str,
+        safe_metadata: SafeMetadata = (),
+    ) -> AuditRecord:
+        """Append one AuditRecord.
+
+        The single write path. Every audited action goes through here, so the
+        attribution and ownership rules are applied in exactly one place.
+        """
+
+        now = utc_now(self._clock)
+
+        record = AuditRecord(
+            id=self._audit_record_id_factory(),
+            project_id=project_id,
+            run_id=run_id,
+            actor_type=actor_type,
+            action=action,
+            target_type=target_type,
+            target_id=target_id,
+            occurred_at=now,
+            safe_metadata=safe_metadata,
+        )
+
+        self._repository.append(record)
+        return record
 
     def record_run_intervention(
         self,
@@ -121,6 +157,42 @@ class AuditService:
             target_id=str(workspace.id) if target_id is None else target_id,
             occurred_at=now,
             safe_metadata=metadata + safe_metadata,
+        )
+
+        self._repository.append(record)
+        return record
+
+    def record_finding_intervention(
+        self,
+        finding: Finding,
+        action: AuditAction,
+        *,
+        actor_type: AuditActorType = AuditActorType.USER,
+        target_type: AuditTargetType = AuditTargetType.FINDING,
+        safe_metadata: SafeMetadata = (),
+    ) -> AuditRecord:
+        """Record one operator decision about a Finding.
+
+        This is the attribution that DOMAIN_MODEL §29.5 requires for accepted
+        risk: the Finding itself records the reason, and this records who acted.
+        """
+
+        now = utc_now(self._clock)
+
+        record = AuditRecord(
+            id=self._audit_record_id_factory(),
+            project_id=finding.project_id,
+            run_id=finding.run_id,
+            actor_type=actor_type,
+            action=action,
+            target_type=target_type,
+            target_id=str(finding.id),
+            occurred_at=now,
+            safe_metadata=(
+                ("severity", finding.severity.value),
+                ("status", finding.status.value),
+            )
+            + safe_metadata,
         )
 
         self._repository.append(record)

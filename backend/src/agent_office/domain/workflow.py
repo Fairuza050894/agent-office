@@ -20,10 +20,14 @@ from agent_office.domain.identifiers import (
     WorkflowSnapshotId,
 )
 from agent_office.domain.timestamps import to_utc
+from agent_office.domain.verification import VerificationCheckDefinition
 
-WORKFLOW_SCHEMA_VERSION = 1
+# Version 2 adds declared verification checks. Version 1 documents remain
+# readable and simply declare no Phase-4 verification obligation, so a
+# historical Run whose snapshot predates this is never retroactively invalidated.
+WORKFLOW_SCHEMA_VERSION = 2
 
-SUPPORTED_WORKFLOW_SCHEMA_VERSIONS: frozenset[int] = frozenset({WORKFLOW_SCHEMA_VERSION})
+SUPPORTED_WORKFLOW_SCHEMA_VERSIONS: frozenset[int] = frozenset({1, WORKFLOW_SCHEMA_VERSION})
 
 
 class WorkflowDefinitionStatus(StrEnum):
@@ -179,6 +183,7 @@ class WorkflowGraph:
 
     stages: tuple[StageDefinition, ...]
     schema_version: int = WORKFLOW_SCHEMA_VERSION
+    verification_checks: tuple[VerificationCheckDefinition, ...] = ()
 
     def __post_init__(self) -> None:
         if self.schema_version not in SUPPORTED_WORKFLOW_SCHEMA_VERSIONS:
@@ -204,6 +209,11 @@ class WorkflowGraph:
                     )
 
         self._ensure_acyclic()
+
+        check_keys = [check.key for check in self.verification_checks]
+
+        if len(set(check_keys)) != len(check_keys):
+            raise DomainInvariantError("Workflow verification check keys must be unique")
 
     def _ensure_acyclic(self) -> None:
         """Reject cyclic dependency graphs deterministically."""
@@ -243,6 +253,7 @@ class WorkflowGraph:
 
         return {
             "schema_version": self.schema_version,
+            "verification_checks": [check.to_document() for check in self.verification_checks],
             "stages": [
                 {
                     "key": stage.key.value,
@@ -287,7 +298,20 @@ class WorkflowGraph:
         for raw_stage in raw_stages:
             stages.append(_stage_from_document(raw_stage))
 
-        return cls(stages=tuple(stages), schema_version=raw_schema_version)
+        raw_checks = document.get("verification_checks", [])
+
+        if not isinstance(raw_checks, list):
+            raise DomainInvariantError("Workflow document verification_checks must be a list")
+
+        checks = tuple(
+            VerificationCheckDefinition.from_document(raw_check) for raw_check in raw_checks
+        )
+
+        return cls(
+            stages=tuple(stages),
+            schema_version=raw_schema_version,
+            verification_checks=checks,
+        )
 
 
 def _stage_from_document(raw_stage: object) -> StageDefinition:

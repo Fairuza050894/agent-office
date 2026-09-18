@@ -135,10 +135,12 @@ def test_audit_table_is_append_only_by_schema(tmp_path: Path) -> None:
             ).fetchall()
         }
 
-    assert triggers == {
+    # Later phases add their own append-only triggers, so the audit triggers are
+    # asserted as a subset of everything the schema enforces.
+    assert {
         "audit_records_append_only_update",
         "audit_records_append_only_delete",
-    }
+    } <= triggers
 
 
 def test_migration_is_idempotent(tmp_path: Path) -> None:

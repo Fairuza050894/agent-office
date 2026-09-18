@@ -40,7 +40,11 @@ from agent_office.infrastructure.executors import (
     ReferenceScenario,
 )
 
-EVIDENCE_DOMAIN_PREFIXES = ("review.finding", "evidence.", "test.", "command.", "artifact.")
+#: Events that assert an executed test, command, or stored artifact. A review
+#: observation is not Evidence, and neither is the Git-derived change summary
+#: captured at the review handoff, so `evidence.created` is checked by kind
+#: rather than by prefix.
+EVIDENCE_DOMAIN_PREFIXES = ("test.", "command.", "artifact.")
 
 
 # ----------------------------------------------------------------------
@@ -93,12 +97,24 @@ def _started_run(
 
 
 def _no_evidence_is_claimed(harness: Harness, run_id: str) -> None:
-    """Phase 3 must never assert engineering evidence."""
+    """No test, command, or artifact fact may be asserted by orchestration.
+
+    Phase 4B records one kind of Evidence legitimately: the Git-derived change
+    summary captured at the review handoff (WORKTREE_POLICY §112). That is a
+    repository fact, not a claim that anything was tested, so it is the only
+    evidence this assertion tolerates.
+    """
 
     types = _event_types(harness, run_id)
 
     for event_type in types:
         assert not event_type.startswith(EVIDENCE_DOMAIN_PREFIXES), event_type
+
+    for event in harness.events(run_id, limit=200):
+        if not event["event_type"].startswith("evidence."):
+            continue
+
+        assert event["payload"]["kind"] == "DIFF_SUMMARY", event["payload"]
 
     blob = str(
         {

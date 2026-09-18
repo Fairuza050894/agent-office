@@ -21,6 +21,10 @@ from agent_office.application.events.errors import EventScopeError
 from agent_office.application.events.ports import EventProcessingResult
 from agent_office.application.events.service import EventService
 from agent_office.application.projects.service import ProjectService
+from agent_office.application.review import (
+    FindingService,
+    RemediationOwnershipError,
+)
 from agent_office.application.runs.errors import (
     ProjectArchivedError,
     RunNotResumableError,
@@ -30,6 +34,11 @@ from agent_office.application.runs.errors import (
 from agent_office.application.runs.service import RunService
 from agent_office.application.runs.stages import RunStageService
 from agent_office.application.tasks.service import TaskService
+from agent_office.application.verification import (
+    CommandRejectedError,
+    VerificationService,
+    VerificationWorkspaceError,
+)
 from agent_office.application.workflows.service import WorkflowService
 from agent_office.application.workspaces import (
     WRITE_ACCESS_MODES,
@@ -38,6 +47,7 @@ from agent_office.application.workspaces import (
     WorkspaceService,
 )
 from agent_office.domain import (
+    WORKTREE_KINDS,
     AgentAccessMode,
     AgentRun,
     AgentRunReasonCode,
@@ -59,9 +69,11 @@ from agent_office.domain import (
     ExecutorId,
     ExecutorSessionRef,
     FailureRetryability,
+    Finding,
     FrozenAgentAssignment,
     ProjectStatus,
     ReconciliationResult,
+    ReportedFinding,
     ReviewVerdict,
     Run,
     RunId,
@@ -77,11 +89,14 @@ from agent_office.domain import (
     StartExecutionRequest,
     WorkflowDefinitionStatus,
     WorkflowSnapshot,
+    Workspace,
+    WorkspaceStatus,
     classify_failure_retryability,
     evaluate_stage_condition,
     is_terminal_agent_run_status,
     is_terminal_run_stage_status,
     is_terminal_run_status,
+    reported_findings_from_metadata,
     review_verdict_from_metadata,
     run_transition_allowed,
     utc_now,
@@ -168,6 +183,12 @@ NON_AUTONOMOUS_BLOCK_REASONS: frozenset[RunReasonCode] = frozenset(
         # machine never returns a BLOCKED assignment to a pre-start state, so
         # resolving it requires an explicit operator decision.
         RunReasonCode.WORKSPACE_UNAVAILABLE,
+        # A failed or refused verification check and an open blocker Finding are
+        # both human decision points. Re-running a bounded command on every
+        # unrelated wake would repeat work without changing the outcome, so only
+        # an explicit resume re-enters them.
+        RunReasonCode.VERIFICATION_EVIDENCE_MISSING,
+        RunReasonCode.OPEN_BLOCKER_FINDING,
     }
 )
 
@@ -274,6 +295,8 @@ class RunOrchestrator:
         executor_registry: ExecutorRegistry,
         audit_service: AuditService,
         workspace_service: WorkspaceService | None = None,
+        finding_service: FindingService | None = None,
+        verification_service: VerificationService | None = None,
         clock: Clock = utc_now,
     ) -> None:
         self._runs = run_service
@@ -286,6 +309,8 @@ class RunOrchestrator:
         self._executors = executor_registry
         self._audit = audit_service
         self._workspaces = workspace_service
+        self._findings = finding_service
+        self._verification = verification_service
         self._clock = clock
 
     # ------------------------------------------------------------------
@@ -466,6 +491,16 @@ class RunOrchestrator:
                 return run
 
             if all(is_terminal_run_stage_status(stage.status) for stage in stages):
+                # Every stage is terminal. Before completion is considered, the
+                # Run must satisfy the verification obligations its frozen
+                # snapshot declares.
+                run = await self._run_required_verification(run)
+
+                stages = self._stages.list_for_run(run.id)
+
+                if run.status is RunStatus.BLOCKED or is_terminal_run_status(run.status):
+                    return run
+
                 return self._finalize(run, stages)
 
             signature: tuple[object, ...] = (
@@ -489,6 +524,52 @@ class RunOrchestrator:
             RunReasonCode.ORCHESTRATION_STEP_LIMIT,
             "Orchestration stopped after the bounded step limit was reached.",
         )
+
+    async def _run_required_verification(self, run: Run) -> Run:
+        """Execute the verification checks the Run's snapshot declares.
+
+        Runs at most once per advance: the check is skipped when every required
+        check already has successful Evidence, so a later explicit resume is what
+        re-runs a failing check.
+
+        A check that cannot run blocks the Run. Verification never falls back to
+        the Project's main working tree, and a refused command is a policy
+        decision rather than a test failure.
+        """
+
+        if self._verification is None:
+            return run
+
+        required = self._verification.required_checks(run.id)
+
+        if not required:
+            return run
+
+        latest = self._verification.latest_check_evidence(run.id)
+
+        if all(
+            (evidence := latest.get(check.key)) is not None
+            and evidence.is_successful_command_evidence
+            for check in required
+        ):
+            return run
+
+        try:
+            await self._verification.run_required_checks(run, agent_run=None)
+        except VerificationWorkspaceError as exc:
+            return self._block(
+                run,
+                RunReasonCode.VERIFICATION_EVIDENCE_MISSING,
+                str(exc),
+            )
+        except CommandRejectedError as exc:
+            return self._block(
+                run,
+                RunReasonCode.VERIFICATION_EVIDENCE_MISSING,
+                exc.summary,
+            )
+
+        return self._runs.get_run(run.id)
 
     async def _advance_once(self, run: Run, stages: tuple[RunStageState, ...]) -> Run:
         ready = [stage for stage in stages if stage.status is RunStageStatus.READY]
@@ -679,6 +760,17 @@ class RunOrchestrator:
             source=EventSource.ORCHESTRATOR,
             payload=(("stage_key", stage.stage_key.value),),
         )
+
+        if stage.stage_key is StageKey.REVIEW:
+            self._events.emit(
+                run,
+                EventType.REVIEW_STARTED,
+                source=EventSource.ORCHESTRATOR,
+                payload=(
+                    ("stage_key", stage.stage_key.value),
+                    ("reviewer_count", len(assignments)),
+                ),
+            )
 
         if stage.stage_key is StageKey.REMEDIATION:
             self._events.emit(
@@ -1182,7 +1274,7 @@ class RunOrchestrator:
         """
 
         if agent_run.access_mode not in WRITE_ACCESS_MODES:
-            return agent_run
+            return self._prepare_review_view(run, agent_run)
 
         if self._workspaces is None:
             return self._block_agent_run(
@@ -1221,6 +1313,114 @@ class RunOrchestrator:
             )
 
         return self._agent_runs.attach_workspace(agent_run, workspace.id)
+
+    def _prepare_review_view(self, run: Run, agent_run: AgentRun) -> AgentRun:
+        """Hand a settled implementation worktree to a read-only assignment.
+
+        WORKTREE_POLICY §112/§113: once the implementation is terminal, the
+        candidate revision is captured and the reviewer receives a read-only
+        view. A reader creates no worktree and owns nothing, so a review can
+        never alter the revision it is judging.
+
+        A read-only assignment that runs before any write exists — Discovery, for
+        example — still needs no workspace at all, which keeps Phase 4A behaviour
+        for everything that is not a review handoff.
+        """
+
+        if self._workspaces is None or agent_run.workspace_id is not None:
+            return agent_run
+
+        candidate = self._review_candidate(run)
+
+        if candidate is None:
+            return agent_run
+
+        try:
+            view = self._workspaces.allocate_read_view(run, agent_run, candidate.id)
+        except (WorkspaceAllocationError, WorkspaceOwnershipError) as exc:
+            # A read view is an aid, not a precondition: a reviewer that cannot
+            # observe a worktree is not started against the main tree either.
+            self._events.emit(
+                run,
+                EventType.WORKSPACE_FAILED,
+                source=EventSource.ORCHESTRATOR,
+                agent_run_id=agent_run.id,
+                payload=(
+                    ("stage_key", agent_run.stage_key.value),
+                    ("summary", str(exc)),
+                ),
+            )
+
+            return agent_run
+
+        self._capture_handoff_evidence(run, view, agent_run)
+
+        return self._agent_runs.attach_workspace(agent_run, view.id)
+
+    def _review_candidate(self, run: Run) -> Workspace | None:
+        """Return the candidate worktree a read-only assignment should observe.
+
+        Derived from durable state: the most recently allocated writable Git
+        worktree of the same Run that reached a base revision. The Project's main
+        working tree is never a candidate.
+        """
+
+        if self._workspaces is None:
+            return None
+
+        candidates = [
+            workspace
+            for workspace in self._workspaces.list_for_run(run.id)
+            if workspace.kind in WORKTREE_KINDS
+            and workspace.writable
+            and workspace.base_revision is not None
+            and workspace.status not in {WorkspaceStatus.RELEASED, WorkspaceStatus.FAILED}
+        ]
+
+        if not candidates:
+            return None
+
+        return max(candidates, key=lambda workspace: (workspace.created_at, str(workspace.id)))
+
+    def _capture_handoff_evidence(
+        self,
+        run: Run,
+        view: Workspace,
+        agent_run: AgentRun,
+    ) -> None:
+        """Record the candidate's change set before review begins.
+
+        The summary is derived from Git against the workspace, never from what an
+        executor reported it wrote (WORKTREE_POLICY §112, DOMAIN_MODEL §31).
+        """
+
+        if self._verification is None or self._workspaces is None:
+            return
+
+        try:
+            summary = self._workspaces.capture_changes(view.id)
+        except Exception:  # noqa: BLE001 - a missing summary must not block review
+            self._events.emit(
+                run,
+                EventType.WORKSPACE_FAILED,
+                source=EventSource.ORCHESTRATOR,
+                agent_run_id=agent_run.id,
+                payload=(
+                    ("stage_key", agent_run.stage_key.value),
+                    ("summary", "The review candidate could not be inspected."),
+                ),
+            )
+
+            return
+
+        self._verification.record_workspace_status_evidence(
+            run,
+            view,
+            files_changed=summary.files_changed,
+            base_revision=summary.base_revision,
+            current_revision=summary.current_revision,
+            agent_run=agent_run,
+        )
 
     def _emit_agent_run_transition(
         self,
@@ -1365,6 +1565,8 @@ class RunOrchestrator:
         if verdict is not None:
             payload = payload + (("review_verdict", verdict.value),)
 
+        self._record_review_findings(run, agent_run, result.safe_metadata)
+
         return self._emit_agent_run_transition(
             run,
             agent_run,
@@ -1372,6 +1574,29 @@ class RunOrchestrator:
             EventType.AGENT_COMPLETED,
             payload,
         )
+
+    def _record_review_findings(
+        self,
+        run: Run,
+        agent_run: AgentRun,
+        metadata: SafeMetadata,
+    ) -> tuple[Finding, ...]:
+        """Create canonical Findings from a completed reviewer's normalized report.
+
+        The application layer owns this, never the executor adapter: the adapter
+        only normalizes facts into bounded safe metadata. A reviewer that reports
+        a blocker is still COMPLETED, so this runs on the success path.
+        """
+
+        if self._findings is None or agent_run.stage_key is not StageKey.REVIEW:
+            return ()
+
+        reported: tuple[ReportedFinding, ...] = reported_findings_from_metadata(metadata)
+
+        if not reported:
+            return ()
+
+        return self._findings.record_review_findings(run, agent_run, reported)
 
     def _record_unresolved_cancellation(
         self,
@@ -1647,19 +1872,65 @@ class RunOrchestrator:
     ) -> Run:
         """Resolve a completed review fan-in into clear or remediation.
 
-        A reviewer that reported a blocker completed successfully; the verdict,
-        not the assignment status, decides whether remediation is required.
+        A reviewer that reported a blocker completed successfully; neither the
+        verdict nor the assignment status is a failure. A review pass also
+        resolves any earlier Finding it no longer reports, which is the only way
+        a Finding stops being open besides an attributable human decision.
         """
 
-        blocking = [
+        if self._findings is not None:
+            self._findings.reconcile_after_review(run, tuple(required_runs))
+
+        verdict_blocking = [
             agent_run
             for agent_run in required_runs
             if agent_run.review_verdict is ReviewVerdict.BLOCKER
         ]
 
-        if not blocking:
+        # The review fan-in resolved. The verdict, not this event, says whether
+        # anything must be remediated.
+        self._events.emit(
+            run,
+            EventType.REVIEW_COMPLETED,
+            source=EventSource.ORCHESTRATOR,
+            payload=(
+                ("stage_key", stage.stage_key.value),
+                ("reviewer_count", len(required_runs)),
+                ("blocking_count", len(verdict_blocking)),
+            ),
+        )
+
+        finding_blocking: tuple[Finding, ...] = ()
+
+        if self._findings is not None:
+            finding_blocking = self._findings.blocking_findings(run.id)
+
+        if not verdict_blocking and not finding_blocking:
             self._transition_stage(run, stage, RunStageStatus.COMPLETED)
             return self._resolve_remediation_outcome(run)
+
+        # Remediation ownership must be factual. When no implementation owner can
+        # be established the Run blocks rather than guessing one.
+        if finding_blocking and self._findings is not None:
+            try:
+                finding_blocking = tuple(
+                    self._findings.assign_remediation_owner(run, finding)
+                    for finding in finding_blocking
+                )
+            except RemediationOwnershipError as exc:
+                self._transition_stage(
+                    run,
+                    stage,
+                    RunStageStatus.BLOCKED,
+                    StageReasonCode.REMEDIATION_OWNER_UNKNOWN,
+                    exc.summary,
+                )
+                return self._block(
+                    run,
+                    RunReasonCode.REMEDIATION_OWNER_UNKNOWN,
+                    "Remediation ownership could not be established for a blocking "
+                    "Finding, so remediation was not started.",
+                )
 
         if run.remediation_cycles_used >= MAX_REMEDIATION_CYCLES:
             summary = (
@@ -1699,6 +1970,10 @@ class RunOrchestrator:
             return self._block(run, RunReasonCode.REMEDIATION_BOUND_EXCEEDED, summary)
 
         run = self._runs.increment_remediation_cycles(run)
+
+        if self._findings is not None:
+            for finding in finding_blocking:
+                self._findings.mark_remediating(run, finding)
 
         self._transition_stage(
             run,
@@ -1913,6 +2188,27 @@ class RunOrchestrator:
 
         if run.remediation_cycles_used > MAX_REMEDIATION_CYCLES:
             add(RunReasonCode.REMEDIATION_BOUND_EXCEEDED)
+
+        # Phase 4B obligations, derived from the Run's frozen snapshot. A snapshot
+        # that declares none imposes none, so historical orchestration-only Runs
+        # are never retroactively invalidated.
+        if self._findings is not None:
+            blocking = self._findings.blocking_findings(run.id)
+
+            if blocking:
+                add(RunReasonCode.OPEN_BLOCKER_FINDING)
+
+        if self._verification is not None:
+            latest = self._verification.latest_check_evidence(run.id)
+
+            for check in self._verification.required_checks(run.id):
+                evidence = latest.get(check.key)
+
+                # An unknown verification state blocks: absent, inconclusive, or
+                # non-successful Evidence all refuse completion.
+                if evidence is None or not evidence.is_successful_command_evidence:
+                    add(RunReasonCode.VERIFICATION_EVIDENCE_MISSING)
+                    break
 
         for agent_run in agent_runs:
             if not is_terminal_agent_run_status(agent_run.status):

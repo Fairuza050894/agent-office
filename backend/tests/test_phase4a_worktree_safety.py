@@ -139,7 +139,7 @@ def test_a_clean_repository_allocates_an_isolated_worktree(
 
     assert started["status"] == "COMPLETED"
 
-    allocated = workspaces(harness, run["id"])
+    allocated = [item for item in workspaces(harness, run["id"]) if item["writable"]]
     assert allocated
 
     workspace = allocated[0]
@@ -160,6 +160,15 @@ def test_a_clean_repository_allocates_an_isolated_worktree(
     worktree_list = git(repository, "worktree", "list", "--porcelain")
     registered = [line for line in worktree_list.splitlines() if line.startswith("worktree ")]
     assert len(registered) == len(allocated) + 1
+
+    # Read-only review views observe a candidate and create nothing: the number
+    # of registered worktrees above already proves no extra one was created.
+    views = [item for item in workspaces(harness, run["id"]) if not item["writable"]]
+    assert views
+    assert {view["kind"] for view in views} == {"PROJECT_READ_VIEW"}
+    assert {view["owner_agent_run_id"] for view in views} == {None}
+    # A view records the same base revision as the candidate it observes.
+    assert {view["base_revision"] for view in views} == {allocated[0]["base_revision"]}
     assert git(repository, "branch", "--show-current") == "main"
     assert len({workspace["id"] for workspace in allocated}) == len(allocated)
 
@@ -197,7 +206,7 @@ def test_bcd_main_tree_dirty_state_is_preserved_byte_for_byte(
     started = harness.start_run(run["id"], changed_areas=["BACKEND"])
 
     assert started["status"] == "COMPLETED"
-    allocated = workspaces(harness, run["id"])
+    allocated = [item for item in workspaces(harness, run["id"]) if item["writable"]]
     assert allocated and allocated[0]["status"] in {"READY", "IN_USE", "RELEASED"}
 
     # 6. Perform activity in the isolated worktree.
@@ -342,7 +351,7 @@ def test_h_write_ownership_is_exclusive_and_releasable(
     run = harness.create_run(task["id"])
     harness.start_run(run["id"], changed_areas=["BACKEND"])
 
-    workspace = workspaces(harness, run["id"])[0]
+    workspace = next(item for item in workspaces(harness, run["id"]) if item["writable"])
     service = harness.app.state.workspace_service
     workspace_id = WorkspaceId.parse(workspace["id"])
 
@@ -598,13 +607,22 @@ def test_k_read_only_assignments_need_no_workspace(
     assert read_only
     assert writing
 
-    # Read-only work needs no workspace...
-    assert {agent["workspace_id"] for agent in read_only} == {None}
+    by_id = {workspace["id"]: workspace for workspace in workspaces(harness, run["id"])}
 
-    # ...and every write assignment holds one.
+    # A read-only assignment never holds a writable Workspace. It may hold a
+    # review view of a candidate, which is a read-only observation target that
+    # creates no worktree and is never owned (WORKTREE_POLICY §87, §112).
+    for agent in read_only:
+        if agent["workspace_id"] is not None:
+            observed = by_id[agent["workspace_id"]]
+            assert observed["writable"] is False
+            assert observed["kind"] == "PROJECT_READ_VIEW"
+            assert observed["owner_agent_run_id"] is None
+
+    # Every write assignment holds a writable Worktree.
     assert {agent["workspace_id"] is None for agent in writing} == {False}
     assert {agent["workspace_id"] for agent in writing} == {
-        workspace["id"] for workspace in workspaces(harness, run["id"])
+        workspace["id"] for workspace in by_id.values() if workspace["writable"]
     }
 
 
@@ -855,7 +873,7 @@ def test_r_clean_worktree_releases_and_removes_the_worktree(
     run = harness.create_run(task["id"])
     harness.start_run(run["id"], changed_areas=["BACKEND"])
 
-    allocated = workspaces(harness, run["id"])
+    allocated = [item for item in workspaces(harness, run["id"]) if item["writable"]]
     assert allocated
 
     manager = manager_for(harness)
@@ -944,7 +962,7 @@ def test_s_allocation_is_idempotent_per_agent_run(
     run = harness.create_run(task["id"])
     harness.start_run(run["id"], changed_areas=["BACKEND"])
 
-    allocated = workspaces(harness, run["id"])
+    allocated = [item for item in workspaces(harness, run["id"]) if item["writable"]]
     assert allocated
 
     service = harness.app.state.workspace_service
@@ -964,7 +982,9 @@ def test_s_allocation_is_idempotent_per_agent_run(
     again = service.allocate_for_agent_run(domain_run, agent_run)
 
     assert str(again.id) == recorded
-    assert len(workspaces(harness, run["id"])) == len(allocated)
+    assert len([item for item in workspaces(harness, run["id"]) if item["writable"]]) == len(
+        allocated
+    )
 
     # No extra managed worktree was created by the repeated request.
     worktrees = [
@@ -1219,7 +1239,7 @@ def test_bounded_write_also_requires_an_isolated_worktree(
         for agent in documentation:
             assert agent["workspace_id"] is not None
 
-    allocated = workspaces(harness, run["id"])
+    allocated = [workspace for workspace in workspaces(harness, run["id"]) if workspace["writable"]]
     assert allocated
     assert {workspace["access_mode"] for workspace in allocated} <= {
         "WRITE",
@@ -1240,7 +1260,7 @@ def test_no_write_assignment_ever_targets_the_main_working_tree(
     run = harness.create_run(task["id"])
     harness.start_run(run["id"], changed_areas=["BACKEND", "FRONTEND"])
 
-    allocated = workspaces(harness, run["id"])
+    allocated = [workspace for workspace in workspaces(harness, run["id"]) if workspace["writable"]]
     assert allocated
 
     manager = manager_for(harness)

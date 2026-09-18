@@ -14,6 +14,8 @@ from agent_office.domain import (
     StageDefinition,
     StageExecutionMode,
     StageKey,
+    VerificationCheckDefinition,
+    VerificationCheckType,
     WorkflowDefinition,
     WorkflowDefinitionStatus,
     WorkflowGraph,
@@ -44,6 +46,23 @@ class StageRequest(BaseModel):
     condition: StageCondition = StageCondition.ALWAYS
 
 
+class VerificationCheckRequest(BaseModel):
+    """One verification check a WorkflowDefinition declares.
+
+    A check is a fixed executable plus fixed arguments. There is no shell, no
+    free-form command string, and no environment map: an operator cannot turn a
+    declaration into arbitrary execution.
+    """
+
+    key: str = Field(min_length=1, max_length=100)
+    check_type: VerificationCheckType = VerificationCheckType.TEST
+    executable: str = Field(min_length=1, max_length=200)
+    arguments: list[str] = Field(default_factory=list, max_length=64)
+    timeout_seconds: int | None = None
+    environment_names: list[str] = Field(default_factory=list, max_length=16)
+    required: bool = True
+
+
 class CreateWorkflowRequest(BaseModel):
     """Request to create a reusable WorkflowDefinition."""
 
@@ -52,6 +71,10 @@ class CreateWorkflowRequest(BaseModel):
     description: str = Field(default="", max_length=2000)
     status: WorkflowDefinitionStatus = WorkflowDefinitionStatus.ACTIVE
     stages: list[StageRequest] = Field(min_length=1, max_length=50)
+    verification_checks: list[VerificationCheckRequest] = Field(
+        default_factory=list,
+        max_length=50,
+    )
 
 
 class UpdateWorkflowRequest(BaseModel):
@@ -61,6 +84,10 @@ class UpdateWorkflowRequest(BaseModel):
     description: str | None = Field(default=None, max_length=2000)
     status: WorkflowDefinitionStatus | None = None
     stages: list[StageRequest] = Field(min_length=1, max_length=50)
+    verification_checks: list[VerificationCheckRequest] | None = Field(
+        default=None,
+        max_length=50,
+    )
 
 
 class StageAssignmentResponse(BaseModel):
@@ -118,6 +145,7 @@ class WorkflowResponse(BaseModel):
     status: WorkflowDefinitionStatus
     schema_version: int
     stages: list[StageResponse]
+    verification_checks: list[VerificationCheckResponse]
     created_at: datetime
     updated_at: datetime
 
@@ -133,6 +161,10 @@ class WorkflowResponse(BaseModel):
             schema_version=definition.graph.schema_version,
             stages=[
                 StageResponse.from_domain(stage) for stage in definition.graph.ordered_stages()
+            ],
+            verification_checks=[
+                VerificationCheckResponse.from_domain(check)
+                for check in definition.graph.verification_checks
             ],
             created_at=definition.created_at,
             updated_at=definition.updated_at,
@@ -181,7 +213,34 @@ class WorkflowValidationResponse(BaseModel):
         )
 
 
-def graph_from_stages(stages: list[StageRequest]) -> WorkflowGraph:
+class VerificationCheckResponse(BaseModel):
+    """Safe verification check representation."""
+
+    key: str
+    check_type: VerificationCheckType
+    executable: str
+    arguments: list[str]
+    timeout_seconds: int
+    environment_names: list[str]
+    required: bool
+
+    @classmethod
+    def from_domain(cls, check: VerificationCheckDefinition) -> Self:
+        return cls(
+            key=check.key,
+            check_type=check.check_type,
+            executable=check.executable,
+            arguments=list(check.arguments),
+            timeout_seconds=check.timeout_seconds,
+            environment_names=list(check.environment_names),
+            required=check.required,
+        )
+
+
+def graph_from_stages(
+    stages: list[StageRequest],
+    verification_checks: list[VerificationCheckRequest] | None = None,
+) -> WorkflowGraph:
     """Build a validated workflow graph from request stages.
 
     Domain validation raises ``DomainInvariantError`` for unknown dependencies,
@@ -209,5 +268,21 @@ def graph_from_stages(stages: list[StageRequest]) -> WorkflowGraph:
                 condition=stage.condition,
             )
             for stage in stages
-        )
+        ),
+        verification_checks=tuple(
+            VerificationCheckDefinition(
+                key=check.key,
+                check_type=check.check_type,
+                executable=check.executable,
+                arguments=tuple(check.arguments),
+                **(
+                    {"timeout_seconds": check.timeout_seconds}
+                    if check.timeout_seconds is not None
+                    else {}
+                ),
+                environment_names=tuple(check.environment_names),
+                required=check.required,
+            )
+            for check in verification_checks or []
+        ),
     )

@@ -128,6 +128,25 @@ class EventType(StrEnum):
     WORKSPACE_FAILED = "workspace.failed"
     WORKSPACE_ORPHANED = "workspace.orphaned"
 
+    # Canonical review events (EVENT_CONTRACT §47). A Finding is durable before
+    # its creation event is emitted, and a Finding is only resolved by re-review
+    # or by an attributable human decision.
+    REVIEW_STARTED = "review.started"
+    REVIEW_FINDING_CREATED = "review.finding.created"
+    REVIEW_FINDING_ACKNOWLEDGED = "review.finding.acknowledged"
+    REVIEW_FINDING_REMEDIATING = "review.finding.remediating"
+    REVIEW_FINDING_RESOLVED = "review.finding.resolved"
+    REVIEW_FINDING_ACCEPTED_RISK = "review.finding.accepted_risk"
+    REVIEW_COMPLETED = "review.completed"
+
+    # Canonical verification-check events (EVENT_CONTRACT §51). The completed
+    # event is emitted only after the run's Evidence is durably committed.
+    VERIFICATION_CHECK_STARTED = "verification.check.started"
+    VERIFICATION_CHECK_COMPLETED = "verification.check.completed"
+
+    # Canonical evidence event (EVENT_CONTRACT §53).
+    EVIDENCE_CREATED = "evidence.created"
+
 
 def build_payload(
     pairs: tuple[tuple[str, EventPayloadValue], ...],

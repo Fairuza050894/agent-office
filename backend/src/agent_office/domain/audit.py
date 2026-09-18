@@ -60,6 +60,8 @@ class AuditAction(StrEnum):
     WORKSPACE_RELEASED = "WORKSPACE_RELEASED"
     WORKSPACE_RECONCILIATION_REQUESTED = "WORKSPACE_RECONCILIATION_REQUESTED"
     WORKSPACE_BRANCH_DELETED = "WORKSPACE_BRANCH_DELETED"
+    FINDING_ACCEPTED_RISK = "FINDING_ACCEPTED_RISK"
+    VERIFICATION_COMMAND_DENIED = "VERIFICATION_COMMAND_DENIED"
 
 
 class AuditTargetType(StrEnum):
@@ -68,6 +70,7 @@ class AuditTargetType(StrEnum):
     RUN = "RUN"
     EXECUTOR = "EXECUTOR"
     WORKSPACE = "WORKSPACE"
+    FINDING = "FINDING"
 
 
 def _validated_identifier(value: str, *, field: str) -> str:
@@ -88,7 +91,7 @@ def _validated_identifier(value: str, *, field: str) -> str:
 
 #: Targets that are always scoped to exactly one Run, so `run_id` is required.
 RUN_SCOPED_AUDIT_TARGETS: frozenset[AuditTargetType] = frozenset(
-    {AuditTargetType.RUN, AuditTargetType.WORKSPACE}
+    {AuditTargetType.RUN, AuditTargetType.WORKSPACE, AuditTargetType.FINDING}
 )
 
 

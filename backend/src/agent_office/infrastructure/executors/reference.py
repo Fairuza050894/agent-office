@@ -34,13 +34,17 @@ from agent_office.domain import (
     ExecutorKind,
     ExecutorSessionRef,
     ExecutorStatus,
+    FindingCategory,
+    FindingSeverity,
     ReconciliationResult,
+    ReportedFinding,
     ReviewVerdict,
     SafeMetadata,
     StageKey,
     StartExecutionOutcome,
     StartExecutionRequest,
     StartExecutionResult,
+    reported_findings_metadata,
     review_verdict_metadata,
     to_utc,
     utc_now,
@@ -86,6 +90,7 @@ class _SessionPlan:
     outcome: ExecutionOutcome
     summary: str
     review_verdict: ReviewVerdict | None = None
+    review_findings: tuple[ReportedFinding, ...] = ()
 
 
 @dataclass(slots=True)
@@ -369,11 +374,31 @@ def _parse_cycle(value: str | None) -> int:
     return max(cycle, 0)
 
 
-def _plan_metadata(plan: _SessionPlan) -> SafeMetadata:
-    if plan.review_verdict is None:
-        return ()
+#: The deterministic blocking observation the reference reviewer reports.
+#:
+#: It carries no source location, truthfully: the reference executor inspects no
+#: real files, so it cannot claim to know where in a repository a problem is.
+_REFERENCE_BLOCKING_FINDING = ReportedFinding(
+    severity=FindingSeverity.BLOCKER,
+    category=FindingCategory.SECURITY,
+    title="Reference reviewer reported a blocking observation",
+    description=(
+        "The deterministic local executor reports a blocking review observation "
+        "for this assignment. No repository inspection was performed."
+    ),
+)
 
-    return review_verdict_metadata(plan.review_verdict)
+
+def _plan_metadata(plan: _SessionPlan) -> SafeMetadata:
+    metadata: SafeMetadata = ()
+
+    if plan.review_verdict is not None:
+        metadata = review_verdict_metadata(plan.review_verdict)
+
+    if plan.review_findings:
+        metadata = metadata + reported_findings_metadata(plan.review_findings)
+
+    return metadata
 
 
 def _plan_for(
@@ -416,6 +441,7 @@ def _plan_for(
                 outcome=ExecutionOutcome.SUCCESS,
                 summary="Reference review reported a blocking outcome.",
                 review_verdict=ReviewVerdict.BLOCKER,
+                review_findings=(_REFERENCE_BLOCKING_FINDING,),
             )
 
         return _SessionPlan(
@@ -437,6 +463,9 @@ def _plan_for(
                 review_verdict=(
                     ReviewVerdict.BLOCKER if remediation_cycle == 0 else ReviewVerdict.CLEAR
                 ),
+                # The re-review reports no findings, which is what resolves the
+                # observation the first cycle raised.
+                review_findings=((_REFERENCE_BLOCKING_FINDING,) if remediation_cycle == 0 else ()),
             )
 
         return _SessionPlan(
@@ -459,6 +488,7 @@ def _plan_for(
                 outcome=ExecutionOutcome.SUCCESS,
                 summary="Reference review reported a blocking outcome.",
                 review_verdict=ReviewVerdict.BLOCKER,
+                review_findings=(_REFERENCE_BLOCKING_FINDING,),
             )
 
         return _SessionPlan(

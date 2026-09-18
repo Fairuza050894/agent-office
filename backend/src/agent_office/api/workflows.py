@@ -43,7 +43,7 @@ def create_workflow(
     service: WorkflowServiceDependency,
 ) -> WorkflowResponse:
     try:
-        graph = graph_from_stages(request.stages)
+        graph = graph_from_stages(request.stages, request.verification_checks)
         definition = service.create_definition(
             key=request.key,
             name=request.name,
@@ -99,7 +99,7 @@ def update_workflow(
     """
 
     try:
-        graph = graph_from_stages(request.stages)
+        graph = graph_from_stages(request.stages, request.verification_checks)
         definition = service.revise_definition(
             WorkflowDefinitionId(workflow_id),
             graph=graph,

@@ -9,8 +9,10 @@ from agent_office.application.events import EventService
 from agent_office.application.orchestration import RunOrchestrator
 from agent_office.application.projects import ProjectService
 from agent_office.application.recovery import RecoveryService
+from agent_office.application.review import FindingService
 from agent_office.application.runs import RunService, RunStageService
 from agent_office.application.tasks import TaskService
+from agent_office.application.verification import VerificationService
 from agent_office.application.workflows import WorkflowService
 from agent_office.application.workspaces import WorkspaceService
 from agent_office.persistence import SQLiteDatabase
@@ -154,3 +156,19 @@ def get_workspace_service(request: Request) -> WorkspaceService:
 
     database.initialize()
     return service
+
+
+def get_finding_service(request: Request) -> FindingService:
+    """Return the process-wide Finding service after ensuring its schema."""
+
+    _database(request).initialize()
+
+    return cast(FindingService, request.app.state.finding_service)
+
+
+def get_verification_service(request: Request) -> VerificationService:
+    """Return the process-wide verification service after ensuring its schema."""
+
+    _database(request).initialize()
+
+    return cast(VerificationService, request.app.state.verification_service)

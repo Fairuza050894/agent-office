@@ -85,17 +85,33 @@ def test_remediation_bound_event_is_emitted_once(
     assert exhausted[0]["payload"]["remediation_cycles_used"] == 3
 
 
-def test_no_finding_or_evidence_events_are_fabricated(
+def test_no_evidence_event_is_fabricated(
     harness_factory: HarnessFactory,
 ) -> None:
+    """A durable Finding is a review observation; it is never Evidence.
+
+    Phase 4B records real Findings, and the review handoff records a Git-derived
+    change summary. No command ran here, so nothing may claim a test or command
+    outcome.
+    """
+
     harness = harness_factory(ReferenceScenario.REMEDIATION_SUCCESS)
     run, _ = harness.start_workflow("bug-fix", changed_areas=[])
 
     event_types = _event_types(harness, run["id"])
 
-    assert not [name for name in event_types if name.startswith("review.finding")]
-    assert not [name for name in event_types if name.startswith("evidence")]
+    assert [name for name in event_types if name.startswith("review.finding")]
     assert not [name for name in event_types if name.startswith("test.")]
+    assert not [name for name in event_types if name.startswith("command.")]
+
+    # The only Evidence here is the handoff's repository change summary.
+    evidence_events = [
+        event
+        for event in harness.events(run["id"], limit=200)
+        if event["event_type"] == "evidence.created"
+    ]
+    assert evidence_events
+    assert {event["payload"]["kind"] for event in evidence_events} == {"DIFF_SUMMARY"}
 
 
 def test_duplicate_reconcile_produces_one_logical_effect(

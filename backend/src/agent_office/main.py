@@ -8,6 +8,7 @@ from agent_office.api.audit import router as audit_router
 from agent_office.api.events import router as events_router
 from agent_office.api.projects import router as projects_router
 from agent_office.api.recovery import router as recovery_router
+from agent_office.api.review import router as review_router
 from agent_office.api.runs import router as runs_router
 from agent_office.api.tasks import router as tasks_router
 from agent_office.api.workflows import router as workflows_router
@@ -19,12 +20,15 @@ from agent_office.application.events import EventService
 from agent_office.application.orchestration import RunOrchestrator
 from agent_office.application.projects import ProjectService
 from agent_office.application.recovery import RecoveryService
+from agent_office.application.review import FindingService
 from agent_office.application.runs import RunService, RunStageService
 from agent_office.application.tasks import TaskService
+from agent_office.application.verification import VerificationService
 from agent_office.application.workflows import WorkflowService
 from agent_office.application.workspaces import WorkspaceService
 from agent_office.config import Settings, get_settings
 from agent_office.domain import AgentProfileCatalog
+from agent_office.infrastructure.commands import CommandRunner
 from agent_office.infrastructure.executors import (
     ExecutorRegistry,
     ReferenceExecutor,
@@ -35,6 +39,8 @@ from agent_office.infrastructure.persistence import (
     SQLiteAgentRunRepository,
     SQLiteAuditRecordRepository,
     SQLiteEventRepository,
+    SQLiteEvidenceRepository,
+    SQLiteFindingRepository,
     SQLiteProjectRepository,
     SQLiteRunRepository,
     SQLiteRunStageRepository,
@@ -147,6 +153,24 @@ def create_app(
         event_service=event_service,
         audit_service=app.state.audit_service,
     )
+    app.state.finding_service = FindingService(
+        SQLiteFindingRepository(database),
+        run_service=app.state.run_service,
+        agent_run_service=agent_run_service,
+        workflow_service=workflow_service,
+        event_service=event_service,
+        audit_service=app.state.audit_service,
+    )
+    app.state.verification_service = VerificationService(
+        SQLiteEvidenceRepository(database),
+        CommandRunner(),
+        GitWorktreeManager(resolved_settings.managed_workspace_root),
+        run_service=app.state.run_service,
+        workflow_service=workflow_service,
+        workspace_service=app.state.workspace_service,
+        event_service=event_service,
+        audit_service=app.state.audit_service,
+    )
     app.state.orchestrator = RunOrchestrator(
         run_service=app.state.run_service,
         task_service=app.state.task_service,
@@ -158,6 +182,8 @@ def create_app(
         executor_registry=executor_registry,
         audit_service=app.state.audit_service,
         workspace_service=app.state.workspace_service,
+        finding_service=app.state.finding_service,
+        verification_service=app.state.verification_service,
     )
 
     @app.get("/health", response_model=HealthResponse)
@@ -172,6 +198,7 @@ def create_app(
         )
 
     app.include_router(projects_router)
+    app.include_router(review_router)
     app.include_router(tasks_router)
     app.include_router(runs_router)
     app.include_router(workflows_router)
