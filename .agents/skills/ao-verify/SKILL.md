@@ -5,7 +5,7 @@ description: Run the canonical Agent Office backend, frontend, Git hygiene, and 
 
 # Agent Office Verification
 
-Use `scripts/verify.sh` after implementation or repair.
+Use the repo-root `scripts/verify.sh` entry point after implementation or repair. It delegates to this skill's canonical verification script.
 
 The script runs:
 

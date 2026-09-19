@@ -3,13 +3,14 @@
 ## Current checkpoint
 
 ```text
+c92466c chore: add agent workflow skills
 2ec69b7 docs: complete phase 4b verification
 9383f79 feat: add review findings and verification evidence
 eceaff1 docs: complete phase 4a workspace verification
 510ddb5 feat: add isolated workspace safety foundation
 ```
 
-At creation of this file:
+Current recorded status:
 
 - Phase 0 CLOSED
 - Phase 1 CLOSED
@@ -56,6 +57,8 @@ A real Codex/Antigravity/OpenClaw/Hermes executor belongs to Phase 6.
 
 ## Phase 4C is currently HOLD
 
-Do not begin Phase 4C merely because this skill is loaded.
+Phase 4C behavior work remains on hold while the approved context-efficiency hardening patch is prepared.
 
-Resume only when explicitly requested.
+This maintenance patch may update repository governance, agent skills, context/verification scripts, and navigation indexes, but must not implement Phase 4C behavior.
+
+Resume Phase 4C only when explicitly requested after this maintenance checkpoint is reviewed.

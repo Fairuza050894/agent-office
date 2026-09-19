@@ -9,11 +9,14 @@ Use this skill before implementation, review, debugging, or milestone work.
 
 ## Procedure
 
-1. Run `scripts/context.sh`.
+1. Run the repo-root `scripts/context.sh` entry point (which delegates to this skill's script).
 2. Read the resulting repository facts.
 3. Read `../../../AGENTS.md`.
-4. Read only the specification/documentation needed for the current task.
-5. Do not rescan the entire repository unless the task genuinely requires it.
+4. Read `../ao-milestone/references/current-phase.md`.
+5. Read `../ao-repo-map/references/repo-map.md` and `../ao-repo-map/references/contract-index.md`.
+6. Inspect task-relevant tests and source symbols.
+7. Read only the specification sections needed for the current task.
+8. Do not rescan the entire repository unless the task genuinely requires it.
 
 ## Required facts
 

@@ -123,18 +123,31 @@ The `agents/`, `executors/`, and `workflows/` directories are reserved for imple
 
 ## Specification Map
 
-Read the documents in this order before substantial implementation:
+The specification set is an architecture authority, not a mandatory linear reading list for every task.
 
-1. `docs/product/PRD.md`
-2. `docs/architecture/SYSTEM_ARCHITECTURE.md`
-3. `docs/architecture/DOMAIN_MODEL.md`
-4. `docs/contracts/WORKFLOW_CONTRACT.md`
-5. `docs/contracts/EVENT_CONTRACT.md`
-6. `docs/contracts/EXECUTOR_ADAPTER.md`
-7. `docs/security/WORKTREE_POLICY.md`
-8. `docs/security/SECURITY_MODEL.md`
-9. `docs/ux/INFORMATION_ARCHITECTURE.md`
-10. `docs/product/MVP_ACCEPTANCE.md`
+For implementation work, start with:
+
+1. `scripts/context.sh`
+2. `.agents/skills/ao-milestone/references/current-phase.md`
+3. `.agents/skills/ao-repo-map/references/repo-map.md`
+4. `.agents/skills/ao-repo-map/references/contract-index.md`
+5. task-relevant tests and source symbols
+6. only the specification sections needed for the behavior being changed
+
+The full specification set remains available under `docs/`:
+
+- `docs/product/PRD.md`
+- `docs/architecture/SYSTEM_ARCHITECTURE.md`
+- `docs/architecture/DOMAIN_MODEL.md`
+- `docs/contracts/WORKFLOW_CONTRACT.md`
+- `docs/contracts/EVENT_CONTRACT.md`
+- `docs/contracts/EXECUTOR_ADAPTER.md`
+- `docs/security/WORKTREE_POLICY.md`
+- `docs/security/SECURITY_MODEL.md`
+- `docs/ux/INFORMATION_ARCHITECTURE.md`
+- `docs/product/MVP_ACCEPTANCE.md`
+
+Use targeted heading/section lookup before reading any large contract end-to-end.
 
 `MVP_ACCEPTANCE.md` is the implementation acceptance gate. A phase is not complete merely because the application starts or a screen renders.
 
@@ -291,17 +304,11 @@ Real Agent Office domain behavior, persistence, orchestration, executor integrat
 
 ## Development Status
 
-Current status:
+The canonical milestone status is maintained in:
 
-```text
-Phase 1A — Repository & Tooling Foundation
-```
+`.agents/skills/ao-milestone/references/current-phase.md`
 
-The next implementation milestone after Phase 1A acceptance is:
-
-```text
-Phase 1B — FastAPI Backend Shell
-```
+Do not copy the active phase number into README. The milestone reference must be checked against committed code, Git state, tests, and verification evidence before implementation.
 
 ## Contribution and Agent Instructions
 

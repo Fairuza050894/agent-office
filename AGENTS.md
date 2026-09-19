@@ -8,19 +8,20 @@ These instructions apply to Codex, Antigravity, OpenClaw, and any future coding 
 
 ## 1. Read Before Coding
 
-Before substantial implementation, read the relevant specifications.
+Start with targeted repository context. Do not read every specification by default.
 
-Minimum baseline:
+Required entry path:
 
-```text
-README.md
-docs/product/PRD.md
-docs/architecture/SYSTEM_ARCHITECTURE.md
-docs/architecture/DOMAIN_MODEL.md
-docs/product/MVP_ACCEPTANCE.md
-```
+1. run `scripts/context.sh`
+2. read `.agents/skills/ao-milestone/references/current-phase.md`
+3. read `.agents/skills/ao-repo-map/references/repo-map.md`
+4. read `.agents/skills/ao-repo-map/references/contract-index.md`
+5. inspect the existing tests and source symbols that own the requested behavior
+6. read only the specification sections explicitly relevant to the task
 
-Then read task-specific contracts:
+Use `rg`, heading anchors, and the contract index to retrieve targeted sections instead of loading whole large documents.
+
+Task-to-contract routing remains:
 
 ```text
 workflow work
@@ -41,6 +42,8 @@ security-sensitive work
 frontend/UX work
 → docs/ux/INFORMATION_ARCHITECTURE.md
 ```
+
+Read the full document only when the task genuinely spans the whole contract or targeted sections are insufficient.
 
 Do not implement from this file alone.
 
@@ -767,29 +770,10 @@ production deployment
 
 ## 43. Current Implementation Gate
 
-Current repository state is:
+Do not duplicate the active phase number or next milestone in this file.
 
-```text
-Phase 0 — Specification Baseline
-```
+Read `.agents/skills/ao-milestone/references/current-phase.md` for the canonical milestone status, then confirm that status against committed code, Git state, tests, and verification evidence.
 
-The next milestone is:
+If the milestone reference conflicts with executable repository facts, treat the mismatch as a governance defect and report it before implementation.
 
-```text
-Phase 1 — Application Foundation
-```
-
-Phase 1 should establish:
-
-- backend shell
-- frontend shell
-- configuration
-- SQLite
-- schema/migration foundation
-- core domain primitives
-- Project registry skeleton
-- Executor port
-- ReferenceExecutor boundary
-- test infrastructure
-
-Do not connect real Codex, Antigravity, or OpenClaw execution in Phase 1.
+Real Codex, Antigravity, OpenClaw, Hermes, or other AI executor integration remains outside the current ReferenceExecutor-only Phase 4 boundary and must not be introduced before its approved milestone.

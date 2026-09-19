@@ -5,14 +5,15 @@ description: Navigate Agent Office architecture without repeatedly scanning the 
 
 # Agent Office Repository Map
 
-Read `references/repo-map.md` first.
+Read `references/repo-map.md` and `references/contract-index.md` first.
 
 Use targeted file discovery after that.
 
 Prefer:
 
 - exact known paths
-- `rg` / `grep` for symbols
+- contract-index section references
+- `rg` / `grep` for headings and symbols
 - existing tests for behavior contracts
 
 Avoid repeatedly reading every source file and every specification document.
