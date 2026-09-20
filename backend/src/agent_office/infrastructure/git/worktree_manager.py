@@ -13,9 +13,13 @@ for containment before use, so a caller cannot substitute a path.
 
 from __future__ import annotations
 
+import hashlib
+import os
+import stat
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from agent_office.application.workspaces.errors import (
     WorktreeCreationError,
@@ -275,6 +279,12 @@ class GitWorktreeManager:
 
         insertions, deletions = self._numstat(path, base_revision)
         current_revision = self._git_or_none(path, "rev-parse", "HEAD")
+        state_fingerprint = self._state_fingerprint(
+            path,
+            base_revision=base_revision,
+            current_revision=current_revision,
+            untracked_paths=tuple(sorted(untracked)),
+        )
 
         return WorkspaceChangeSummary(
             base_revision=base_revision,
@@ -284,9 +294,139 @@ class GitWorktreeManager:
             deleted_paths=tuple(sorted(deleted)),
             untracked_paths=tuple(sorted(untracked)),
             current_revision=current_revision,
+            state_fingerprint=state_fingerprint,
             insertions=insertions,
             deletions=deletions,
         )
+
+    def _state_fingerprint(
+        self,
+        path: Path,
+        *,
+        base_revision: str,
+        current_revision: str | None,
+        untracked_paths: tuple[str, ...],
+    ) -> str:
+        """Return a deterministic digest of the candidate Worktree state.
+
+        Commit identity alone is insufficient because Agent Office intentionally
+        permits uncommitted implementation work. The digest therefore binds the
+        base/current revision, Git's canonical tracked diff, and the content of
+        each untracked path. Raw patch/file content is hashed in memory and is
+        never persisted or exposed.
+        """
+
+        diff = self._run(
+            path,
+            "diff",
+            "--binary",
+            "--full-index",
+            "--no-ext-diff",
+            "--no-color",
+            base_revision,
+            "--",
+        )
+
+        if diff.returncode != 0:
+            raise WorktreeOperationError(
+                self._safe_git_failure("candidate-state diff failed", diff)
+            )
+
+        digest = hashlib.sha256()
+        digest.update(b"agent-office-candidate-state-v1\0")
+        digest.update(base_revision.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update((current_revision or "<unknown>").encode("utf-8"))
+        digest.update(b"\0tracked-diff\0")
+        digest.update(diff.stdout.encode("utf-8", errors="surrogateescape"))
+
+        for relative_path in untracked_paths:
+            digest.update(b"\0untracked-path\0")
+            digest.update(os.fsencode(relative_path))
+            digest.update(b"\0")
+            self._hash_untracked_path(path, relative_path, digest)
+
+        return digest.hexdigest()
+
+    def _hash_untracked_path(
+        self,
+        root: Path,
+        relative_path: str,
+        digest: Any,
+    ) -> None:
+        """Hash one untracked path without following its final symlink.
+
+        Git status supplies repository-relative paths, but this method still
+        rejects absolute/traversing input and uses ``lstat``/``O_NOFOLLOW`` so a
+        malicious symlink cannot make Evidence fingerprint host files outside
+        the managed worktree.
+        """
+
+        candidate_rel = Path(relative_path)
+
+        if candidate_rel.is_absolute() or ".." in candidate_rel.parts:
+            raise WorktreeOperationError(
+                "Git reported an unsafe untracked path while fingerprinting the Worktree"
+            )
+
+        candidate = root / candidate_rel
+
+        try:
+            before = os.lstat(candidate)
+        except OSError as exc:
+            raise WorktreeOperationError(
+                "An untracked path changed while the Worktree fingerprint was captured"
+            ) from exc
+
+        digest.update(str(stat.S_IFMT(before.st_mode)).encode("ascii"))
+        digest.update(b":")
+        digest.update(str(before.st_mode & 0o777).encode("ascii"))
+        digest.update(b"\0")
+
+        if stat.S_ISLNK(before.st_mode):
+            try:
+                target = os.readlink(candidate)
+            except OSError as exc:
+                raise WorktreeOperationError(
+                    "An untracked symlink changed while the Worktree fingerprint was captured"
+                ) from exc
+
+            digest.update(b"symlink\0")
+            digest.update(os.fsencode(target))
+            return
+
+        if not stat.S_ISREG(before.st_mode):
+            raise WorktreeOperationError(
+                "Unsupported untracked file type prevents a trustworthy Worktree fingerprint"
+            )
+
+        flags = os.O_RDONLY
+        if hasattr(os, "O_NOFOLLOW"):
+            flags |= os.O_NOFOLLOW
+
+        try:
+            descriptor = os.open(candidate, flags)
+        except OSError as exc:
+            raise WorktreeOperationError(
+                "An untracked file could not be opened safely for fingerprinting"
+            ) from exc
+
+        try:
+            after = os.fstat(descriptor)
+
+            if (before.st_dev, before.st_ino) != (after.st_dev, after.st_ino):
+                raise WorktreeOperationError(
+                    "An untracked file changed identity while its fingerprint was captured"
+                )
+
+            digest.update(b"regular\0")
+            while True:
+                chunk = os.read(descriptor, 1024 * 1024)
+                if not chunk:
+                    break
+                digest.update(chunk)
+        finally:
+            os.close(descriptor)
 
     def remove_worktree(self, path_ref: str, *, git_branch: str | None) -> bool:
         """Remove a managed worktree without ever forcing it.

@@ -421,19 +421,9 @@ def test_evidence_records_the_workspace_and_the_verified_revision(
     assert len(metadata["base_revision"]) == 40
     assert metadata["current_revision"] == metadata["base_revision"]
     assert metadata["base_revision"] == git(repository, "rev-parse", "main")
+    assert len(metadata["candidate_state_fingerprint"]) == 64
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "Phase 4C obligation: WORKTREE_POLICY §139/§141 require the reviewed and "
-        "verified revision to be stable. The completion gate currently accepts any "
-        "successful Evidence for a check without comparing it to the Workspace's "
-        "current state, so a Workspace mutated after verification still satisfies "
-        "the gate. When staleness detection lands this test will XPASS, which is "
-        "the signal to remove this marker."
-    ),
-)
 def test_evidence_for_a_mutated_workspace_no_longer_satisfies_the_gate(
     harness_factory: HarnessFactory,
 ) -> None:
@@ -466,6 +456,9 @@ def test_evidence_for_a_mutated_workspace_no_longer_satisfies_the_gate(
 
     assert status["checks"][0]["satisfied"] is False
 
+    gates = harness.client.get(f"/api/runs/{run['id']}/completion-gates").json()
+    assert "VERIFICATION_EVIDENCE_MISSING" in gates["failures"]
+
 
 def test_read_only_view_targets_a_writable_candidate(
     harness_factory: HarnessFactory,
@@ -491,16 +484,19 @@ def test_read_only_view_targets_a_writable_candidate(
     assert observed
     assert observed <= writable
 
+    persisted = harness.run_by_id(run["id"])
+    assert persisted["candidate_workspace_id"] in writable
+    assert {persisted["candidate_workspace_id"]} == observed
+
 
 @pytest.mark.xfail(
     strict=True,
     reason=(
-        "Phase 4C obligation: WORKTREE_POLICY §142 requires verification scope to "
-        "be explicit when multiple worktrees remain unintegrated, and §143 requires "
-        "a Run to designate candidate_workspace_id. No designation exists, so the "
-        "required checks execute in whichever writable worktree was allocated last. "
-        "When candidate designation lands this test will XPASS, which is the signal "
-        "to remove this marker."
+        "Phase 4C-2 obligation: several relevant implementation writers require an "
+        "integration Workspace before one final candidate can be designated. Phase "
+        "4C-1 now fails closed instead of choosing the latest worktree, so no command "
+        "Evidence exists until integration lands. When integration candidate support "
+        "lands this test will XPASS and this marker can be removed."
     ),
 )
 def test_multi_writer_verification_runs_in_an_implementation_worktree(

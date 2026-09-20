@@ -298,6 +298,7 @@ Run
 ├── workflow_snapshot_id
 ├── requested_executor_id?
 ├── resolved_executor_policy
+├── candidate_workspace_id?
 ├── started_at?
 ├── completed_at?
 ├── failure_code?
@@ -331,6 +332,8 @@ CANCELLED
 5. An implementation AgentRun ending does not automatically complete the Run.
 6. Run status is backend-authoritative.
 7. Office View and frontend components never mutate Run status directly.
+8. `candidate_workspace_id`, when set, names the backend-authoritative Workspace
+   whose state review and final verification evaluate; allocation order is not authority.
 
 ---
 

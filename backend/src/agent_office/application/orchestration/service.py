@@ -43,6 +43,7 @@ from agent_office.application.workflows.service import WorkflowService
 from agent_office.application.workspaces import (
     WRITE_ACCESS_MODES,
     WorkspaceAllocationError,
+    WorkspaceNotFoundError,
     WorkspaceOwnershipError,
     WorkspaceService,
 )
@@ -515,6 +516,11 @@ class RunOrchestrator:
             previous = signature
 
             run = await self._advance_once(run, stages)
+            # Candidate designation may happen while an AgentRun is prepared.
+            # Rehydrate the Run after each durable advancement step so later
+            # lifecycle transitions and API responses carry authoritative state
+            # rather than an aggregate that predates the designation.
+            run = self._runs.get_run(run.id)
 
             if run.status is RunStatus.BLOCKED or is_terminal_run_status(run.status):
                 return run
@@ -545,11 +551,17 @@ class RunOrchestrator:
         if not required:
             return run
 
+        # Workflows without an explicit review stage still need an authoritative
+        # candidate before final verification. This resolver only designates a
+        # single completed writer; multi-writer scope remains intentionally
+        # ambiguous until Phase 4C-2 integration exists.
+        self._review_candidate(run)
+
         latest = self._verification.latest_check_evidence(run.id)
 
         if all(
             (evidence := latest.get(check.key)) is not None
-            and evidence.is_successful_command_evidence
+            and self._verification.evidence_satisfies_current_candidate(run.id, evidence)
             for check in required
         ):
             return run
@@ -1286,7 +1298,22 @@ class RunOrchestrator:
             )
 
         try:
-            workspace = self._workspaces.allocate_for_agent_run(run, agent_run)
+            current_run = self._runs.get_run(run.id)
+
+            if agent_run.stage_key is StageKey.REMEDIATION:
+                if current_run.candidate_workspace_id is None:
+                    return self._block_agent_run(
+                        run,
+                        agent_run,
+                        AgentRunReasonCode.WORKSPACE_UNAVAILABLE,
+                        "Remediation requires an explicit candidate Workspace; no "
+                        "candidate has been designated for this Run.",
+                    )
+
+                workspace = self._workspaces.get(current_run.candidate_workspace_id)
+            else:
+                workspace = self._workspaces.allocate_for_agent_run(run, agent_run)
+
             workspace = self._workspaces.acquire_write_ownership(workspace.id, agent_run)
         except WorkspaceAllocationError as exc:
             return self._block_agent_run(
@@ -1295,6 +1322,13 @@ class RunOrchestrator:
                 AgentRunReasonCode.WORKSPACE_UNAVAILABLE,
                 f"An isolated writable Workspace could not be allocated "
                 f"({exc.reason_code.value}); execution was not started.",
+            )
+        except WorkspaceNotFoundError as exc:
+            return self._block_agent_run(
+                run,
+                agent_run,
+                AgentRunReasonCode.WORKSPACE_UNAVAILABLE,
+                f"The Run's explicit candidate Workspace is unavailable: {exc}",
             )
         except WorkspaceOwnershipError as exc:
             return self._block_agent_run(
@@ -1358,29 +1392,99 @@ class RunOrchestrator:
         return self._agent_runs.attach_workspace(agent_run, view.id)
 
     def _review_candidate(self, run: Run) -> Workspace | None:
-        """Return the candidate worktree a read-only assignment should observe.
+        """Return or designate the explicit implementation candidate Workspace.
 
-        Derived from durable state: the most recently allocated writable Git
-        worktree of the same Run that reached a base revision. The Project's main
-        working tree is never a candidate.
+        Allocation order is never used. A single completed implementation writer
+        can become the durable candidate directly. Several independent writer
+        Workspaces are intentionally ambiguous and require Phase 4C-2 integration
+        before review/verification may claim one final state.
         """
 
         if self._workspaces is None:
             return None
 
-        candidates = [
-            workspace
-            for workspace in self._workspaces.list_for_run(run.id)
-            if workspace.kind in WORKTREE_KINDS
-            and workspace.writable
-            and workspace.base_revision is not None
-            and workspace.status not in {WorkspaceStatus.RELEASED, WorkspaceStatus.FAILED}
-        ]
+        current_run = self._runs.get_run(run.id)
 
-        if not candidates:
+        if current_run.candidate_workspace_id is not None:
+            try:
+                candidate = self._workspaces.get(current_run.candidate_workspace_id)
+            except Exception:  # noqa: BLE001 - invalid durable candidate fails closed
+                return None
+
+            if (
+                candidate.run_id == run.id
+                and candidate.kind in WORKTREE_KINDS
+                and candidate.writable
+                and candidate.base_revision is not None
+                and candidate.status not in {WorkspaceStatus.RELEASED, WorkspaceStatus.FAILED}
+            ):
+                return candidate
+
             return None
 
-        return max(candidates, key=lambda workspace: (workspace.created_at, str(workspace.id)))
+        implementation_runs = [
+            agent_run
+            for agent_run in self._agent_runs.list_for_stage(run.id, StageKey.IMPLEMENTATION)
+            if agent_run.status is AgentRunStatus.COMPLETED
+            and agent_run.access_mode in WRITE_ACCESS_MODES
+            and agent_run.workspace_id is not None
+        ]
+
+        snapshot = self._workflows.find_snapshot(run.id)
+        assignments = () if snapshot is None else snapshot.assignments_for(StageKey.IMPLEMENTATION)
+        required_profiles = {
+            assignment.profile_key for assignment in assignments if assignment.required
+        }
+        changed_profiles: set[str] = set()
+
+        for area in current_run.changed_areas or ():
+            if area is ChangeArea.BACKEND:
+                changed_profiles.add("backend-developer")
+            elif area in {ChangeArea.FRONTEND, ChangeArea.UI}:
+                changed_profiles.add("frontend-developer")
+
+        candidate_profiles = required_profiles | changed_profiles
+        scoped_runs = [
+            agent_run
+            for agent_run in implementation_runs
+            if agent_run.agent_profile_key in candidate_profiles
+        ]
+
+        # A custom workflow may use a different implementation profile vocabulary.
+        # If semantic scoping produced nothing but exactly one writer actually
+        # completed, that single durable writer is unambiguous.
+        if not scoped_runs and len(implementation_runs) == 1:
+            scoped_runs = implementation_runs
+
+        workspace_ids = {
+            agent_run.workspace_id
+            for agent_run in scoped_runs
+            if agent_run.workspace_id is not None
+        }
+
+        if len(workspace_ids) != 1:
+            # Zero writers means no candidate exists. More than one writer means
+            # integration is required; choosing any one would hide valid work.
+            return None
+
+        workspace_id = next(iter(workspace_ids))
+
+        try:
+            candidate = self._workspaces.get(workspace_id)
+        except Exception:  # noqa: BLE001 - unavailable candidate fails closed
+            return None
+
+        if (
+            candidate.run_id != run.id
+            or candidate.kind not in WORKTREE_KINDS
+            or not candidate.writable
+            or candidate.base_revision is None
+            or candidate.status in {WorkspaceStatus.RELEASED, WorkspaceStatus.FAILED}
+        ):
+            return None
+
+        self._runs.designate_candidate_workspace(current_run, candidate.id)
+        return candidate
 
     def _capture_handoff_evidence(
         self,
@@ -1419,6 +1523,7 @@ class RunOrchestrator:
             files_changed=summary.files_changed,
             base_revision=summary.base_revision,
             current_revision=summary.current_revision,
+            candidate_state_fingerprint=summary.state_fingerprint,
             agent_run=agent_run,
         )
 
@@ -2206,7 +2311,9 @@ class RunOrchestrator:
 
                 # An unknown verification state blocks: absent, inconclusive, or
                 # non-successful Evidence all refuse completion.
-                if evidence is None or not evidence.is_successful_command_evidence:
+                if evidence is None or not self._verification.evidence_satisfies_current_candidate(
+                    run.id, evidence
+                ):
                     add(RunReasonCode.VERIFICATION_EVIDENCE_MISSING)
                     break
 

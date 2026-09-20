@@ -114,6 +114,8 @@ def test_handoff_records_a_git_derived_diff_summary(
 
     assert metadata["base_revision"]
     assert int(metadata["files_changed"]) >= 0
+    assert metadata["workspace_id"]
+    assert len(metadata["candidate_state_fingerprint"]) == 64
 
     # Attributed to the reviewer that received the handoff, not to the writer.
     reviewer_ids = {

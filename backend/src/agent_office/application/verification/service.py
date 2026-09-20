@@ -36,6 +36,7 @@ from agent_office.application.workspaces.ports import WorktreeManager
 from agent_office.application.workspaces.service import WorkspaceService
 from agent_office.domain import (
     BASE_REVISION_KEY,
+    CANDIDATE_STATE_FINGERPRINT_KEY,
     CHECK_KEY_KEY,
     CHECK_TYPE_KEY,
     CURRENT_REVISION_KEY,
@@ -62,6 +63,7 @@ from agent_office.domain import (
     TestResult,
     VerificationCheckDefinition,
     Workspace,
+    WorkspaceChangeSummary,
     WorkspaceStatus,
     classify_command,
     utc_now,
@@ -170,6 +172,53 @@ class VerificationService:
 
         return latest
 
+    def evidence_satisfies_current_candidate(
+        self,
+        run_id: RunId,
+        evidence: Evidence,
+    ) -> bool:
+        """Return whether Evidence is a fresh successful observation of the candidate.
+
+        Freshness is evaluated, never persisted by mutating Evidence. Historical
+        records stay append-only: a later candidate edit merely means the old
+        fingerprint no longer matches the current Git-derived state.
+        """
+
+        if not evidence.is_successful_command_evidence:
+            return False
+
+        run = self._runs.get_run(run_id)
+        candidate_id = run.candidate_workspace_id
+
+        if candidate_id is None:
+            return False
+
+        metadata = dict(evidence.metadata)
+
+        if metadata.get(WORKSPACE_ID_KEY) != str(candidate_id):
+            return False
+
+        recorded_fingerprint = metadata.get(CANDIDATE_STATE_FINGERPRINT_KEY)
+
+        if recorded_fingerprint is None:
+            return False
+
+        try:
+            workspace = self._workspaces.get(candidate_id)
+        except Exception:  # noqa: BLE001 - unavailable candidate fails closed
+            return False
+
+        if workspace.status not in _VERIFIABLE_WORKSPACE_STATUSES:
+            return False
+
+        current = self._candidate_state_or_none(workspace)
+
+        return (
+            current is not None
+            and current.state_fingerprint is not None
+            and current.state_fingerprint == recorded_fingerprint
+        )
+
     # ------------------------------------------------------------------
     # Execution
     # ------------------------------------------------------------------
@@ -193,11 +242,6 @@ class VerificationService:
 
         workspace = self._verification_workspace(run)
 
-        # Resolved once, before the checks run: every check in this pass is at
-        # least as recent as this revision, so Evidence carries the revision it
-        # was actually established against rather than only the worktree's base.
-        verified_revision = self._current_revision(workspace)
-
         outcomes: list[CheckOutcome] = []
 
         for definition in definitions:
@@ -218,7 +262,6 @@ class VerificationService:
                 workspace,
                 definition,
                 agent_run=agent_run,
-                verified_revision=verified_revision,
             )
             outcomes.append(outcome)
 
@@ -231,7 +274,6 @@ class VerificationService:
         definition: VerificationCheckDefinition,
         *,
         agent_run: AgentRun | None,
-        verified_revision: str | None = None,
     ) -> CheckOutcome:
         decision = classify_command(definition)
 
@@ -256,6 +298,7 @@ class VerificationService:
             )
 
         working_directory = self._resolve_working_directory(workspace)
+        before = self._candidate_state(workspace)
 
         # A verification command is a blocking child process. Running it off the
         # event loop keeps the API responsive for the whole bounded timeout.
@@ -265,6 +308,20 @@ class VerificationService:
             working_directory=working_directory,
         )
 
+        # Verification evidence is fresh only when the candidate state remained
+        # identical for the whole command. If post-command capture fails or the
+        # digest changes, the factual command result is still recorded but no
+        # freshness fingerprint is attached, so it cannot satisfy a gate.
+        after = self._candidate_state_or_none(workspace)
+        stable_fingerprint = (
+            before.state_fingerprint
+            if after is not None
+            and before.state_fingerprint is not None
+            and before.state_fingerprint == after.state_fingerprint
+            else None
+        )
+        verified_revision = before.current_revision if after is None else after.current_revision
+
         evidence = self._record_evidence(
             run,
             workspace,
@@ -272,6 +329,7 @@ class VerificationService:
             outcome,
             agent_run=agent_run,
             verified_revision=verified_revision,
+            candidate_state_fingerprint=stable_fingerprint,
         )
 
         self._events.emit(
@@ -319,6 +377,7 @@ class VerificationService:
         *,
         agent_run: AgentRun | None,
         verified_revision: str | None = None,
+        candidate_state_fingerprint: str | None = None,
     ) -> Evidence:
         """Append the Evidence for one command execution.
 
@@ -354,6 +413,9 @@ class VerificationService:
 
         if verified_revision is not None:
             metadata = metadata + ((CURRENT_REVISION_KEY, verified_revision),)
+
+        if candidate_state_fingerprint is not None:
+            metadata = metadata + ((CANDIDATE_STATE_FINGERPRINT_KEY, candidate_state_fingerprint),)
 
         summary = self._summarize(definition, outcome)
 
@@ -398,6 +460,7 @@ class VerificationService:
         files_changed: int,
         base_revision: str,
         current_revision: str | None,
+        candidate_state_fingerprint: str | None = None,
         agent_run: AgentRun | None = None,
     ) -> Evidence:
         """Append DIFF_SUMMARY evidence describing a worktree's change set.
@@ -410,8 +473,14 @@ class VerificationService:
             (BASE_REVISION_KEY, base_revision),
         )
 
+        if workspace.id is not None:
+            metadata = metadata + ((WORKSPACE_ID_KEY, str(workspace.id)),)
+
         if current_revision is not None:
             metadata = metadata + ((CURRENT_REVISION_KEY, current_revision),)
+
+        if candidate_state_fingerprint is not None:
+            metadata = metadata + ((CANDIDATE_STATE_FINGERPRINT_KEY, candidate_state_fingerprint),)
 
         evidence = Evidence(
             id=self._evidence_id_factory(),
@@ -447,41 +516,70 @@ class VerificationService:
     # ------------------------------------------------------------------
 
     def _verification_workspace(self, run: Run) -> Workspace:
-        """Return the Run's Workspace that verification may execute inside.
+        """Return the Run's explicitly designated candidate Workspace.
 
-        The Workspace is derived from durable state only, never from a request
-        payload, and it is never the Project's main working tree.
+        Verification never guesses from allocation order. The candidate identity
+        is backend-authoritative durable Run state and can only name a writable
+        Workspace belonging to this Run.
         """
 
-        candidates = [
-            workspace
-            for workspace in self._workspaces.list_for_run(run.id)
-            if workspace.writable and workspace.status in _VERIFIABLE_WORKSPACE_STATUSES
-        ]
+        current_run = self._runs.get_run(run.id)
+        candidate_id = current_run.candidate_workspace_id
 
-        if not candidates:
+        if candidate_id is None:
             raise VerificationWorkspaceError(
                 CommandRejectionCode.WORKSPACE_UNAVAILABLE,
-                "No verified writable Workspace is available for verification; "
-                "verification never runs against the Project's main working tree.",
+                "The Run has no explicit candidate Workspace; verification scope is "
+                "ambiguous and will not fall back to another worktree or the main tree.",
             )
 
-        # Deterministic: the most recently allocated Workspace.
-        return max(candidates, key=lambda workspace: (workspace.created_at, str(workspace.id)))
+        try:
+            candidate = self._workspaces.get(candidate_id)
+        except Exception as exc:
+            raise VerificationWorkspaceError(
+                CommandRejectionCode.WORKSPACE_UNAVAILABLE,
+                "The Run's designated candidate Workspace is unavailable.",
+            ) from exc
 
-    def _current_revision(self, workspace: Workspace) -> str | None:
-        """Return the Worktree's current revision, or None when it cannot be read.
+        if (
+            candidate.run_id != run.id
+            or not candidate.writable
+            or candidate.status not in _VERIFIABLE_WORKSPACE_STATUSES
+        ):
+            raise VerificationWorkspaceError(
+                CommandRejectionCode.WORKSPACE_NOT_VERIFIABLE,
+                "The Run's designated candidate Workspace is not verifiable.",
+            )
 
-        An unread revision is reported as absent rather than guessed: Evidence that
-        names no revision is weaker than Evidence that names a wrong one.
-        """
+        return candidate
+
+    def _candidate_state(self, workspace: Workspace) -> WorkspaceChangeSummary:
+        """Capture a fingerprintable Git state or refuse verification."""
 
         try:
             summary = self._workspaces.capture_changes(workspace.id)
-        except Exception:  # noqa: BLE001 - a missing revision must not block a check
-            return None
+        except Exception as exc:
+            raise VerificationWorkspaceError(
+                CommandRejectionCode.WORKSPACE_NOT_VERIFIABLE,
+                "The candidate Workspace state could not be fingerprinted safely.",
+            ) from exc
 
-        return summary.current_revision
+        if summary.state_fingerprint is None:
+            raise VerificationWorkspaceError(
+                CommandRejectionCode.WORKSPACE_NOT_VERIFIABLE,
+                "The candidate Workspace state has no trustworthy fingerprint.",
+            )
+
+        return summary
+
+    def _candidate_state_or_none(
+        self,
+        workspace: Workspace,
+    ) -> WorkspaceChangeSummary | None:
+        try:
+            return self._candidate_state(workspace)
+        except VerificationWorkspaceError:
+            return None
 
     def _resolve_working_directory(self, workspace: Workspace) -> Path:
         """Resolve the contained absolute location from opaque Workspace identity."""

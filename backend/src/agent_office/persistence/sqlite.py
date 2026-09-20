@@ -12,7 +12,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 BUSY_TIMEOUT_MS = 5000
-LATEST_SCHEMA_VERSION: int = 8
+LATEST_SCHEMA_VERSION: int = 9
 
 SCHEMA_VERSION_KEY = "schema_version"
 
@@ -621,6 +621,29 @@ def _migration_v8(connection: sqlite3.Connection) -> None:
     )
 
 
+def _migration_v9(connection: sqlite3.Connection) -> None:
+    """Persist the explicit Phase 4C candidate Workspace on each Run.
+
+    The column is nullable so every historical Run remains readable. A candidate
+    is designated only after a writable Workspace already exists, and the
+    foreign key prevents a durable Run from pointing at an unknown Workspace.
+    """
+
+    connection.execute(
+        """
+        ALTER TABLE runs
+        ADD COLUMN candidate_workspace_id TEXT REFERENCES workspaces(id)
+        """
+    )
+
+    connection.execute(
+        """
+        CREATE INDEX runs_candidate_workspace_idx
+        ON runs (candidate_workspace_id)
+        """
+    )
+
+
 MIGRATIONS: dict[int, Callable[[sqlite3.Connection], None]] = {
     1: _migration_v1,
     2: _migration_v2,
@@ -630,6 +653,7 @@ MIGRATIONS: dict[int, Callable[[sqlite3.Connection], None]] = {
     6: _migration_v6,
     7: _migration_v7,
     8: _migration_v8,
+    9: _migration_v9,
 }
 
 

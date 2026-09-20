@@ -56,6 +56,7 @@ OUTPUT_EXCERPT_KEY = "output_excerpt"
 #: The Workspace a command evidence record was collected in. Opaque identity
 #: only: a Workspace id is a domain identifier, never a host path.
 WORKSPACE_ID_KEY = "workspace_id"
+CANDIDATE_STATE_FINGERPRINT_KEY = "candidate_state_fingerprint"
 
 #: A captured output excerpt is bounded. Raw, unbounded command output is never
 #: persisted anywhere (SECURITY_MODEL §17, §362).

@@ -30,6 +30,7 @@ from agent_office.domain import (
     RunStatus,
     TaskId,
     WorkflowSnapshotId,
+    WorkspaceId,
     ensure_run_transition_allowed,
     is_terminal_run_status,
     utc_now,
@@ -267,6 +268,30 @@ class RunService:
         updated = replace(
             run,
             resolved_executor_id=executor_id,
+            updated_at=utc_now(self._clock),
+        )
+
+        self._run_repository.update(updated)
+        return updated
+
+    def designate_candidate_workspace(
+        self,
+        run: Run,
+        workspace_id: WorkspaceId,
+    ) -> Run:
+        """Persist the explicit Workspace whose state review/verification evaluate.
+
+        The caller must derive this identity from durable orchestration state, not
+        from an arbitrary request parameter. Re-designating the same Workspace is
+        idempotent; changing it records a new authoritative candidate on the Run.
+        """
+
+        if run.candidate_workspace_id == workspace_id:
+            return run
+
+        updated = replace(
+            run,
+            candidate_workspace_id=workspace_id,
             updated_at=utc_now(self._clock),
         )
 

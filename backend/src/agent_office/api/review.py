@@ -179,7 +179,10 @@ def get_run_verification(
                 required=check.required,
                 command_status=None if result is None else result.command_status,
                 evidence_id=None if evidence is None else str(evidence.id),
-                satisfied=evidence is not None and evidence.is_successful_command_evidence,
+                satisfied=(
+                    evidence is not None
+                    and verification_service.evidence_satisfies_current_candidate(run, evidence)
+                ),
             )
         )
 

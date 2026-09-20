@@ -274,6 +274,7 @@ class WorkspaceChangeSummary:
     deleted_paths: tuple[str, ...] = ()
     untracked_paths: tuple[str, ...] = ()
     current_revision: str | None = None
+    state_fingerprint: str | None = None
     insertions: int | None = None
     deletions: int | None = None
 

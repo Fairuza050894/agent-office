@@ -3,6 +3,7 @@
 ## Current checkpoint
 
 ```text
+02955a2 chore: harden agent context workflow
 c92466c chore: add agent workflow skills
 2ec69b7 docs: complete phase 4b verification
 9383f79 feat: add review findings and verification evidence
@@ -18,7 +19,7 @@ Current recorded status:
 - Phase 3 CLOSED
 - Phase 4A CLOSED
 - Phase 4B CLOSED
-- Phase 4C HOLD
+- Phase 4C ACTIVE — 4C-1 candidate truth and Evidence freshness
 - Phase 5 not started
 - Phase 6 real executor not started
 
@@ -55,10 +56,16 @@ Phase 4 closes with ReferenceExecutor.
 
 A real Codex/Antigravity/OpenClaw/Hermes executor belongs to Phase 6.
 
-## Phase 4C is currently HOLD
+## Phase 4C is ACTIVE
 
-Phase 4C behavior work remains on hold while the approved context-efficiency hardening patch is prepared.
+Phase 4C resumed explicitly after the context-efficiency hardening checkpoint
+`02955a2`. The current bounded implementation slice is **4C-1**:
 
-This maintenance patch may update repository governance, agent skills, context/verification scripts, and navigation indexes, but must not implement Phase 4C behavior.
+- durable `Run.candidate_workspace_id`
+- review and verification bound to that explicit candidate
+- deterministic candidate-state fingerprint for uncommitted worktree state
+- stale command Evidence must not satisfy verification/completion gates
+- multiple relevant implementation writers remain fail-closed until 4C-2 integration
 
-Resume Phase 4C only when explicitly requested after this maintenance checkpoint is reviewed.
+Do not introduce a real AI executor, auto-commit, auto-merge, force-push, or
+destructive Git while this slice is active.

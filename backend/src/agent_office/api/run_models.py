@@ -59,6 +59,7 @@ class RunResponse(BaseModel):
     completed_at: datetime | None
     cancel_requested_at: datetime | None
     remediation_cycles_used: int
+    candidate_workspace_id: str | None
     created_at: datetime
     updated_at: datetime
 
@@ -85,6 +86,9 @@ class RunResponse(BaseModel):
             completed_at=run.completed_at,
             cancel_requested_at=run.cancel_requested_at,
             remediation_cycles_used=run.remediation_cycles_used,
+            candidate_workspace_id=(
+                None if run.candidate_workspace_id is None else str(run.candidate_workspace_id)
+            ),
             created_at=run.created_at,
             updated_at=run.updated_at,
         )

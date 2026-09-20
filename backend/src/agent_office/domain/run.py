@@ -13,6 +13,7 @@ from agent_office.domain.identifiers import (
     RunId,
     TaskId,
     WorkflowSnapshotId,
+    WorkspaceId,
 )
 from agent_office.domain.timestamps import to_utc
 from agent_office.domain.workflow import ChangeArea
@@ -168,6 +169,7 @@ class Run:
     completed_at: datetime | None = None
     cancel_requested_at: datetime | None = None
     remediation_cycles_used: int = 0
+    candidate_workspace_id: WorkspaceId | None = None
 
     def __post_init__(self) -> None:
         created_at = to_utc(self.created_at)

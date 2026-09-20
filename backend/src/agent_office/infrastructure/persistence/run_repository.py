@@ -18,6 +18,7 @@ from agent_office.domain import (
     RunStatus,
     TaskId,
     WorkflowSnapshotId,
+    WorkspaceId,
     to_utc,
 )
 from agent_office.persistence import SQLiteDatabase
@@ -54,9 +55,10 @@ class SQLiteRunRepository:
                         started_at,
                         completed_at,
                         cancel_requested_at,
-                        remediation_cycles_used
+                        remediation_cycles_used,
+                        candidate_workspace_id
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     self._parameters(run),
                 )
@@ -85,6 +87,7 @@ class SQLiteRunRepository:
                     completed_at = ?,
                     cancel_requested_at = ?,
                     remediation_cycles_used = ?,
+                    candidate_workspace_id = COALESCE(?, candidate_workspace_id),
                     updated_at = ?,
                     workflow_snapshot_id = COALESCE(workflow_snapshot_id, ?)
                 WHERE id = ?
@@ -99,6 +102,7 @@ class SQLiteRunRepository:
                     _optional_datetime(run.completed_at),
                     _optional_datetime(run.cancel_requested_at),
                     run.remediation_cycles_used,
+                    None if run.candidate_workspace_id is None else str(run.candidate_workspace_id),
                     _serialize_datetime(run.updated_at),
                     None if run.workflow_snapshot_id is None else str(run.workflow_snapshot_id),
                     str(run.id),
@@ -166,6 +170,7 @@ class SQLiteRunRepository:
             _optional_datetime(run.completed_at),
             _optional_datetime(run.cancel_requested_at),
             run.remediation_cycles_used,
+            None if run.candidate_workspace_id is None else str(run.candidate_workspace_id),
         )
 
     def _hydrate(self, row: sqlite3.Row) -> Run:
@@ -194,6 +199,11 @@ class SQLiteRunRepository:
             completed_at=_optional_parse_datetime(row["completed_at"]),
             cancel_requested_at=_optional_parse_datetime(row["cancel_requested_at"]),
             remediation_cycles_used=int(row["remediation_cycles_used"]),
+            candidate_workspace_id=(
+                None
+                if row["candidate_workspace_id"] is None
+                else WorkspaceId.parse(row["candidate_workspace_id"])
+            ),
         )
 
 

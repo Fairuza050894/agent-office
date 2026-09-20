@@ -41,6 +41,7 @@ from agent_office.domain.event import (
 )
 from agent_office.domain.evidence import (
     BASE_REVISION_KEY,
+    CANDIDATE_STATE_FINGERPRINT_KEY,
     CHECK_KEY_KEY,
     CHECK_TYPE_KEY,
     COMMAND_STATUS_KEY,
@@ -231,6 +232,7 @@ from agent_office.domain.workspace import (
 __all__ = [
     "ALLOWED_EXECUTABLES",
     "BASE_REVISION_KEY",
+    "CANDIDATE_STATE_FINGERPRINT_KEY",
     "CHECK_KEY_KEY",
     "CHECK_TYPE_KEY",
     "COMMAND_STATUS_KEY",
