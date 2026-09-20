@@ -22,7 +22,7 @@ Current recorded status:
 - Phase 3 CLOSED
 - Phase 4A CLOSED
 - Phase 4B CLOSED
-- Phase 4C ACTIVE — 4C-1 CLOSED; 4C-2 CLOSED; 4C-3 end-to-end closure NEXT
+- Phase 4C ACTIVE — 4C-1 CLOSED; 4C-2 CLOSED; 4C-3 end-to-end closure ACTIVE
 - Phase 5 not started
 - Phase 6 real executor not started
 
@@ -86,7 +86,7 @@ Phase 4C resumed explicitly after the context-efficiency hardening checkpoint
 - the previous multi-writer strict `xfail` acceptance blocker now passes normally
 - integration still does not auto-commit, auto-merge, rebase, cherry-pick, push, or resolve conflicting paths heuristically
 
-The next bounded slice is **4C-3 end-to-end closure**:
+The current bounded slice is **4C-3 end-to-end closure**:
 
 - prove the complete Phase 4 candidate lifecycle across single-writer and multi-writer paths
 - prove cleanup/reconciliation semantics for candidate and integration Workspaces

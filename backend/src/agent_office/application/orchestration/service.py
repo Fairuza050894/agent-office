@@ -2268,8 +2268,32 @@ class RunOrchestrator:
         run = self._runs.get_run(run_id)
         stages = self._stages.list_for_run(run_id)
         agent_runs = self._agent_runs.list_for_run(run_id)
+        failures = self._completion_gate_failures(run, stages, agent_runs)
 
-        return self._completion_gate_failures(run, stages, agent_runs)
+        # A safely released candidate no longer has a filesystem state that can
+        # be re-fingerprinted. That loss of re-verifiability happens only after
+        # explicit cleanup and must not retroactively report a verification-gate
+        # failure for an already COMPLETED Run. A retained/dirty candidate still
+        # evaluates normally and stale Evidence remains visible as a failure.
+        if (
+            run.status is RunStatus.COMPLETED
+            and RunReasonCode.VERIFICATION_EVIDENCE_MISSING in failures
+            and self._workspaces is not None
+            and run.candidate_workspace_id is not None
+        ):
+            try:
+                candidate = self._workspaces.get(run.candidate_workspace_id)
+            except WorkspaceNotFoundError:
+                candidate = None
+
+            if candidate is not None and candidate.status is WorkspaceStatus.RELEASED:
+                failures = tuple(
+                    failure
+                    for failure in failures
+                    if failure is not RunReasonCode.VERIFICATION_EVIDENCE_MISSING
+                )
+
+        return failures
 
     def _completion_gate_failures(
         self,
