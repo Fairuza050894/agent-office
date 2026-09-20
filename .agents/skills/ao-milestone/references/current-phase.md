@@ -3,6 +3,7 @@
 ## Current checkpoint
 
 ```text
+ce1a7e9 feat: add multi-writer integration workspace
 2c58887 docs: complete phase 4c1 verification
 0e06de6 feat: enforce candidate truth and evidence freshness
 02955a2 chore: harden agent context workflow
@@ -21,7 +22,7 @@ Current recorded status:
 - Phase 3 CLOSED
 - Phase 4A CLOSED
 - Phase 4B CLOSED
-- Phase 4C ACTIVE — 4C-1 CLOSED; 4C-2 multi-writer integration ACTIVE
+- Phase 4C ACTIVE — 4C-1 CLOSED; 4C-2 CLOSED; 4C-3 end-to-end closure NEXT
 - Phase 5 not started
 - Phase 6 real executor not started
 
@@ -72,16 +73,25 @@ Phase 4C resumed explicitly after the context-efficiency hardening checkpoint
 - remediation reuses the designated candidate workspace
 - schema migration to version 9 for durable candidate identity
 
-The current bounded implementation slice is **4C-2 multi-writer integration**:
+4C-2 is **CLOSED** after canonical verification on 2026-09-20 at implementation checkpoint `ce1a7e9`.
 
-- several relevant implementation writer Workspaces produce one explicit integration candidate
+4C-2 established:
+
+- multiple relevant implementation writer Workspaces converge into one explicit integration candidate
 - integration occurs only inside a managed `INTEGRATION_WORKTREE`
+- disjoint writer changes are copied into the integration candidate without mutating source writer Workspaces
 - overlapping writer paths fail closed before integration target mutation
-- source writer Workspaces and the registered Project main working tree remain unchanged
-- verification/review bind to the integrated candidate, never allocation order
+- the registered Project main working tree remains unchanged
+- review and verification bind to the integrated candidate, never allocation order
+- the previous multi-writer strict `xfail` acceptance blocker now passes normally
+- integration still does not auto-commit, auto-merge, rebase, cherry-pick, push, or resolve conflicting paths heuristically
 
-4C-2 does not auto-commit, auto-merge, rebase, cherry-pick, push, or resolve
-conflicting paths heuristically.
+The next bounded slice is **4C-3 end-to-end closure**:
 
-Do not introduce a real AI executor, auto-commit, auto-merge, force-push, or
-destructive Git during 4C-2.
+- prove the complete Phase 4 candidate lifecycle across single-writer and multi-writer paths
+- prove cleanup/reconciliation semantics for candidate and integration Workspaces
+- confirm restart-safe durable state after candidate/integration designation
+- close remaining Phase 4 acceptance/documentation gaps without introducing real executors
+- produce the final Phase 4 closure evidence before Phase 5 begins
+
+Do not introduce a real AI executor, auto-commit, auto-merge, force-push, or destructive Git during 4C-3.
