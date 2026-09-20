@@ -19,7 +19,7 @@ Current recorded status:
 - Phase 3 CLOSED
 - Phase 4A CLOSED
 - Phase 4B CLOSED
-- Phase 4C ACTIVE — 4C-1 candidate truth and Evidence freshness
+- Phase 4C ACTIVE — 4C-1 CLOSED; 4C-2 multi-writer integration NEXT
 - Phase 5 not started
 - Phase 6 real executor not started
 
@@ -59,13 +59,20 @@ A real Codex/Antigravity/OpenClaw/Hermes executor belongs to Phase 6.
 ## Phase 4C is ACTIVE
 
 Phase 4C resumed explicitly after the context-efficiency hardening checkpoint
-`02955a2`. The current bounded implementation slice is **4C-1**:
+`02955a2`. **4C-1 is CLOSED** after canonical verification on 2026-09-20.
+
+4C-1 established:
 
 - durable `Run.candidate_workspace_id`
 - review and verification bound to that explicit candidate
 - deterministic candidate-state fingerprint for uncommitted worktree state
-- stale command Evidence must not satisfy verification/completion gates
-- multiple relevant implementation writers remain fail-closed until 4C-2 integration
+- stale command Evidence cannot satisfy verification/completion gates
+- remediation reuses the designated candidate workspace
+- schema migration to version 9 for durable candidate identity
+
+The remaining Phase 4C blocker is **4C-2 multi-writer integration**. Multiple
+relevant implementation writers must remain fail-closed until an integration
+workspace produces one explicit candidate state.
 
 Do not introduce a real AI executor, auto-commit, auto-merge, force-push, or
-destructive Git while this slice is active.
+destructive Git during 4C-2.
