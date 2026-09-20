@@ -3,6 +3,8 @@
 ## Current checkpoint
 
 ```text
+2c58887 docs: complete phase 4c1 verification
+0e06de6 feat: enforce candidate truth and evidence freshness
 02955a2 chore: harden agent context workflow
 c92466c chore: add agent workflow skills
 2ec69b7 docs: complete phase 4b verification
@@ -19,7 +21,7 @@ Current recorded status:
 - Phase 3 CLOSED
 - Phase 4A CLOSED
 - Phase 4B CLOSED
-- Phase 4C ACTIVE — 4C-1 CLOSED; 4C-2 multi-writer integration NEXT
+- Phase 4C ACTIVE — 4C-1 CLOSED; 4C-2 multi-writer integration ACTIVE
 - Phase 5 not started
 - Phase 6 real executor not started
 
@@ -70,9 +72,16 @@ Phase 4C resumed explicitly after the context-efficiency hardening checkpoint
 - remediation reuses the designated candidate workspace
 - schema migration to version 9 for durable candidate identity
 
-The remaining Phase 4C blocker is **4C-2 multi-writer integration**. Multiple
-relevant implementation writers must remain fail-closed until an integration
-workspace produces one explicit candidate state.
+The current bounded implementation slice is **4C-2 multi-writer integration**:
+
+- several relevant implementation writer Workspaces produce one explicit integration candidate
+- integration occurs only inside a managed `INTEGRATION_WORKTREE`
+- overlapping writer paths fail closed before integration target mutation
+- source writer Workspaces and the registered Project main working tree remain unchanged
+- verification/review bind to the integrated candidate, never allocation order
+
+4C-2 does not auto-commit, auto-merge, rebase, cherry-pick, push, or resolve
+conflicting paths heuristically.
 
 Do not introduce a real AI executor, auto-commit, auto-merge, force-push, or
 destructive Git during 4C-2.

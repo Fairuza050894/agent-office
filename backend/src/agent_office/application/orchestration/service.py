@@ -43,6 +43,7 @@ from agent_office.application.workflows.service import WorkflowService
 from agent_office.application.workspaces import (
     WRITE_ACCESS_MODES,
     WorkspaceAllocationError,
+    WorkspaceIntegrationError,
     WorkspaceNotFoundError,
     WorkspaceOwnershipError,
     WorkspaceService,
@@ -552,10 +553,12 @@ class RunOrchestrator:
             return run
 
         # Workflows without an explicit review stage still need an authoritative
-        # candidate before final verification. This resolver only designates a
-        # single completed writer; multi-writer scope remains intentionally
-        # ambiguous until Phase 4C-2 integration exists.
+        # candidate before final verification. Several writer Workspaces are
+        # integrated into one explicit candidate before any check can run.
         self._review_candidate(run)
+        run = self._runs.get_run(run.id)
+        if run.status is RunStatus.BLOCKED:
+            return run
 
         latest = self._verification.latest_check_evidence(run.id)
 
@@ -1367,6 +1370,18 @@ class RunOrchestrator:
         candidate = self._review_candidate(run)
 
         if candidate is None:
+            current_run = self._runs.get_run(run.id)
+            if (
+                current_run.status is RunStatus.BLOCKED
+                and current_run.failure_code is RunReasonCode.INTEGRATION_CONFLICT
+            ):
+                return self._block_agent_run(
+                    current_run,
+                    agent_run,
+                    AgentRunReasonCode.WORKSPACE_UNAVAILABLE,
+                    current_run.failure_summary
+                    or "Multi-writer integration could not produce a review candidate.",
+                )
             return agent_run
 
         try:
@@ -1395,9 +1410,9 @@ class RunOrchestrator:
         """Return or designate the explicit implementation candidate Workspace.
 
         Allocation order is never used. A single completed implementation writer
-        can become the durable candidate directly. Several independent writer
-        Workspaces are intentionally ambiguous and require Phase 4C-2 integration
-        before review/verification may claim one final state.
+        can become the durable candidate directly. Several relevant writer
+        Workspaces are combined in one controlled integration Worktree; conflicts
+        block the Run instead of selecting a writer or applying last-write-wins.
         """
 
         if self._workspaces is None:
@@ -1462,17 +1477,28 @@ class RunOrchestrator:
             if agent_run.workspace_id is not None
         }
 
-        if len(workspace_ids) != 1:
-            # Zero writers means no candidate exists. More than one writer means
-            # integration is required; choosing any one would hide valid work.
+        if not workspace_ids:
             return None
 
-        workspace_id = next(iter(workspace_ids))
-
-        try:
-            candidate = self._workspaces.get(workspace_id)
-        except Exception:  # noqa: BLE001 - unavailable candidate fails closed
-            return None
+        if len(workspace_ids) > 1:
+            try:
+                candidate = self._workspaces.ensure_integration_workspace(
+                    current_run,
+                    tuple(sorted(workspace_ids, key=str)),
+                )
+            except WorkspaceIntegrationError as exc:
+                self._block(
+                    current_run,
+                    RunReasonCode.INTEGRATION_CONFLICT,
+                    exc.reason_summary,
+                )
+                return None
+        else:
+            workspace_id = next(iter(workspace_ids))
+            try:
+                candidate = self._workspaces.get(workspace_id)
+            except Exception:  # noqa: BLE001 - unavailable candidate fails closed
+                return None
 
         if (
             candidate.run_id != run.id

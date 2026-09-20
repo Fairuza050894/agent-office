@@ -299,6 +299,216 @@ class GitWorktreeManager:
             deletions=deletions,
         )
 
+    def integrate_worktrees(
+        self,
+        target_path_ref: str,
+        source_path_refs: tuple[str, ...],
+        *,
+        base_revision: str,
+    ) -> tuple[str, ...]:
+        """Combine disjoint uncommitted writer states into one Worktree.
+
+        Integration is intentionally conservative for Phase 4C-2. Every source
+        must be based on the same recorded revision and may claim a changed path
+        only once. Any overlap is reported before the target is mutated; rename
+        and copy status entries are rejected because their two-path semantics
+        require a richer merge policy. Tracked changes are replayed with
+        ``git apply`` and untracked files are copied without following symlinks.
+
+        This never commits, merges, rebases, checks out the user's branch, or
+        writes outside the managed integration Worktree.
+        """
+
+        if len(source_path_refs) < 2:
+            raise WorktreeOperationError("Integration requires at least two source Workspaces")
+
+        target = self.resolve_workspace_path(target_path_ref)
+        if not target.exists():
+            raise WorktreeOperationError("Integration target Worktree is missing")
+
+        if self._status_entries(target):
+            raise WorktreeOperationError("Integration target must start from a clean base")
+
+        sources: list[tuple[Path, tuple[_StatusEntry, ...], str, tuple[str, ...]]] = []
+        owners: dict[str, int] = {}
+        conflicts: set[str] = set()
+
+        for index, path_ref in enumerate(source_path_refs):
+            source = self.resolve_workspace_path(path_ref)
+            if not source.exists():
+                raise WorktreeOperationError("An integration source Worktree is missing")
+
+            source_base = self._git_or_none(source, "merge-base", "HEAD", base_revision)
+            if source_base != base_revision:
+                raise WorktreeOperationError(
+                    "An integration source does not share the recorded base revision"
+                )
+
+            entries = self._status_entries(source)
+            for entry in entries:
+                if entry.index_status in {"R", "C"} or entry.worktree_status in {"R", "C"}:
+                    raise WorktreeOperationError(
+                        "Rename/copy changes require an explicit integration policy"
+                    )
+
+                self._validate_repository_relative_path(entry.path)
+                previous = owners.get(entry.path)
+                if previous is not None and previous != index:
+                    conflicts.add(entry.path)
+                else:
+                    owners[entry.path] = index
+
+            patch = self._run(
+                source,
+                "diff",
+                "--binary",
+                "--full-index",
+                "--no-ext-diff",
+                "--no-color",
+                base_revision,
+                "--",
+            )
+            if patch.returncode != 0:
+                raise WorktreeOperationError(
+                    self._safe_git_failure("integration diff failed", patch)
+                )
+
+            untracked = tuple(
+                sorted(
+                    entry.path
+                    for entry in entries
+                    if entry.index_status == "?" and entry.worktree_status == "?"
+                )
+            )
+            for relative_path in untracked:
+                self._preflight_untracked_source(source, relative_path)
+
+            sources.append((source, entries, patch.stdout, untracked))
+
+        if conflicts:
+            return tuple(sorted(conflicts))
+
+        # Preflight every tracked patch against the pristine target before any
+        # mutation. Paths are disjoint, so checks remain valid when replayed in
+        # deterministic source order.
+        for _source, _entries, patch_text, _untracked in sources:
+            if not patch_text:
+                continue
+            check = self._run_with_input(
+                target,
+                patch_text,
+                "apply",
+                "--check",
+                "--whitespace=nowarn",
+                "-",
+            )
+            if check.returncode != 0:
+                raise WorktreeOperationError(
+                    self._safe_git_failure("integration patch preflight failed", check)
+                )
+
+        for source, _entries, patch_text, untracked in sources:
+            if patch_text:
+                applied = self._run_with_input(
+                    target,
+                    patch_text,
+                    "apply",
+                    "--whitespace=nowarn",
+                    "-",
+                )
+                if applied.returncode != 0:
+                    raise WorktreeOperationError(
+                        self._safe_git_failure("integration patch apply failed", applied)
+                    )
+
+            for relative_path in untracked:
+                self._copy_untracked_path(source, target, relative_path)
+
+        return ()
+
+    @staticmethod
+    def _validate_repository_relative_path(relative_path: str) -> None:
+        candidate = Path(relative_path)
+        if candidate.is_absolute() or not candidate.parts or ".." in candidate.parts:
+            raise WorktreeOperationError(
+                "Git reported an unsafe repository-relative path during integration"
+            )
+
+    def _preflight_untracked_source(self, source: Path, relative_path: str) -> None:
+        self._validate_repository_relative_path(relative_path)
+        candidate = source / relative_path
+        try:
+            resolved_parent = candidate.parent.resolve(strict=True)
+            source_root = source.resolve(strict=True)
+            info = os.lstat(candidate)
+        except OSError as exc:
+            raise WorktreeOperationError(
+                "An untracked integration source changed during preflight"
+            ) from exc
+
+        if resolved_parent != source_root and not resolved_parent.is_relative_to(source_root):
+            raise WorktreeOperationError(
+                "An untracked integration source escapes its managed Worktree"
+            )
+
+        if not (stat.S_ISREG(info.st_mode) or stat.S_ISLNK(info.st_mode)):
+            raise WorktreeOperationError(
+                "Unsupported untracked file type prevents safe integration"
+            )
+
+    def _copy_untracked_path(self, source: Path, target: Path, relative_path: str) -> None:
+        """Copy one untracked file/symlink without following source symlinks."""
+
+        self._preflight_untracked_source(source, relative_path)
+        source_path = source / relative_path
+        target_path = target / relative_path
+        target_root = target.resolve(strict=True)
+
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        resolved_parent = target_path.parent.resolve(strict=True)
+        if resolved_parent != target_root and not resolved_parent.is_relative_to(target_root):
+            raise WorktreeOperationError("An integration target path escapes its managed Worktree")
+
+        if target_path.exists() or target_path.is_symlink():
+            raise WorktreeOperationError(
+                "An untracked integration target unexpectedly already exists"
+            )
+
+        info = os.lstat(source_path)
+        if stat.S_ISLNK(info.st_mode):
+            os.symlink(os.readlink(source_path), target_path)
+            return
+
+        source_flags = os.O_RDONLY
+        if hasattr(os, "O_NOFOLLOW"):
+            source_flags |= os.O_NOFOLLOW
+        descriptor = os.open(source_path, source_flags)
+        target_flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+        if hasattr(os, "O_NOFOLLOW"):
+            target_flags |= os.O_NOFOLLOW
+
+        output: int | None = None
+        try:
+            after = os.fstat(descriptor)
+            if (info.st_dev, info.st_ino) != (after.st_dev, after.st_ino):
+                raise WorktreeOperationError(
+                    "An untracked integration source changed identity during copy"
+                )
+
+            output = os.open(target_path, target_flags, info.st_mode & 0o777)
+            while True:
+                chunk = os.read(descriptor, 1024 * 1024)
+                if not chunk:
+                    break
+                view = memoryview(chunk)
+                while view:
+                    written = os.write(output, view)
+                    view = view[written:]
+        finally:
+            os.close(descriptor)
+            if output is not None:
+                os.close(output)
+
     def _state_fingerprint(
         self,
         path: Path,
@@ -574,6 +784,26 @@ class GitWorktreeManager:
         value = result.stdout.strip()
 
         return value or None
+
+    def _run_with_input(
+        self,
+        path: Path,
+        input_text: str,
+        *arguments: str,
+    ) -> subprocess.CompletedProcess[str]:
+        """Run one Git command with bounded caller-provided stdin and no shell."""
+
+        try:
+            return subprocess.run(
+                ["git", "-C", str(path), *arguments],
+                input=input_text,
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=GIT_TIMEOUT_SECONDS,
+            )
+        except (FileNotFoundError, subprocess.TimeoutExpired) as exc:
+            raise WorktreeOperationError("Git command could not be executed safely") from exc
 
     def _run(self, path: Path, *arguments: str) -> subprocess.CompletedProcess[str]:
         """Run one Git command with an argument array and no shell."""

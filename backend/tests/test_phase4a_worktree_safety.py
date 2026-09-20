@@ -1276,3 +1276,106 @@ def test_no_write_assignment_ever_targets_the_main_working_tree(
         assert location != repository_root
         assert not location.is_relative_to(repository_root)
         assert location.is_relative_to(Path(manager.workspace_root).resolve())
+
+
+# ----------------------------------------------------------------------
+# Phase 4C-2. Multi-writer integration
+# ----------------------------------------------------------------------
+
+
+def test_integration_worktree_combines_disjoint_writer_states(tmp_path: Path) -> None:
+    """Disjoint writer changes become one isolated, uncommitted candidate."""
+
+    repository = create_git_repository(tmp_path / "integration-repo")
+    manager = GitWorktreeManager(tmp_path / "managed-integration")
+    identity = manager.resolve_repository_identity(repository)
+    base_revision = git(repository, "rev-parse", "HEAD")
+    project_id = ProjectId.new()
+    run_id = RunId.new()
+
+    source_ids = (WorkspaceId.new(), WorkspaceId.new())
+    target_id = WorkspaceId.new()
+
+    for workspace_id, profile in (
+        (source_ids[0], "backend-developer"),
+        (source_ids[1], "frontend-developer"),
+        (target_id, "integration"),
+    ):
+        manager.create_worktree(
+            project_id=project_id,
+            run_id=run_id,
+            workspace_id=workspace_id,
+            repository_path=repository,
+            identity=identity,
+            base_revision=base_revision,
+            git_branch=generated_branch_name(run_id, profile, workspace_id),
+        )
+
+    source_refs = tuple(workspace_path_ref(project_id, run_id, item) for item in source_ids)
+    target_ref = workspace_path_ref(project_id, run_id, target_id)
+
+    write_workspace_file(manager, source_refs[0], "backend/change.txt", "backend\n")
+    write_workspace_file(manager, source_refs[1], "frontend/change.txt", "frontend\n")
+
+    conflicts = manager.integrate_worktrees(
+        target_ref,
+        source_refs,
+        base_revision=base_revision,
+    )
+
+    assert conflicts == ()
+    target = manager.resolve_workspace_path(target_ref)
+    assert (target / "backend/change.txt").read_text() == "backend\n"
+    assert (target / "frontend/change.txt").read_text() == "frontend\n"
+    assert manager.capture_changes(target_ref, base_revision=base_revision).changed_paths == (
+        "backend/change.txt",
+        "frontend/change.txt",
+    )
+    assert git(repository, "branch", "--show-current") == "main"
+    assert git(repository, "status", "--porcelain") == ""
+
+
+def test_integration_worktree_blocks_overlapping_writer_paths(tmp_path: Path) -> None:
+    """Path overlap is reported before the integration target is mutated."""
+
+    repository = create_git_repository(tmp_path / "integration-conflict-repo")
+    manager = GitWorktreeManager(tmp_path / "managed-integration-conflict")
+    identity = manager.resolve_repository_identity(repository)
+    base_revision = git(repository, "rev-parse", "HEAD")
+    project_id = ProjectId.new()
+    run_id = RunId.new()
+
+    source_ids = (WorkspaceId.new(), WorkspaceId.new())
+    target_id = WorkspaceId.new()
+
+    for workspace_id, profile in (
+        (source_ids[0], "backend-developer"),
+        (source_ids[1], "frontend-developer"),
+        (target_id, "integration"),
+    ):
+        manager.create_worktree(
+            project_id=project_id,
+            run_id=run_id,
+            workspace_id=workspace_id,
+            repository_path=repository,
+            identity=identity,
+            base_revision=base_revision,
+            git_branch=generated_branch_name(run_id, profile, workspace_id),
+        )
+
+    source_refs = tuple(workspace_path_ref(project_id, run_id, item) for item in source_ids)
+    target_ref = workspace_path_ref(project_id, run_id, target_id)
+    write_workspace_file(manager, source_refs[0], "shared.txt", "writer one\n")
+    write_workspace_file(manager, source_refs[1], "shared.txt", "writer two\n")
+
+    conflicts = manager.integrate_worktrees(
+        target_ref,
+        source_refs,
+        base_revision=base_revision,
+    )
+
+    assert conflicts == ("shared.txt",)
+    summary = manager.capture_changes(target_ref, base_revision=base_revision)
+    assert summary.is_dirty is False
+    assert git(repository, "branch", "--show-current") == "main"
+    assert git(repository, "status", "--porcelain") == ""

@@ -104,6 +104,7 @@ def create_workflow(
     harness: Harness,
     *,
     checks: list[dict[str, Any]],
+    multi_writer: bool = False,
 ) -> dict[str, Any]:
     """Create a workflow whose implementation stage runs in a real worktree."""
 
@@ -131,7 +132,17 @@ def create_workflow(
                     {
                         "profile_key": "backend-developer",
                         "access_mode": AgentAccessMode.WRITE.value,
-                    }
+                    },
+                    *(
+                        [
+                            {
+                                "profile_key": "frontend-developer",
+                                "access_mode": AgentAccessMode.WRITE.value,
+                            }
+                        ]
+                        if multi_writer
+                        else []
+                    ),
                 ],
             },
         ],
@@ -149,6 +160,7 @@ def execute(
     workflow: dict[str, Any],
     *,
     project: dict[str, Any] | None = None,
+    changed_areas: list[ChangeArea] | None = None,
 ) -> dict[str, Any]:
     """Start a Run for a custom workflow and return the final Run."""
 
@@ -159,7 +171,10 @@ def execute(
         requested_workflow_id=workflow["id"],
     )
     run = harness.create_run(task["id"])
-    harness.start_run(run["id"], changed_areas=[ChangeArea.BACKEND])
+    harness.start_run(
+        run["id"],
+        changed_areas=changed_areas or [ChangeArea.BACKEND],
+    )
 
     return harness.run_by_id(run["id"])
 
@@ -489,30 +504,22 @@ def test_read_only_view_targets_a_writable_candidate(
     assert {persisted["candidate_workspace_id"]} == observed
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "Phase 4C-2 obligation: several relevant implementation writers require an "
-        "integration Workspace before one final candidate can be designated. Phase "
-        "4C-1 now fails closed instead of choosing the latest worktree, so no command "
-        "Evidence exists until integration lands. When integration candidate support "
-        "lands this test will XPASS and this marker can be removed."
-    ),
-)
-def test_multi_writer_verification_runs_in_an_implementation_worktree(
+def test_multi_writer_verification_runs_in_an_integration_candidate(
     harness_factory: HarnessFactory,
 ) -> None:
-    """With several writers, the verified revision must be one under review.
-
-    ``enterprise-engineering`` with both areas changed allocates three writable
-    worktrees: backend and frontend implementation, and documentation last. The
-    checks run once every stage is terminal, so the last-allocated worktree is the
-    documentation one — which holds none of the implementation under review.
-    """
+    """Several relevant writers are verified only after explicit integration."""
 
     harness = harness_factory(ReferenceScenario.SUCCESS)
-    run, _ = harness.start_workflow(
-        "enterprise-engineering",
+    project, repository = register_repository(harness, "Multi Writer Verification")
+    workflow = create_workflow(
+        harness,
+        checks=[check_request()],
+        multi_writer=True,
+    )
+    run = execute(
+        harness,
+        workflow,
+        project=project,
         changed_areas=[ChangeArea.BACKEND, ChangeArea.UI],
     )
 
@@ -521,8 +528,17 @@ def test_multi_writer_verification_runs_in_an_implementation_worktree(
         for agent in harness.agent_runs(run["id"])
         if agent["stage_key"] == "IMPLEMENTATION"
     }
-
     assert len(implementation) > 1, "this scenario must have several writers"
+
+    persisted = harness.run_by_id(run["id"])
+    candidate_id = persisted["candidate_workspace_id"]
+    assert candidate_id is not None
+    assert candidate_id not in implementation
+
+    workspaces = harness.client.get(f"/api/runs/{run['id']}/workspaces").json()
+    candidate = next(item for item in workspaces if item["id"] == candidate_id)
+    assert candidate["kind"] == "INTEGRATION_WORKTREE"
+    assert candidate["status"] in {"READY", "RELEASED"}
 
     verified_in = {
         item["metadata"]["workspace_id"]
@@ -530,8 +546,8 @@ def test_multi_writer_verification_runs_in_an_implementation_worktree(
         if item["kind"] == EvidenceKind.TEST_RESULT
     }
 
-    assert verified_in
-    assert verified_in <= implementation
+    assert verified_in == {candidate_id}
+    assert git(repository, "branch", "--show-current") == "main"
 
 
 # ----------------------------------------------------------------------
