@@ -3,6 +3,8 @@
 ## Current checkpoint
 
 ```text
+7db2585 feat: close candidate lifecycle and cleanup semantics
+a9671af docs: complete phase 4c2 verification
 ce1a7e9 feat: add multi-writer integration workspace
 2c58887 docs: complete phase 4c1 verification
 0e06de6 feat: enforce candidate truth and evidence freshness
@@ -20,78 +22,71 @@ Current recorded status:
 - Phase 1 CLOSED
 - Phase 2 CLOSED
 - Phase 3 CLOSED
-- Phase 4A CLOSED
-- Phase 4B CLOSED
-- Phase 4C ACTIVE — 4C-1 CLOSED; 4C-2 CLOSED; 4C-3 end-to-end closure ACTIVE
-- Phase 5 not started
+- Phase 4 CLOSED
+  - Phase 4A CLOSED
+  - Phase 4B CLOSED
+  - Phase 4C-1 CLOSED
+  - Phase 4C-2 CLOSED
+  - Phase 4C-3 CLOSED
+- Phase 5 NEXT — not started
 - Phase 6 real executor not started
 
-## Phase 4C known required closure
+## Phase 4 closure
 
-Primary blockers discovered during Phase 4B hardening:
+Phase 4 is **CLOSED** after canonical verification on 2026-09-20.
 
-### Explicit candidate scope
+The final Phase 4 implementation checkpoint is:
 
-Review and verification must operate on one explicit durable candidate Workspace.
+```text
+7db2585 feat: close candidate lifecycle and cleanup semantics
+```
 
-Never infer candidate from the latest-created Workspace.
+The combined closure record is:
 
-### Evidence freshness
+```text
+docs/product/PHASE_4_VERIFICATION.md
+```
 
-Commit SHA alone does not identify an uncommitted worktree state.
+Phase 4 established the complete ReferenceExecutor-driven write-safety boundary:
 
-Evidence that passed for candidate state F1 must not satisfy completion after the candidate changes to F2.
+- isolated managed Git worktrees for write-capable execution
+- durable one-writer ownership and parallel-writer separation
+- main working tree protection across execution, review, cancellation, and cleanup
+- read-only review with durable Finding lifecycle and append-only Evidence
+- bounded verification commands and truthful completion gates
+- durable explicit `Run.candidate_workspace_id`
+- deterministic candidate-state fingerprinting beyond commit SHA
+- stale Evidence rejection after candidate mutation
+- managed `INTEGRATION_WORKTREE` for multiple relevant writers
+- fail-closed handling of overlapping writer paths before integration target mutation
+- restart-safe candidate identity and Evidence
+- safe cleanup/reconciliation of candidate and integration Workspaces
+- historical completion truth after a clean completed candidate is safely released
+- no automatic commit, merge to the default branch, rebase, cherry-pick, push, force-push, or destructive main-tree Git operation
 
-Phase 4C needs deterministic candidate-state identity/fingerprint and completion-gate freshness validation.
+The final canonical repository gate observed:
 
-### Multi-writer integration
+```text
+backend pytest      612 passed, 2 dependency warnings
+ruff                passed
+ruff format         171 files already formatted
+mypy                passed (117 source files)
+frontend vitest     7 files passed, 39 tests passed
+frontend typecheck  passed
+frontend lint       passed
+frontend build      passed
+git diff --check    passed
+expected xfail      0
+```
 
-Integration Workspace is conditional:
+The two Python warnings are existing FastAPI/Starlette dependency deprecations and are not Phase 4 blockers.
 
-- single relevant writer: writer Workspace may be candidate
-- multiple independent writers contributing to one final state: integration is required
+## Phase boundary
 
-Conflicts must block rather than use last-write-wins.
+Phase 4 closes with `ReferenceExecutor` only.
 
-### Phase boundary
+Phase 5 is the next milestone and remains **not started**. It owns the operational frontend surface and must consume truthful backend state rather than inventing progress or execution facts.
 
-Phase 4 closes with ReferenceExecutor.
+A real Codex, Antigravity, OpenClaw, Hermes, or other external AI executor remains Phase 6 work. Do not introduce real provider execution merely because Phase 4 is closed.
 
-A real Codex/Antigravity/OpenClaw/Hermes executor belongs to Phase 6.
-
-## Phase 4C is ACTIVE
-
-Phase 4C resumed explicitly after the context-efficiency hardening checkpoint
-`02955a2`. **4C-1 is CLOSED** after canonical verification on 2026-09-20.
-
-4C-1 established:
-
-- durable `Run.candidate_workspace_id`
-- review and verification bound to that explicit candidate
-- deterministic candidate-state fingerprint for uncommitted worktree state
-- stale command Evidence cannot satisfy verification/completion gates
-- remediation reuses the designated candidate workspace
-- schema migration to version 9 for durable candidate identity
-
-4C-2 is **CLOSED** after canonical verification on 2026-09-20 at implementation checkpoint `ce1a7e9`.
-
-4C-2 established:
-
-- multiple relevant implementation writer Workspaces converge into one explicit integration candidate
-- integration occurs only inside a managed `INTEGRATION_WORKTREE`
-- disjoint writer changes are copied into the integration candidate without mutating source writer Workspaces
-- overlapping writer paths fail closed before integration target mutation
-- the registered Project main working tree remains unchanged
-- review and verification bind to the integrated candidate, never allocation order
-- the previous multi-writer strict `xfail` acceptance blocker now passes normally
-- integration still does not auto-commit, auto-merge, rebase, cherry-pick, push, or resolve conflicting paths heuristically
-
-The current bounded slice is **4C-3 end-to-end closure**:
-
-- prove the complete Phase 4 candidate lifecycle across single-writer and multi-writer paths
-- prove cleanup/reconciliation semantics for candidate and integration Workspaces
-- confirm restart-safe durable state after candidate/integration designation
-- close remaining Phase 4 acceptance/documentation gaps without introducing real executors
-- produce the final Phase 4 closure evidence before Phase 5 begins
-
-Do not introduce a real AI executor, auto-commit, auto-merge, force-push, or destructive Git during 4C-3.
+Do not introduce auto-commit, auto-merge, force-push, destructive Git, or heuristic conflict resolution unless a later approved milestone explicitly changes those contracts.
