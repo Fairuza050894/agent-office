@@ -143,6 +143,32 @@ describe('Agent Office API client', () => {
     )
   })
 
+  it('uses Run-scoped endpoints for Phase 5A operational visibility', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse(RUN)) // getRun
+      .mockResolvedValueOnce(jsonResponse([])) // getRunStages
+      .mockResolvedValueOnce(jsonResponse({ status: 'PENDING', complete: false, failures: [] })) // getRunCompletionGate
+      .mockResolvedValueOnce(jsonResponse({ run_id: RUN.id, findings: [], open_blockers: 0 })) // getRunFindings
+      .mockResolvedValueOnce(jsonResponse([])) // getRunEvidence
+      .mockResolvedValueOnce(jsonResponse({ events: [], next_cursor: null })) // getRunEvents
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(api.getRun(RUN.id)).resolves.toEqual(RUN)
+    await expect(api.getRunStages(RUN.id)).resolves.toEqual([])
+    await expect(api.getRunCompletionGate(RUN.id)).resolves.toEqual({ status: 'PENDING', complete: false, failures: [] })
+    await expect(api.getRunFindings(RUN.id)).resolves.toEqual({ run_id: RUN.id, findings: [], open_blockers: 0 })
+    await expect(api.getRunEvidence(RUN.id)).resolves.toEqual([])
+    await expect(api.getRunEvents(RUN.id)).resolves.toEqual({ events: [], next_cursor: null })
+
+    expect(fetchMock.mock.calls[0][0]).toBe(`/api/runs/${RUN.id}`)
+    expect(fetchMock.mock.calls[1][0]).toBe(`/api/runs/${RUN.id}/stages`)
+    expect(fetchMock.mock.calls[2][0]).toBe(`/api/runs/${RUN.id}/gate`)
+    expect(fetchMock.mock.calls[3][0]).toBe(`/api/runs/${RUN.id}/findings`)
+    expect(fetchMock.mock.calls[4][0]).toBe(`/api/runs/${RUN.id}/evidence`)
+    expect(fetchMock.mock.calls[5][0]).toBe(`/api/runs/${RUN.id}/events`)
+  })
+
   it.each([
     [400, 'Invalid request.'],
     [409, 'Request conflicts with the current resource state.'],

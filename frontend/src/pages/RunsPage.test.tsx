@@ -111,4 +111,27 @@ describe('RunsPage Phase 2 integration', () => {
     expect(screen.queryByText('bbbbbbbb')).not.toBeInTheDocument()
     expect(screen.getByLabelText('Task')).toHaveValue(TASK.id)
   })
+
+  it('Run row links navigate to /runs/{id} detail page', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = requestUrl(input)
+        if (url === '/api/projects') return jsonResponse([PROJECT])
+        if (url === `/api/projects/${PROJECT.id}/tasks`) return jsonResponse([TASK])
+        if (url === `/api/tasks/${TASK.id}/runs`) return jsonResponse([RUN])
+        throw new Error(`Unexpected request: ${url}`)
+      }),
+    )
+
+    render(
+      <Router initialPath="/runs">
+        <RunsPage />
+      </Router>,
+    )
+
+    // Wait for the run row to render
+    const link = await screen.findByRole('link', { name: '33333333' })
+    expect(link).toHaveAttribute('href', `/runs/${RUN.id}`)
+  })
 })

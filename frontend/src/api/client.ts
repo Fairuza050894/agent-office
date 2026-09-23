@@ -169,4 +169,24 @@ export const api = {
       body: JSON.stringify(data),
     })
   },
+
+  getRunStages(runId: string): Promise<import('./types').RunStage[]> {
+    return request<import('./types').RunStage[]>(`/api/runs/${encodeURIComponent(runId)}/stages`)
+  },
+
+  getRunCompletionGate(runId: string): Promise<import('./types').CompletionGateResponse> {
+    return request<import('./types').CompletionGateResponse>(`/api/runs/${encodeURIComponent(runId)}/gate`)
+  },
+
+  getRunFindings(runId: string): Promise<import('./types').RunFindingsResponse> {
+    return request<import('./types').RunFindingsResponse>(`/api/runs/${encodeURIComponent(runId)}/findings`)
+  },
+
+  getRunEvidence(runId: string): Promise<import('./types').Evidence[]> {
+    return request<import('./types').Evidence[]>(`/api/runs/${encodeURIComponent(runId)}/evidence`)
+  },
+
+  getRunEvents(runId: string): Promise<import('./types').EventPageResponse> {
+    return request<import('./types').EventPageResponse>(`/api/runs/${encodeURIComponent(runId)}/events`)
+  },
 }

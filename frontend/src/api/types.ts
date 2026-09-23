@@ -61,6 +61,73 @@ export interface CreateRunRequest {
   requested_executor_id?: string | null
 }
 
+export interface RunStage {
+  stage_key: string
+  status: string
+  required: boolean
+  order_hint: number
+  execution_mode: string
+  condition: string
+  reason_code: string | null
+  reason_summary: string | null
+  started_at: string | null
+  completed_at: string | null
+}
+
+export interface CompletionGateResponse {
+  status: string
+  complete: boolean
+  failures: string[]
+}
+
+export interface Finding {
+  id: string
+  project_id: string
+  run_id: string
+  reviewer_agent_run_id: string
+  category: string
+  severity: string
+  title: string
+  description: string
+  status: string
+  blocks_completion: boolean
+  created_at: string
+}
+
+export interface RunFindingsResponse {
+  run_id: string
+  findings: Finding[]
+  open_blockers: number
+}
+
+export interface Evidence {
+  id: string
+  project_id: string
+  task_id: string
+  run_id: string
+  kind: string
+  status: string
+  summary: string
+  created_at: string
+}
+
+export interface AgentEvent {
+  id: string
+  event_type: string
+  project_id: string
+  run_id: string
+  agent_run_id: string | null
+  source: string
+  occurred_at: string
+  recorded_at: string
+  payload: Record<string, unknown>
+}
+
+export interface EventPageResponse {
+  events: AgentEvent[]
+  next_cursor: string | null
+}
+
 export interface HealthResponse {
   status: string
 }

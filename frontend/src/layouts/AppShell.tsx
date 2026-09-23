@@ -14,6 +14,7 @@ import { EvidencePage } from '../pages/EvidencePage'
 import { AuditPage } from '../pages/AuditPage'
 import { SettingsPage } from '../pages/SettingsPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
+import { RunDetailPage } from '../pages/RunDetailPage'
 
 export function AppShell() {
   const { currentPath } = useRouter()
@@ -32,6 +33,13 @@ export function AppShell() {
   }, [isNavOpen])
 
   const renderContent = () => {
+    if (currentPath.startsWith('/runs/')) {
+      const parts = currentPath.split('/')
+      if (parts.length === 3) {
+        return <RunDetailPage runId={parts[2]} />
+      }
+    }
+
     switch (currentPath) {
       case '/overview':
         return <OverviewPage />

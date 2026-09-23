@@ -4,6 +4,7 @@ import { EmptyState } from '../components/EmptyState'
 import { PageHeader } from '../components/PageHeader'
 import { TableShell } from '../components/TableShell'
 import { useRouter } from '../router/useRouter'
+import { Link } from '../router/Link'
 
 const COLUMNS = [
   'Run',
@@ -174,7 +175,7 @@ export function RunsPage() {
 
       return (
         <tr key={run.id} data-testid={`run-row-${run.id}`}>
-          <td><code className="mono-badge">{shortId(run.id)}</code></td>
+          <td><Link href={`/runs/${run.id}`}><code className="mono-badge">{shortId(run.id)}</code></Link></td>
           <td>{project?.name ?? 'Unknown project'}</td>
           <td>{task?.title ?? shortId(run.task_id)}</td>
           <td><span className={`badge ${runBadgeClass(run.status)}`}>{run.status}</span></td>
