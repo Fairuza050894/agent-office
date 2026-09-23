@@ -156,11 +156,11 @@ describe('RunDetailPage Phase 5A behavior', () => {
     expect(screen.getByText('Test Task Title')).toBeInTheDocument()
     expect(screen.getByText('Project A')).toBeInTheDocument()
     expect(screen.getByText('BLOCKED')).toBeInTheDocument()
-    
+
     // Explicit unavailable semantics
     expect(await screen.findByText('No active blockers.')).toBeInTheDocument()
     expect(screen.getByText('No workflow stages recorded.')).toBeInTheDocument()
-    
+
     // Check navigation tab clicks to findings
     fireEvent.click(screen.getByRole('button', { name: /findings/i }))
     expect(await screen.findByText('No findings recorded for this run.')).toBeInTheDocument()
@@ -196,7 +196,7 @@ describe('RunDetailPage Phase 5A behavior', () => {
     expect(await screen.findByText('Missing required evidence for execution')).toBeInTheDocument()
     expect(screen.getByText('planning')).toBeInTheDocument()
     expect(screen.getByText('execution')).toBeInTheDocument()
-    
+
     // Ensure actual failure reasons are displayed
     expect(screen.queryByText('false')).not.toBeInTheDocument() // Not merely pass/fail coloring
   })
@@ -224,7 +224,7 @@ describe('RunDetailPage Phase 5A behavior', () => {
 
     expect(await screen.findByText('Exposed secret')).toBeInTheDocument()
     expect(screen.getByText('Open blockers: 1')).toBeInTheDocument()
-    
+
     // Checking styling for blocker distinguishing
     const findingContainer = screen.getByText('Exposed secret').closest('.panel') as HTMLElement | null
     expect(findingContainer?.style.borderLeft).toContain('var(--danger-color)')

@@ -39,7 +39,7 @@ export function RunOverviewTab({ runId }: RunOverviewTabProps) {
 
   return (
     <div className="run-overview panel" style={{ padding: '1rem', display: 'grid', gap: '2rem' }}>
-      
+
       <section>
         <h3 style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>Needs attention</h3>
         {gate && gate.failures.length > 0 ? (

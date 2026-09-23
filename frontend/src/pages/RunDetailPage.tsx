@@ -27,7 +27,7 @@ export function RunDetailPage({ runId }: RunDetailPageProps) {
         const loadedRun = await api.getRun(runId)
         if (!active) return
         setRun(loadedRun)
-        
+
         const [loadedProject, loadedTask] = await Promise.all([
           api.getProject(loadedRun.project_id),
           api.getTask(loadedRun.task_id)
@@ -35,7 +35,7 @@ export function RunDetailPage({ runId }: RunDetailPageProps) {
         if (!active) return
         setProject(loadedProject)
         setTask(loadedTask)
-        
+
         setIsLoading(false)
       } catch (err) {
         if (!active) return
@@ -75,7 +75,7 @@ export function RunDetailPage({ runId }: RunDetailPageProps) {
   return (
     <div className="page-container">
       <RunHeader run={run} project={project} task={task} />
-      
+
       <div className="tabs" style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--border-color)', marginBottom: '1.5rem' }}>
         {(['overview', 'findings', 'evidence', 'activity'] as const).map(tab => (
           <button

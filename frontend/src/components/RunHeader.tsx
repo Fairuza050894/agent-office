@@ -29,7 +29,7 @@ export function RunHeader({ run, project, task }: RunHeaderProps) {
           {task?.title ?? 'Unknown Task'}
         </div>
       </div>
-      
+
       <div style={{ display: 'flex', gap: '2rem', marginTop: '1.5rem', fontSize: '0.875rem' }}>
         <div>
           <div style={{ color: 'var(--text-secondary)' }}>Project</div>
