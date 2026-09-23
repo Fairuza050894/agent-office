@@ -42,7 +42,7 @@ npm run build
 echo
 echo "=== REPOSITORY: DIFF CHECK ==="
 cd "$ROOT"
-git diff --check
+"$ROOT/.agents/skills/ao-verify/scripts/check-whitespace.sh"
 
 echo
 echo "=== FRONTEND STATUS ==="
