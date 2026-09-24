@@ -8,6 +8,7 @@ from agent_office.api.audit import router as audit_router
 from agent_office.api.events import router as events_router
 from agent_office.api.projects import router as projects_router
 from agent_office.api.recovery import router as recovery_router
+from agent_office.api.resources import router as resources_router
 from agent_office.api.review import router as review_router
 from agent_office.api.runs import router as runs_router
 from agent_office.api.tasks import router as tasks_router
@@ -198,6 +199,7 @@ def create_app(
         )
 
     app.include_router(projects_router)
+    app.include_router(resources_router)
     app.include_router(review_router)
     app.include_router(tasks_router)
     app.include_router(runs_router)
