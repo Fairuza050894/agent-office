@@ -3,6 +3,10 @@
 ## Current checkpoint
 
 ```text
+34f14db chore: harden repository whitespace verification
+99101ca chore: clean phase 5a frontend whitespace
+0422636 feat: add phase 5a operational run visibility
+16a1b3c docs: close phase 4 acceptance
 7db2585 feat: close candidate lifecycle and cleanup semantics
 a9671af docs: complete phase 4c2 verification
 ce1a7e9 feat: add multi-writer integration workspace
@@ -28,7 +32,9 @@ Current recorded status:
   - Phase 4C-1 CLOSED
   - Phase 4C-2 CLOSED
   - Phase 4C-3 CLOSED
-- Phase 5 NEXT — not started
+- Phase 5 IN PROGRESS
+  - Phase 5A CLOSED — Operational Visibility Core
+  - Phase 5B NEXT
 - Phase 6 real executor not started
 
 ## Phase 4 closure
@@ -85,8 +91,12 @@ The two Python warnings are existing FastAPI/Starlette dependency deprecations a
 
 Phase 4 closes with `ReferenceExecutor` only.
 
-Phase 5 is the next milestone and remains **not started**. It owns the operational frontend surface and must consume truthful backend state rather than inventing progress or execution facts.
+Phase 5 is now **IN PROGRESS**.
 
-A real Codex, Antigravity, OpenClaw, Hermes, or other external AI executor remains Phase 6 work. Do not introduce real provider execution merely because Phase 4 is closed.
+Phase 5A — Operational Visibility Core is **CLOSED**. It established the first truthful Run operational surface using existing backend state for Run detail, stages, completion gates, Findings, Evidence, and normalized Activity.
+
+Phase 5B is **NEXT** and must be selected from the remaining Phase 5 acceptance gaps. Closing Phase 5A does not satisfy the full Phase 5 exit criterion.
+
+A real Codex, Antigravity, OpenClaw, Hermes, or other external AI executor remains Phase 6 work. Do not introduce real provider execution merely because Phase 5A is closed.
 
 Do not introduce auto-commit, auto-merge, force-push, destructive Git, or heuristic conflict resolution unless a later approved milestone explicitly changes those contracts.
