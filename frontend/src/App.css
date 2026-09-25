@@ -1290,3 +1290,92 @@
     grid-template-columns: 1fr;
   }
 }
+
+.overview-resource-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.overview-resource-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 0.875rem;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.8125rem;
+}
+
+.overview-resource-row:last-child {
+  border-bottom: 0;
+}
+
+.run-finding-list {
+  display: grid;
+  gap: 0.875rem;
+}
+
+.run-finding {
+  padding: 0.875rem;
+  border-left: 4px solid #cbd5e1;
+}
+
+.run-finding-blocker {
+  border-left-color: #dc2626;
+}
+
+.run-finding-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.run-finding-heading h3 {
+  margin: 0;
+  font-size: 0.9375rem;
+}
+
+.run-finding-description {
+  margin: 0.75rem 0 0;
+  color: #334155;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.run-resolution {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+}
+
+.run-risk-action {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.875rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.run-risk-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.run-risk-row .form-input {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .run-risk-row {
+    flex-direction: column;
+  }
+}
