@@ -209,35 +209,16 @@ def test_codex_descriptor_health_and_capabilities_are_factual(tmp_path: Path) ->
         assert descriptor.runtime_version == "codex-cli 9.9.9-test"
 
         assert health.status is ExecutorStatus.AVAILABLE
-        assert (
-            report.support_for(ExecutorCapability.START_EXECUTION)
-            is CapabilitySupport.SUPPORTED
-        )
-        assert (
-            report.support_for(ExecutorCapability.STATUS_QUERY)
-            is CapabilitySupport.SUPPORTED
-        )
-        assert (
-            report.support_for(ExecutorCapability.CANCELLATION)
-            is CapabilitySupport.SUPPORTED
-        )
+        assert report.support_for(ExecutorCapability.START_EXECUTION) is CapabilitySupport.SUPPORTED
+        assert report.support_for(ExecutorCapability.STATUS_QUERY) is CapabilitySupport.SUPPORTED
+        assert report.support_for(ExecutorCapability.CANCELLATION) is CapabilitySupport.SUPPORTED
         assert report.support_for(ExecutorCapability.FILE_WRITE) is CapabilitySupport.SUPPORTED
+        assert report.support_for(ExecutorCapability.SHELL_EXECUTION) is CapabilitySupport.SUPPORTED
+        assert report.support_for(ExecutorCapability.EVENT_STREAM) is CapabilitySupport.UNSUPPORTED
         assert (
-            report.support_for(ExecutorCapability.SHELL_EXECUTION)
-            is CapabilitySupport.SUPPORTED
+            report.support_for(ExecutorCapability.SESSION_RESUME) is CapabilitySupport.UNSUPPORTED
         )
-        assert (
-            report.support_for(ExecutorCapability.EVENT_STREAM)
-            is CapabilitySupport.UNSUPPORTED
-        )
-        assert (
-            report.support_for(ExecutorCapability.SESSION_RESUME)
-            is CapabilitySupport.UNSUPPORTED
-        )
-        assert (
-            report.support_for(ExecutorCapability.TOKEN_USAGE)
-            is CapabilitySupport.UNSUPPORTED
-        )
+        assert report.support_for(ExecutorCapability.TOKEN_USAGE) is CapabilitySupport.UNSUPPORTED
 
     asyncio.run(exercise())
 
