@@ -129,14 +129,14 @@ export function RunDetailPage({ runId }: RunDetailPageProps) {
         aria-labelledby={`run-tab-${activeTab}`}
         className="run-tab-content"
       >
-        {activeTab === 'overview' && <RunOverviewTab run={run} />}
-        {activeTab === 'workflow' && <RunWorkflowTab runId={run.id} />}
-        {activeTab === 'agents' && <RunAgentsTab runId={run.id} />}
-        {activeTab === 'activity' && <RunActivityTab runId={run.id} />}
-        {activeTab === 'changes' && <RunChangesTab run={run} />}
-        {activeTab === 'tests' && <RunTestsTab runId={run.id} />}
-        {activeTab === 'findings' && <RunFindingsTab runId={run.id} />}
-        {activeTab === 'evidence' && <RunEvidenceTab runId={run.id} />}
+        {activeTab === 'overview' && <RunOverviewTab key={run.updated_at} run={run} />}
+        {activeTab === 'workflow' && <RunWorkflowTab key={run.updated_at} runId={run.id} />}
+        {activeTab === 'agents' && <RunAgentsTab key={run.updated_at} runId={run.id} />}
+        {activeTab === 'activity' && <RunActivityTab key={run.updated_at} runId={run.id} />}
+        {activeTab === 'changes' && <RunChangesTab key={run.updated_at} run={run} />}
+        {activeTab === 'tests' && <RunTestsTab key={run.updated_at} runId={run.id} />}
+        {activeTab === 'findings' && <RunFindingsTab key={run.updated_at} runId={run.id} />}
+        {activeTab === 'evidence' && <RunEvidenceTab key={run.updated_at} runId={run.id} />}
       </div>
     </div>
   )
