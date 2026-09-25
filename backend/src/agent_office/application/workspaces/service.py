@@ -296,9 +296,7 @@ class WorkspaceService:
             )
         base_revision = next(iter(base_revisions))
         if base_revision is None:
-            raise WorkspaceIntegrationError(
-                (), "Integration sources must record a base revision."
-            )
+            raise WorkspaceIntegrationError((), "Integration sources must record a base revision.")
 
         project = self._projects.get_project(run.project_id)
         if project.status is not ProjectStatus.ACTIVE:
