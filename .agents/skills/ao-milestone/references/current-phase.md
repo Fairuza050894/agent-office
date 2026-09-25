@@ -3,6 +3,8 @@
 ## Current checkpoint
 
 ```text
+e22e546 style: format phase 6 integration test
+ac2e5f6 Merge pull request #1 from Fairuza050894/phase-5b-work
 34f14db chore: harden repository whitespace verification
 99101ca chore: clean phase 5a frontend whitespace
 0422636 feat: add phase 5a operational run visibility
@@ -35,7 +37,7 @@ Current recorded status:
 - Phase 5 CLOSED
   - Phase 5A CLOSED — Operational Visibility Core
   - Phase 5B CLOSED — Operational Frontend Completion
-- Phase 6 NEXT — first real executor not started
+- Phase 6 IN PROGRESS — first real executor implemented; authenticated live smoke is the remaining closure gate
 
 ## Phase 4 closure
 
@@ -99,6 +101,6 @@ Phase 5B — Operational Frontend Completion added the remaining Run Workflow, A
 
 The Phase 5 exit criterion is satisfied with the deterministic ReferenceExecutor: its workflow can be operated and inspected from the UI without Office View.
 
-Phase 6 is **NEXT** and owns the first real AI executor. A real Codex, Antigravity, OpenClaw, Hermes, or other external AI executor must enter only through the ExecutorAdapter boundary.
+Phase 6 is **IN PROGRESS** and owns the first real AI executor. Codex CLI is integrated through the provider-neutral ExecutorAdapter boundary with bounded execution, isolated workspace context, opt-in configuration, capability/health exposure, orchestration integration, deterministic tests, and an opt-in live smoke runner. Automated CI is green at the current Phase 6 checkpoint. The remaining closure gate is an authenticated local live smoke using `scripts/smoke-codex.sh`; Phase 6 must not be marked CLOSED until that evidence passes. Any later real Antigravity, OpenClaw, Hermes, or other external AI executor must enter only through the ExecutorAdapter boundary.
 
 Do not introduce auto-commit, auto-merge, force-push, destructive Git, or heuristic conflict resolution unless a later approved milestone explicitly changes those contracts.
