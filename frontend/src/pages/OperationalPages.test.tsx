@@ -14,6 +14,7 @@ import type {
 } from '../api'
 import { RunChangesTab } from '../components/RunChangesTab'
 import { RunTestsTab } from '../components/RunTestsTab'
+import { Router } from '../router/Router'
 import { ActivityPage } from './ActivityPage'
 import { AgentsPage } from './AgentsPage'
 import { AuditPage } from './AuditPage'
@@ -229,14 +230,14 @@ describe('Phase 5 operational registries', () => {
 
   it('renders normalized global Activity from persisted Run events', async () => {
     vi.stubGlobal('fetch', vi.fn(registryFetch))
-    render(<ActivityPage />)
+    render(<Router initialPath="/activity"><ActivityPage /></Router>)
     expect(await screen.findByText('RUN_BLOCKED')).toBeInTheDocument()
     expect(screen.getByText(/reason_code=OPEN_BLOCKER_FINDING/)).toBeInTheDocument()
   })
 
   it('renders persisted Evidence with source and status', async () => {
     vi.stubGlobal('fetch', vi.fn(registryFetch))
-    render(<EvidencePage />)
+    render(<Router initialPath="/evidence"><EvidencePage /></Router>)
     expect(await screen.findByText('Backend verification passed.')).toBeInTheDocument()
     expect(screen.getByText('PASSED')).toBeInTheDocument()
     expect(screen.getByText('Control plane')).toBeInTheDocument()
@@ -244,14 +245,14 @@ describe('Phase 5 operational registries', () => {
 
   it('renders append-only Audit history', async () => {
     vi.stubGlobal('fetch', vi.fn(registryFetch))
-    render(<AuditPage />)
+    render(<Router initialPath="/audit"><AuditPage /></Router>)
     expect(await screen.findByText('RUN_RECONCILIATION_REQUESTED')).toBeInTheDocument()
     expect(screen.getByText('USER')).toBeInTheDocument()
   })
 
   it('derives Needs Attention from blocked backend Run state', async () => {
     vi.stubGlobal('fetch', vi.fn(registryFetch))
-    render(<OverviewPage />)
+    render(<Router initialPath="/overview"><OverviewPage /></Router>)
     expect(await screen.findByText('1 actionable')).toBeInTheDocument()
     expect(screen.getByText('A blocker requires operator attention.')).toBeInTheDocument()
   })
