@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sqlite3
+from typing import Any
 from uuid import uuid4
 
 import pytest
@@ -16,7 +17,7 @@ from agent_office.infrastructure.executors.reference import (
 )
 
 
-def _started_run(harness: Harness, name: str) -> tuple[dict[str, object], dict[str, object]]:
+def _started_run(harness: Harness, name: str) -> tuple[dict[str, Any], dict[str, Any]]:
     project = harness.register_project(name)
     task = harness.create_task(str(project["id"]))
     run = harness.create_run(task["id"])

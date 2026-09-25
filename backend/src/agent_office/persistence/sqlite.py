@@ -739,7 +739,7 @@ def _migration_v10(connection: sqlite3.Connection) -> None:
                 )
             )
         BEGIN
-            SELECT RAISE(ABORT, 'workspace ownership scope mismatch');
+            SELECT RAISE(ABORT, 'FOREIGN KEY workspace ownership scope mismatch');
         END
         """
     )
@@ -765,7 +765,7 @@ def _migration_v10(connection: sqlite3.Connection) -> None:
                 )
             )
         BEGIN
-            SELECT RAISE(ABORT, 'workspace ownership scope mismatch');
+            SELECT RAISE(ABORT, 'FOREIGN KEY workspace ownership scope mismatch');
         END
         """
     )
@@ -782,7 +782,7 @@ def _migration_v10(connection: sqlite3.Connection) -> None:
                   AND project_id = NEW.project_id
             )
         BEGIN
-            SELECT RAISE(ABORT, 'event AgentRun ownership scope mismatch');
+            SELECT RAISE(ABORT, 'FOREIGN KEY event AgentRun ownership scope mismatch');
         END
         """
     )
@@ -799,7 +799,7 @@ def _migration_v10(connection: sqlite3.Connection) -> None:
                   AND project_id = NEW.project_id
             )
         BEGIN
-            SELECT RAISE(ABORT, 'event AgentRun ownership scope mismatch');
+            SELECT RAISE(ABORT, 'FOREIGN KEY event AgentRun ownership scope mismatch');
         END
         """
     )
@@ -816,7 +816,7 @@ def _migration_v10(connection: sqlite3.Connection) -> None:
                   AND project_id = NEW.project_id
             )
         BEGIN
-            SELECT RAISE(ABORT, 'candidate Workspace ownership scope mismatch');
+            SELECT RAISE(ABORT, 'FOREIGN KEY candidate Workspace ownership scope mismatch');
         END
         """
     )
@@ -833,7 +833,7 @@ def _migration_v10(connection: sqlite3.Connection) -> None:
                   AND project_id = NEW.project_id
             )
         BEGIN
-            SELECT RAISE(ABORT, 'candidate Workspace ownership scope mismatch');
+            SELECT RAISE(ABORT, 'FOREIGN KEY candidate Workspace ownership scope mismatch');
         END
         """
     )
