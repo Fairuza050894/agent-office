@@ -109,7 +109,7 @@ export function RunWorkflowTab({ runId }: RunWorkflowTabProps) {
           return (
             <tr key={definition.key}>
               <td><strong>{definition.name}</strong><div className="cell-secondary"><code>{definition.key}</code></div></td>
-              <td><span className="badge badge-neutral">{runtime?.status ?? 'PENDING'}</span></td>
+              <td><span className="badge badge-neutral">{runtime?.status ?? 'Unavailable'}</span></td>
               <td className="cell-wrap">{roles.join(', ') || 'Unavailable'}</td>
               <td className="cell-wrap">{executors.length ? executors.join(', ') : 'Unavailable'}</td>
               <td>{duration(runtime?.started_at ?? null, runtime?.completed_at ?? null)}</td>
