@@ -77,9 +77,7 @@ def get_settings() -> Settings:
 
     return Settings(
         codex_enabled=(
-            enabled.strip().lower() in {"1", "true", "yes", "on"}
-            if enabled is not None
-            else False
+            enabled.strip().lower() in {"1", "true", "yes", "on"} if enabled is not None else False
         ),
         codex_model=(model.strip() or None) if model is not None else None,
         codex_cli_path=cli_path if cli_path is not None else "codex",
