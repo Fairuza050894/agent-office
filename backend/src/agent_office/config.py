@@ -75,13 +75,12 @@ def get_settings() -> Settings:
     model = os.getenv("AGENT_OFFICE_CODEX_MODEL")
     cli_path = os.getenv("AGENT_OFFICE_CODEX_CLI_PATH")
 
-    values: dict[str, object] = {}
-
-    if enabled is not None:
-        values["codex_enabled"] = enabled.strip().lower() in {"1", "true", "yes", "on"}
-    if model is not None:
-        values["codex_model"] = model.strip() or None
-    if cli_path is not None:
-        values["codex_cli_path"] = cli_path
-
-    return Settings(**values)
+    return Settings(
+        codex_enabled=(
+            enabled.strip().lower() in {"1", "true", "yes", "on"}
+            if enabled is not None
+            else False
+        ),
+        codex_model=(model.strip() or None) if model is not None else None,
+        codex_cli_path=cli_path if cli_path is not None else "codex",
+    )

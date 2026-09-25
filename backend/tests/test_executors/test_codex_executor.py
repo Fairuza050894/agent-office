@@ -102,6 +102,14 @@ if "SLEEP_EXEC" in prompt:
     }}), flush=True)
     raise SystemExit(0)
 
+if "FAIL_THEN_SLEEP" in prompt:
+    print(json.dumps({{
+        "type": "turn.failed",
+        "error": {{"message": "SECRET_PROVIDER_FAILURE"}},
+    }}), flush=True)
+    time.sleep(5)
+    raise SystemExit(1)
+
 if "FAIL_EXEC" in prompt:
     print(json.dumps({{
         "type": "turn.failed",
@@ -259,6 +267,12 @@ def test_codex_success_uses_bounded_read_only_process_and_redacts_raw_output(
     assert "--ephemeral" in argv
     assert "--ignore-user-config" in argv
     assert "--ignore-rules" in argv
+    disabled_features = [
+        argv[index + 1]
+        for index, value in enumerate(argv[:-1])
+        if value == "--disable"
+    ]
+    assert disabled_features == ["apps", "plugins", "multi_agent"]
     assert "--sandbox" in argv
     assert "read-only" in argv
     assert "--cd" in argv
@@ -331,6 +345,26 @@ def test_codex_failure_maps_without_exposing_provider_error_text(tmp_path: Path)
         assert result.outcome is ExecutionOutcome.FAILURE
         assert result.summary == "Codex execution failed."
         assert "SECRET_PROVIDER_FAILURE" not in result.summary
+
+    asyncio.run(exercise())
+
+
+def test_codex_provider_failure_wins_a_cancellation_race(tmp_path: Path) -> None:
+    executable, _log_path = _write_fake_codex(tmp_path)
+    executor = _executor(executable, tmp_path / "repo")
+
+    async def exercise() -> None:
+        started = await executor.start(_request("FAIL_THEN_SLEEP"))
+        assert started.session_ref is not None
+
+        await asyncio.sleep(0.1)
+        cancellation = await executor.cancel(started.session_ref)
+        status = await executor.get_status(started.session_ref)
+        result = await executor.fetch_result(started.session_ref)
+
+        assert cancellation.outcome is CancellationOutcome.ALREADY_TERMINAL
+        assert status is ExecutionStatus.FAILED
+        assert result.outcome is ExecutionOutcome.FAILURE
 
     asyncio.run(exercise())
 

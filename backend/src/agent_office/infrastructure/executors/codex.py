@@ -445,6 +445,12 @@ class CodexExecutor:
             "--ephemeral",
             "--ignore-user-config",
             "--ignore-rules",
+            "--disable",
+            "apps",
+            "--disable",
+            "plugins",
+            "--disable",
+            "multi_agent",
             "--color",
             "never",
             "--sandbox",
@@ -527,6 +533,7 @@ class CodexExecutor:
         except Exception:  # noqa: BLE001 - provider protocol failure must fail closed
             stored.protocol_error = True
         finally:
+            return_code: int | None
             try:
                 return_code = await stored.process.wait()
             except Exception:  # noqa: BLE001 - process state is unproven
@@ -551,6 +558,13 @@ class CodexExecutor:
                     ExecutionOutcome.SUCCESS,
                     "Codex execution completed successfully.",
                 )
+            elif stored.failed:
+                self._finish(
+                    stored,
+                    ExecutionStatus.FAILED,
+                    ExecutionOutcome.FAILURE,
+                    "Codex execution failed.",
+                )
             elif stored.cancellation_requested and return_code is not None:
                 self._finish(
                     stored,
@@ -558,7 +572,7 @@ class CodexExecutor:
                     ExecutionOutcome.CANCELLED,
                     "Codex local execution process was cancelled.",
                 )
-            elif stored.failed or (return_code is not None and return_code != 0):
+            elif return_code is not None and return_code != 0:
                 self._finish(
                     stored,
                     ExecutionStatus.FAILED,
