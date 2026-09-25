@@ -341,7 +341,7 @@ describe('RunDetailPage Phase 5 operational behavior', () => {
 
     fireEvent.click(await screen.findByRole('tab', { name: 'Workflow' }))
     expect(await screen.findByText('enterprise-engineering')).toBeInTheDocument()
-    expect(screen.getByText('Backend Developer')).not.toBeInTheDocument()
+    expect(screen.queryByText('Backend Developer')).not.toBeInTheDocument()
     expect(screen.getByText('backend-developer')).toBeInTheDocument()
 
     fireEvent.click(await screen.findByRole('tab', { name: 'Agents' }))
