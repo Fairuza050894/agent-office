@@ -78,7 +78,7 @@ export function Navigation({ isOpen, onClose }: NavigationProps) {
           </div>
           <div className="sidebar-meta">
             <span className="meta-label">Phase</span>
-            <span className="meta-value">Phase 2</span>
+            <span className="meta-value">Phase 5</span>
           </div>
         </div>
       </aside>
