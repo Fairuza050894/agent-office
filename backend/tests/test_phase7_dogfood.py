@@ -13,14 +13,14 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
+from conftest import ScriptedExecutor
+from conftest import registry_for as make_test_registry
 from fastapi.testclient import TestClient
 
 from agent_office.config import Settings
 from agent_office.domain import ExecutionStatus
 from agent_office.infrastructure.executors.codex import CODEX_EXECUTOR_ID
 from agent_office.main import create_app
-from conftest import ScriptedExecutor
-from conftest import registry_for as make_test_registry
 
 
 def _git(repository: Path, *arguments: str) -> str:
