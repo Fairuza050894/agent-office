@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from pydantic import BaseModel, Field
@@ -21,7 +22,7 @@ class Settings(BaseModel):
         default=None,
         description=(
             "Root directory for managed Agent Office worktrees. Defaults to "
-            "`data_root/workspaces`, so managed worktrees never live inside a "
+            "data_root/workspaces, so managed worktrees never live inside a "
             "registered Project repository."
         ),
     )
@@ -35,17 +36,52 @@ class Settings(BaseModel):
         description="Application log level.",
     )
 
+    codex_enabled: bool = Field(
+        default=False,
+        description=(
+            "Register the real local Codex CLI executor. Disabled by default so "
+            "normal development and CI never consume provider quota."
+        ),
+    )
+    codex_cli_path: str = Field(
+        default="codex",
+        min_length=1,
+        description="Codex CLI executable path or command name resolved through PATH.",
+    )
+    codex_model: str | None = Field(
+        default=None,
+        description="Optional Codex model override. None uses the CLI/runtime default.",
+    )
+    codex_start_timeout_seconds: float = Field(default=10.0, gt=0, le=60)
+    codex_cancel_timeout_seconds: float = Field(default=2.0, gt=0, le=30)
+    codex_probe_timeout_seconds: float = Field(default=3.0, gt=0, le=30)
+
     @property
     def managed_workspace_root(self) -> Path:
-        """Return the root that managed Worktrees are created under.
-
-        Defaulting to ``data_root/workspaces`` keeps generated worktrees inside
-        Agent Office's own storage rather than inside a registered Project
-        repository (WORKTREE_POLICY §12).
-        """
+        """Return the root that managed Worktrees are created under."""
 
         return self.workspace_root or (self.data_root / "workspaces")
 
 
 def get_settings() -> Settings:
-    return Settings()
+    """Load bounded non-secret runtime settings.
+
+    Codex credentials deliberately do not enter this object. The adapter relies
+    on Codex provider-native login under HOME/CODEX_HOME and passes no ambient
+    API-key environment variables to executor subprocesses.
+    """
+
+    enabled = os.getenv("AGENT_OFFICE_CODEX_ENABLED")
+    model = os.getenv("AGENT_OFFICE_CODEX_MODEL")
+    cli_path = os.getenv("AGENT_OFFICE_CODEX_CLI_PATH")
+
+    values: dict[str, object] = {}
+
+    if enabled is not None:
+        values["codex_enabled"] = enabled.strip().lower() in {"1", "true", "yes", "on"}
+    if model is not None:
+        values["codex_model"] = model.strip() or None
+    if cli_path is not None:
+        values["codex_cli_path"] = cli_path
+
+    return Settings(**values)
