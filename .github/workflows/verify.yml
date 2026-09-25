@@ -61,3 +61,5 @@ jobs:
           fetch-depth: 0
       - name: Repository whitespace verification
         run: ./.agents/skills/ao-verify/scripts/check-whitespace.sh
+
+# Phase 5B branch verification
