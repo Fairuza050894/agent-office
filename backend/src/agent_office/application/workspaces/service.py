@@ -412,9 +412,8 @@ class WorkspaceService:
             raise WorkspaceIntegrationError((), str(exc)) from exc
 
         if conflicts:
-            summary = (
-                "Integration conflict on repository-relative paths: "
-                + ", ".join(conflicts[:10])
+            summary = "Integration conflict on repository-relative paths: " + ", ".join(
+                conflicts[:10]
             )
             if len(conflicts) > 10:
                 summary += f" (+{len(conflicts) - 10} more)"
