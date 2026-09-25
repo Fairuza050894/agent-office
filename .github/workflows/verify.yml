@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - phase-5b-work
+      - "phase-*"
   pull_request:
 
 concurrency:
@@ -66,4 +66,3 @@ jobs:
           fetch-depth: 0
       - name: Repository whitespace verification
         run: ./.agents/skills/ao-verify/scripts/check-whitespace.sh
-
