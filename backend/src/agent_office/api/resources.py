@@ -29,11 +29,12 @@ async def list_executors(request: Request) -> list[ExecutorResponse]:
     responses: list[ExecutorResponse] = []
 
     for registered in registry.list():
+        descriptor = await registered.adapter.describe()
         health = await registered.adapter.health()
         capability_report = await registered.adapter.capabilities()
         responses.append(
             ExecutorResponse.from_observations(
-                registered.descriptor,
+                descriptor,
                 health,
                 capability_report.capabilities,
             )
