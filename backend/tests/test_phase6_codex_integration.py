@@ -183,9 +183,7 @@ def test_codex_run_is_bound_to_an_isolated_workspace_and_canonical_state(
         workspaces = _json(client.get(f"/api/runs/{run['id']}/workspaces"))
         assert len(workspaces) == 1
         assert workspaces[0]["kind"] == "GIT_WORKTREE"
-        workspace_status = _json(
-            client.get(f"/api/workspaces/{workspaces[0]['id']}/status")
-        )
+        workspace_status = _json(client.get(f"/api/workspaces/{workspaces[0]['id']}/status"))
         summary = workspace_status["change_summary"]
         assert summary is not None
         assert "phase6-integration.txt" in summary["untracked_paths"]
