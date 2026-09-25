@@ -56,7 +56,7 @@ def format_sse_event(event: Event) -> str:
     # consume every normalized Agent Office Event without subscribing to a
     # provider- or event-type-specific channel. The canonical event type remains
     # inside the JSON payload.
-    return f"id: {event.id}\\ndata: {payload}\\n\\n"
+    return f"id: {event.id}\ndata: {payload}\n\n"
 
 @router.get("/api/runs/{run_id}/events", response_model=EventPageResponse)
 def list_run_events(
