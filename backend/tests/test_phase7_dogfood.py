@@ -84,7 +84,7 @@ stage = next(
 if stage == "IMPLEMENTATION":
     if "phase7-docs.md" in prompt:
         pathlib.Path("phase7-docs.md").write_text(
-            "# Phase 7 dogfood\n\nSecond-project isolation verified.\n"
+            "# Phase 7 dogfood\\n\\nSecond-project isolation verified.\\n"
         )
     elif "calculator.py" in prompt:
         calculator = pathlib.Path("calculator.py")
