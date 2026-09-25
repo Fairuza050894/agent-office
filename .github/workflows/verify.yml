@@ -3,6 +3,7 @@ name: verify
 on:
   push:
     branches:
+      - main
       - phase-5b-work
   pull_request:
 
@@ -66,4 +67,3 @@ jobs:
       - name: Repository whitespace verification
         run: ./.agents/skills/ao-verify/scripts/check-whitespace.sh
 
-# Phase 5B branch verification
