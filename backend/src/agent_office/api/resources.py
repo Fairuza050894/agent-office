@@ -17,8 +17,7 @@ def list_agent_profiles(request: Request) -> list[AgentProfileResponse]:
 
     service: WorkflowService = request.app.state.workflow_service
     return [
-        AgentProfileResponse.from_domain(profile)
-        for profile in service.agent_profiles.profiles
+        AgentProfileResponse.from_domain(profile) for profile in service.agent_profiles.profiles
     ]
 
 
