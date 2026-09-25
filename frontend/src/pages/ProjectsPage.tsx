@@ -54,7 +54,7 @@ export function ProjectsPage() {
   }, [])
 
   useEffect(() => {
-    void loadProjects()
+    void Promise.resolve().then(loadProjects)
   }, [loadProjects])
 
   const handleRegisterSuccess = (newProject: Project) => {

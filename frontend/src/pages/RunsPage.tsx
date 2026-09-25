@@ -113,7 +113,7 @@ export function RunsPage() {
   }, [])
 
   useEffect(() => {
-    void loadRuns()
+    void Promise.resolve().then(loadRuns)
   }, [loadRuns])
 
   const renderTableBody = () => {

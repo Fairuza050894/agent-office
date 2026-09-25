@@ -29,7 +29,7 @@ export function RunActivityTab({ runId }: RunActivityTabProps) {
 
   useEffect(() => {
     let active = true
-    void refresh()
+    void Promise.resolve().then(refresh)
 
     if (typeof EventSource === 'undefined') {
       return () => {

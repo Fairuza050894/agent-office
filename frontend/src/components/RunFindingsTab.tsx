@@ -29,7 +29,7 @@ export function RunFindingsTab({ runId }: RunFindingsTabProps) {
   }, [runId])
 
   useEffect(() => {
-    void load()
+    void Promise.resolve().then(load)
   }, [load])
 
   const acceptRisk = async (finding: Finding) => {

@@ -82,7 +82,7 @@ export function OverviewPage() {
   }, [])
 
   useEffect(() => {
-    void load()
+    void Promise.resolve().then(load)
   }, [load])
 
   const projectsById = useMemo(() => new Map(projects.map((project) => [project.id, project])), [projects])
