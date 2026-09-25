@@ -52,8 +52,7 @@ def format_sse_event(event: Event) -> str:
         sort_keys=True,
     )
 
-    return f"id: {event.id}\nevent: {event.event_type.value}\ndata: {payload}\n\n"
-
+    # Use the default SSE message event so browser EventSource.onmessage can\n    # consume every normalized Agent Office Event without subscribing to a\n    # provider- or event-type-specific channel. The canonical event type remains\n    # inside the JSON payload.\n    return f"id: {event.id}\\ndata: {payload}\\n\\n"\n
 
 @router.get("/api/runs/{run_id}/events", response_model=EventPageResponse)
 def list_run_events(
