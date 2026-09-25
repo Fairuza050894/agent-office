@@ -268,9 +268,7 @@ def test_codex_success_uses_bounded_read_only_process_and_redacts_raw_output(
     assert "--ignore-user-config" in argv
     assert "--ignore-rules" in argv
     disabled_features = [
-        argv[index + 1]
-        for index, value in enumerate(argv[:-1])
-        if value == "--disable"
+        argv[index + 1] for index, value in enumerate(argv[:-1]) if value == "--disable"
     ]
     assert disabled_features == ["apps", "plugins", "multi_agent"]
     assert "--sandbox" in argv
