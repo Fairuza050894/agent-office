@@ -340,7 +340,7 @@ def test_two_unrelated_projects_dogfood_through_reference_and_codex_configuratio
                     "key": "calculator-regression",
                     "check_type": "TEST",
                     "executable": "python3",
-                    "arguments": ["test_calculator.py"],
+                    "arguments": ["-B", "test_calculator.py"],
                     "required": True,
                 }
             ],
