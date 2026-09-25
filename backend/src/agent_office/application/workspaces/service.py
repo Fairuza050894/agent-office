@@ -32,8 +32,6 @@ from agent_office.application.workspaces.errors import (
 )
 from agent_office.application.workspaces.ports import WorkspaceRepository, WorktreeManager
 from agent_office.domain import (
-    WORKSPACE_UNWRITABLE_STATUSES,
-    WORKTREE_KINDS,
     AgentAccessMode,
     AgentRun,
     AgentRunId,
@@ -49,9 +47,11 @@ from agent_office.domain import (
     Workspace,
     WorkspaceChangeSummary,
     WorkspaceId,
+    WORKTREE_KINDS,
     WorkspaceKind,
     WorkspaceReasonCode,
     WorkspaceReconciliationOutcome,
+    WORKSPACE_UNWRITABLE_STATUSES,
     WorkspaceStatus,
     ensure_workspace_transition_allowed,
     generated_branch_name,
@@ -97,48 +97,20 @@ class WorkspaceService:
         self._clock = clock
         self._workspace_id_factory = workspace_id_factory
 
-    # ------------------------------------------------------------------
-    # Queries
-    # ------------------------------------------------------------------
-
     def get(self, workspace_id: WorkspaceId) -> Workspace:
-        """Return a Workspace by ID."""
-
         workspace = self._repository.get(workspace_id)
-
         if workspace is None:
             raise WorkspaceNotFoundError(f"Workspace {workspace_id} was not found")
-
         return workspace
 
     def list_for_run(self, run_id: RunId) -> tuple[Workspace, ...]:
-        """Return every Workspace of a Run."""
-
         self._runs.get_run(run_id)
-
         return self._repository.list_by_run(run_id)
 
     def find_for_agent_run(self, agent_run_id: AgentRunId) -> Workspace | None:
-        """Return the Workspace currently owned by an AgentRun, if any."""
-
         return self._repository.find_by_owner(agent_run_id)
 
-    # ------------------------------------------------------------------
-    # Allocation
-    # ------------------------------------------------------------------
-
     def allocate_for_agent_run(self, run: Run, agent_run: AgentRun) -> Workspace:
-        """Allocate an isolated writable Workspace for one write-capable AgentRun.
-
-        Idempotent per AgentRun: a retry reuses the Workspace already allocated
-        to that AgentRun rather than creating a second worktree
-        (WORKTREE_POLICY §170).
-
-        Raises:
-            WorkspaceAllocationError: when no safe writable Workspace exists. The
-                caller must not start execution.
-        """
-
         if agent_run.access_mode not in WRITE_ACCESS_MODES:
             raise WorkspaceAllocationError(
                 None,
@@ -146,12 +118,8 @@ class WorkspaceService:
                 "A read-only assignment does not require a writable Workspace.",
             )
 
-        # Idempotent per AgentRun, keyed on the Workspace the AgentRun durably
-        # records. Ownership is released once an assignment finishes, so the
-        # current owner is not a stable request identity.
         if agent_run.workspace_id is not None:
             recorded = self._repository.get(agent_run.workspace_id)
-
             if (
                 recorded is not None
                 and recorded.run_id == run.id
@@ -160,7 +128,6 @@ class WorkspaceService:
                 return recorded
 
         project = self._projects.get_project(run.project_id)
-
         if project.status is not ProjectStatus.ACTIVE:
             raise WorkspaceAllocationError(
                 None,
@@ -170,7 +137,6 @@ class WorkspaceService:
 
         workspace_id = self._workspace_id_factory()
         now = utc_now(self._clock)
-
         workspace = Workspace(
             id=workspace_id,
             project_id=run.project_id,
@@ -182,9 +148,7 @@ class WorkspaceService:
             created_at=now,
             updated_at=now,
         )
-
         self._repository.add(workspace)
-
         self._emit(
             run,
             EventType.WORKSPACE_ALLOCATION_REQUESTED,
@@ -200,9 +164,7 @@ class WorkspaceService:
             base_revision = self._worktrees.resolve_base_revision(project.repository_path)
         except WorktreeNotContainedError as exc:
             return self._fail_allocation(
-                workspace,
-                WorkspaceReasonCode.PATH_OUTSIDE_MANAGED_ROOT,
-                str(exc),
+                workspace, WorkspaceReasonCode.PATH_OUTSIDE_MANAGED_ROOT, str(exc)
             )
         except WorktreeOperationError as exc:
             return self._fail_allocation(
@@ -219,7 +181,6 @@ class WorkspaceService:
             )
 
         branch = generated_branch_name(run.id, agent_run.agent_profile_key, workspace_id)
-
         try:
             self._worktrees.create_worktree(
                 project_id=run.project_id,
@@ -232,9 +193,7 @@ class WorkspaceService:
             )
         except WorktreeNotContainedError as exc:
             return self._fail_allocation(
-                workspace,
-                WorkspaceReasonCode.PATH_OUTSIDE_MANAGED_ROOT,
-                str(exc),
+                workspace, WorkspaceReasonCode.PATH_OUTSIDE_MANAGED_ROOT, str(exc)
             )
         except WorktreeCreationError as exc:
             return self._fail_allocation(
@@ -256,11 +215,9 @@ class WorkspaceService:
             git_branch=branch,
             updated_at=utc_now(self._clock),
         )
-
         self._repository.update(ready)
         self._emit(run, EventType.WORKSPACE_CREATED, ready)
         self._emit(run, EventType.WORKSPACE_READY, ready)
-
         self._audit_workspace(
             ready,
             AuditAction.WORKSPACE_ALLOCATED,
@@ -270,7 +227,6 @@ class WorkspaceService:
                 ("agent_run_id", str(agent_run.id)),
             ),
         )
-
         return ready
 
     def ensure_integration_workspace(
@@ -278,14 +234,6 @@ class WorkspaceService:
         run: Run,
         source_workspace_ids: tuple[WorkspaceId, ...],
     ) -> Workspace:
-        """Return one durable integration Workspace for several writer states.
-
-        Sources must belong to the same Run, be quiescent managed worktrees, and
-        share one immutable base revision. The integration target is a separate
-        managed worktree. Overlapping changed paths fail closed before any target
-        mutation; no commit or merge into a user branch is performed.
-        """
-
         unique_sources = tuple(dict.fromkeys(source_workspace_ids))
         if len(unique_sources) < 2:
             raise WorkspaceIntegrationError((), "Integration requires at least two writers.")
@@ -298,8 +246,7 @@ class WorkspaceService:
         if len(existing) > 1:
             raise WorkspaceIntegrationError(
                 (),
-                "More than one integration Workspace exists for this Run; "
-                "operator review is required.",
+                "More than one integration Workspace exists for this Run; operator review is required.",
             )
         if existing:
             workspace = existing[0]
@@ -312,8 +259,7 @@ class WorkspaceService:
             if workspace.reason_code is WorkspaceReasonCode.INTEGRATION_CONFLICT:
                 raise WorkspaceIntegrationError(
                     (),
-                    workspace.reason_summary
-                    or "Integration is blocked by conflicting writer paths.",
+                    workspace.reason_summary or "Integration is blocked by conflicting writer paths.",
                 )
             raise WorkspaceIntegrationError(
                 (),
@@ -324,36 +270,30 @@ class WorkspaceService:
         for source in sources:
             if source.run_id != run.id or source.project_id != run.project_id:
                 raise WorkspaceIntegrationError(
-                    (),
-                    "Integration sources must belong to the same Run and Project.",
+                    (), "Integration sources must belong to the same Run and Project."
                 )
             if source.kind not in WORKTREE_KINDS or not source.writable:
                 raise WorkspaceIntegrationError(
-                    (),
-                    "Integration sources must be writable managed Worktrees.",
+                    (), "Integration sources must be writable managed Worktrees."
                 )
             if source.owner_agent_run_id is not None or source.status is not WorkspaceStatus.READY:
                 raise WorkspaceIntegrationError(
-                    (),
-                    "Integration sources must be quiescent READY Workspaces.",
+                    (), "Integration sources must be quiescent READY Workspaces."
                 )
             if source.base_revision is None:
                 raise WorkspaceIntegrationError(
-                    (),
-                    "Integration sources must record a base revision.",
+                    (), "Integration sources must record a base revision."
                 )
 
         base_revisions = {source.base_revision for source in sources}
         if len(base_revisions) != 1:
             raise WorkspaceIntegrationError(
-                (),
-                "Integration sources do not share one immutable base revision.",
+                (), "Integration sources do not share one immutable base revision."
             )
         base_revision = next(iter(base_revisions))
         if base_revision is None:
             raise WorkspaceIntegrationError(
-                (),
-                "Integration sources must record a base revision.",
+                (), "Integration sources must record a base revision."
             )
 
         project = self._projects.get_project(run.project_id)
@@ -471,8 +411,6 @@ class WorkspaceService:
         reason_code: WorkspaceReasonCode,
         reason_summary: str,
     ) -> Workspace:
-        """Mark an allocation attempt FAILED and refuse to hand it to an executor."""
-
         failed = replace(
             workspace,
             status=WorkspaceStatus.FAILED,
@@ -480,17 +418,10 @@ class WorkspaceService:
             reason_summary=reason_summary,
             updated_at=utc_now(self._clock),
         )
-
         self._repository.update(failed)
-
         run = self._runs.get_run(workspace.run_id)
         self._emit(run, EventType.WORKSPACE_FAILED, failed)
-
         raise WorkspaceAllocationError(workspace.id, reason_code, reason_summary)
-
-    # ------------------------------------------------------------------
-    # Write ownership
-    # ------------------------------------------------------------------
 
     def allocate_read_view(
         self,
@@ -498,20 +429,8 @@ class WorkspaceService:
         agent_run: AgentRun,
         source_workspace_id: WorkspaceId,
     ) -> Workspace:
-        """Give a read-only assignment a view onto an existing candidate worktree.
-
-        This is the review half of the workspace handoff (WORKTREE_POLICY §112,
-        §113). The view shares the source location and is never writable, never
-        owned, and never creates a filesystem object, so a reviewer can inspect
-        the exact revision under review without gaining any ability to alter it
-        (WORKTREE_POLICY §87, §139).
-
-        Idempotent per AgentRun, keyed on the Workspace the AgentRun records.
-        """
-
         if agent_run.workspace_id is not None:
             recorded = self._repository.get(agent_run.workspace_id)
-
             if (
                 recorded is not None
                 and recorded.run_id == run.id
@@ -520,12 +439,10 @@ class WorkspaceService:
                 return recorded
 
         source = self.get(source_workspace_id)
-
         if source.run_id != run.id:
             raise WorkspaceOwnershipError(
                 "A read view may only observe a Workspace of the same Run."
             )
-
         if source.kind not in WORKTREE_KINDS:
             raise WorkspaceAllocationError(
                 None,
@@ -535,7 +452,6 @@ class WorkspaceService:
 
         workspace_id = self._workspace_id_factory()
         now = utc_now(self._clock)
-
         view = Workspace(
             id=workspace_id,
             project_id=run.project_id,
@@ -543,15 +459,12 @@ class WorkspaceService:
             kind=WorkspaceKind.PROJECT_READ_VIEW,
             access_mode=AgentAccessMode.READ_ONLY,
             status=WorkspaceStatus.READY,
-            # The same opaque reference: the view is the same location, read only.
             path_ref=source.path_ref,
             base_revision=source.base_revision,
             created_at=now,
             updated_at=now,
         )
-
         self._repository.add(view)
-
         self._emit(
             run,
             EventType.WORKSPACE_CREATED,
@@ -561,39 +474,26 @@ class WorkspaceService:
                 ("observed_workspace_id", str(source.id)),
             ),
         )
-
         return view
 
     def acquire_write_ownership(self, workspace_id: WorkspaceId, agent_run: AgentRun) -> Workspace:
-        """Atomically claim a writable Workspace for one AgentRun.
-
-        A second writer can never attach concurrently: the claim is a single
-        conditional statement that succeeds only while the Workspace is READY and
-        unowned (WORKTREE_POLICY §25, §174).
-        """
-
         workspace = self.get(workspace_id)
-
         if workspace.run_id != agent_run.run_id or workspace.project_id != agent_run.project_id:
             raise WorkspaceOwnershipError(
                 "A Workspace may only be owned by an AgentRun of the same Run and Project."
             )
-
         if not workspace.writable:
             raise WorkspaceOwnershipError("A read-only Workspace cannot hold write ownership.")
-
         if workspace.owner_agent_run_id == agent_run.id:
             return workspace
 
         run = self._runs.get_run(workspace.run_id)
-
         if workspace.owner_agent_run_id is not None:
             self._emit(run, EventType.WORKSPACE_CONFLICT_DETECTED, workspace)
             raise WorkspaceOwnershipError(
                 "This Workspace already has an active writer; parallel writers require "
                 "separate Worktrees."
             )
-
         if workspace.status is not WorkspaceStatus.READY:
             self._emit(run, EventType.WORKSPACE_CONFLICT_DETECTED, workspace)
             raise WorkspaceOwnershipError(
@@ -605,27 +505,17 @@ class WorkspaceService:
             agent_run.id,
             updated_at=utc_now(self._clock).isoformat(),
         )
-
         if not claimed:
             self._emit(run, EventType.WORKSPACE_CONFLICT_DETECTED, self.get(workspace_id))
             raise WorkspaceOwnershipError(
                 "Write ownership of this Workspace was taken by another writer."
             )
-
         return self.get(workspace_id)
 
     def release_write_ownership(self, workspace_id: WorkspaceId) -> Workspace:
-        """Return a writable Workspace to READY once its writer finished.
-
-        Idempotent, and a no-op for a Workspace that can no longer accept writes,
-        so settling a finished assignment can never resurrect a released one.
-        """
-
         workspace = self.get(workspace_id)
-
         if workspace.owner_agent_run_id is None:
             return workspace
-
         if workspace.status in WORKSPACE_UNWRITABLE_STATUSES:
             return workspace
 
@@ -635,53 +525,26 @@ class WorkspaceService:
             owner_agent_run_id=None,
             updated_at=utc_now(self._clock),
         )
-
         self._repository.update(released)
         return released
 
-    # ------------------------------------------------------------------
-    # Inspection
-    # ------------------------------------------------------------------
-
     def capture_changes(self, workspace_id: WorkspaceId) -> WorkspaceChangeSummary:
-        """Return the factual change summary of a Worktree.
-
-        The summary is always produced by Git. Nothing is inferred from what an
-        executor claims it wrote (WORKTREE_POLICY §42, §188.17).
-        """
-
         workspace = self.get(workspace_id)
-
         if workspace.base_revision is None:
             raise WorkspaceReleaseError(
                 "A Workspace without a recorded base revision has no comparable changes."
             )
-
         return self._worktrees.capture_changes(
             workspace.path_ref,
             base_revision=workspace.base_revision,
         )
 
-    # ------------------------------------------------------------------
-    # Release
-    # ------------------------------------------------------------------
-
     def request_release(self, workspace_id: WorkspaceId) -> Workspace:
-        """Release a Workspace, removing its worktree only when that is safe.
-
-        A Workspace is never destroyed merely because it can be. Removal happens
-        only when no execution is attached and Git reports no unrecorded changes.
-        Otherwise the worktree is retained and the Workspace explains why
-        (WORKTREE_POLICY §51, §58, §60).
-        """
-
         workspace = self.get(workspace_id)
-
         if workspace.status is WorkspaceStatus.RELEASED:
             return workspace
 
         run = self._runs.get_run(workspace.run_id)
-
         self._audit_workspace(
             workspace,
             AuditAction.WORKSPACE_RELEASE_REQUESTED,
@@ -689,26 +552,18 @@ class WorkspaceService:
         )
 
         if workspace.kind not in WORKTREE_KINDS:
-            # A logical view owns no filesystem object. Releasing it retires the
-            # record and must never remove the location it observes, which could
-            # be another Workspace's live worktree.
             now = utc_now(self._clock)
-
             released_view = replace(
                 workspace,
                 status=WorkspaceStatus.RELEASED,
                 released_at=now,
                 updated_at=now,
             )
-
             self._repository.update(released_view)
             self._emit(run, EventType.WORKSPACE_RELEASED, released_view)
-
             return released_view
 
         if workspace.owner_agent_run_id is not None:
-            # A cancellation request is not cleanup authorization, so an
-            # attached writer blocks release outright.
             return self._retain(
                 workspace,
                 run,
@@ -727,13 +582,11 @@ class WorkspaceService:
                     WorkspaceReasonCode.RECONCILIATION_REQUIRED,
                     "The Workspace is not in a releasable state; reconciliation is required.",
                 )
-
             workspace = replace(
                 workspace,
                 status=WorkspaceStatus.RELEASING,
                 updated_at=utc_now(self._clock),
             )
-
             self._repository.update(workspace)
             self._emit(run, EventType.WORKSPACE_RELEASE_REQUESTED, workspace)
 
@@ -755,7 +608,6 @@ class WorkspaceService:
             )
 
         if summary.is_dirty:
-            # Unrecorded changes must never be silently discarded.
             return self._retain(
                 workspace,
                 run,
@@ -776,7 +628,6 @@ class WorkspaceService:
             )
 
         now = utc_now(self._clock)
-
         released = replace(
             workspace,
             status=WorkspaceStatus.RELEASED,
@@ -786,10 +637,8 @@ class WorkspaceService:
             reason_summary=None,
             updated_at=now,
         )
-
         self._repository.update(released)
         self._emit(run, EventType.WORKSPACE_RELEASED, released)
-
         self._audit_workspace(
             released,
             AuditAction.WORKSPACE_RELEASED,
@@ -803,7 +652,6 @@ class WorkspaceService:
                 actor_type=AuditActorType.SYSTEM,
                 safe_metadata=(("branch", released.git_branch),),
             )
-
         return released
 
     def _retain(
@@ -813,14 +661,11 @@ class WorkspaceService:
         reason_code: WorkspaceReasonCode,
         reason_summary: str,
     ) -> Workspace:
-        """Keep a Workspace exactly as it is and record why release was refused."""
-
         target = (
             WorkspaceStatus.READY
             if workspace.status is WorkspaceStatus.RELEASING
             else workspace.status
         )
-
         if target is not workspace.status:
             ensure_workspace_transition_allowed(workspace.status, target)
 
@@ -831,10 +676,8 @@ class WorkspaceService:
             reason_summary=reason_summary,
             updated_at=utc_now(self._clock),
         )
-
         self._repository.update(retained)
         self._emit(run, EventType.WORKSPACE_CHANGED, retained)
-
         return retained
 
     def _orphan(
@@ -844,11 +687,8 @@ class WorkspaceService:
         reason_code: WorkspaceReasonCode,
         reason_summary: str,
     ) -> Workspace:
-        """Retain a Workspace whose cleanup could not be proven safe."""
-
         if workspace.status is not WorkspaceStatus.ORPHANED:
             ensure_workspace_transition_allowed(workspace.status, WorkspaceStatus.ORPHANED)
-
         orphaned = replace(
             workspace,
             status=WorkspaceStatus.ORPHANED,
@@ -856,26 +696,13 @@ class WorkspaceService:
             reason_summary=reason_summary,
             updated_at=utc_now(self._clock),
         )
-
         self._repository.update(orphaned)
         self._emit(run, EventType.WORKSPACE_ORPHANED, orphaned)
-
         return orphaned
 
-    # ------------------------------------------------------------------
-    # Reconciliation
-    # ------------------------------------------------------------------
-
     def reconcile(self, workspace_id: WorkspaceId) -> Workspace:
-        """Compare durable Workspace state against the filesystem and Git.
-
-        Nothing is deleted and nothing is recreated: reconciliation only records
-        what is factually true now (WORKTREE_POLICY §129-§133).
-        """
-
         workspace = self.get(workspace_id)
         run = self._runs.get_run(workspace.run_id)
-
         self._audit_workspace(
             workspace,
             AuditAction.WORKSPACE_RECONCILIATION_REQUESTED,
@@ -886,15 +713,12 @@ class WorkspaceService:
             return workspace
 
         project = self._projects.get_project(workspace.project_id)
-
         observed = self._worktrees.verify_worktree(
             workspace.path_ref,
             project.repository_identity,
         )
 
         if observed is WorkspaceReconciliationOutcome.MISSING:
-            # A missing worktree is never silently recreated: recreating it
-            # could hide lost work.
             reconciled = self._mark_unresolved(
                 workspace,
                 WorkspaceReasonCode.WORKTREE_MISSING,
@@ -922,7 +746,6 @@ class WorkspaceService:
             reconciled = self._clear_reason(workspace)
 
         self._emit(run, EventType.WORKSPACE_CHANGED, reconciled)
-
         return reconciled
 
     def _mark_unresolved(
@@ -931,13 +754,9 @@ class WorkspaceService:
         reason_code: WorkspaceReasonCode,
         reason_summary: str,
     ) -> Workspace:
-        """Record an unresolved Worktree without destroying anything."""
-
         target_status = workspace.status
-
         if not _is_terminal(workspace.status):
             target_status = WorkspaceStatus.ORPHANED
-
         if target_status is not workspace.status:
             ensure_workspace_transition_allowed(workspace.status, target_status)
 
@@ -948,29 +767,20 @@ class WorkspaceService:
             reason_summary=reason_summary,
             updated_at=utc_now(self._clock),
         )
-
         self._repository.update(reconciled)
         return reconciled
 
     def _clear_reason(self, workspace: Workspace) -> Workspace:
-        """Record a verified Worktree and clear a stale unresolved reason."""
-
         if workspace.reason_code is None and workspace.reason_summary is None:
             return workspace
-
         cleared = replace(
             workspace,
             reason_code=None,
             reason_summary=None,
             updated_at=utc_now(self._clock),
         )
-
         self._repository.update(cleared)
         return cleared
-
-    # ------------------------------------------------------------------
-    # Events and audit
-    # ------------------------------------------------------------------
 
     def _emit(
         self,
@@ -980,23 +790,14 @@ class WorkspaceService:
         *,
         extra: tuple[tuple[str, str | int | bool | None], ...] = (),
     ) -> None:
-        """Emit a canonical Workspace Event.
-
-        Payloads carry identity and lifecycle facts only. No absolute path,
-        worktree location, or repository path ever reaches an Event
-        (EVENT_CONTRACT §39, §111).
-        """
-
         payload: tuple[tuple[str, str | int | bool | None], ...] = (
             ("workspace_id", str(workspace.id)),
             ("workspace_kind", workspace.kind.value),
             ("access_mode", workspace.access_mode.value),
             ("status", workspace.status.value),
         )
-
         if workspace.base_revision is not None:
             payload = payload + (("base_revision", workspace.base_revision),)
-
         if workspace.reason_code is not None:
             payload = payload + (("reason_code", workspace.reason_code.value),)
 
