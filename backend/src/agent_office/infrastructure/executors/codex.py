@@ -160,9 +160,7 @@ class CodexExecutor:
             ),
         }
         unsupported = {
-            ExecutorCapability.EVENT_STREAM: (
-                "Raw Codex JSONL remains private to the adapter."
-            ),
+            ExecutorCapability.EVENT_STREAM: ("Raw Codex JSONL remains private to the adapter."),
             ExecutorCapability.SESSION_RESUME: (
                 "Resume starts another turn, so restart reconciliation returns UNKNOWN."
             ),
@@ -271,9 +269,7 @@ class CodexExecutor:
         if outcome is not StartExecutionOutcome.STARTED or thread_id is None:
             await self._terminate_untracked(process, stderr_task)
             if outcome is StartExecutionOutcome.FAILED:
-                return self._start_failed(
-                    "Codex failed before a session identity was established."
-                )
+                return self._start_failed("Codex failed before a session identity was established.")
             return self._start_unknown("Codex start outcome could not be established safely.")
 
         if thread_id in self._sessions:
