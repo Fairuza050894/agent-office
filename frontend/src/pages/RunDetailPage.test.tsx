@@ -339,22 +339,22 @@ describe('RunDetailPage Phase 5 operational behavior', () => {
     vi.stubGlobal('fetch', makeFetch())
     renderPage()
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Workflow' }))
+    fireEvent.click(await screen.findByRole('tab', { name: 'Workflow' }))
     expect(await screen.findByText('enterprise-engineering')).toBeInTheDocument()
     expect(screen.getByText('Backend Developer')).not.toBeInTheDocument()
     expect(screen.getByText('backend-developer')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Agents' }))
+    fireEvent.click(await screen.findByRole('tab', { name: 'Agents' }))
     expect(await screen.findByText('Agent Profiles')).toBeInTheDocument()
     expect(screen.getByText('Backend Developer')).toBeInTheDocument()
     expect(screen.getByText('Agent Runs')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Changes' }))
+    fireEvent.click(await screen.findByRole('tab', { name: 'Changes' }))
     expect(await screen.findByText('12')).toBeInTheDocument()
     expect(screen.getByText('3')).toBeInTheDocument()
     expect(screen.getByText('+backend/new.py')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Tests' }))
+    fireEvent.click(await screen.findByRole('tab', { name: 'Tests' }))
     expect(await screen.findByText('backend-tests')).toBeInTheDocument()
     expect(screen.getByText('SUCCEEDED')).toBeInTheDocument()
   })
@@ -363,7 +363,7 @@ describe('RunDetailPage Phase 5 operational behavior', () => {
     vi.stubGlobal('fetch', makeFetch())
     renderPage()
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Activity' }))
+    fireEvent.click(await screen.findByRole('tab', { name: 'Activity' }))
     expect(await screen.findByText('Live updates disconnected. REST reconciliation remains available.')).toBeInTheDocument()
     expect(screen.getByText('AGENT_RUN_STARTED')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Refresh' })).toBeInTheDocument()
@@ -409,7 +409,7 @@ describe('RunDetailPage Phase 5 operational behavior', () => {
     vi.stubGlobal('fetch', fetchMock)
     renderPage()
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Findings' }))
+    fireEvent.click(await screen.findByRole('tab', { name: 'Findings' }))
     expect(await screen.findByText('Original reviewer text remains visible.')).toBeInTheDocument()
 
     const button = screen.getByRole('button', { name: 'Accept risk' })
