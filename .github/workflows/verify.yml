@@ -6,6 +6,10 @@ on:
       - phase-5b-work
   pull_request:
 
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   backend:
     runs-on: ubuntu-latest
