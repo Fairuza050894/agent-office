@@ -83,9 +83,6 @@ export function RunHeader({ run, project, task, onRunUpdated }: RunHeaderProps) 
     let active = true
 
     if (!needsExecutorSelection) {
-      setExecutors([])
-      setSelectedExecutorId('')
-      setExecutorLoadError(null)
       return () => {
         active = false
       }
@@ -96,9 +93,12 @@ export function RunHeader({ run, project, task, onRunUpdated }: RunHeaderProps) 
         const available = await api.listExecutors()
         if (!active) return
         setExecutors(available)
+        setSelectedExecutorId('')
         setExecutorLoadError(null)
       } catch (err) {
         if (!active) return
+        setExecutors([])
+        setSelectedExecutorId('')
         setExecutorLoadError(
           err instanceof Error ? err.message : 'Compatible executor list is unavailable.',
         )
