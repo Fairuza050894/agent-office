@@ -55,9 +55,7 @@ class CodexExecutionContextResolver:
         workspace = self._workspaces.get(agent_run.workspace_id)
 
         if workspace.project_id != agent_run.project_id or workspace.run_id != agent_run.run_id:
-            raise CodexExecutionContextError(
-                "AgentRun and Workspace ownership do not match."
-            )
+            raise CodexExecutionContextError("AgentRun and Workspace ownership do not match.")
 
         if agent_run.access_mode in WRITE_ACCESS_MODES:
             if not workspace.accepts_writes:
@@ -81,13 +79,9 @@ class CodexExecutionContextResolver:
         try:
             resolved = path.expanduser().resolve(strict=True)
         except OSError as exc:
-            raise CodexExecutionContextError(
-                "Codex execution directory does not exist."
-            ) from exc
+            raise CodexExecutionContextError("Codex execution directory does not exist.") from exc
 
         if not resolved.is_dir():
-            raise CodexExecutionContextError(
-                "Codex execution path is not a directory."
-            )
+            raise CodexExecutionContextError("Codex execution path is not a directory.")
 
         return resolved
