@@ -124,7 +124,10 @@ def test_database_rejects_cross_project_workspace_event_and_candidate_links(
             ),
         )
 
-    with pytest.raises(sqlite3.IntegrityError, match="candidate Workspace ownership scope mismatch"):
+    with pytest.raises(
+        sqlite3.IntegrityError,
+        match="candidate Workspace ownership scope mismatch",
+    ):
         with database.transaction() as connection:
             connection.execute(
                 "UPDATE runs SET candidate_workspace_id = ? WHERE id = ?",
