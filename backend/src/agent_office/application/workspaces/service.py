@@ -131,13 +131,14 @@ class WorkspaceService:
                     "AgentRun references a Workspace that is not durably registered."
                 )
 
-            if (
-                recorded.run_id != run.id
-                or recorded.project_id != run.project_id
-                or recorded.owner_agent_run_id != agent_run.id
-            ):
+            if recorded.run_id != run.id or recorded.project_id != run.project_id:
                 raise WorkspaceOwnershipError(
                     "AgentRun references a Workspace outside its Run/Project ownership scope."
+                )
+
+            if recorded.owner_agent_run_id not in {None, agent_run.id}:
+                raise WorkspaceOwnershipError(
+                    "AgentRun references a Workspace owned by a different active writer."
                 )
 
             if recorded.status not in {WorkspaceStatus.RELEASED, WorkspaceStatus.FAILED}:
