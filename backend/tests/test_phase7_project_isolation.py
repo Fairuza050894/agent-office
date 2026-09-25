@@ -172,9 +172,6 @@ def test_unavailable_executor_does_not_silently_fallback_and_explicit_switch_suc
     assert agents
     assert {agent["executor_id"] for agent in agents} == {str(REFERENCE_EXECUTOR_ID)}
 
-    operator_actions = {
-        record["action"]
-        for record in harness.operator_audit(run["id"])
-    }
+    operator_actions = {record["action"] for record in harness.operator_audit(run["id"])}
     assert "RUN_EXECUTOR_SELECTED" in operator_actions
     assert "RUN_RESUME_REQUESTED" in operator_actions
