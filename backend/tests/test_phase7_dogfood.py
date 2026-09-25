@@ -370,9 +370,23 @@ def test_two_unrelated_projects_dogfood_through_reference_and_codex_configuratio
         )
 
         assert docs_run["status"] == "COMPLETED"
-        assert app_run["status"] == "COMPLETED", (
-            f"{app_run.get('failure_code')}: {app_run.get('failure_summary')}"
-        )
+        if app_run["status"] != "COMPLETED":
+            diagnostic_evidence = _json(client.get(f"/api/runs/{app_run['id']}/evidence"))
+            diagnostic_workspaces, diagnostic_statuses = _workspace_evidence(
+                client, app_run["id"]
+            )
+            raise AssertionError(
+                json.dumps(
+                    {
+                        "failure_code": app_run.get("failure_code"),
+                        "failure_summary": app_run.get("failure_summary"),
+                        "evidence": diagnostic_evidence,
+                        "workspaces": diagnostic_workspaces,
+                        "workspace_statuses": diagnostic_statuses,
+                    },
+                    sort_keys=True,
+                )
+            )
         assert docs_run["project_id"] == docs_project["id"]
         assert app_run["project_id"] == app_project["id"]
         assert docs_run["id"] != app_run["id"]
