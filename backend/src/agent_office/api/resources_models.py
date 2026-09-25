@@ -85,9 +85,14 @@ class ExecutorResponse(BaseModel):
             "SHELL_EXECUTION",
         }
         limitations = [
-            f"{record.capability.value}: {record.support.value}"
+            (
+                f"{record.capability.value}: {record.limitations}"
+                if record.limitations
+                else f"{record.capability.value}: {record.support.value}"
+            )
             for record in capabilities
-            if record.capability.value in security_relevant and record.support.value != "SUPPORTED"
+            if record.capability.value in security_relevant
+            and (record.support.value != "SUPPORTED" or record.limitations)
         ]
 
         return cls(

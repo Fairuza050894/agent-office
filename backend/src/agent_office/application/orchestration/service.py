@@ -5,8 +5,8 @@ scheduling, fan-in completion, stage and Run state, cancellation coordination,
 and completion gates. It never executes provider APIs directly: every execution
 goes through the Executor port, which keeps the core provider-neutral.
 
-Phase 3A executes through the deterministic ReferenceExecutor only. No real AI
-runtime is reachable from this module.
+Executor implementations remain outside this module. The orchestrator drives
+ReferenceExecutor and real providers through the same provider-neutral port.
 """
 
 from __future__ import annotations
@@ -89,6 +89,7 @@ from agent_office.domain import (
     StageReasonCode,
     StartExecutionOutcome,
     StartExecutionRequest,
+    Task,
     WorkflowDefinitionStatus,
     WorkflowSnapshot,
     Workspace,
@@ -766,7 +767,7 @@ class RunOrchestrator:
                 f"Stage {stage.stage_key.value} has no frozen agent assignments.",
             )
 
-        task_title = self._tasks.get_task(run.task_id).title
+        task_context = _compose_task_context(self._tasks.get_task(run.task_id))
 
         stage = self._stages.transition(stage, RunStageStatus.RUNNING)
         self._events.emit(
@@ -824,7 +825,7 @@ class RunOrchestrator:
             assignments=assignments,
             agent_runs=agent_runs,
             registered=registered,
-            task_title=task_title,
+            task_context=task_context,
             capability_report=capability_report,
             cycle=cycle,
         )
@@ -839,7 +840,7 @@ class RunOrchestrator:
         assignments: tuple[FrozenAgentAssignment, ...],
         agent_runs: list[AgentRun],
         registered: RegisteredExecutor,
-        task_title: str,
+        task_context: str,
         capability_report: CapabilityReport,
         cycle: int,
     ) -> list[AgentRun]:
@@ -872,7 +873,7 @@ class RunOrchestrator:
                 await asyncio.gather(
                     *(
                         self._execute_agent_run(
-                            run, agent_run, registered, task_title, capability_report, cycle
+                            run, agent_run, registered, task_context, capability_report, cycle
                         )
                         for agent_run in batch
                     )
@@ -880,7 +881,7 @@ class RunOrchestrator:
             else:
                 for agent_run in batch:
                     await self._execute_agent_run(
-                        run, agent_run, registered, task_title, capability_report, cycle
+                        run, agent_run, registered, task_context, capability_report, cycle
                     )
 
             retries: list[AgentRun] = []
@@ -1036,7 +1037,7 @@ class RunOrchestrator:
         run: Run,
         agent_run: AgentRun,
         registered: RegisteredExecutor,
-        task_title: str,
+        task_context: str,
         capability_report: CapabilityReport,
         cycle: int,
     ) -> AgentRun:
@@ -1051,7 +1052,7 @@ class RunOrchestrator:
             run,
             agent_run,
             registered,
-            task_title,
+            task_context,
             capability_report,
             cycle,
         )
@@ -1076,7 +1077,7 @@ class RunOrchestrator:
         run: Run,
         agent_run: AgentRun,
         registered: RegisteredExecutor,
-        task_title: str,
+        task_context: str,
         capability_report: CapabilityReport,
         cycle: int,
     ) -> AgentRun:
@@ -1124,7 +1125,7 @@ class RunOrchestrator:
         start_result = await adapter.start(
             StartExecutionRequest(
                 agent_run_id=agent_run.id,
-                instruction=_compose_instruction(agent_run, task_title),
+                instruction=_compose_instruction(agent_run, task_context),
                 safe_context=(
                     ("agent_profile_key", agent_run.agent_profile_key),
                     ("stage_key", agent_run.stage_key.value),
@@ -3232,14 +3233,34 @@ class RunOrchestrator:
         return self._executors.get(run.resolved_executor_id)
 
 
-def _compose_instruction(agent_run: AgentRun, task_title: str) -> str:
-    """Compose a bounded, safe instruction for one assignment."""
+def _compose_task_context(task: Task) -> str:
+    """Preserve the Task's actual bounded engineering intent."""
+
+    parts = [
+        f"Title: {task.title}",
+        f"Objective: {task.objective}",
+    ]
+
+    if task.constraints:
+        parts.append(f"Constraints: {task.constraints}")
+
+    return "\n".join(parts)
+
+
+def _compose_instruction(agent_run: AgentRun, task_context: str) -> str:
+    """Compose one bounded assignment instruction with non-destructive guardrails."""
 
     instruction = (
         f"Agent role: {agent_run.agent_profile_key}\n"
         f"Workflow stage: {agent_run.stage_key.value}\n"
-        f"Access mode: {agent_run.access_mode.value}\n"
-        f"Task: {task_title}"
+        f"Access mode: {agent_run.access_mode.value}\n\n"
+        "Safety requirements:\n"
+        "- Operate only inside the working directory assigned by Agent Office.\n"
+        "- Do not commit, merge, rebase, cherry-pick, push, or force-push.\n"
+        "- Do not run destructive Git reset or clean operations.\n"
+        "- Do not modify Git remotes or repository-global configuration.\n"
+        "- Do not expose credentials or secrets in output.\n\n"
+        f"Task:\n{task_context}"
     )
 
     if len(instruction) > MAX_INSTRUCTION_LENGTH:

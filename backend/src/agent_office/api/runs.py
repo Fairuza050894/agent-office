@@ -121,9 +121,9 @@ async def start_run(
 ) -> RunResponse:
     """Start workflow orchestration for a Run.
 
-    Execution is bound to the resolved Executor adapter. In Phase 3A only the
-    deterministic ReferenceExecutor is registered; no real AI runtime is
-    reachable through this endpoint.
+    Execution is bound to the resolved Executor adapter. Provider-specific
+    behavior remains behind that adapter, and capability/workspace gates run
+    before any external execution side effect.
     """
 
     try:

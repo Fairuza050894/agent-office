@@ -776,4 +776,4 @@ Read `.agents/skills/ao-milestone/references/current-phase.md` for the canonical
 
 If the milestone reference conflicts with executable repository facts, treat the mismatch as a governance defect and report it before implementation.
 
-Real Codex, Antigravity, OpenClaw, Hermes, or other AI executor integration remains outside the current ReferenceExecutor-only Phase 4 boundary and must not be introduced before its approved milestone.
+Real Codex, Antigravity, OpenClaw, Hermes, or other AI executor integration may be introduced only in an explicitly approved milestone and only through the provider-neutral ExecutorAdapter boundary. Check the canonical milestone reference before changing executor scope.
