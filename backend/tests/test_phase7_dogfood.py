@@ -19,7 +19,7 @@ from agent_office.config import Settings
 from agent_office.domain import ExecutionStatus
 from agent_office.infrastructure.executors.codex import CODEX_EXECUTOR_ID
 from agent_office.main import create_app
-from conftest import ScriptedExecutor, registry_for as test_registry_for
+from conftest import ScriptedExecutor, registry_for as make_test_registry
 
 
 def _git(repository: Path, *arguments: str) -> str:
@@ -169,7 +169,10 @@ def _run(
     )
     started = _json(client.post(f"/api/runs/{run['id']}/start", json={}))
 
-    if started["status"] not in {"COMPLETED", "FAILED", "BLOCKED", "CANCELLED"}:
+    terminal_statuses = {"COMPLETED", "FAILED", "BLOCKED", "CANCELLED"}
+    for _ in range(20):
+        if started["status"] in terminal_statuses:
+            break
         started = _json(client.post(f"/api/runs/{run['id']}/reconcile"))
 
     return started
@@ -486,7 +489,7 @@ def test_project_b_can_complete_while_project_a_remains_active(
             workspace_root=data_root / "workspaces",
             database_path=data_root / "agent-office.sqlite",
         ),
-        executor_registry=test_registry_for(executor_a, executor_b),
+        executor_registry=make_test_registry(executor_a, executor_b),
     )
 
     repository_a = _repository(tmp_path / "concurrent-a", {"README.md": "# A\\n"})
