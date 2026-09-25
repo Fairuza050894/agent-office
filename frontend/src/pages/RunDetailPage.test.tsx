@@ -1,7 +1,20 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import type { Project, Run, Task, RunStage, CompletionGateResponse, Finding, Evidence, AgentEvent } from '../api'
+import type {
+  AgentEvent,
+  AgentRun,
+  Evidence,
+  Finding,
+  Project,
+  Run,
+  RunStage,
+  Task,
+  VerificationStatus,
+  WorkflowSnapshot,
+  Workspace,
+  WorkspaceStatusResponse,
+} from '../api'
 import { Router } from '../router/Router'
 import { RunDetailPage } from './RunDetailPage'
 
@@ -24,7 +37,7 @@ const TASK: Task = {
   title: 'Test Task Title',
   objective: 'Objective A',
   constraints: null,
-  requested_workflow_id: 'default_workflow',
+  requested_workflow_id: null,
   requested_executor_id: null,
   created_at: '2026-09-16T09:00:00Z',
   updated_at: '2026-09-16T09:00:00Z',
@@ -34,85 +47,196 @@ const RUN: Run = {
   id: '33333333-3333-4333-8333-333333333333',
   project_id: PROJECT.id,
   task_id: TASK.id,
-  status: 'BLOCKED',
-  requested_executor_id: 'TestExecutor',
-  created_at: '2026-09-16T10:00:00Z',
+  status: 'RUNNING',
+  requested_executor_id: null,
+  resolved_executor_id: '00000000-0000-4000-8000-000000000001',
+  workflow_snapshot_id: '44444444-4444-4444-8444-444444444444',
+  changed_areas: ['BACKEND'],
+  failure_code: null,
+  failure_summary: null,
+  started_at: '2026-09-16T10:00:00Z',
+  completed_at: null,
+  cancel_requested_at: null,
+  remediation_cycles_used: 0,
+  candidate_workspace_id: '77777777-7777-4777-8777-777777777777',
+  created_at: '2026-09-16T09:59:00Z',
   updated_at: '2026-09-16T10:00:00Z',
 }
 
-const RUN_STAGES: RunStage[] = [
-  {
-    stage_key: 'planning',
-    status: 'COMPLETED',
-    required: true,
-    order_hint: 1,
-    execution_mode: 'AUTO',
-    condition: '',
-    reason_code: null,
-    reason_summary: null,
-    started_at: '2026-09-16T10:00:00Z',
-    completed_at: '2026-09-16T10:05:00Z',
-  },
-  {
-    stage_key: 'execution',
-    status: 'RUNNING',
-    required: true,
-    order_hint: 2,
-    execution_mode: 'AUTO',
-    condition: '',
-    reason_code: null,
-    reason_summary: null,
-    started_at: '2026-09-16T10:05:00Z',
-    completed_at: null,
-  }
-]
-
-const COMPLETION_GATE: CompletionGateResponse = {
-  status: 'PENDING',
-  complete: false,
-  failures: ['Missing required evidence for execution']
+const STAGE: RunStage = {
+  stage_key: 'IMPLEMENTATION',
+  status: 'RUNNING',
+  required: true,
+  order_hint: 1,
+  execution_mode: 'SEQUENTIAL',
+  condition: 'ALWAYS',
+  reason_code: null,
+  reason_summary: null,
+  started_at: RUN.started_at,
+  completed_at: null,
 }
 
-const FINDING: Finding = {
-  id: '44444444-4444-4444-8444-444444444444',
+const AGENT: AgentRun = {
+  id: '55555555-5555-4555-8555-555555555555',
+  run_id: RUN.id,
+  project_id: PROJECT.id,
+  stage_key: 'IMPLEMENTATION',
+  agent_profile_key: 'backend-developer',
+  agent_profile_version: 1,
+  executor_id: RUN.resolved_executor_id!,
+  access_mode: 'WRITE',
+  status: 'RUNNING',
+  attempt: 1,
+  retry_of_agent_run_id: null,
+  remediation_cycle: 0,
+  review_verdict: null,
+  workspace_id: RUN.candidate_workspace_id,
+  result_outcome: null,
+  result_summary: null,
+  reason_code: null,
+  reason_summary: null,
+  failure_retryable: null,
+  started_at: RUN.started_at,
+  completed_at: null,
+  created_at: RUN.started_at!,
+  updated_at: RUN.started_at!,
+}
+
+const SNAPSHOT: WorkflowSnapshot = {
+  id: RUN.workflow_snapshot_id!,
+  run_id: RUN.id,
+  project_id: PROJECT.id,
+  source_workflow_id: '88888888-8888-4888-8888-888888888888',
+  source_workflow_key: 'enterprise-engineering',
+  source_workflow_version: 1,
+  schema_version: 1,
+  stages: [
+    {
+      key: 'IMPLEMENTATION',
+      name: 'Implementation',
+      order_hint: 1,
+      execution_mode: 'SEQUENTIAL',
+      required: true,
+      condition: 'ALWAYS',
+      depends_on: [],
+      assignments: [
+        { profile_key: 'backend-developer', access_mode: 'WRITE', required: true },
+      ],
+    },
+  ],
+  agent_assignments: [
+    {
+      stage_key: 'IMPLEMENTATION',
+      profile_id: '99999999-9999-4999-8999-999999999999',
+      profile_key: 'backend-developer',
+      profile_name: 'Backend Developer',
+      profile_version: 1,
+      access_mode: 'WRITE',
+      required: true,
+    },
+  ],
+  created_at: '2026-09-16T10:00:00Z',
+}
+
+const WORKSPACE: Workspace = {
+  id: RUN.candidate_workspace_id!,
   project_id: PROJECT.id,
   run_id: RUN.id,
-  reviewer_agent_run_id: 'review-agent',
-  category: 'Security',
-  severity: 'HIGH',
-  title: 'Exposed secret',
-  description: 'A secret is exposed in the code.',
-  status: 'OPEN',
-  blocks_completion: true,
-  created_at: '2026-09-16T10:06:00Z',
+  owner_agent_run_id: AGENT.id,
+  kind: 'GIT_WORKTREE',
+  access_mode: 'WRITE',
+  status: 'READY',
+  base_revision: 'abc123',
+  git_branch: 'ao/run-work',
+  reason_code: null,
+  reason_summary: null,
+  writable: true,
+  created_at: '2026-09-16T10:00:00Z',
+  updated_at: '2026-09-16T10:01:00Z',
+  released_at: null,
+}
+
+const WORKSPACE_STATUS: WorkspaceStatusResponse = {
+  workspace: WORKSPACE,
+  change_summary: {
+    base_revision: 'abc123',
+    current_revision: 'abc123',
+    files_changed: 2,
+    insertions: 12,
+    deletions: 3,
+    added_paths: ['backend/new.py'],
+    modified_paths: ['backend/existing.py'],
+    deleted_paths: [],
+    untracked_paths: [],
+  },
 }
 
 const EVIDENCE: Evidence = {
-  id: '55555555-5555-4555-8555-555555555555',
+  id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
   project_id: PROJECT.id,
   task_id: TASK.id,
   run_id: RUN.id,
+  agent_run_id: AGENT.id,
   kind: 'TEST_RESULT',
-  status: 'FAILED',
-  summary: '1 tests failed.',
-  created_at: '2026-09-16T10:07:00Z',
+  status: 'PASSED',
+  summary: 'Tests passed.',
+  metadata: {},
+  schema_version: 1,
+  created_at: '2026-09-16T10:05:00Z',
+}
+
+const VERIFICATION: VerificationStatus = {
+  run_id: RUN.id,
+  checked: true,
+  evidence_count: 1,
+  checks: [
+    {
+      check_key: 'backend-tests',
+      check_type: 'TEST',
+      required: true,
+      command_status: 'SUCCEEDED',
+      evidence_id: EVIDENCE.id,
+      satisfied: true,
+    },
+  ],
+}
+
+const FINDING: Finding = {
+  id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+  project_id: PROJECT.id,
+  run_id: RUN.id,
+  reviewer_agent_run_id: AGENT.id,
+  category: 'SECURITY',
+  severity: 'BLOCKER',
+  title: 'Blocking observation',
+  description: 'Original reviewer text remains visible.',
+  status: 'OPEN',
+  location: null,
+  remediation_owner_agent_run_id: AGENT.id,
+  resolution_type: null,
+  resolver_agent_run_id: null,
+  resolution_summary: null,
+  blocks_completion: true,
+  created_at: '2026-09-16T10:04:00Z',
+  updated_at: '2026-09-16T10:04:00Z',
+  resolved_at: null,
 }
 
 const EVENT: AgentEvent = {
-  id: '66666666-6666-4666-8666-666666666666',
-  event_type: 'agent_started',
+  id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+  event_type: 'AGENT_RUN_STARTED',
   project_id: PROJECT.id,
   run_id: RUN.id,
-  agent_run_id: 'agent-1',
-  source: 'SYSTEM',
-  occurred_at: '2026-09-16T10:08:00Z',
-  recorded_at: '2026-09-16T10:08:01Z',
-  payload: { detail: 'Agent started successfully' }
+  agent_run_id: AGENT.id,
+  source: 'ORCHESTRATOR',
+  occurred_at: '2026-09-16T10:02:00Z',
+  recorded_at: '2026-09-16T10:02:01Z',
+  payload: { stage_key: 'IMPLEMENTATION' },
 }
 
-function jsonResponse(body: unknown): Response {
+function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
-    status: 200,
+    status,
     headers: { 'Content-Type': 'application/json' },
   })
 }
@@ -123,343 +247,188 @@ function requestUrl(input: RequestInfo | URL): string {
   return input.url
 }
 
+function makeFetch(run: Run = RUN) {
+  return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = requestUrl(input)
+    const method = init?.method?.toUpperCase() ?? 'GET'
+
+    if (method === 'GET' && url === `/api/runs/${run.id}`) return jsonResponse(run)
+    if (method === 'GET' && url === `/api/projects/${PROJECT.id}`) return jsonResponse(PROJECT)
+    if (method === 'GET' && url === `/api/tasks/${TASK.id}`) return jsonResponse(TASK)
+    if (method === 'GET' && url === `/api/runs/${run.id}/stages`) return jsonResponse([STAGE])
+    if (method === 'GET' && url === `/api/runs/${run.id}/completion-gates`) {
+      return jsonResponse({
+        status: run.status,
+        complete: run.status === 'COMPLETED',
+        failures: run.status === 'BLOCKED' ? [run.failure_code ?? 'BLOCKED'] : [],
+      })
+    }
+    if (method === 'GET' && url === `/api/runs/${run.id}/agents`) return jsonResponse([AGENT])
+    if (method === 'GET' && url === `/api/runs/${run.id}/snapshot`) return jsonResponse(SNAPSHOT)
+    if (method === 'GET' && url === `/api/runs/${run.id}/workspaces`) return jsonResponse([WORKSPACE])
+    if (method === 'GET' && url === `/api/workspaces/${WORKSPACE.id}/status`) return jsonResponse(WORKSPACE_STATUS)
+    if (method === 'GET' && url === `/api/runs/${run.id}/evidence`) return jsonResponse([EVIDENCE])
+    if (method === 'GET' && url === `/api/runs/${run.id}/verification`) return jsonResponse(VERIFICATION)
+    if (method === 'GET' && url === `/api/runs/${run.id}/findings`) {
+      return jsonResponse({ run_id: run.id, findings: [FINDING], open_blockers: 1 })
+    }
+    if (method === 'GET' && url === `/api/runs/${run.id}/events`) {
+      return jsonResponse({ events: [EVENT], next_cursor: null })
+    }
+    if (method === 'POST' && url === `/api/runs/${run.id}/cancel`) {
+      return jsonResponse({ ...run, status: 'CANCELLED', completed_at: '2026-09-16T10:10:00Z' })
+    }
+    if (method === 'POST' && url === `/api/runs/${run.id}/reconcile`) {
+      return jsonResponse({ ...run, status: 'BLOCKED' })
+    }
+    if (method === 'POST' && url === `/api/runs/${run.id}/resume`) {
+      return jsonResponse({ ...run, status: 'RUNNING', failure_code: null, failure_summary: null })
+    }
+    if (method === 'POST' && url === `/api/findings/${FINDING.id}/accept-risk`) {
+      return jsonResponse({
+        ...FINDING,
+        status: 'ACCEPTED_RISK',
+        blocks_completion: false,
+        resolution_summary: 'Accepted for test.',
+      })
+    }
+
+    throw new Error(`Unexpected request: ${method} ${url}`)
+  })
+}
+
+function renderPage(run: Run = RUN) {
+  return render(
+    <Router initialPath={`/runs/${run.id}`}>
+      <RunDetailPage runId={run.id} />
+    </Router>,
+  )
+}
+
 afterEach(() => {
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
 })
 
-describe('RunDetailPage Phase 5A behavior', () => {
-  it('loads run details and renders explicit unavailable semantics', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (input: RequestInfo | URL) => {
-        const url = requestUrl(input)
-        if (url === `/api/runs/${RUN.id}`) return jsonResponse(RUN)
-        if (url === `/api/projects/${PROJECT.id}`) return jsonResponse(PROJECT)
-        if (url === `/api/tasks/${TASK.id}`) return jsonResponse(TASK)
-        if (url === `/api/runs/${RUN.id}/stages`) return jsonResponse([])
-        if (url === `/api/runs/${RUN.id}/gate`) return jsonResponse({ status: 'PENDING', complete: false, failures: [] })
-        if (url === `/api/runs/${RUN.id}/findings`) return jsonResponse({ run_id: RUN.id, findings: [], open_blockers: 0 })
-        if (url === `/api/runs/${RUN.id}/evidence`) return jsonResponse([])
-        if (url === `/api/runs/${RUN.id}/events`) return jsonResponse({ events: [], next_cursor: null })
-        throw new Error(`Unexpected request: ${url}`)
-      }),
-    )
+describe('RunDetailPage Phase 5 operational behavior', () => {
+  it('renders every required Run Detail tab', async () => {
+    vi.stubGlobal('fetch', makeFetch())
+    renderPage()
 
-    render(
-      <Router initialPath={`/runs/${RUN.id}`}>
-        <RunDetailPage runId={RUN.id} />
-      </Router>
-    )
-
-    expect(await screen.findByText('Run #33333333')).toBeInTheDocument()
-    expect(screen.getByText('Test Task Title')).toBeInTheDocument()
-    expect(screen.getByText('Project A')).toBeInTheDocument()
-    expect(screen.getByText('BLOCKED')).toBeInTheDocument()
-
-    // Explicit unavailable semantics
-    expect(await screen.findByText('No active blockers.')).toBeInTheDocument()
-    expect(screen.getByText('No workflow stages recorded.')).toBeInTheDocument()
-
-    // Check navigation tab clicks to findings
-    fireEvent.click(screen.getByRole('button', { name: /findings/i }))
-    expect(await screen.findByText('No findings recorded for this run.')).toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('button', { name: /evidence/i }))
-    expect(await screen.findByText('No evidence recorded for this run.')).toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('button', { name: /activity/i }))
-    expect(await screen.findByText('No activity recorded for this run.')).toBeInTheDocument()
-  })
-
-  it('renders overview data including completion gates and stages correctly', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (input: RequestInfo | URL) => {
-        const url = requestUrl(input)
-        if (url === `/api/runs/${RUN.id}`) return jsonResponse(RUN)
-        if (url === `/api/projects/${PROJECT.id}`) return jsonResponse(PROJECT)
-        if (url === `/api/tasks/${TASK.id}`) return jsonResponse(TASK)
-        if (url === `/api/runs/${RUN.id}/stages`) return jsonResponse(RUN_STAGES)
-        if (url === `/api/runs/${RUN.id}/gate`) return jsonResponse(COMPLETION_GATE)
-        throw new Error(`Unexpected request: ${url}`)
-      }),
-    )
-
-    render(
-      <Router initialPath={`/runs/${RUN.id}`}>
-        <RunDetailPage runId={RUN.id} />
-      </Router>
-    )
-
-    // Wait for gates and stages
-    expect(await screen.findByText('Missing required evidence for execution')).toBeInTheDocument()
-    expect(screen.getByText('planning')).toBeInTheDocument()
-    expect(screen.getByText('execution')).toBeInTheDocument()
-
-    // Ensure actual failure reasons are displayed
-    expect(screen.queryByText('false')).not.toBeInTheDocument() // Not merely pass/fail coloring
-  })
-
-  it('renders findings and visibly distinguishes blockers', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (input: RequestInfo | URL) => {
-        const url = requestUrl(input)
-        if (url === `/api/runs/${RUN.id}`) return jsonResponse(RUN)
-        if (url === `/api/projects/${PROJECT.id}`) return jsonResponse(PROJECT)
-        if (url === `/api/tasks/${TASK.id}`) return jsonResponse(TASK)
-        if (url === `/api/runs/${RUN.id}/findings`) return jsonResponse({ run_id: RUN.id, findings: [FINDING], open_blockers: 1 })
-        throw new Error(`Unexpected request: ${url}`)
-      }),
-    )
-
-    render(
-      <Router initialPath={`/runs/${RUN.id}`}>
-        <RunDetailPage runId={RUN.id} />
-      </Router>
-    )
-
-    fireEvent.click(await screen.findByRole('button', { name: /findings/i }))
-
-    expect(await screen.findByText('Exposed secret')).toBeInTheDocument()
-    expect(screen.getByText('Open blockers: 1')).toBeInTheDocument()
-
-    // Checking styling for blocker distinguishing
-    const findingContainer = screen.getByText('Exposed secret').closest('.panel') as HTMLElement | null
-    expect(findingContainer?.style.borderLeft).toContain('var(--danger-color)')
-  })
-
-  it('renders evidence and preserves failure status from the backend', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (input: RequestInfo | URL) => {
-        const url = requestUrl(input)
-        if (url === `/api/runs/${RUN.id}`) return jsonResponse(RUN)
-        if (url === `/api/projects/${PROJECT.id}`) return jsonResponse(PROJECT)
-        if (url === `/api/tasks/${TASK.id}`) return jsonResponse(TASK)
-        if (url === `/api/runs/${RUN.id}/evidence`) return jsonResponse([EVIDENCE])
-        throw new Error(`Unexpected request: ${url}`)
-      }),
-    )
-
-    render(
-      <Router initialPath={`/runs/${RUN.id}`}>
-        <RunDetailPage runId={RUN.id} />
-      </Router>
-    )
-
-    fireEvent.click(await screen.findByRole('button', { name: /evidence/i }))
-
-    expect(await screen.findByText('TEST_RESULT')).toBeInTheDocument()
-    expect(screen.getByText('FAILED')).toBeInTheDocument() // Non-success evidence is not successful
-    expect(screen.getByText('1 tests failed.')).toBeInTheDocument()
-  })
-
-  it('renders activity timeline with event ordering', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (input: RequestInfo | URL) => {
-        const url = requestUrl(input)
-        if (url === `/api/runs/${RUN.id}`) return jsonResponse(RUN)
-        if (url === `/api/projects/${PROJECT.id}`) return jsonResponse(PROJECT)
-        if (url === `/api/tasks/${TASK.id}`) return jsonResponse(TASK)
-        if (url === `/api/runs/${RUN.id}/events`) return jsonResponse({ events: [EVENT], next_cursor: null })
-        throw new Error(`Unexpected request: ${url}`)
-      }),
-    )
-
-    render(
-      <Router initialPath={`/runs/${RUN.id}`}>
-        <RunDetailPage runId={RUN.id} />
-      </Router>
-    )
-
-    fireEvent.click(await screen.findByRole('button', { name: /activity/i }))
-
-    expect(await screen.findByText('agent_started')).toBeInTheDocument()
-    expect(screen.getByText(/Agent started successfully/i)).toBeInTheDocument()
-  })
-
-  it('RunHeader renders status and metadata but no mutation controls (Phase 5A is read-only)', async () => {
-    // Verify across a representative set of statuses that no operation buttons appear.
-    // Mutation controls (Cancel, Resume, Retry) are out of scope for Phase 5A Operational Visibility.
-    const statuses: Run['status'][] = ['BLOCKED', 'RUNNING', 'FAILED', 'COMPLETED', 'CANCELLED']
-
-    for (const status of statuses) {
-      vi.unstubAllGlobals()
-      const runWithStatus: Run = { ...RUN, status }
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(async (input: RequestInfo | URL) => {
-          const url = requestUrl(input)
-          if (url === `/api/runs/${runWithStatus.id}`) return jsonResponse(runWithStatus)
-          if (url === `/api/projects/${PROJECT.id}`) return jsonResponse(PROJECT)
-          if (url === `/api/tasks/${TASK.id}`) return jsonResponse(TASK)
-          throw new Error(`Unexpected request: ${url}`)
-        }),
-      )
-
-      const { unmount } = render(
-        <Router initialPath={`/runs/${runWithStatus.id}`}>
-          <RunDetailPage runId={runWithStatus.id} />
-        </Router>
-      )
-
-      expect(await screen.findByText('Run #33333333')).toBeInTheDocument()
-      expect(screen.getByText(status)).toBeInTheDocument()
-
-      // No mutation controls must appear for any lifecycle state in Phase 5A
-      expect(screen.queryByRole('button', { name: /Cancel/i })).not.toBeInTheDocument()
-      expect(screen.queryByRole('button', { name: /Resume/i })).not.toBeInTheDocument()
-      expect(screen.queryByRole('button', { name: /Retry/i })).not.toBeInTheDocument()
-
-      unmount()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Run #33333333' })).toBeInTheDocument()
+    for (const tab of ['Overview', 'Workflow', 'Agents', 'Activity', 'Changes', 'Tests', 'Findings', 'Evidence']) {
+      expect(screen.getByRole('tab', { name: tab })).toBeInTheDocument()
     }
   })
 
-  it('RunFindingsTab renders non-blocker finding with border-color (not danger-color)', async () => {
-    const nonBlockerFinding: Finding = {
-      ...FINDING,
-      id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
-      title: 'Style warning',
-      blocks_completion: false,
-      severity: 'LOW',
-      status: 'OPEN',
-    }
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (input: RequestInfo | URL) => {
-        const url = requestUrl(input)
-        if (url === `/api/runs/${RUN.id}`) return jsonResponse(RUN)
-        if (url === `/api/projects/${PROJECT.id}`) return jsonResponse(PROJECT)
-        if (url === `/api/tasks/${TASK.id}`) return jsonResponse(TASK)
-        if (url === `/api/runs/${RUN.id}/findings`)
-          return jsonResponse({ run_id: RUN.id, findings: [nonBlockerFinding], open_blockers: 0 })
-        throw new Error(`Unexpected request: ${url}`)
-      }),
-    )
+  it('answers the operational Run overview from backend truth', async () => {
+    vi.stubGlobal('fetch', makeFetch())
+    renderPage()
 
-    render(
-      <Router initialPath={`/runs/${RUN.id}`}>
-        <RunDetailPage runId={RUN.id} />
-      </Router>
-    )
-
-    fireEvent.click(await screen.findByRole('button', { name: /findings/i }))
-
-    const title = await screen.findByText('Style warning')
-    expect(title).toBeInTheDocument()
-    // Non-blocker must not use the danger border
-    const panel = title.closest('.panel') as HTMLElement | null
-    expect(panel?.style.borderLeft).not.toContain('var(--danger-color)')
-    expect(panel?.style.borderLeft).toContain('var(--border-color)')
-    // open_blockers 0 is truthful
-    expect(screen.getByText('Open blockers: 0')).toBeInTheDocument()
+    expect(await screen.findByText('What is running?')).toBeInTheDocument()
+    expect(screen.getByText('Who is active?')).toBeInTheDocument()
+    expect(screen.getByText('Which executor?')).toBeInTheDocument()
+    expect(screen.getByText('What changed?')).toBeInTheDocument()
+    expect(screen.getByText('What evidence exists?')).toBeInTheDocument()
+    expect(screen.getByText('Is it merged?')).toBeInTheDocument()
+    expect(screen.getByText(/2 file\(s\) changed/)).toBeInTheDocument()
+    expect(screen.getByText(/does not automatically merge/)).toBeInTheDocument()
   })
 
-  it('RunFindingsTab shows RESOLVED badge with success styling', async () => {
-    const resolvedFinding: Finding = {
-      ...FINDING,
-      id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
-      title: 'Fixed issue',
-      blocks_completion: false,
-      status: 'RESOLVED',
-    }
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (input: RequestInfo | URL) => {
-        const url = requestUrl(input)
-        if (url === `/api/runs/${RUN.id}`) return jsonResponse(RUN)
-        if (url === `/api/projects/${PROJECT.id}`) return jsonResponse(PROJECT)
-        if (url === `/api/tasks/${TASK.id}`) return jsonResponse(TASK)
-        if (url === `/api/runs/${RUN.id}/findings`)
-          return jsonResponse({ run_id: RUN.id, findings: [resolvedFinding], open_blockers: 0 })
-        throw new Error(`Unexpected request: ${url}`)
-      }),
-    )
+  it('renders WorkflowSnapshot, AgentProfile assignments, Changes, and Tests without invented values', async () => {
+    vi.stubGlobal('fetch', makeFetch())
+    renderPage()
 
-    render(
-      <Router initialPath={`/runs/${RUN.id}`}>
-        <RunDetailPage runId={RUN.id} />
-      </Router>
-    )
+    fireEvent.click(screen.getByRole('tab', { name: 'Workflow' }))
+    expect(await screen.findByText('enterprise-engineering')).toBeInTheDocument()
+    expect(screen.getByText('Backend Developer')).not.toBeInTheDocument()
+    expect(screen.getByText('backend-developer')).toBeInTheDocument()
 
-    fireEvent.click(await screen.findByRole('button', { name: /findings/i }))
+    fireEvent.click(screen.getByRole('tab', { name: 'Agents' }))
+    expect(await screen.findByText('Agent Profiles')).toBeInTheDocument()
+    expect(screen.getByText('Backend Developer')).toBeInTheDocument()
+    expect(screen.getByText('Agent Runs')).toBeInTheDocument()
 
-    expect(await screen.findByText('Fixed issue')).toBeInTheDocument()
-    // RESOLVED status badge must use success styling, not neutral
-    const badge = screen.getByText('RESOLVED')
-    expect(badge).toHaveClass('badge-success')
-    expect(badge).not.toHaveClass('badge-neutral')
+    fireEvent.click(screen.getByRole('tab', { name: 'Changes' }))
+    expect(await screen.findByText('12')).toBeInTheDocument()
+    expect(screen.getByText('3')).toBeInTheDocument()
+    expect(screen.getByText('+backend/new.py')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Tests' }))
+    expect(await screen.findByText('backend-tests')).toBeInTheDocument()
+    expect(screen.getByText('SUCCEEDED')).toBeInTheDocument()
   })
 
-  it('RunEvidenceTab shows PASSED evidence without conflating it with test failure', async () => {
-    const passedEvidence: Evidence = {
-      ...EVIDENCE,
-      id: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
-      kind: 'TEST_RESULT',
-      status: 'PASSED',
-      summary: 'All 42 tests passed.',
-    }
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (input: RequestInfo | URL) => {
-        const url = requestUrl(input)
-        if (url === `/api/runs/${RUN.id}`) return jsonResponse(RUN)
-        if (url === `/api/projects/${PROJECT.id}`) return jsonResponse(PROJECT)
-        if (url === `/api/tasks/${TASK.id}`) return jsonResponse(TASK)
-        if (url === `/api/runs/${RUN.id}/evidence`) return jsonResponse([passedEvidence])
-        throw new Error(`Unexpected request: ${url}`)
-      }),
-    )
+  it('shows normalized Activity with explicit REST fallback state', async () => {
+    vi.stubGlobal('fetch', makeFetch())
+    renderPage()
 
-    render(
-      <Router initialPath={`/runs/${RUN.id}`}>
-        <RunDetailPage runId={RUN.id} />
-      </Router>
-    )
-
-    fireEvent.click(await screen.findByRole('button', { name: /evidence/i }))
-
-    expect(await screen.findByText('All 42 tests passed.')).toBeInTheDocument()
-    // Status is PASSED — must render as-is, not transformed
-    expect(screen.getByText('PASSED')).toBeInTheDocument()
-    // Must not silently drop the status or show FAILED
-    expect(screen.queryByText('FAILED')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('tab', { name: 'Activity' }))
+    expect(await screen.findByText('Live updates disconnected. REST reconciliation remains available.')).toBeInTheDocument()
+    expect(screen.getByText('AGENT_RUN_STARTED')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Refresh' })).toBeInTheDocument()
   })
 
-  it('RunOverviewTab with complete gate shows no failure reasons (truthful empty state)', async () => {
-    const completeGate: CompletionGateResponse = {
-      status: 'SATISFIED',
-      complete: true,
-      failures: [],
+  it('uses canonical backend controls instead of frontend-owned state', async () => {
+    const fetchMock = makeFetch()
+    vi.stubGlobal('fetch', fetchMock)
+    renderPage()
+
+    const cancel = await screen.findByRole('button', { name: 'Cancel Run' })
+    fireEvent.click(cancel)
+
+    await waitFor(() => expect(screen.getByText('CANCELLED')).toBeInTheDocument())
+    expect(
+      fetchMock.mock.calls.some(
+        ([input, options]) =>
+          requestUrl(input) === `/api/runs/${RUN.id}/cancel` &&
+          options?.method === 'POST',
+      ),
+    ).toBe(true)
+  })
+
+  it('shows blocked and unknown-execution recovery UX truthfully', async () => {
+    const blocked: Run = {
+      ...RUN,
+      status: 'BLOCKED',
+      failure_code: 'UNKNOWN_EXECUTION_STATE',
+      failure_summary: 'Executor status could not be proven.',
     }
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (input: RequestInfo | URL) => {
-        const url = requestUrl(input)
-        if (url === `/api/runs/${RUN.id}`) return jsonResponse(RUN)
-        if (url === `/api/projects/${PROJECT.id}`) return jsonResponse(PROJECT)
-        if (url === `/api/tasks/${TASK.id}`) return jsonResponse(TASK)
-        if (url === `/api/runs/${RUN.id}/stages`) return jsonResponse([])
-        if (url === `/api/runs/${RUN.id}/gate`) return jsonResponse(completeGate)
-        throw new Error(`Unexpected request: ${url}`)
-      }),
-    )
+    vi.stubGlobal('fetch', makeFetch(blocked))
+    renderPage(blocked)
 
-    render(
-      <Router initialPath={`/runs/${RUN.id}`}>
-        <RunDetailPage runId={RUN.id} />
-      </Router>
-    )
+    expect(
+      await screen.findByText('Execution status unknown / Workspace retained for safety.'),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Reconcile' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Resume' })).not.toBeInTheDocument()
+  })
 
-    // When gate is satisfied with no failures, the section must say so explicitly
-    expect(await screen.findByText('No active blockers.')).toBeInTheDocument()
-    // Must not fabricate failure text when there are none
-    expect(screen.queryByText('Missing required evidence for execution')).not.toBeInTheDocument()
-    // Must not render the boolean value literally
-    expect(screen.queryByText('true')).not.toBeInTheDocument()
-    expect(screen.queryByText('false')).not.toBeInTheDocument()
+  it('keeps original blocker text visible and requires a reason for risk acceptance', async () => {
+    const fetchMock = makeFetch()
+    vi.stubGlobal('fetch', fetchMock)
+    renderPage()
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Findings' }))
+    expect(await screen.findByText('Original reviewer text remains visible.')).toBeInTheDocument()
+
+    const button = screen.getByRole('button', { name: 'Accept risk' })
+    fireEvent.click(button)
+    expect(await screen.findByRole('alert')).toHaveTextContent('Accepting risk requires a recorded reason.')
+
+    fireEvent.change(screen.getByLabelText('Accept risk reason'), {
+      target: { value: 'Accepted for test.' },
+    })
+    fireEvent.click(button)
+
+    await waitFor(() => {
+      expect(
+        fetchMock.mock.calls.some(
+          ([input, options]) =>
+            requestUrl(input) === `/api/findings/${FINDING.id}/accept-risk` &&
+            options?.method === 'POST',
+        ),
+      ).toBe(true)
+    })
   })
 })
