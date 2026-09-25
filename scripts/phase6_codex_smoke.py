@@ -230,7 +230,7 @@ def main() -> int:
             writable = [
                 workspace
                 for workspace in workspaces
-                if workspace["kind"] in {"AGENT_WORKTREE", "INTEGRATION_WORKTREE"}
+                if workspace["kind"] in {"GIT_WORKTREE", "INTEGRATION_WORKTREE"}
                 and workspace["writable"]
             ]
             if len(writable) != 1:
