@@ -123,10 +123,9 @@ export function RunHeader({ run, project, task, onRunUpdated }: RunHeaderProps) 
   )
 
   const canStart = run.status === 'CREATED'
+  const showResume = run.status === 'BLOCKED' && !executionUnknown
   const canResume =
-    run.status === 'BLOCKED' &&
-    !executionUnknown &&
-    (!needsExecutorSelection || selectedExecutorId.length > 0)
+    showResume && (!needsExecutorSelection || selectedExecutorId.length > 0)
   const canReconcile = run.status === 'BLOCKED'
   const canCancel = activeStatuses.has(run.status)
 
@@ -170,11 +169,11 @@ export function RunHeader({ run, project, task, onRunUpdated }: RunHeaderProps) 
               {isActing ? 'Starting...' : 'Start Run'}
             </button>
           )}
-          {canResume && (
+          {showResume && (
             <button
               type="button"
               className="btn btn-primary"
-              disabled={isActing}
+              disabled={isActing || !canResume}
               onClick={() =>
                 void mutate(() =>
                   api.resumeRun(

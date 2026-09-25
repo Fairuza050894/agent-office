@@ -456,6 +456,7 @@ describe('RunDetailPage Phase 5 operational behavior', () => {
 
     expect(resume).toBeDisabled()
     expect(screen.getByText(/does not silently fall back/)).toBeInTheDocument()
+    await screen.findByRole('option', { name: /Reference Executor/ })
 
     fireEvent.change(select, { target: { value: REFERENCE_EXECUTOR.id } })
     expect(resume).toBeEnabled()
