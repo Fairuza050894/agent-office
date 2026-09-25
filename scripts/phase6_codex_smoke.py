@@ -19,7 +19,9 @@ from typing import Any
 from fastapi.testclient import TestClient
 
 from agent_office.config import Settings
+from agent_office.domain import WorkspaceId
 from agent_office.infrastructure.executors.codex import CODEX_EXECUTOR_ID
+from agent_office.infrastructure.git import GitWorktreeManager
 from agent_office.main import create_app
 
 TERMINAL_RUN_STATUSES = {"COMPLETED", "FAILED", "BLOCKED", "CANCELLED"}
@@ -255,10 +257,10 @@ def main() -> int:
                 )
 
             workspace_service = app.state.workspace_service
-            workspace_domain = workspace_service.get(workspace["id"])
-            workspace_path = app.state.workspace_service._worktree_manager.resolve_workspace_path(
-                workspace_domain.path_ref
-            )
+            workspace_domain = workspace_service.get(WorkspaceId.parse(workspace["id"]))
+            workspace_path = GitWorktreeManager(
+                data_root / "workspaces"
+            ).resolve_workspace_path(workspace_domain.path_ref)
             marker = workspace_path / "phase6-live-smoke.txt"
             if not marker.exists() or marker.read_text() != EXPECTED_CONTENT:
                 raise RuntimeError("Workspace marker contents do not match the bounded task.")
