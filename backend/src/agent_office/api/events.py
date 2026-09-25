@@ -58,6 +58,7 @@ def format_sse_event(event: Event) -> str:
     # inside the JSON payload.
     return f"id: {event.id}\ndata: {payload}\n\n"
 
+
 @router.get("/api/runs/{run_id}/events", response_model=EventPageResponse)
 def list_run_events(
     run_id: UUID,
