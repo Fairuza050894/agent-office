@@ -87,8 +87,7 @@ class ExecutorResponse(BaseModel):
         limitations = [
             f"{record.capability.value}: {record.support.value}"
             for record in capabilities
-            if record.capability.value in security_relevant
-            and record.support.value != "SUPPORTED"
+            if record.capability.value in security_relevant and record.support.value != "SUPPORTED"
         ]
 
         return cls(
@@ -100,8 +99,7 @@ class ExecutorResponse(BaseModel):
             health_summary=health.safe_summary,
             last_check=health.checked_at,
             capabilities=[
-                ExecutorCapabilityResponse.from_domain(record)
-                for record in capabilities
+                ExecutorCapabilityResponse.from_domain(record) for record in capabilities
             ],
             security_limitations=limitations,
         )
