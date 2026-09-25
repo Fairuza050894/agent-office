@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { Project, Run, Task } from '../api'
@@ -85,8 +85,11 @@ describe('ProjectDetailPage Phase 5', () => {
     for (const tab of ['Overview', 'Tasks', 'Runs', 'Repository', 'Settings']) {
       expect(screen.getByRole('tab', { name: tab })).toBeInTheDocument()
     }
-    expect(screen.getByText('Active runs')).toBeInTheDocument()
-    expect(screen.getByText('1')).toBeInTheDocument()
+    const activeRunsHeading = screen.getByText('Active runs')
+    expect(activeRunsHeading).toBeInTheDocument()
+    const activeRunsSection = activeRunsHeading.closest('section')
+    expect(activeRunsSection).not.toBeNull()
+    expect(within(activeRunsSection as HTMLElement).getByText('1')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('tab', { name: 'Repository' }))
     expect(screen.getByText('project-a')).toBeInTheDocument()
