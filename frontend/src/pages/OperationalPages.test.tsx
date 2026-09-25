@@ -259,7 +259,7 @@ describe('Phase 5 operational registries', () => {
 
   it('shows backend executor status on Global Overview without a score', async () => {
     vi.stubGlobal('fetch', vi.fn(registryFetch))
-    render(<OverviewPage />)
+    render(<Router initialPath="/overview"><OverviewPage /></Router>)
     expect(await screen.findByText('Reference Executor')).toBeInTheDocument()
     expect(screen.getByText('AVAILABLE')).toBeInTheDocument()
     expect(screen.queryByText(/score/i)).not.toBeInTheDocument()
