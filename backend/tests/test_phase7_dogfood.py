@@ -185,8 +185,7 @@ def _workspace_evidence(
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     workspaces = _json(client.get(f"/api/runs/{run_id}/workspaces"))
     statuses = [
-        _json(client.get(f"/api/workspaces/{workspace['id']}/status"))
-        for workspace in workspaces
+        _json(client.get(f"/api/workspaces/{workspace['id']}/status")) for workspace in workspaces
     ]
     return workspaces, statuses
 
@@ -203,9 +202,7 @@ def test_two_unrelated_projects_dogfood_through_reference_and_codex_configuratio
         {
             "calculator.py": "def add(a: int, b: int) -> int:\n    return a - b\n",
             "test_calculator.py": (
-                "from calculator import add\n\n"
-                "if add(2, 3) != 5:\n"
-                "    raise SystemExit(1)\n"
+                "from calculator import add\n\nif add(2, 3) != 5:\n    raise SystemExit(1)\n"
             ),
         },
     )
@@ -399,12 +396,8 @@ def test_two_unrelated_projects_dogfood_through_reference_and_codex_configuratio
         docs_workspaces, docs_statuses = _workspace_evidence(client, docs_run["id"])
         app_workspaces, app_statuses = _workspace_evidence(client, app_run["id"])
         assert docs_workspaces and app_workspaces
-        assert {workspace["project_id"] for workspace in docs_workspaces} == {
-            docs_project["id"]
-        }
-        assert {workspace["project_id"] for workspace in app_workspaces} == {
-            app_project["id"]
-        }
+        assert {workspace["project_id"] for workspace in docs_workspaces} == {docs_project["id"]}
+        assert {workspace["project_id"] for workspace in app_workspaces} == {app_project["id"]}
         assert not {workspace["id"] for workspace in docs_workspaces} & {
             workspace["id"] for workspace in app_workspaces
         }
@@ -569,6 +562,4 @@ def test_project_b_can_complete_while_project_a_remains_active(
         assert workspaces_a and workspaces_b
         assert {item["project_id"] for item in workspaces_a} == {project_a["id"]}
         assert {item["project_id"] for item in workspaces_b} == {project_b["id"]}
-        assert not {item["id"] for item in workspaces_a} & {
-            item["id"] for item in workspaces_b
-        }
+        assert not {item["id"] for item in workspaces_a} & {item["id"] for item in workspaces_b}
