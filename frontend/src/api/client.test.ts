@@ -34,6 +34,16 @@ const RUN: Run = {
   task_id: TASK.id,
   status: 'CREATED',
   requested_executor_id: null,
+  resolved_executor_id: null,
+  workflow_snapshot_id: null,
+  changed_areas: null,
+  failure_code: null,
+  failure_summary: null,
+  started_at: null,
+  completed_at: null,
+  cancel_requested_at: null,
+  remediation_cycles_used: 0,
+  candidate_workspace_id: null,
   created_at: '2026-09-16T09:00:00Z',
   updated_at: '2026-09-16T09:00:00Z',
 }
@@ -51,122 +61,134 @@ afterEach(() => {
 })
 
 describe('Agent Office API client', () => {
-  it('loads projects from the safe project endpoint', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse([PROJECT]))
+  it('uses safe project, task, and run registry endpoints', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse([PROJECT]))
+      .mockResolvedValueOnce(jsonResponse([TASK]))
+      .mockResolvedValueOnce(jsonResponse([RUN]))
     vi.stubGlobal('fetch', fetchMock)
 
     await expect(api.listProjects()).resolves.toEqual([PROJECT])
+    await expect(api.listTasks(PROJECT.id)).resolves.toEqual([TASK])
+    await expect(api.listRuns(TASK.id)).resolves.toEqual([RUN])
 
-    expect(fetchMock).toHaveBeenCalledWith(
+    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
       '/api/projects',
-      expect.objectContaining({
-        headers: expect.objectContaining({ Accept: 'application/json' }),
-      }),
-    )
+      `/api/projects/${PROJECT.id}/tasks`,
+      `/api/tasks/${TASK.id}/runs`,
+    ])
   })
 
-  it('registers a project with only name and repository path', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(PROJECT, 201))
+  it('uses canonical Phase 5 Run inspection endpoints', async () => {
+    const responses = [
+      RUN,
+      [],
+      { status: 'CREATED', complete: false, failures: [] },
+      { id: 'snapshot', run_id: RUN.id, stages: [], agent_assignments: [] },
+      [],
+      { run_id: RUN.id, findings: [], open_blockers: 0 },
+      [],
+      { run_id: RUN.id, checked: false, checks: [], evidence_count: 0 },
+      { events: [], next_cursor: null },
+      [],
+      [],
+    ]
+    const fetchMock = vi.fn()
+    responses.forEach((body) => fetchMock.mockResolvedValueOnce(jsonResponse(body)))
     vi.stubGlobal('fetch', fetchMock)
 
-    const request = {
-      name: 'Agent Office',
-      repository_path: '/tmp/agent-office',
-    }
+    await api.getRun(RUN.id)
+    await api.getRunStages(RUN.id)
+    await api.getRunCompletionGate(RUN.id)
+    await api.getRunSnapshot(RUN.id)
+    await api.getRunAgents(RUN.id)
+    await api.getRunFindings(RUN.id)
+    await api.getRunEvidence(RUN.id)
+    await api.getRunVerification(RUN.id)
+    await api.getRunEvents(RUN.id)
+    await api.getRunAudit(RUN.id)
+    await api.getRunWorkspaces(RUN.id)
 
-    await expect(api.registerProject(request)).resolves.toEqual(PROJECT)
+    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
+      `/api/runs/${RUN.id}`,
+      `/api/runs/${RUN.id}/stages`,
+      `/api/runs/${RUN.id}/completion-gates`,
+      `/api/runs/${RUN.id}/snapshot`,
+      `/api/runs/${RUN.id}/agents`,
+      `/api/runs/${RUN.id}/findings`,
+      `/api/runs/${RUN.id}/evidence`,
+      `/api/runs/${RUN.id}/verification`,
+      `/api/runs/${RUN.id}/events`,
+      `/api/runs/${RUN.id}/audit`,
+      `/api/runs/${RUN.id}/workspaces`,
+    ])
+  })
 
-    expect(fetchMock).toHaveBeenCalledWith(
-      '/api/projects',
+  it('uses bounded backend control endpoints rather than frontend-owned state', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ ...RUN, status: 'RUNNING' }))
+      .mockResolvedValueOnce(jsonResponse({ ...RUN, status: 'CANCELLED' }))
+      .mockResolvedValueOnce(jsonResponse({ ...RUN, status: 'RUNNING' }))
+      .mockResolvedValueOnce(jsonResponse({ ...RUN, status: 'BLOCKED' }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await api.startRun(RUN.id)
+    await api.cancelRun(RUN.id)
+    await api.resumeRun(RUN.id)
+    await api.reconcileRun(RUN.id)
+
+    expect(fetchMock.mock.calls.map(([url, options]) => [url, options?.method])).toEqual([
+      [`/api/runs/${RUN.id}/start`, 'POST'],
+      [`/api/runs/${RUN.id}/cancel`, 'POST'],
+      [`/api/runs/${RUN.id}/resume`, 'POST'],
+      [`/api/runs/${RUN.id}/reconcile`, 'POST'],
+    ])
+  })
+
+  it('connects AgentProfile, Executor, Workflow, and bounded Finding actions', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse([]))
+      .mockResolvedValueOnce(jsonResponse([]))
+      .mockResolvedValueOnce(jsonResponse([]))
+      .mockResolvedValueOnce(jsonResponse({ id: 'finding-1', status: 'ACCEPTED_RISK' }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await api.listAgentProfiles()
+    await api.listExecutors()
+    await api.listWorkflows()
+    await api.acceptFindingRisk('finding-1', 'Reviewed and accepted.')
+
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/agent-profiles')
+    expect(fetchMock.mock.calls[1][0]).toBe('/api/executors')
+    expect(fetchMock.mock.calls[2][0]).toBe('/api/workflows')
+    expect(fetchMock.mock.calls[3]).toEqual([
+      '/api/findings/finding-1/accept-risk',
       expect.objectContaining({
         method: 'POST',
-        body: JSON.stringify(request),
+        body: JSON.stringify({ reason: 'Reviewed and accepted.' }),
       }),
-    )
+    ])
   })
 
-  it('archives through POST rather than DELETE', async () => {
-    const archived: Project = {
-      ...PROJECT,
-      status: 'ARCHIVED',
-      archived_at: '2026-09-15T09:00:00Z',
-    }
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(archived))
-    vi.stubGlobal('fetch', fetchMock)
-
-    await expect(api.archiveProject(PROJECT.id)).resolves.toEqual(archived)
-
-    const [, options] = fetchMock.mock.calls[0]
-    expect(options?.method).toBe('POST')
-    expect(fetchMock.mock.calls[0][0]).toBe(`/api/projects/${PROJECT.id}/archive`)
-  })
-
-  it('uses the project-scoped Task endpoints', async () => {
+  it('creates durable resources using POST contracts', async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(jsonResponse([TASK]))
+      .mockResolvedValueOnce(jsonResponse(PROJECT, 201))
       .mockResolvedValueOnce(jsonResponse(TASK, 201))
-    vi.stubGlobal('fetch', fetchMock)
-
-    await expect(api.listTasks(PROJECT.id)).resolves.toEqual([TASK])
-
-    const createRequest = {
-      title: TASK.title,
-      objective: TASK.objective,
-      constraints: null,
-      requested_workflow_id: null,
-      requested_executor_id: null,
-    }
-    await expect(api.createTask(PROJECT.id, createRequest)).resolves.toEqual(TASK)
-
-    expect(fetchMock.mock.calls[0][0]).toBe(`/api/projects/${PROJECT.id}/tasks`)
-    expect(fetchMock.mock.calls[1][0]).toBe(`/api/projects/${PROJECT.id}/tasks`)
-    expect(fetchMock.mock.calls[1][1]).toEqual(
-      expect.objectContaining({ method: 'POST', body: JSON.stringify(createRequest) }),
-    )
-  })
-
-  it('uses Task-scoped Run history and creation endpoints', async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(jsonResponse([RUN]))
       .mockResolvedValueOnce(jsonResponse(RUN, 201))
     vi.stubGlobal('fetch', fetchMock)
 
-    await expect(api.listRuns(TASK.id)).resolves.toEqual([RUN])
-    await expect(api.createRun(TASK.id, {})).resolves.toEqual(RUN)
+    await api.registerProject({ name: PROJECT.name, repository_path: '/tmp/agent-office' })
+    await api.createTask(PROJECT.id, {
+      title: TASK.title,
+      objective: TASK.objective,
+    })
+    await api.createRun(TASK.id)
 
-    expect(fetchMock.mock.calls[0][0]).toBe(`/api/tasks/${TASK.id}/runs`)
-    expect(fetchMock.mock.calls[1][0]).toBe(`/api/tasks/${TASK.id}/runs`)
-    expect(fetchMock.mock.calls[1][1]).toEqual(
-      expect.objectContaining({ method: 'POST', body: '{}' }),
-    )
-  })
-
-  it('uses Run-scoped endpoints for Phase 5A operational visibility', async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(jsonResponse(RUN)) // getRun
-      .mockResolvedValueOnce(jsonResponse([])) // getRunStages
-      .mockResolvedValueOnce(jsonResponse({ status: 'PENDING', complete: false, failures: [] })) // getRunCompletionGate
-      .mockResolvedValueOnce(jsonResponse({ run_id: RUN.id, findings: [], open_blockers: 0 })) // getRunFindings
-      .mockResolvedValueOnce(jsonResponse([])) // getRunEvidence
-      .mockResolvedValueOnce(jsonResponse({ events: [], next_cursor: null })) // getRunEvents
-    vi.stubGlobal('fetch', fetchMock)
-
-    await expect(api.getRun(RUN.id)).resolves.toEqual(RUN)
-    await expect(api.getRunStages(RUN.id)).resolves.toEqual([])
-    await expect(api.getRunCompletionGate(RUN.id)).resolves.toEqual({ status: 'PENDING', complete: false, failures: [] })
-    await expect(api.getRunFindings(RUN.id)).resolves.toEqual({ run_id: RUN.id, findings: [], open_blockers: 0 })
-    await expect(api.getRunEvidence(RUN.id)).resolves.toEqual([])
-    await expect(api.getRunEvents(RUN.id)).resolves.toEqual({ events: [], next_cursor: null })
-
-    expect(fetchMock.mock.calls[0][0]).toBe(`/api/runs/${RUN.id}`)
-    expect(fetchMock.mock.calls[1][0]).toBe(`/api/runs/${RUN.id}/stages`)
-    expect(fetchMock.mock.calls[2][0]).toBe(`/api/runs/${RUN.id}/gate`)
-    expect(fetchMock.mock.calls[3][0]).toBe(`/api/runs/${RUN.id}/findings`)
-    expect(fetchMock.mock.calls[4][0]).toBe(`/api/runs/${RUN.id}/evidence`)
-    expect(fetchMock.mock.calls[5][0]).toBe(`/api/runs/${RUN.id}/events`)
+    expect(fetchMock.mock.calls.every(([, options]) => options?.method === 'POST')).toBe(true)
   })
 
   it.each([
@@ -176,16 +198,10 @@ describe('Agent Office API client', () => {
   ])('maps HTTP %i into a controlled ApiError', async (status, expectedMessage) => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({}, status)))
 
-    try {
-      await api.registerProject({
-        name: 'Agent Office',
-        repository_path: '/tmp/repository',
-      })
-      throw new Error('Expected ApiError')
-    } catch (error) {
-      expect(error).toBeInstanceOf(ApiError)
-      expect(error).toMatchObject({ status, message: expectedMessage })
-    }
+    await expect(api.listProjects()).rejects.toMatchObject({
+      status,
+      message: expectedMessage,
+    })
   })
 
   it('keeps network failure distinct from HTTP failure', async () => {

@@ -11,7 +11,8 @@ import {
   vi,
 } from 'vitest'
 
-import App from '../App'
+import { Router } from '../router/Router'
+import { Header } from './Header'
 
 function jsonResponse(
   body: unknown,
@@ -41,7 +42,11 @@ describe('backend reachability indicator', () => {
         ),
     )
 
-    render(<App initialPath="/overview" />)
+    render(
+      <Router initialPath="/overview">
+        <Header isNavOpen={false} onToggleNav={() => undefined} />
+      </Router>,
+    )
 
     expect(
       await screen.findByText(
@@ -66,7 +71,11 @@ describe('backend reachability indicator', () => {
 
     vi.stubGlobal('fetch', fetchMock)
 
-    render(<App initialPath="/overview" />)
+    render(
+      <Router initialPath="/overview">
+        <Header isNavOpen={false} onToggleNav={() => undefined} />
+      </Router>,
+    )
 
     expect(
       await screen.findByText(

@@ -1,12 +1,28 @@
 import type {
+  AgentProfile,
+  AgentRun,
+  AuditRecord,
+  CompletionGateResponse,
   CreateRunRequest,
   CreateTaskRequest,
+  EventPageResponse,
+  Executor,
+  Evidence,
   HealthResponse,
   Project,
   RegisterProjectRequest,
+  ResumeRunRequest,
   Run,
+  RunFindingsResponse,
+  RunStage,
+  StartRunRequest,
   Task,
+  VerificationStatus,
   VersionResponse,
+  WorkflowDefinition,
+  WorkflowSnapshot,
+  Workspace,
+  WorkspaceStatusResponse,
 } from './types'
 
 export class ApiError extends Error {
@@ -22,14 +38,10 @@ export class ApiError extends Error {
 }
 
 function parseErrorDetail(data: unknown): string | undefined {
-  if (!data || typeof data !== 'object') {
-    return undefined
-  }
+  if (!data || typeof data !== 'object') return undefined
 
   const obj = data as Record<string, unknown>
-  if (typeof obj.detail === 'string') {
-    return obj.detail
-  }
+  if (typeof obj.detail === 'string') return obj.detail
 
   if (Array.isArray(obj.detail)) {
     return obj.detail
@@ -37,7 +49,7 @@ function parseErrorDetail(data: unknown): string | undefined {
         if (typeof item === 'object' && item !== null && 'msg' in item) {
           const rawLoc = (item as { loc?: unknown }).loc
           const loc = Array.isArray(rawLoc)
-            ? rawLoc.filter((l: unknown) => l !== 'body').map(String).join('.')
+            ? rawLoc.filter((value: unknown) => value !== 'body').map(String).join('.')
             : ''
           const msg = String((item as { msg: unknown }).msg)
           return loc ? `${loc}: ${msg}` : msg
@@ -50,11 +62,9 @@ function parseErrorDetail(data: unknown): string | undefined {
   return undefined
 }
 
-async function request<T>(
-  url: string,
-  options: RequestInit = {},
-): Promise<T> {
+async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
   let response: Response
+
   try {
     response = await fetch(url, {
       ...options,
@@ -74,10 +84,9 @@ async function request<T>(
     let errorMessage: string
 
     try {
-      const data = await response.json()
-      errorDetail = parseErrorDetail(data)
+      errorDetail = parseErrorDetail(await response.json())
     } catch {
-      // Body was not JSON
+      // Body was not JSON.
     }
 
     switch (response.status) {
@@ -111,82 +120,85 @@ async function request<T>(
 }
 
 export const api = {
-  getHealth(): Promise<HealthResponse> {
-    return request<HealthResponse>('/health')
-  },
+  getHealth: (): Promise<HealthResponse> => request('/health'),
+  getVersion: (): Promise<VersionResponse> => request('/version'),
 
-  getVersion(): Promise<VersionResponse> {
-    return request<VersionResponse>('/version')
-  },
+  listProjects: (): Promise<Project[]> => request('/api/projects'),
+  getProject: (projectId: string): Promise<Project> =>
+    request(`/api/projects/${encodeURIComponent(projectId)}`),
+  registerProject: (data: RegisterProjectRequest): Promise<Project> =>
+    request('/api/projects', { method: 'POST', body: JSON.stringify(data) }),
+  archiveProject: (projectId: string): Promise<Project> =>
+    request(`/api/projects/${encodeURIComponent(projectId)}/archive`, { method: 'POST' }),
 
-  listProjects(): Promise<Project[]> {
-    return request<Project[]>('/api/projects')
-  },
-
-  getProject(projectId: string): Promise<Project> {
-    return request<Project>(`/api/projects/${encodeURIComponent(projectId)}`)
-  },
-
-  registerProject(data: RegisterProjectRequest): Promise<Project> {
-    return request<Project>('/api/projects', {
+  listTasks: (projectId: string): Promise<Task[]> =>
+    request(`/api/projects/${encodeURIComponent(projectId)}/tasks`),
+  getTask: (taskId: string): Promise<Task> =>
+    request(`/api/tasks/${encodeURIComponent(taskId)}`),
+  createTask: (projectId: string, data: CreateTaskRequest): Promise<Task> =>
+    request(`/api/projects/${encodeURIComponent(projectId)}/tasks`, {
       method: 'POST',
       body: JSON.stringify(data),
-    })
-  },
+    }),
 
-  archiveProject(projectId: string): Promise<Project> {
-    return request<Project>(`/api/projects/${encodeURIComponent(projectId)}/archive`, {
-      method: 'POST',
-    })
-  },
-
-  listTasks(projectId: string): Promise<Task[]> {
-    return request<Task[]>(`/api/projects/${encodeURIComponent(projectId)}/tasks`)
-  },
-
-  getTask(taskId: string): Promise<Task> {
-    return request<Task>(`/api/tasks/${encodeURIComponent(taskId)}`)
-  },
-
-  createTask(projectId: string, data: CreateTaskRequest): Promise<Task> {
-    return request<Task>(`/api/projects/${encodeURIComponent(projectId)}/tasks`, {
+  listRuns: (taskId: string): Promise<Run[]> =>
+    request(`/api/tasks/${encodeURIComponent(taskId)}/runs`),
+  getRun: (runId: string): Promise<Run> =>
+    request(`/api/runs/${encodeURIComponent(runId)}`),
+  createRun: (taskId: string, data: CreateRunRequest = {}): Promise<Run> =>
+    request(`/api/tasks/${encodeURIComponent(taskId)}/runs`, {
       method: 'POST',
       body: JSON.stringify(data),
-    })
-  },
-
-  listRuns(taskId: string): Promise<Run[]> {
-    return request<Run[]>(`/api/tasks/${encodeURIComponent(taskId)}/runs`)
-  },
-
-  getRun(runId: string): Promise<Run> {
-    return request<Run>(`/api/runs/${encodeURIComponent(runId)}`)
-  },
-
-  createRun(taskId: string, data: CreateRunRequest = {}): Promise<Run> {
-    return request<Run>(`/api/tasks/${encodeURIComponent(taskId)}/runs`, {
+    }),
+  startRun: (runId: string, data: StartRunRequest = {}): Promise<Run> =>
+    request(`/api/runs/${encodeURIComponent(runId)}/start`, {
       method: 'POST',
       body: JSON.stringify(data),
-    })
-  },
+    }),
+  cancelRun: (runId: string): Promise<Run> =>
+    request(`/api/runs/${encodeURIComponent(runId)}/cancel`, { method: 'POST' }),
+  resumeRun: (runId: string, data: ResumeRunRequest = {}): Promise<Run> =>
+    request(`/api/runs/${encodeURIComponent(runId)}/resume`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  reconcileRun: (runId: string): Promise<Run> =>
+    request(`/api/runs/${encodeURIComponent(runId)}/reconcile`, { method: 'POST' }),
 
-  getRunStages(runId: string): Promise<import('./types').RunStage[]> {
-    return request<import('./types').RunStage[]>(`/api/runs/${encodeURIComponent(runId)}/stages`)
-  },
+  getRunStages: (runId: string): Promise<RunStage[]> =>
+    request(`/api/runs/${encodeURIComponent(runId)}/stages`),
+  getRunCompletionGate: (runId: string): Promise<CompletionGateResponse> =>
+    request(`/api/runs/${encodeURIComponent(runId)}/completion-gates`),
+  getRunSnapshot: (runId: string): Promise<WorkflowSnapshot> =>
+    request(`/api/runs/${encodeURIComponent(runId)}/snapshot`),
+  getRunAgents: (runId: string): Promise<AgentRun[]> =>
+    request(`/api/runs/${encodeURIComponent(runId)}/agents`),
+  getRunFindings: (runId: string): Promise<RunFindingsResponse> =>
+    request(`/api/runs/${encodeURIComponent(runId)}/findings`),
+  acceptFindingRisk: (findingId: string, reason: string): Promise<import('./types').Finding> =>
+    request(`/api/findings/${encodeURIComponent(findingId)}/accept-risk`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    }),
+  getRunEvidence: (runId: string): Promise<Evidence[]> =>
+    request(`/api/runs/${encodeURIComponent(runId)}/evidence`),
+  getRunVerification: (runId: string): Promise<VerificationStatus> =>
+    request(`/api/runs/${encodeURIComponent(runId)}/verification`),
+  getRunEvents: (runId: string): Promise<EventPageResponse> =>
+    request(`/api/runs/${encodeURIComponent(runId)}/events`),
+  getRunAudit: (runId: string): Promise<AuditRecord[]> =>
+    request(`/api/runs/${encodeURIComponent(runId)}/audit`),
 
-  getRunCompletionGate(runId: string): Promise<import('./types').CompletionGateResponse> {
-    return request<import('./types').CompletionGateResponse>(`/api/runs/${encodeURIComponent(runId)}/gate`)
-  },
+  getRunWorkspaces: (runId: string): Promise<Workspace[]> =>
+    request(`/api/runs/${encodeURIComponent(runId)}/workspaces`),
+  getWorkspaceStatus: (workspaceId: string): Promise<WorkspaceStatusResponse> =>
+    request(`/api/workspaces/${encodeURIComponent(workspaceId)}/status`),
+  releaseWorkspace: (workspaceId: string): Promise<Workspace> =>
+    request(`/api/workspaces/${encodeURIComponent(workspaceId)}/release`, { method: 'POST' }),
+  reconcileWorkspace: (workspaceId: string): Promise<Workspace> =>
+    request(`/api/workspaces/${encodeURIComponent(workspaceId)}/reconcile`, { method: 'POST' }),
 
-  getRunFindings(runId: string): Promise<import('./types').RunFindingsResponse> {
-    return request<import('./types').RunFindingsResponse>(`/api/runs/${encodeURIComponent(runId)}/findings`)
-  },
-
-  getRunEvidence(runId: string): Promise<import('./types').Evidence[]> {
-    return request<import('./types').Evidence[]>(`/api/runs/${encodeURIComponent(runId)}/evidence`)
-  },
-
-  getRunEvents(runId: string): Promise<import('./types').EventPageResponse> {
-    return request<import('./types').EventPageResponse>(`/api/runs/${encodeURIComponent(runId)}/events`)
-  },
+  listAgentProfiles: (): Promise<AgentProfile[]> => request('/api/agent-profiles'),
+  listExecutors: (): Promise<Executor[]> => request('/api/executors'),
+  listWorkflows: (): Promise<WorkflowDefinition[]> => request('/api/workflows'),
 }

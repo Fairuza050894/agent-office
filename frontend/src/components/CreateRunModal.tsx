@@ -92,12 +92,12 @@ export function CreateRunModal({ task, onClose, onSuccess, onCreate }: CreateRun
             {error && <div className="form-error" role="alert">{error}</div>}
 
             <p className="modal-description">
-              Create a durable Run record for <strong>{task.title}</strong>. This does not start an AI executor or workflow.
+              Create a durable Run record for <strong>{task.title}</strong>. Creation alone does not start workflow execution.
             </p>
 
             <div className="modal-notice">
               <span className="notice-icon" aria-hidden="true">i</span>
-              <span>Run creation records an execution attempt only. Real executor dispatch is intentionally outside Phase 2.</span>
+              <span>Run creation records an execution attempt only. Start the Run from Run Detail when it is ready for ReferenceExecutor orchestration.</span>
             </div>
 
             <div className="form-group modal-field-after-notice">

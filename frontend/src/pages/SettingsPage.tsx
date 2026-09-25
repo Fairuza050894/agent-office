@@ -13,8 +13,8 @@ export function SettingsPage() {
         <div className="settings-notice" role="note">
           <span className="notice-label">Configuration State:</span>
           <span>
-            Configuration settings will be synchronized from the backend configuration layer in Phase 1H.
-            Baseline architectural defaults are displayed below.
+            Current control-plane safety defaults are displayed below.
+            Runtime secrets and absolute Workspace locations are intentionally not exposed.
           </span>
         </div>
 

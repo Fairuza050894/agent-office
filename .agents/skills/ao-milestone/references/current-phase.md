@@ -32,10 +32,10 @@ Current recorded status:
   - Phase 4C-1 CLOSED
   - Phase 4C-2 CLOSED
   - Phase 4C-3 CLOSED
-- Phase 5 IN PROGRESS
+- Phase 5 CLOSED
   - Phase 5A CLOSED — Operational Visibility Core
-  - Phase 5B NEXT
-- Phase 6 real executor not started
+  - Phase 5B CLOSED — Operational Frontend Completion
+- Phase 6 NEXT — first real executor not started
 
 ## Phase 4 closure
 
@@ -91,12 +91,14 @@ The two Python warnings are existing FastAPI/Starlette dependency deprecations a
 
 Phase 4 closes with `ReferenceExecutor` only.
 
-Phase 5 is now **IN PROGRESS**.
+Phase 5 is **CLOSED** after Phase 5B completed the operational frontend acceptance surface.
 
-Phase 5A — Operational Visibility Core is **CLOSED**. It established the first truthful Run operational surface using existing backend state for Run detail, stages, completion gates, Findings, Evidence, and normalized Activity.
+Phase 5A — Operational Visibility Core established truthful Run Overview, Findings, Evidence, and normalized Activity.
 
-Phase 5B is **NEXT** and must be selected from the remaining Phase 5 acceptance gaps. Closing Phase 5A does not satisfy the full Phase 5 exit criterion.
+Phase 5B — Operational Frontend Completion added the remaining Run Workflow, Agents, Changes, and Tests views; backend-derived global registries and Overview; Project Detail; factual Executor and AgentProfile registries; bounded operator controls; blocked and unknown-execution UX; and SSE disconnect recovery.
 
-A real Codex, Antigravity, OpenClaw, Hermes, or other external AI executor remains Phase 6 work. Do not introduce real provider execution merely because Phase 5A is closed.
+The Phase 5 exit criterion is satisfied with the deterministic ReferenceExecutor: its workflow can be operated and inspected from the UI without Office View.
+
+Phase 6 is **NEXT** and owns the first real AI executor. A real Codex, Antigravity, OpenClaw, Hermes, or other external AI executor must enter only through the ExecutorAdapter boundary.
 
 Do not introduce auto-commit, auto-merge, force-push, destructive Git, or heuristic conflict resolution unless a later approved milestone explicitly changes those contracts.

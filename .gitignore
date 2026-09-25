@@ -30,7 +30,7 @@ coverage/
 .agent-office/
 runtime/
 artifacts/
-workspaces/
+/workspaces/
 
 # Local databases
 *.db

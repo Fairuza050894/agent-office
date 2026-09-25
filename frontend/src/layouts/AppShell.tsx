@@ -15,6 +15,7 @@ import { AuditPage } from '../pages/AuditPage'
 import { SettingsPage } from '../pages/SettingsPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 import { RunDetailPage } from '../pages/RunDetailPage'
+import { ProjectDetailPage } from '../pages/ProjectDetailPage'
 
 export function AppShell() {
   const { currentPath } = useRouter()
@@ -33,6 +34,13 @@ export function AppShell() {
   }, [isNavOpen])
 
   const renderContent = () => {
+    if (currentPath.startsWith('/projects/')) {
+      const parts = currentPath.split('/')
+      if (parts.length === 3) {
+        return <ProjectDetailPage projectId={parts[2]} />
+      }
+    }
+
     if (currentPath.startsWith('/runs/')) {
       const parts = currentPath.split('/')
       if (parts.length === 3) {

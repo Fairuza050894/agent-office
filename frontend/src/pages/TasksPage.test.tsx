@@ -51,6 +51,16 @@ const RUN_A: Run = {
   task_id: TASK_A.id,
   status: 'CREATED',
   requested_executor_id: null,
+  resolved_executor_id: null,
+  workflow_snapshot_id: null,
+  changed_areas: null,
+  failure_code: null,
+  failure_summary: null,
+  started_at: null,
+  completed_at: null,
+  cancel_requested_at: null,
+  remediation_cycles_used: 0,
+  candidate_workspace_id: null,
   created_at: '2026-09-16T10:00:00Z',
   updated_at: '2026-09-16T10:00:00Z',
 }
@@ -81,7 +91,7 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('TasksPage Phase 2 integration', () => {
+describe('TasksPage operational integration', () => {
   it('loads project-scoped tasks and their factual latest Run state', async () => {
     vi.stubGlobal(
       'fetch',
@@ -172,7 +182,7 @@ describe('TasksPage Phase 2 integration', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Create run for Task A' }))
     const dialog = screen.getByRole('dialog', { name: 'Create Run' })
-    expect(dialog).toHaveTextContent('This does not start an AI executor or workflow.')
+    expect(dialog).toHaveTextContent('Creation alone does not start workflow execution.')
     fireEvent.click(within(dialog).getByRole('button', { name: 'Create Run' }))
 
     await waitFor(() => expect(screen.getByText('CREATED')).toBeInTheDocument())
