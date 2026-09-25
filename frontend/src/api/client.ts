@@ -175,6 +175,11 @@ export const api = {
     request(`/api/runs/${encodeURIComponent(runId)}/agents`),
   getRunFindings: (runId: string): Promise<RunFindingsResponse> =>
     request(`/api/runs/${encodeURIComponent(runId)}/findings`),
+  acceptFindingRisk: (findingId: string, reason: string): Promise<import('./types').Finding> =>
+    request(`/api/findings/${encodeURIComponent(findingId)}/accept-risk`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    }),
   getRunEvidence: (runId: string): Promise<Evidence[]> =>
     request(`/api/runs/${encodeURIComponent(runId)}/evidence`),
   getRunVerification: (runId: string): Promise<VerificationStatus> =>
