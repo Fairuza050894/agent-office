@@ -84,7 +84,7 @@ stage = next(
 if stage == "IMPLEMENTATION":
     if "phase7-docs.md" in prompt:
         pathlib.Path("phase7-docs.md").write_text(
-            "# Phase 7 dogfood\\n\\nSecond-project isolation verified.\\n"
+            "# Phase 7 dogfood\n\nSecond-project isolation verified.\n"
         )
     elif "calculator.py" in prompt:
         calculator = pathlib.Path("calculator.py")
@@ -195,16 +195,16 @@ def test_two_unrelated_projects_dogfood_through_reference_and_codex_configuratio
 ) -> None:
     docs_repository = _repository(
         tmp_path / "docs-project",
-        {"README.md": "# Unrelated docs repository\\n"},
+        {"README.md": "# Unrelated docs repository\n"},
     )
     app_repository = _repository(
         tmp_path / "app-project",
         {
-            "calculator.py": "def add(a: int, b: int) -> int:\\n    return a - b\\n",
+            "calculator.py": "def add(a: int, b: int) -> int:\n    return a - b\n",
             "test_calculator.py": (
-                "from calculator import add\\n\\n"
-                "if add(2, 3) != 5:\\n"
-                "    raise SystemExit(1)\\n"
+                "from calculator import add\n\n"
+                "if add(2, 3) != 5:\n"
+                "    raise SystemExit(1)\n"
             ),
         },
     )
@@ -370,23 +370,7 @@ def test_two_unrelated_projects_dogfood_through_reference_and_codex_configuratio
         )
 
         assert docs_run["status"] == "COMPLETED"
-        if app_run["status"] != "COMPLETED":
-            diagnostic_evidence = _json(client.get(f"/api/runs/{app_run['id']}/evidence"))
-            diagnostic_workspaces, diagnostic_statuses = _workspace_evidence(
-                client, app_run["id"]
-            )
-            raise AssertionError(
-                json.dumps(
-                    {
-                        "failure_code": app_run.get("failure_code"),
-                        "failure_summary": app_run.get("failure_summary"),
-                        "evidence": diagnostic_evidence,
-                        "workspaces": diagnostic_workspaces,
-                        "workspace_statuses": diagnostic_statuses,
-                    },
-                    sort_keys=True,
-                )
-            )
+        assert app_run["status"] == "COMPLETED"
         assert docs_run["project_id"] == docs_project["id"]
         assert app_run["project_id"] == app_project["id"]
         assert docs_run["id"] != app_run["id"]
@@ -508,8 +492,8 @@ def test_project_b_can_complete_while_project_a_remains_active(
         executor_registry=make_test_registry(executor_a, executor_b),
     )
 
-    repository_a = _repository(tmp_path / "concurrent-a", {"README.md": "# A\\n"})
-    repository_b = _repository(tmp_path / "concurrent-b", {"README.md": "# B\\n"})
+    repository_a = _repository(tmp_path / "concurrent-a", {"README.md": "# A\n"})
+    repository_b = _repository(tmp_path / "concurrent-b", {"README.md": "# B\n"})
 
     with TestClient(app) as client:
         workflow = _create_workflow(
