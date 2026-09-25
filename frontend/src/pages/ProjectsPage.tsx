@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
-import { PageHeader } from '../components/PageHeader'
-import { TableShell } from '../components/TableShell'
-import { EmptyState } from '../components/EmptyState'
-import { RegisterProjectModal } from '../components/RegisterProjectModal'
-import { ArchiveProjectModal } from '../components/ArchiveProjectModal'
 import { api, type Project } from '../api'
+import { ArchiveProjectModal } from '../components/ArchiveProjectModal'
+import { EmptyState } from '../components/EmptyState'
+import { PageHeader } from '../components/PageHeader'
+import { RegisterProjectModal } from '../components/RegisterProjectModal'
+import { TableShell } from '../components/TableShell'
 import { useRouter } from '../router/useRouter'
 
 const COLUMNS = [
@@ -12,17 +12,20 @@ const COLUMNS = [
   'Repository',
   'Default branch',
   'Preferred executor',
-  'Default workflow',
+  'Workflow',
+  'Active runs',
   'Status',
   'Action',
 ]
 
+const TERMINAL_RUNS = new Set(['COMPLETED', 'FAILED', 'CANCELLED'])
+
 export function ProjectsPage() {
   const { navigate } = useRouter()
   const [projects, setProjects] = useState<Project[]>([])
+  const [activeRunsByProject, setActiveRunsByProject] = useState<Record<string, number>>({})
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-
   const [isRegisterOpen, setIsRegisterOpen] = useState(false)
   const [projectToArchive, setProjectToArchive] = useState<Project | null>(null)
 
@@ -30,51 +33,43 @@ export function ProjectsPage() {
     setIsLoading(true)
     setError(null)
     try {
-      const data = await api.listProjects()
-      setProjects(data)
+      const loadedProjects = await api.listProjects()
+      const counts = await Promise.all(
+        loadedProjects.map(async (project) => {
+          const tasks = await api.listTasks(project.id)
+          const groups = await Promise.all(tasks.map((task) => api.listRuns(task.id)))
+          return [
+            project.id,
+            groups.flat().filter((run) => !TERMINAL_RUNS.has(run.status)).length,
+          ] as const
+        }),
+      )
+      setProjects(loadedProjects)
+      setActiveRunsByProject(Object.fromEntries(counts))
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to load projects from backend.'
-      setError(msg)
+      setError(err instanceof Error ? err.message : 'Failed to load projects from backend.')
     } finally {
       setIsLoading(false)
     }
   }, [])
 
   useEffect(() => {
-    let active = true
-    api.listProjects()
-      .then((data) => {
-        if (active) {
-          setProjects(data)
-          setIsLoading(false)
-        }
-      })
-      .catch((err) => {
-        if (active) {
-          const msg = err instanceof Error ? err.message : 'Failed to load projects from backend.'
-          setError(msg)
-          setIsLoading(false)
-        }
-      })
-
-    return () => {
-      active = false
-    }
-  }, [])
+    void loadProjects()
+  }, [loadProjects])
 
   const handleRegisterSuccess = (newProject: Project) => {
-    setProjects((prev) => {
-      const exists = prev.some((p) => p.id === newProject.id)
-      if (exists) {
-        return prev.map((p) => (p.id === newProject.id ? newProject : p))
-      }
-      return [...prev, newProject]
+    setProjects((current) => {
+      const exists = current.some((project) => project.id === newProject.id)
+      return exists
+        ? current.map((project) => project.id === newProject.id ? newProject : project)
+        : [...current, newProject]
     })
+    setActiveRunsByProject((current) => ({ ...current, [newProject.id]: 0 }))
   }
 
   const handleArchiveSuccess = (archivedProject: Project) => {
-    setProjects((prev) =>
-      prev.map((p) => (p.id === archivedProject.id ? archivedProject : p))
+    setProjects((current) =>
+      current.map((project) => project.id === archivedProject.id ? archivedProject : project),
     )
   }
 
@@ -83,7 +78,7 @@ export function ProjectsPage() {
       return (
         <tr>
           <td colSpan={COLUMNS.length} className="table-status-cell">
-            <div className="status-feedback loading" role="status" aria-live="polite">
+            <div className="status-feedback" role="status" aria-live="polite">
               <span className="status-spinner" aria-hidden="true" />
               <span>Loading project registry...</span>
             </div>
@@ -96,13 +91,9 @@ export function ProjectsPage() {
       return (
         <tr>
           <td colSpan={COLUMNS.length} className="table-status-cell">
-            <div className="status-feedback error" role="alert">
+            <div className="status-feedback" role="alert">
               <p className="status-error-text">{error}</p>
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
-                onClick={loadProjects}
-              >
+              <button type="button" className="btn btn-secondary btn-sm" onClick={() => void loadProjects()}>
                 Retry
               </button>
             </div>
@@ -118,7 +109,7 @@ export function ProjectsPage() {
             <EmptyState
               title="No projects registered yet."
               message="Register local Git repositories to coordinate autonomous tasks and workflows."
-              detail="Use the Register Project button to add a local Git repository."
+              detail="Use Register Project to add a repository."
             />
           </td>
         </tr>
@@ -129,41 +120,23 @@ export function ProjectsPage() {
       const isArchived = project.status === 'ARCHIVED'
       return (
         <tr key={project.id} data-testid={`project-row-${project.id}`}>
-          <td className="cell-project-name">
-            <strong>{project.name}</strong>
-          </td>
-          <td>
-            <code className="mono-badge">{project.repository.name}</code>
-          </td>
-          <td>
-            <code className="mono-badge">{project.default_branch}</code>
-          </td>
-          <td>{project.preferred_executor_id ?? '—'}</td>
-          <td>{project.default_workflow_id ?? '—'}</td>
-          <td>
-            <span
-              className={`badge ${isArchived ? 'badge-archived' : 'badge-active'}`}
-            >
-              {isArchived ? 'Archived' : 'Active'}
-            </span>
-          </td>
+          <td className="cell-project-name"><strong>{project.name}</strong></td>
+          <td><code className="mono-badge">{project.repository.name}</code></td>
+          <td><code className="mono-badge">{project.default_branch}</code></td>
+          <td>{project.preferred_executor_id ?? 'Unavailable'}</td>
+          <td>{project.default_workflow_id ?? 'Built-in default'}</td>
+          <td>{activeRunsByProject[project.id] ?? 0}</td>
+          <td><span className={`badge ${isArchived ? 'badge-archived' : 'badge-active'}`}>{isArchived ? 'Archived' : 'Active'}</span></td>
           <td>
             <div className="table-actions">
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
-                onClick={() => navigate(`/tasks?project=${encodeURIComponent(project.id)}`)}
-                aria-label={`View tasks for ${project.name}`}
-              >
+              <button type="button" className="btn btn-secondary btn-sm" onClick={() => navigate(`/projects/${project.id}`)} aria-label={`Open project ${project.name}`}>
+                Open
+              </button>
+              <button type="button" className="btn btn-secondary btn-sm" onClick={() => navigate(`/tasks?project=${encodeURIComponent(project.id)}`)} aria-label={`View tasks for ${project.name}`}>
                 Tasks
               </button>
               {!isArchived && (
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => setProjectToArchive(project)}
-                  aria-label={`Archive project ${project.name}`}
-                >
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setProjectToArchive(project)} aria-label={`Archive project ${project.name}`}>
                   Archive
                 </button>
               )}
@@ -179,16 +152,8 @@ export function ProjectsPage() {
       <PageHeader
         eyebrow="WORK"
         title="Projects"
-        description="Local Git repositories registered and managed by Agent Office."
-        action={
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={() => setIsRegisterOpen(true)}
-          >
-            Register Project
-          </button>
-        }
+        description="Registered Git repositories, workflow defaults, and active Run state."
+        action={<button type="button" className="btn btn-primary" onClick={() => setIsRegisterOpen(true)}>Register Project</button>}
       />
 
       <div className="page-content">
