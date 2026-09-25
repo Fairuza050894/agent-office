@@ -32,6 +32,8 @@ from agent_office.application.workspaces.errors import (
 )
 from agent_office.application.workspaces.ports import WorkspaceRepository, WorktreeManager
 from agent_office.domain import (
+    WORKSPACE_UNWRITABLE_STATUSES,
+    WORKTREE_KINDS,
     AgentAccessMode,
     AgentRun,
     AgentRunId,
@@ -47,11 +49,9 @@ from agent_office.domain import (
     Workspace,
     WorkspaceChangeSummary,
     WorkspaceId,
-    WORKTREE_KINDS,
     WorkspaceKind,
     WorkspaceReasonCode,
     WorkspaceReconciliationOutcome,
-    WORKSPACE_UNWRITABLE_STATUSES,
     WorkspaceStatus,
     ensure_workspace_transition_allowed,
     generated_branch_name,
@@ -298,7 +298,8 @@ class WorkspaceService:
         if len(existing) > 1:
             raise WorkspaceIntegrationError(
                 (),
-                "More than one integration Workspace exists for this Run; operator review is required.",
+                "More than one integration Workspace exists for this Run; "
+                "operator review is required.",
             )
         if existing:
             workspace = existing[0]
@@ -311,7 +312,8 @@ class WorkspaceService:
             if workspace.reason_code is WorkspaceReasonCode.INTEGRATION_CONFLICT:
                 raise WorkspaceIntegrationError(
                     (),
-                    workspace.reason_summary or "Integration is blocked by conflicting writer paths.",
+                    workspace.reason_summary
+                    or "Integration is blocked by conflicting writer paths.",
                 )
             raise WorkspaceIntegrationError(
                 (),
