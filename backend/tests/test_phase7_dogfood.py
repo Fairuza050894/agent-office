@@ -370,7 +370,9 @@ def test_two_unrelated_projects_dogfood_through_reference_and_codex_configuratio
         )
 
         assert docs_run["status"] == "COMPLETED"
-        assert app_run["status"] == "COMPLETED", app_run
+        assert app_run["status"] == "COMPLETED", (
+            f"{app_run.get('failure_code')}: {app_run.get('failure_summary')}"
+        )
         assert docs_run["project_id"] == docs_project["id"]
         assert app_run["project_id"] == app_project["id"]
         assert docs_run["id"] != app_run["id"]
