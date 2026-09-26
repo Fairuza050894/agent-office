@@ -241,6 +241,9 @@ function createStandingDesk(
   addBox(desk, [0.62, 0.33, 0.018], [0, 1.32, 0.055], 0x4a789b)
   addBox(desk, [0.045, 0.3, 0.045], [0, 1.14, 0.03], 0x485562)
   addBox(desk, [0.48, 0.035, 0.2], [0, 1.04, -0.2], 0x65727d)
+  addBox(desk, [0.34, 0.018, 0.13], [-0.08, 1.055, -0.31], 0x252e38)
+  addBox(desk, [0.18, 0.012, 0.15], [0.31, 1.06, -0.29], 0x3e4b57)
+  addCylinder(desk, 0.065, 0.12, [-0.47, 1.07, -0.22], 0xc7cbd0)
 
   addBox(desk, [0.18, 0.42, 0.42], [0.55, 0.72, 0.02], 0x293541)
   return desk
@@ -500,6 +503,21 @@ export function createOfficeEnvironment(
   environment.add(createCoffeeCounter(officePoint(78.5, 50.2)))
   environment.add(createFiling(officePoint(45, 56.5)))
   environment.add(createPrinterStation(officePoint(85.4, 56.8)))
+
+  for (const [x, y, width, depth] of [
+    [34.8, 62.6, 4.8, 3.4],
+    [47.0, 49.7, 4.9, 3.2],
+    [61.0, 73.2, 5.1, 3.1],
+  ] as Array<[number, number, number, number]>) {
+    const point = officePoint(x, y)
+    const zone = addBox(
+      environment,
+      [width, 0.025, depth],
+      [point.x, 0.055, point.z],
+      0x5a514b,
+    )
+    zone.receiveShadow = true
+  }
 
   DESK_POINTS.forEach(([x, y], index) => {
     const desk = createStandingDesk(officePoint(x, y))

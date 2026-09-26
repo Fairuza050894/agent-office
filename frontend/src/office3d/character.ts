@@ -6,11 +6,20 @@ import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js
 import type { AgentRun } from '../api'
 import { officeAgentState } from '../officeProjection'
 
-type CharacterVariantKey = 'suit' | 'casual' | 'hoodie' | 'dress' | 'smart'
+export type CharacterVariantKey = 'suit' | 'casual' | 'hoodie' | 'dress' | 'smart'
 
 interface CharacterVariant {
   url: string
   scale: number
+}
+
+export interface CharacterAppearance {
+  id: string
+  variant: CharacterVariantKey
+  scale: number
+  accent: number
+  idleRate: number
+  idlePhase: number
 }
 
 const MODEL_YAW_OFFSET = Math.PI
@@ -38,16 +47,79 @@ const CHARACTER_VARIANTS: Record<CharacterVariantKey, CharacterVariant> = {
   },
 }
 
-const ROLE_VARIANTS: Record<string, CharacterVariantKey> = {
-  architect: 'suit',
-  explorer: 'hoodie',
-  'backend-developer': 'casual',
-  'frontend-developer': 'smart',
-  'qa-reviewer': 'dress',
-  'security-reviewer': 'suit',
-  'ux-reviewer': 'smart',
-  verifier: 'casual',
-  'documentation-writer': 'dress',
+const ROLE_APPEARANCES: Record<string, CharacterAppearance> = {
+  architect: {
+    id: 'architect-navy',
+    variant: 'suit',
+    scale: 1.03,
+    accent: 0x365f86,
+    idleRate: 0.84,
+    idlePhase: 0.12,
+  },
+  explorer: {
+    id: 'explorer-rust',
+    variant: 'hoodie',
+    scale: 0.98,
+    accent: 0xa8673d,
+    idleRate: 1.04,
+    idlePhase: 0.44,
+  },
+  'backend-developer': {
+    id: 'backend-teal',
+    variant: 'casual',
+    scale: 1.01,
+    accent: 0x34766f,
+    idleRate: 0.93,
+    idlePhase: 0.28,
+  },
+  'frontend-developer': {
+    id: 'frontend-violet',
+    variant: 'smart',
+    scale: 0.99,
+    accent: 0x705b91,
+    idleRate: 1.01,
+    idlePhase: 0.61,
+  },
+  'qa-reviewer': {
+    id: 'qa-amber',
+    variant: 'dress',
+    scale: 0.97,
+    accent: 0xa97d34,
+    idleRate: 0.89,
+    idlePhase: 0.35,
+  },
+  'security-reviewer': {
+    id: 'security-burgundy',
+    variant: 'suit',
+    scale: 1.06,
+    accent: 0x814448,
+    idleRate: 0.8,
+    idlePhase: 0.72,
+  },
+  verifier: {
+    id: 'verifier-green',
+    variant: 'casual',
+    scale: 0.96,
+    accent: 0x477553,
+    idleRate: 0.97,
+    idlePhase: 0.53,
+  },
+  'documentation-writer': {
+    id: 'documentation-blue',
+    variant: 'dress',
+    scale: 1.01,
+    accent: 0x4a6d9a,
+    idleRate: 0.87,
+    idlePhase: 0.19,
+  },
+  'ux-reviewer': {
+    id: 'ux-plum',
+    variant: 'smart',
+    scale: 0.97,
+    accent: 0x855b7d,
+    idleRate: 0.95,
+    idlePhase: 0.67,
+  },
 }
 
 const CLIPS = {
@@ -67,6 +139,7 @@ interface RiggedPresentation {
   actions: Map<string, THREE.AnimationAction>
   ownedMaterials: THREE.Material[]
   activeClip: string
+  idleRate: number
 }
 
 export interface StationPlacement {
@@ -108,18 +181,41 @@ function stableHash(value: string): number {
   return hash >>> 0
 }
 
-export function officeCharacterVariant(profileKey: string): CharacterVariantKey {
-  const explicit = ROLE_VARIANTS[profileKey]
+export function officeCharacterAppearance(
+  profileKey: string,
+): CharacterAppearance {
+  const explicit = ROLE_APPEARANCES[profileKey]
   if (explicit) return explicit
 
-  const fallback: CharacterVariantKey[] = [
+  const fallbackVariants: CharacterVariantKey[] = [
     'suit',
     'casual',
     'hoodie',
     'dress',
     'smart',
   ]
-  return fallback[stableHash(profileKey) % fallback.length]
+  const fallbackAccents = [
+    0x486785,
+    0x5b765d,
+    0x735c82,
+    0x8a654d,
+    0x497a78,
+  ]
+  const hash = stableHash(profileKey)
+  const variant = fallbackVariants[hash % fallbackVariants.length]
+
+  return {
+    id: `fallback-${variant}-${hash.toString(16)}`,
+    variant,
+    scale: 0.97 + ((hash >>> 5) % 7) * 0.01,
+    accent: fallbackAccents[(hash >>> 9) % fallbackAccents.length],
+    idleRate: 0.84 + ((hash >>> 13) % 17) / 100,
+    idlePhase: ((hash >>> 17) % 100) / 100,
+  }
+}
+
+export function officeCharacterVariant(profileKey: string): CharacterVariantKey {
+  return officeCharacterAppearance(profileKey).variant
 }
 
 function loadCharacterAssets(
@@ -191,9 +287,9 @@ function createNameplate(name: string, status: string): {
 
 function createFallback(profileKey: string): THREE.Group {
   const fallback = new THREE.Group()
-  const palette = [0x43566f, 0x52615a, 0x5b526d, 0x67534b]
+  const appearance = officeCharacterAppearance(profileKey)
   const suit = new THREE.MeshStandardMaterial({
-    color: palette[stableHash(profileKey) % palette.length],
+    color: appearance.accent,
     roughness: 0.82,
     metalness: 0.01,
   })
@@ -271,7 +367,9 @@ function playRigged(runtime: RuntimeAgent, force = false): void {
   const running =
     !runtime.moving &&
     ['RUNNING', 'STARTING'].includes(runtime.currentStatus.toUpperCase())
-  next.setEffectiveTimeScale(runtime.moving ? 1 : running ? 1.05 : 0.82)
+  next.setEffectiveTimeScale(
+    runtime.moving ? 1 : running ? rigged.idleRate * 1.06 : rigged.idleRate,
+  )
 
   if (!force && rigged.activeClip === desired) return
 
@@ -289,7 +387,8 @@ async function attachRiggedPresentation(
   profileKey: string,
   onReady?: () => void,
 ): Promise<void> {
-  const variantKey = officeCharacterVariant(profileKey)
+  const appearance = officeCharacterAppearance(profileKey)
+  const variantKey = appearance.variant
 
   try {
     const assets = await loadCharacterAssets(variantKey)
@@ -299,9 +398,10 @@ async function attachRiggedPresentation(
     const model = cloneSkinned(assets.source) as THREE.Group
     model.name = `agent-office-${variantKey}-character`
     model.rotation.y = MODEL_YAW_OFFSET
-    model.scale.setScalar(variant.scale)
+    model.scale.setScalar(variant.scale * appearance.scale)
 
     const ownedMaterials: THREE.Material[] = []
+    const accent = new THREE.Color(appearance.accent)
 
     model.traverse((object) => {
       if (!(object instanceof THREE.Mesh)) return
@@ -313,6 +413,12 @@ async function attachRiggedPresentation(
         if (copy instanceof THREE.MeshStandardMaterial) {
           copy.roughness = Math.max(0.72, copy.roughness)
           copy.metalness = 0
+
+          const hsl = { h: 0, s: 0, l: 0 }
+          copy.color.getHSL(hsl)
+          if (hsl.l < 0.62 && hsl.s > 0.08) {
+            copy.color.lerp(accent, 0.18)
+          }
         }
         ownedMaterials.push(copy)
         return copy
@@ -332,6 +438,9 @@ async function attachRiggedPresentation(
       if (!clip) continue
       const action = mixer.clipAction(clip)
       action.setLoop(THREE.LoopRepeat, Infinity)
+      if (name === CLIPS.idle && clip.duration > 0) {
+        action.time = clip.duration * appearance.idlePhase
+      }
       actions.set(name, action)
     }
 
@@ -342,6 +451,7 @@ async function attachRiggedPresentation(
       actions,
       ownedMaterials,
       activeClip: '',
+      idleRate: appearance.idleRate,
     }
     runtime.fallback.visible = false
     playRigged(runtime, true)

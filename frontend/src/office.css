@@ -525,3 +525,430 @@
     white-space: normal;
   }
 }
+
+
+/* Phase 8 visual gate — persistent live control sidebar */
+
+.office-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2.75fr) minmax(300px, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.office-scene-column {
+  min-width: 0;
+}
+
+.office-live-sidebar {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-width: 0;
+  height: clamp(640px, 76vh, 860px);
+  overflow: hidden;
+  border: 1px solid #2a3642;
+  background: #121a23;
+  box-shadow: 0 16px 38px rgba(31, 43, 58, .12);
+  color: #dbe3eb;
+}
+
+.office-sidebar-section {
+  min-width: 0;
+}
+
+.office-selected-agent {
+  border-bottom: 1px solid #2c3743;
+}
+
+.office-sidebar-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 15px 11px;
+}
+
+.office-sidebar-heading > div {
+  min-width: 0;
+}
+
+.office-sidebar-heading strong {
+  display: block;
+  overflow: hidden;
+  color: #f1f4f7;
+  font-size: .82rem;
+  font-weight: 680;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.office-sidebar-kicker {
+  display: block;
+  margin-bottom: 3px;
+  color: #7f8d9d;
+  font-family: var(--ao-mono);
+  font-size: .56rem;
+  font-weight: 650;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.office-state-pill,
+.office-feed-mode {
+  flex: 0 0 auto;
+  border: 1px solid #3a4652;
+  border-radius: 999px;
+  background: #1a2530;
+  color: #aeb9c5;
+  font-family: var(--ao-mono);
+  font-size: .55rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 5px 7px;
+}
+
+.office-state-pill.state-running,
+.office-state-pill.state-completed {
+  border-color: rgba(70, 171, 118, .46);
+  background: rgba(34, 106, 68, .22);
+  color: #86d3a8;
+}
+
+.office-state-pill.state-starting,
+.office-state-pill.state-waiting {
+  border-color: rgba(207, 157, 61, .45);
+  background: rgba(123, 88, 27, .22);
+  color: #dec17c;
+}
+
+.office-state-pill.state-blocked,
+.office-state-pill.state-failed {
+  border-color: rgba(207, 85, 75, .48);
+  background: rgba(128, 48, 43, .22);
+  color: #e39a93;
+}
+
+.office-agent-identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 15px 12px;
+}
+
+.office-agent-avatar {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, .18);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, .12);
+  color: #fff;
+  font-size: .63rem;
+  font-weight: 800;
+  letter-spacing: .02em;
+}
+
+.office-agent-identity > div {
+  min-width: 0;
+}
+
+.office-agent-identity strong {
+  display: block;
+  overflow: hidden;
+  color: #f1f4f7;
+  font-size: .73rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.office-agent-identity span:last-child {
+  display: block;
+  margin-top: 2px;
+  color: #8f9cac;
+  font-family: var(--ao-mono);
+  font-size: .56rem;
+}
+
+.office-live-sidebar .office-detail-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+  padding: 0 15px;
+  border-top: 1px solid #26323e;
+}
+
+.office-live-sidebar .office-detail-facts > div {
+  min-width: 0;
+  padding: 9px 0;
+  border-bottom: 1px solid #26323e;
+}
+
+.office-live-sidebar .office-detail-facts > div:nth-child(odd):not(.office-detail-fact-wide) {
+  padding-right: 10px;
+  border-right: 1px solid #26323e;
+}
+
+.office-live-sidebar .office-detail-facts > div:nth-child(even) {
+  padding-left: 10px;
+}
+
+.office-live-sidebar .office-detail-facts .office-detail-fact-wide {
+  grid-column: 1 / -1;
+}
+
+.office-live-sidebar .office-detail-facts dt {
+  margin-bottom: 3px;
+  color: #788798;
+  font-family: var(--ao-mono);
+  font-size: .54rem;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.office-live-sidebar .office-detail-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: #c6d0da;
+  font-size: .64rem;
+  line-height: 1.45;
+}
+
+.office-live-sidebar .office-detail-note {
+  margin: 0 15px;
+  padding: 9px 0;
+  border-bottom: 1px solid #26323e;
+  color: #aeb9c5;
+}
+
+.office-live-sidebar .office-detail-note strong {
+  color: #e39a93;
+}
+
+.office-technical-refs {
+  display: grid;
+  gap: 3px;
+  padding: 9px 15px 12px;
+  color: #758495;
+  font-size: .53rem;
+  line-height: 1.4;
+}
+
+.office-technical-refs span {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.office-technical-refs code {
+  max-width: 68%;
+  overflow: hidden;
+  color: #8f9cac;
+  font-family: var(--ao-mono);
+  font-size: .52rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.office-selection-prompt {
+  display: flex;
+  min-height: 148px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  padding: 12px 15px 18px;
+  border-top: 1px solid #26323e;
+}
+
+.office-selection-prompt strong {
+  color: #cbd5de;
+  font-size: .68rem;
+}
+
+.office-selection-prompt span {
+  max-width: 34ch;
+  color: #788798;
+  font-size: .61rem;
+  line-height: 1.5;
+}
+
+.office-signal-feed {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.office-signal-feed .office-sidebar-heading {
+  flex: 0 0 auto;
+  border-bottom: 1px solid #2c3743;
+}
+
+.office-feed-mode {
+  margin-top: 1px;
+}
+
+.office-signal-feed .office-signal-list {
+  display: block;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: #44515f #16202a;
+  scrollbar-width: thin;
+}
+
+.office-signal-feed .office-signal {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr);
+  gap: 9px;
+  align-items: start;
+  padding: 10px 15px;
+  border-top: 0;
+  border-bottom: 1px solid #25303b;
+}
+
+.office-signal-feed .office-signal:hover {
+  background: rgba(255, 255, 255, .018);
+}
+
+.office-signal-dot {
+  width: 6px;
+  height: 6px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: #7c8998;
+  box-shadow: 0 0 0 3px rgba(124, 137, 152, .1);
+}
+
+.office-signal-dot.tone-success {
+  background: #56ad7c;
+  box-shadow: 0 0 0 3px rgba(86, 173, 124, .1);
+}
+
+.office-signal-dot.tone-attention {
+  background: #c99a45;
+  box-shadow: 0 0 0 3px rgba(201, 154, 69, .1);
+}
+
+.office-signal-dot.tone-critical {
+  background: #cc6259;
+  box-shadow: 0 0 0 3px rgba(204, 98, 89, .1);
+}
+
+.office-signal-copy {
+  min-width: 0;
+}
+
+.office-signal-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.office-signal-meta strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #cdd6df;
+  font-size: .62rem;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.office-signal-feed .office-signal-meta time {
+  flex: 0 0 auto;
+  color: #657486;
+  font-family: var(--ao-mono);
+  font-size: .51rem;
+}
+
+.office-signal-feed .office-signal-type {
+  display: block;
+  margin-top: 2px;
+  color: #8796a7;
+  font-family: var(--ao-mono);
+  font-size: .54rem;
+  line-height: 1.35;
+}
+
+.office-signal-feed .office-signal-detail {
+  display: block;
+  margin-top: 3px;
+  overflow: visible;
+  color: #aab6c2;
+  font-size: .59rem;
+  line-height: 1.45;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.office-signal-feed .office-signal-empty {
+  padding: 16px 15px;
+  border-top: 0;
+  color: #718092;
+  font-size: .61rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 1180px) {
+  .office-layout {
+    grid-template-columns: minmax(0, 1fr) 310px;
+  }
+
+  .office-live-sidebar {
+    height: clamp(620px, 74vh, 820px);
+  }
+}
+
+@media (max-width: 960px) {
+  .office-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .office-live-sidebar {
+    grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+    grid-template-rows: none;
+    height: 420px;
+  }
+
+  .office-selected-agent {
+    overflow-y: auto;
+    border-right: 1px solid #2c3743;
+    border-bottom: 0;
+  }
+}
+
+@media (max-width: 680px) {
+  .office-live-sidebar {
+    display: flex;
+    height: auto;
+    max-height: none;
+    flex-direction: column;
+  }
+
+  .office-selected-agent {
+    overflow: visible;
+    border-right: 0;
+    border-bottom: 1px solid #2c3743;
+  }
+
+  .office-signal-feed .office-signal-list {
+    max-height: 340px;
+  }
+
+  .office-live-sidebar .office-detail-facts {
+    grid-template-columns: 1fr;
+  }
+
+  .office-live-sidebar .office-detail-facts > div:nth-child(odd):not(.office-detail-fact-wide),
+  .office-live-sidebar .office-detail-facts > div:nth-child(even) {
+    padding-right: 0;
+    padding-left: 0;
+    border-right: 0;
+  }
+}

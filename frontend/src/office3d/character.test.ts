@@ -1,24 +1,39 @@
 import { describe, expect, it } from 'vitest'
 
-import { officeCharacterVariant } from './character'
+import {
+  officeCharacterAppearance,
+  officeCharacterVariant,
+} from './character'
 
-describe('officeCharacterVariant', () => {
-  it('maps core roles to stable, clothed office variants', () => {
+const CORE_ROLES = [
+  'architect',
+  'explorer',
+  'backend-developer',
+  'frontend-developer',
+  'qa-reviewer',
+  'security-reviewer',
+  'verifier',
+  'documentation-writer',
+] as const
+
+describe('officeCharacterAppearance', () => {
+  it('gives all eight core roles a deterministic unique visual identity', () => {
+    const appearances = CORE_ROLES.map((role) => officeCharacterAppearance(role))
+
+    expect(new Set(appearances.map((appearance) => appearance.id)).size).toBe(8)
+    expect(new Set(appearances.map((appearance) => appearance.accent)).size).toBe(8)
     expect(officeCharacterVariant('architect')).toBe('suit')
-    expect(officeCharacterVariant('explorer')).toBe('hoodie')
-    expect(officeCharacterVariant('backend-developer')).toBe('casual')
-    expect(officeCharacterVariant('frontend-developer')).toBe('smart')
-    expect(officeCharacterVariant('qa-reviewer')).toBe('dress')
     expect(officeCharacterVariant('security-reviewer')).toBe('suit')
-    expect(officeCharacterVariant('verifier')).toBe('casual')
-    expect(officeCharacterVariant('documentation-writer')).toBe('dress')
+    expect(officeCharacterAppearance('architect').id).not.toBe(
+      officeCharacterAppearance('security-reviewer').id,
+    )
   })
 
   it('keeps unknown-role fallback deterministic', () => {
-    const first = officeCharacterVariant('future-specialist')
-    const second = officeCharacterVariant('future-specialist')
+    const first = officeCharacterAppearance('future-specialist')
+    const second = officeCharacterAppearance('future-specialist')
 
-    expect(second).toBe(first)
-    expect(['suit', 'casual', 'hoodie', 'dress', 'smart']).toContain(first)
+    expect(second).toEqual(first)
+    expect(['suit', 'casual', 'hoodie', 'dress', 'smart']).toContain(first.variant)
   })
 })

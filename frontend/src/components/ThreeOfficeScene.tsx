@@ -21,6 +21,11 @@ import {
   disposeObject,
   stageCenter,
 } from '../office3d/environment'
+import {
+  officeReplayPlan,
+  type OfficeReplayEvent,
+  type OfficeReplayRange,
+} from '../office3d/replay'
 
 export interface ThreeOfficeSceneProps {
   stages: RunStage[]
@@ -31,12 +36,8 @@ export interface ThreeOfficeSceneProps {
   motionPaused: boolean
   mode: 'live' | 'replay'
   replayNonce: number
-}
-
-interface ReplayEvent {
-  at: number
-  type: 'start' | 'finish'
-  agentId: string
+  replayStartedAt: number | null
+  replayRange: OfficeReplayRange | null
 }
 
 interface Engine {
@@ -52,7 +53,7 @@ interface Engine {
   frame: number | null
   lastFrameAt: number
   replayStartedAt: number | null
-  replayEvents: ReplayEvent[]
+  replayEvents: OfficeReplayEvent[]
   replayIndex: number
   focusTarget: THREE.Vector3 | null
   focusUntil: number | null
@@ -79,52 +80,6 @@ function stateTarget(
     default:
       return runtime.station.clone()
   }
-}
-
-function parseTime(value: string | null): number | null {
-  if (!value) return null
-  const parsed = Date.parse(value)
-  return Number.isFinite(parsed) ? parsed : null
-}
-
-function replayPlan(agents: AgentRun[]): ReplayEvent[] {
-  const raw: Array<{
-    time: number
-    type: ReplayEvent['type']
-    agentId: string
-  }> = []
-
-  agents.forEach((agent) => {
-    const started = parseTime(agent.started_at)
-    const completed = parseTime(agent.completed_at)
-    if (started !== null) {
-      raw.push({ time: started, type: 'start', agentId: agent.id })
-    }
-    if (completed !== null) {
-      raw.push({ time: completed, type: 'finish', agentId: agent.id })
-    }
-  })
-
-  if (raw.length === 0) return []
-
-  raw.sort((left, right) => left.time - right.time || left.agentId.localeCompare(right.agentId))
-  const min = raw[0].time
-  const max = raw[raw.length - 1].time
-  const factualSpan = Math.max(1, max - min)
-  const playbackSpan = Math.min(18_000, Math.max(10_000, factualSpan / 3))
-  const scale = playbackSpan / factualSpan
-
-  let previousAt = 350
-  return raw.map((event, index) => {
-    const normalized = 500 + (event.time - min) * scale
-    const at = Math.max(normalized, previousAt + (index === 0 ? 0 : 520))
-    previousAt = at
-    return {
-      at,
-      type: event.type,
-      agentId: event.agentId,
-    }
-  })
 }
 
 function moveRuntime(runtime: RuntimeAgent, target: THREE.Vector3): void {
@@ -155,6 +110,8 @@ export function ThreeOfficeScene({
   motionPaused,
   mode,
   replayNonce,
+  replayStartedAt,
+  replayRange,
 }: ThreeOfficeSceneProps) {
   const hostRef = useRef<HTMLDivElement>(null)
   const engineRef = useRef<Engine | null>(null)
@@ -617,11 +574,11 @@ export function ThreeOfficeScene({
 
   useEffect(() => {
     const engine = engineRef.current
-    if (!engine || mode !== 'replay') return
+    if (!engine || mode !== 'replay' || replayStartedAt === null) return
 
-    engine.replayEvents = replayPlan(agents)
+    engine.replayEvents = officeReplayPlan(agents, replayRange)
     engine.replayIndex = 0
-    engine.replayStartedAt = performance.now()
+    engine.replayStartedAt = replayStartedAt
 
     engine.runtimes.forEach((runtime) => {
       runtime.root.visible = false
@@ -636,7 +593,14 @@ export function ThreeOfficeScene({
 
     renderEngine(engine)
     startLoop()
-  }, [agents, mode, replayNonce, startLoop])
+  }, [
+    agents,
+    mode,
+    replayNonce,
+    replayStartedAt,
+    replayRange,
+    startLoop,
+  ])
 
   useEffect(() => {
     const engine = engineRef.current

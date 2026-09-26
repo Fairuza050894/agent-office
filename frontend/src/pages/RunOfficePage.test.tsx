@@ -229,15 +229,23 @@ describe('Phase 8 Office View', () => {
     expect(screen.getByText('1 AgentRun')).toBeInTheDocument()
     expect(screen.queryByText(/72%/)).not.toBeInTheDocument()
 
+    const sidebar = screen.getByRole('complementary', { name: 'Live office sidebar' })
+    expect(within(sidebar).getByText('No agent selected')).toBeInTheDocument()
+    expect(
+      within(sidebar).getByRole('region', { name: 'Recent factual office signals' }),
+    ).toBeInTheDocument()
+
     fireEvent.click(agentButton)
 
-    const detail = screen.getByRole('complementary', { name: 'Selected AgentRun details' })
+    const detail = within(sidebar).getByRole('region', {
+      name: 'Selected AgentRun details',
+    })
     expect(within(detail).getAllByText('Backend Developer').length).toBeGreaterThan(0)
-    expect(within(detail).getByText('Running · RUNNING')).toBeInTheDocument()
+    expect(within(detail).getByText('RUNNING · attempt 1')).toBeInTheDocument()
     expect(within(detail).getByText('Reference Executor · 1')).toBeInTheDocument()
     expect(within(detail).getByText('IMPLEMENTATION · RUNNING')).toBeInTheDocument()
-    expect(within(detail).getByText('GIT_WORKTREE')).toBeInTheDocument()
-    expect(within(detail).getByText(/agent.started/)).toBeInTheDocument()
+    expect(within(detail).getByText('GIT_WORKTREE · ao/office')).toBeInTheDocument()
+    expect(within(detail).getByText(/Agent started/)).toBeInTheDocument()
   })
 
   it('renders only factual event signals and creates no worker when AgentRuns are absent', async () => {
@@ -247,7 +255,7 @@ describe('Phase 8 Office View', () => {
     const projection = await screen.findByRole('region', { name: 'Run office 3D projection' })
     expect(projection.querySelectorAll('.office-agent-button')).toHaveLength(0)
     expect(screen.getByText('No AgentRuns instantiated for this Run.')).toBeInTheDocument()
-    expect(screen.getByText('Test completed')).toBeInTheDocument()
+    expect(screen.getByText('Verification completed')).toBeInTheDocument()
     expect(screen.getByText('142 passed · 2 failed')).toBeInTheDocument()
   })
 

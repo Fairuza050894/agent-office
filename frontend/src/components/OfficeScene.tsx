@@ -1,96 +1,45 @@
 import { useMemo } from 'react'
 
-import type {
-  AgentEvent,
-  AgentProfile,
-  AgentRun,
-  Executor,
-  RunStage,
-  Workspace,
-} from '../api'
+import type { AgentProfile, AgentRun, RunStage } from '../api'
+import type { OfficeReplayRange } from '../office3d/replay'
 import { officeAgentState } from '../officeProjection'
 import { ThreeOfficeScene } from './ThreeOfficeScene'
 
 export interface OfficeSceneProps {
   stages: RunStage[]
   agents: AgentRun[]
-  events: AgentEvent[]
-  workspaces: Workspace[]
-  executors: Executor[]
   profiles: AgentProfile[]
   selectedAgentId: string | null
   onSelectAgent: (agentId: string) => void
   motionPaused: boolean
   mode: 'live' | 'replay'
   replayNonce: number
+  replayStartedAt: number | null
+  replayRange: OfficeReplayRange | null
 }
 
-const OFFICE_SIGNAL_EVENTS = new Set([
-  'agent.started',
-  'agent.waiting',
-  'agent.completed',
-  'agent.failed',
-  'review.finding.created',
-  'test.started',
-  'test.completed',
-])
-
-const EVENT_LABELS: Record<string, string> = {
-  'agent.started': 'Agent started',
-  'agent.waiting': 'Agent waiting',
-  'agent.completed': 'Agent completed',
-  'agent.failed': 'Agent failed',
-  'review.finding.created': 'Review finding',
-  'test.started': 'Test started',
-  'test.completed': 'Test completed',
-}
-
-function profileName(agent: AgentRun, profiles: Map<string, AgentProfile>): string {
+function profileName(
+  agent: AgentRun,
+  profiles: Map<string, AgentProfile>,
+): string {
   return profiles.get(agent.agent_profile_key)?.name ?? agent.agent_profile_key
-}
-
-function signalDetail(event: AgentEvent): string {
-  const summary = event.payload.summary
-  if (typeof summary === 'string' && summary.trim()) return summary
-  if (event.event_type === 'review.finding.created') {
-    const title = event.payload.title
-    if (typeof title === 'string' && title.trim()) return title
-  }
-  if (event.event_type === 'test.completed') {
-    const passed = event.payload.passed
-    const failed = event.payload.failed
-    const details: string[] = []
-    if (typeof passed === 'number') details.push(`${passed} passed`)
-    if (typeof failed === 'number') details.push(`${failed} failed`)
-    if (details.length > 0) return details.join(' · ')
-  }
-  return event.source
 }
 
 export function OfficeScene({
   stages,
   agents,
-  events,
   profiles,
   selectedAgentId,
   onSelectAgent,
   motionPaused,
   mode,
   replayNonce,
+  replayStartedAt,
+  replayRange,
 }: OfficeSceneProps) {
   const profileByKey = useMemo(
     () => new Map(profiles.map((profile) => [profile.key, profile])),
     [profiles],
-  )
-
-  const signals = useMemo(
-    () =>
-      events
-        .filter((event) => OFFICE_SIGNAL_EVENTS.has(event.event_type))
-        .slice()
-        .sort((left, right) => right.occurred_at.localeCompare(left.occurred_at))
-        .slice(0, 6),
-    [events],
   )
 
   return (
@@ -98,11 +47,14 @@ export function OfficeScene({
       <div className="office-scene-heading">
         <div>
           <strong>Live office</strong>
-          <span>Canonical AgentRun state · drag to orbit · right-drag to pan · wheel to zoom</span>
+          <span>
+            Canonical AgentRun state · drag to orbit · right-drag to pan · wheel
+            to zoom
+          </span>
         </div>
         <span className="office-render-mode">
           {mode === 'replay'
-            ? 'Historical replay · timing compressed'
+            ? 'Historical replay · factual timestamps compressed'
             : 'Live state'}
         </span>
       </div>
@@ -116,6 +68,8 @@ export function OfficeScene({
         motionPaused={motionPaused}
         mode={mode}
         replayNonce={replayNonce}
+        replayStartedAt={replayStartedAt}
+        replayRange={replayRange}
       />
 
       <div className="office-agent-roster" aria-label="AgentRun roster">
@@ -144,32 +98,6 @@ export function OfficeScene({
               </button>
             )
           })
-        )}
-      </div>
-
-      <div className="office-signal-strip" aria-label="Recent factual office signals">
-        <div className="office-signal-heading">
-          <strong>Recent signals</strong>
-          <span>Canonical Events only</span>
-        </div>
-        {signals.length === 0 ? (
-          <div className="office-signal-empty">
-            No Office-reactive event has been recorded for this Run.
-          </div>
-        ) : (
-          <div className="office-signal-list">
-            {signals.map((event) => (
-              <article key={event.id} className="office-signal">
-                <span className="office-signal-type">
-                  {EVENT_LABELS[event.event_type] ?? event.event_type}
-                </span>
-                <span className="office-signal-detail">{signalDetail(event)}</span>
-                <time dateTime={event.occurred_at}>
-                  {new Date(event.occurred_at).toLocaleTimeString()}
-                </time>
-              </article>
-            ))}
-          </div>
         )}
       </div>
     </section>

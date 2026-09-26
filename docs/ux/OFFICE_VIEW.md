@@ -34,20 +34,29 @@ Agent Office renders its own Three.js geometry.
 
 ## Character cast
 
-The primary visual path is a deterministic cast of five clothed Quaternius
-CC0 humanoids:
+The primary visual path uses five clothed Quaternius CC0 humanoid rigs as the
+licensed base library and composes eight deterministic role appearances from
+them:
 
-- male business suit
-- male casual
-- male hoodie
-- female formal/dress
-- female smart/casual
+- Architect
+- Explorer
+- Backend Developer
+- Frontend Developer
+- QA Reviewer
+- Security Reviewer
+- Verifier
+- Documentation Writer
 
-Each model is rigged and contains compatible `Idle`, `Walk`, and `Run`
-clips. A local procedural silhouette exists only as an asset-load fallback.
+A role appearance is a stable presentation profile derived from
+`agent_profile_key`. It combines the licensed base outfit/model with a
+role-specific body scale, material accent, and idle cadence/phase. This means
+roles that share a base rig still have different silhouettes and surface
+identity, while the same role remains visually consistent across renders.
 
-Role-to-avatar mapping is deterministic from `agent_profile_key`; avatars do
-not randomly change on reload.
+Each base model is rigged and contains compatible `Idle`, `Walk`, and
+`Run` clips. A local procedural silhouette exists only as an asset-load
+fallback. Unknown future roles use a stable hash-derived appearance; no
+appearance is randomized per render.
 
 Exact sources, license information, transport commit, expected sizes, and Git
 blob hashes are recorded in:
@@ -120,11 +129,29 @@ The Three.js renderer uses soft shadow maps and real scene lighting. The floor
 receives character/furniture shadows; lighting and animation do not fabricate
 execution state.
 
+## Viewport and live sidebar
+
+Desktop Office View uses a scene-first split layout:
+
+- approximately 73% for the Three.js room and accessible AgentRun roster
+- approximately 27% for a persistent live-control sidebar
+
+The sidebar does not cover the 3D room. Its upper section contains the selected
+AgentRun's factual role, state, stage, executor, workspace, timestamps, and
+compact technical identifiers. Its lower section is a scrollable vertical
+canonical Event stream. The earlier bottom signal table/list and floating
+AgentRun detail overlay are not part of the target layout.
+
 ## Event model
 
 Live updates and Historical replay remain driven by canonical Run/AgentRun
 state and the existing event stream. Random timers do not create fictional
 agent behavior.
+
+Historical replay snapshots its factual timestamp range when replay starts.
+Character start/finish transitions and the sidebar Event feed use the same
+compressed playback clock. New live SSE Events may still be persisted while a
+replay is running, but they do not move the already-started replay timeline.
 
 The visual renderer is disposable: failure to load WebGL, a GLB, or an
 animation does not affect cancellation, Findings, Evidence, approvals,
