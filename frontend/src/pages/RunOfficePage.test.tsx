@@ -246,7 +246,7 @@ describe('Phase 8 Office View', () => {
 
     const projection = await screen.findByRole('region', { name: 'Run office 3D projection' })
     expect(projection.querySelectorAll('.office-agent-button')).toHaveLength(0)
-    expect(screen.getByText('No AgentRuns instantiated in this stage.')).toBeInTheDocument()
+    expect(screen.getByText('No AgentRuns instantiated for this Run.')).toBeInTheDocument()
     expect(screen.getByText('Test completed')).toBeInTheDocument()
     expect(screen.getByText('142 passed · 2 failed')).toBeInTheDocument()
   })
