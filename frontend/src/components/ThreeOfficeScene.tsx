@@ -54,6 +54,8 @@ interface Engine {
   replayStartedAt: number | null
   replayEvents: ReplayEvent[]
   replayIndex: number
+  focusTarget: THREE.Vector3 | null
+  focusUntil: number | null
   disposed: boolean
 }
 
@@ -232,6 +234,8 @@ export function ThreeOfficeScene({
               runtime.pendingStatusAt = null
               setCharacterStatus(runtime, 'STARTING')
               moveRuntime(runtime, runtime.station)
+              current.focusTarget = runtime.station.clone()
+              current.focusUntil = now + 950
             } else if (runtime.moving) {
               runtime.pendingStatus = runtime.finalStatus
               runtime.pendingStatusAt = null
@@ -246,6 +250,29 @@ export function ThreeOfficeScene({
       }
 
       let needsFrame = false
+
+      if (current.focusTarget && current.focusUntil !== null) {
+        const before = current.controls.target.clone()
+        current.controls.target.lerp(
+          current.focusTarget,
+          Math.min(1, delta * 4.6),
+        )
+        const shift = current.controls.target.clone().sub(before)
+        current.camera.position.add(shift)
+        needsFrame = true
+
+        if (
+          now >= current.focusUntil ||
+          current.controls.target.distanceTo(current.focusTarget) < 0.035
+        ) {
+          current.focusTarget = null
+          current.focusUntil = null
+        }
+      }
+
+      if (current.controls.update()) {
+        needsFrame = true
+      }
 
       current.runtimes.forEach((runtime) => {
         runtime.selectionRing.visible =
@@ -288,6 +315,9 @@ export function ThreeOfficeScene({
           } else {
             direction.normalize()
             runtime.root.position.addScaledVector(direction, step)
+            // Quaternius models are authored facing -Z. The character module
+            // rotates the GLB presentation by PI, so the runtime root itself
+            // follows the canonical +Z Three.js heading convention here.
             runtime.root.rotation.y = Math.atan2(direction.x, direction.z)
           }
         }
@@ -357,7 +387,8 @@ export function ThreeOfficeScene({
 
       const controls = new OrbitControls(camera, renderer.domElement)
       controls.target.set(0, 0.65, 0)
-      controls.enableDamping = false
+      controls.enableDamping = true
+      controls.dampingFactor = 0.075
       controls.enablePan = true
       controls.enableRotate = true
       controls.screenSpacePanning = true
@@ -401,6 +432,8 @@ export function ThreeOfficeScene({
         replayStartedAt: null,
         replayEvents: [],
         replayIndex: 0,
+        focusTarget: null,
+        focusUntil: null,
         disposed: false,
       }
       engineRef.current = engine
@@ -421,6 +454,7 @@ export function ThreeOfficeScene({
       resizeObserver.observe(host)
       resize()
       controls.addEventListener('change', render)
+      controls.addEventListener('start', startLoop)
 
       const raycaster = new THREE.Raycaster()
       const pointer = new THREE.Vector2()
@@ -448,6 +482,7 @@ export function ThreeOfficeScene({
       return () => {
         resizeObserver?.disconnect()
         controls.removeEventListener('change', render)
+        controls.removeEventListener('start', startLoop)
         renderer.domElement.removeEventListener('click', handleClick)
 
         const frame = engine?.frame
@@ -582,6 +617,15 @@ export function ThreeOfficeScene({
     engine.runtimes.forEach((runtime) => {
       runtime.selectionRing.visible = runtime.agentId === selectedAgentId
     })
+
+    if (selectedAgentId) {
+      const runtime = engine.runtimes.get(selectedAgentId)
+      if (runtime) {
+        engine.focusTarget = runtime.root.position.clone()
+        engine.focusUntil = performance.now() + 850
+        startLoop()
+      }
+    }
 
     renderEngine(engine)
   }, [selectedAgentId])
