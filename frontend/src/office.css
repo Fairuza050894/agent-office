@@ -69,7 +69,8 @@
 
 .office-scene-heading span {
   color: var(--ao-faint);
-  font-size: .66rem;
+  font-size: .68rem;
+  line-height: 1.4;
 }
 
 .office-render-mode {
@@ -78,13 +79,76 @@
 
 .office-three-host {
   position: relative;
-  height: clamp(540px, 66vh, 760px);
+  height: clamp(560px, 68vh, 780px);
   overflow: hidden;
-  border: 1px solid #c8d0da;
-  background: #d8e0e8;
+  border: 1px solid #bfc9d4;
+  background: #cbd5df;
   box-shadow:
-    0 12px 32px rgba(31, 43, 58, .08),
-    inset 0 0 0 1px rgba(255, 255, 255, .45);
+    0 16px 38px rgba(31, 43, 58, .11),
+    inset 0 0 0 1px rgba(255, 255, 255, .38);
+}
+
+
+.office-three-label-layer {
+  position: absolute !important;
+  inset: 0;
+  z-index: 4;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.office-avatar-nameplate {
+  display: flex;
+  min-width: 108px;
+  max-width: 168px;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 5px 8px 6px;
+  transform: translateY(-6px);
+  border: 1px solid rgba(255, 255, 255, .24);
+  border-radius: 7px;
+  background: rgba(26, 36, 51, .9);
+  box-shadow: 0 5px 14px rgba(22, 30, 42, .18);
+  color: #f8fbff;
+  text-align: center;
+  white-space: nowrap;
+  backdrop-filter: blur(5px);
+}
+
+.office-avatar-nameplate strong {
+  max-width: 150px;
+  overflow: hidden;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+}
+
+.office-avatar-nameplate span {
+  color: #c8d3df;
+  font-family: var(--ao-mono);
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.office-avatar-nameplate.state-running {
+  border-color: rgba(63, 173, 112, .48);
+}
+
+.office-avatar-nameplate.state-waiting,
+.office-avatar-nameplate.state-starting {
+  border-color: rgba(205, 155, 55, .5);
+}
+
+.office-avatar-nameplate.state-blocked,
+.office-avatar-nameplate.state-failed {
+  border-color: rgba(210, 86, 75, .54);
+}
+
+.office-avatar-nameplate.state-completed {
+  background: rgba(31, 58, 48, .88);
 }
 
 .office-three-canvas {
@@ -148,7 +212,11 @@
 
 .office-agent-button:hover,
 .office-agent-button.selected {
-  background: #f1f4f8;
+  background: #edf2f7;
+}
+
+.office-agent-button.selected {
+  box-shadow: inset 0 -2px 0 #4979b8;
 }
 
 .office-agent-button:focus-visible {
