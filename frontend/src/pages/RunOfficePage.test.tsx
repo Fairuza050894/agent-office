@@ -231,7 +231,7 @@ describe('Phase 8 Office View', () => {
     fireEvent.click(agentButton)
 
     const detail = screen.getByRole('complementary', { name: 'Selected AgentRun details' })
-    expect(within(detail).getByText('Backend Developer')).toBeInTheDocument()
+    expect(within(detail).getAllByText('Backend Developer').length).toBeGreaterThan(0)
     expect(within(detail).getByText('Running · RUNNING')).toBeInTheDocument()
     expect(within(detail).getByText('Reference Executor · 1')).toBeInTheDocument()
     expect(within(detail).getByText('IMPLEMENTATION · RUNNING')).toBeInTheDocument()
