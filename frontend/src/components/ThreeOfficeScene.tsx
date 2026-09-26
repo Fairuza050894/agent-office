@@ -357,8 +357,7 @@ export function ThreeOfficeScene({
 
       const controls = new OrbitControls(camera, renderer.domElement)
       controls.target.set(0, 0.65, 0)
-      controls.enableDamping = true
-      controls.dampingFactor = 0.08
+      controls.enableDamping = false
       controls.enablePan = true
       controls.enableRotate = true
       controls.screenSpacePanning = true
@@ -421,10 +420,7 @@ export function ThreeOfficeScene({
       resizeObserver = new ResizeObserver(resize)
       resizeObserver.observe(host)
       resize()
-      controls.addEventListener('change', () => {
-        controls.update()
-        render()
-      })
+      controls.addEventListener('change', render)
 
       const raycaster = new THREE.Raycaster()
       const pointer = new THREE.Vector2()
