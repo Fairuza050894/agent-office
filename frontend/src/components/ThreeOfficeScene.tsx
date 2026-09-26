@@ -13,10 +13,10 @@ import {
   type StationPlacement,
 } from '../office3d/character'
 import {
-  CORRIDOR_Z,
   ENTRANCE,
   INCIDENT,
   WAITING,
+  buildOfficePath,
   createOfficeEnvironment,
   disposeObject,
   stageCenter,
@@ -63,21 +63,6 @@ function bayOffset(index: number): THREE.Vector3 {
   const column = index % 3
   const row = Math.floor(index / 3)
   return new THREE.Vector3((column - 1) * 0.78, 0, (row - 1) * 0.7)
-}
-
-function buildPath(from: THREE.Vector3, to: THREE.Vector3): THREE.Vector3[] {
-  if (from.distanceTo(to) < 0.08) return []
-
-  const points = [
-    new THREE.Vector3(from.x, 0, CORRIDOR_Z),
-    new THREE.Vector3(to.x, 0, CORRIDOR_Z),
-    to.clone(),
-  ]
-
-  return points.filter((point, index) => {
-    const previous = index === 0 ? from : points[index - 1]
-    return previous.distanceTo(point) > 0.08
-  })
 }
 
 function stateTarget(
@@ -144,7 +129,7 @@ function replayPlan(agents: AgentRun[]): ReplayEvent[] {
 
 function moveRuntime(runtime: RuntimeAgent, target: THREE.Vector3): void {
   runtime.target.copy(target)
-  runtime.path = buildPath(runtime.root.position, target)
+  runtime.path = buildOfficePath(runtime.root.position, target)
   runtime.moving = runtime.path.length > 0
 }
 
