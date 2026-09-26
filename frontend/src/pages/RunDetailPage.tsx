@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { api, type Project, type Run, type Task } from '../api'
 import { EmptyState } from '../components/EmptyState'
 import { PageHeader } from '../components/PageHeader'
+import { Link } from '../router/Link'
 import { RunActivityTab } from '../components/RunActivityTab'
 import { RunAgentsTab } from '../components/RunAgentsTab'
 import { RunChangesTab } from '../components/RunChangesTab'
@@ -105,6 +106,12 @@ export function RunDetailPage({ runId }: RunDetailPageProps) {
         task={task}
         onRunUpdated={setRun}
       />
+
+      <div className="run-view-switch">
+        <Link href={`/runs/${run.id}/office`} className="run-office-link">
+          Open 3D Office View
+        </Link>
+      </div>
 
       <div className="run-tabs" role="tablist" aria-label="Run detail">
         {TABS.map((tab) => (

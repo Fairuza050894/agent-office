@@ -16,6 +16,7 @@ import { SettingsPage } from '../pages/SettingsPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 import { RunDetailPage } from '../pages/RunDetailPage'
 import { ProjectDetailPage } from '../pages/ProjectDetailPage'
+import { RunOfficePage } from '../pages/RunOfficePage'
 
 export function AppShell() {
   const { currentPath } = useRouter()
@@ -43,6 +44,9 @@ export function AppShell() {
 
     if (currentPath.startsWith('/runs/')) {
       const parts = currentPath.split('/')
+      if (parts.length === 4 && parts[3] === 'office') {
+        return <RunOfficePage runId={parts[2]} />
+      }
       if (parts.length === 3) {
         return <RunDetailPage runId={parts[2]} />
       }

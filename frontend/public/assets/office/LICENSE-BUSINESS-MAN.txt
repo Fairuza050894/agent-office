@@ -1,0 +1,11 @@
+Quaternius — Business Man
+
+Original model title: Business Man
+Creator: Quaternius
+Source: https://poly.pizza/m/JFrLIKqvCH
+Source pack: Ultimate Modular Men Pack
+License: CC0 1.0 Universal / Public Domain Dedication
+License URL: https://creativecommons.org/publicdomain/zero/1.0/
+
+The runtime GLB is fetched from a repository mirror pinned to an exact commit.
+See ASSET_PROVENANCE.md for transport, size, and checksum details.

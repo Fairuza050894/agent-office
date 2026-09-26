@@ -349,6 +349,10 @@ describe('RunDetailPage Phase 5 operational behavior', () => {
     for (const tab of ['Overview', 'Workflow', 'Agents', 'Activity', 'Changes', 'Tests', 'Findings', 'Evidence']) {
       expect(screen.getByRole('tab', { name: tab })).toBeInTheDocument()
     }
+    expect(screen.getByRole('link', { name: 'Open 3D Office View' })).toHaveAttribute(
+      'href',
+      `/runs/${RUN.id}/office`,
+    )
   })
 
   it('answers the operational Run overview from backend truth', async () => {

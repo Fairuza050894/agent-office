@@ -17,6 +17,15 @@ export function Header({
 }: HeaderProps) {
   const { currentPath } = useRouter()
   const activeItem = NAV_ITEMS.find((item) => item.path === currentPath)
+  const contextualLabel =
+    activeItem?.label ??
+    (currentPath.match(/^\/runs\/[^/]+\/office$/)
+      ? 'Office View'
+      : currentPath.match(/^\/runs\/[^/]+$/)
+        ? 'Run detail'
+        : currentPath.match(/^\/projects\/[^/]+$/)
+          ? 'Project detail'
+          : 'Operations')
 
   const [status, setStatus] = useState<
     'checking' | 'connected' | 'disconnected'
@@ -86,7 +95,7 @@ export function Header({
 
         <div className="header-breadcrumb" aria-label="Current view">
           <span className="breadcrumb-current">
-            {activeItem ? activeItem.label : 'Operations'}
+            {contextualLabel}
           </span>
         </div>
       </div>

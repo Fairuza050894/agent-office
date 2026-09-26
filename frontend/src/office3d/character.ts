@@ -1,0 +1,630 @@
+import * as THREE from 'three'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import { CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
+import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js'
+
+import type { AgentRun } from '../api'
+import { officeAgentState } from '../officeProjection'
+
+export type CharacterVariantKey = 'suit' | 'casual' | 'hoodie' | 'dress' | 'smart'
+
+interface CharacterVariant {
+  url: string
+  scale: number
+}
+
+export interface CharacterAppearance {
+  id: string
+  variant: CharacterVariantKey
+  scale: number
+  accent: number
+  idleRate: number
+  idlePhase: number
+}
+
+const MODEL_YAW_OFFSET = Math.PI
+
+const CHARACTER_VARIANTS: Record<CharacterVariantKey, CharacterVariant> = {
+  suit: {
+    url: '/assets/office/char-m-suit.glb',
+    scale: 0.98,
+  },
+  casual: {
+    url: '/assets/office/char-m-casual.glb',
+    scale: 0.98,
+  },
+  hoodie: {
+    url: '/assets/office/char-m-hoodie.glb',
+    scale: 0.98,
+  },
+  dress: {
+    url: '/assets/office/char-f-dress.glb',
+    scale: 0.98,
+  },
+  smart: {
+    url: '/assets/office/char-f-smart.glb',
+    scale: 0.98,
+  },
+}
+
+const ROLE_APPEARANCES: Record<string, CharacterAppearance> = {
+  architect: {
+    id: 'architect-navy',
+    variant: 'suit',
+    scale: 1.0,
+    accent: 0x365f86,
+    idleRate: 0.84,
+    idlePhase: 0.12,
+  },
+  explorer: {
+    id: 'explorer-rust',
+    variant: 'hoodie',
+    scale: 0.98,
+    accent: 0xa8673d,
+    idleRate: 1.04,
+    idlePhase: 0.44,
+  },
+  'backend-developer': {
+    id: 'backend-teal',
+    variant: 'casual',
+    scale: 1.03,
+    accent: 0x34766f,
+    idleRate: 0.93,
+    idlePhase: 0.28,
+  },
+  'frontend-developer': {
+    id: 'frontend-violet',
+    variant: 'smart',
+    scale: 0.99,
+    accent: 0x705b91,
+    idleRate: 1.01,
+    idlePhase: 0.61,
+  },
+  'qa-reviewer': {
+    id: 'qa-amber',
+    variant: 'dress',
+    scale: 0.95,
+    accent: 0xa97d34,
+    idleRate: 0.89,
+    idlePhase: 0.35,
+  },
+  'security-reviewer': {
+    id: 'security-burgundy',
+    variant: 'suit',
+    scale: 1.09,
+    accent: 0x814448,
+    idleRate: 0.8,
+    idlePhase: 0.72,
+  },
+  verifier: {
+    id: 'verifier-green',
+    variant: 'casual',
+    scale: 0.94,
+    accent: 0x477553,
+    idleRate: 0.97,
+    idlePhase: 0.53,
+  },
+  'documentation-writer': {
+    id: 'documentation-blue',
+    variant: 'dress',
+    scale: 1.04,
+    accent: 0x4a6d9a,
+    idleRate: 0.87,
+    idlePhase: 0.19,
+  },
+  'ux-reviewer': {
+    id: 'ux-plum',
+    variant: 'smart',
+    scale: 0.97,
+    accent: 0x855b7d,
+    idleRate: 0.95,
+    idlePhase: 0.67,
+  },
+}
+
+const CLIPS = {
+  idle: 'Idle',
+  walk: 'Walk',
+  run: 'Run',
+} as const
+
+interface CharacterAssets {
+  source: THREE.Group
+  clips: Map<string, THREE.AnimationClip>
+}
+
+interface RiggedPresentation {
+  model: THREE.Group
+  mixer: THREE.AnimationMixer
+  actions: Map<string, THREE.AnimationAction>
+  ownedMaterials: THREE.Material[]
+  activeClip: string
+  idleRate: number
+}
+
+export interface StationPlacement {
+  position: THREE.Vector3
+  yaw: number
+}
+
+export interface RuntimeAgent {
+  agentId: string
+  name: string
+  root: THREE.Group
+  fallback: THREE.Group
+  statusLight: THREE.Mesh
+  selectionRing: THREE.Mesh
+  label: CSS2DObject
+  labelElement: HTMLDivElement
+  target: THREE.Vector3
+  path: THREE.Vector3[]
+  station: THREE.Vector3
+  stationYaw: number
+  targetYaw: number
+  finalStatus: string
+  currentStatus: string
+  moving: boolean
+  pendingStatus: string | null
+  pendingStatusAt: number | null
+  rigged: RiggedPresentation | null
+  disposed: boolean
+  lastAnimationAt: number | null
+}
+
+const assetPromises = new Map<CharacterVariantKey, Promise<CharacterAssets>>()
+
+function stableHash(value: string): number {
+  let hash = 2166136261
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index)
+    hash = Math.imul(hash, 16777619)
+  }
+  return hash >>> 0
+}
+
+export function officeCharacterAppearance(
+  profileKey: string,
+): CharacterAppearance {
+  const explicit = ROLE_APPEARANCES[profileKey]
+  if (explicit) return explicit
+
+  const fallbackVariants: CharacterVariantKey[] = [
+    'suit',
+    'casual',
+    'hoodie',
+    'dress',
+    'smart',
+  ]
+  const fallbackAccents = [
+    0x486785,
+    0x5b765d,
+    0x735c82,
+    0x8a654d,
+    0x497a78,
+  ]
+  const hash = stableHash(profileKey)
+  const variant = fallbackVariants[hash % fallbackVariants.length]
+
+  return {
+    id: `fallback-${variant}-${hash.toString(16)}`,
+    variant,
+    scale: 0.97 + ((hash >>> 5) % 7) * 0.01,
+    accent: fallbackAccents[(hash >>> 9) % fallbackAccents.length],
+    idleRate: 0.84 + ((hash >>> 13) % 17) / 100,
+    idlePhase: ((hash >>> 17) % 100) / 100,
+  }
+}
+
+export function officeCharacterVariant(profileKey: string): CharacterVariantKey {
+  return officeCharacterAppearance(profileKey).variant
+}
+
+function loadCharacterAssets(
+  variantKey: CharacterVariantKey,
+): Promise<CharacterAssets> {
+  const existing = assetPromises.get(variantKey)
+  if (existing) return existing
+
+  const variant = CHARACTER_VARIANTS[variantKey]
+  const loader = new GLTFLoader()
+  const pending = loader.loadAsync(variant.url).then((character) => {
+    const clips = new Map(
+      character.animations.map((clip) => [clip.name, clip]),
+    )
+
+    if (!clips.has(CLIPS.idle) || !clips.has(CLIPS.walk)) {
+      throw new Error(
+        `Office character ${variantKey} is missing required Idle/Walk clips.`,
+      )
+    }
+
+    return {
+      source: character.scene,
+      clips,
+    }
+  })
+
+  assetPromises.set(variantKey, pending)
+  pending.catch(() => {
+    assetPromises.delete(variantKey)
+  })
+  return pending
+}
+
+export function statusColor(status: string): number {
+  switch (status.toUpperCase()) {
+    case 'RUNNING':
+    case 'COMPLETED':
+      return 0x2fb176
+    case 'STARTING':
+    case 'WAITING':
+      return 0xd09a35
+    case 'BLOCKED':
+    case 'FAILED':
+      return 0xd24e43
+    default:
+      return 0x8491a3
+  }
+}
+
+function createNameplate(
+  name: string,
+  status: string,
+  profileKey: string,
+): {
+  object: CSS2DObject
+  element: HTMLDivElement
+} {
+  const element = document.createElement('div')
+  element.className = 'office-avatar-nameplate'
+  element.setAttribute('aria-hidden', 'true')
+
+  const primary = document.createElement('strong')
+  primary.textContent = name
+  const secondary = document.createElement('span')
+  secondary.textContent = officeAgentState(status).label
+  element.append(primary, secondary)
+
+  const object = new CSS2DObject(element)
+  const hash = stableHash(profileKey)
+  const horizontalOffset = ((hash % 5) - 2) * 0.055
+  const verticalOffset = ((hash >>> 5) % 3) * 0.07
+  object.position.set(horizontalOffset, 2.12 + verticalOffset, 0)
+  return { object, element }
+}
+
+function createFallback(profileKey: string): THREE.Group {
+  const fallback = new THREE.Group()
+  const appearance = officeCharacterAppearance(profileKey)
+  const suit = new THREE.MeshStandardMaterial({
+    color: appearance.accent,
+    roughness: 0.82,
+    metalness: 0.01,
+  })
+  const skin = new THREE.MeshStandardMaterial({
+    color: 0xd7b08d,
+    roughness: 0.9,
+  })
+
+  const body = new THREE.Mesh(
+    new THREE.CapsuleGeometry(0.24, 0.58, 6, 12),
+    suit,
+  )
+  body.position.y = 1.04
+  body.castShadow = true
+  fallback.add(body)
+
+  const head = new THREE.Mesh(
+    new THREE.SphereGeometry(0.24, 16, 12),
+    skin,
+  )
+  head.position.y = 1.68
+  head.castShadow = true
+  fallback.add(head)
+
+  fallback.scale.setScalar(0.88)
+  fallback.userData.proceduralFallback = true
+  return fallback
+}
+
+function createIndicator(
+  status: string,
+): { statusLight: THREE.Mesh; selectionRing: THREE.Mesh } {
+  const statusLight = new THREE.Mesh(
+    new THREE.SphereGeometry(0.055, 12, 8),
+    new THREE.MeshBasicMaterial({ color: statusColor(status) }),
+  )
+  statusLight.position.set(0.32, 1.96, 0)
+
+  const selectionRing = new THREE.Mesh(
+    new THREE.RingGeometry(0.38, 0.49, 36),
+    new THREE.MeshBasicMaterial({
+      color: 0x4a8ad4,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.92,
+      depthWrite: false,
+    }),
+  )
+  selectionRing.rotation.x = -Math.PI / 2
+  selectionRing.position.y = 0.025
+  selectionRing.visible = false
+
+  return { statusLight, selectionRing }
+}
+
+function setInteractive(root: THREE.Object3D, agentId: string): void {
+  root.traverse((child) => {
+    child.userData.agentId = agentId
+  })
+}
+
+function clipFor(runtime: RuntimeAgent): string {
+  if (runtime.moving) return CLIPS.walk
+  return CLIPS.idle
+}
+
+function playRigged(runtime: RuntimeAgent, force = false): void {
+  const rigged = runtime.rigged
+  if (!rigged) return
+
+  const desired = clipFor(runtime)
+  const next = rigged.actions.get(desired) ?? rigged.actions.get(CLIPS.idle)
+  if (!next) return
+
+  const running =
+    !runtime.moving &&
+    ['RUNNING', 'STARTING'].includes(runtime.currentStatus.toUpperCase())
+  next.setEffectiveTimeScale(
+    runtime.moving ? 1 : running ? rigged.idleRate * 1.06 : rigged.idleRate,
+  )
+
+  if (!force && rigged.activeClip === desired) return
+
+  const previous = rigged.actions.get(rigged.activeClip)
+  if (previous && previous !== next) previous.fadeOut(0.18)
+
+  if (previous !== next || force) {
+    next.reset().fadeIn(0.18).play()
+  }
+  rigged.activeClip = desired
+}
+
+async function attachRiggedPresentation(
+  runtime: RuntimeAgent,
+  profileKey: string,
+  onReady?: () => void,
+): Promise<void> {
+  const appearance = officeCharacterAppearance(profileKey)
+  const variantKey = appearance.variant
+
+  try {
+    const assets = await loadCharacterAssets(variantKey)
+    if (runtime.disposed) return
+
+    const variant = CHARACTER_VARIANTS[variantKey]
+    const model = cloneSkinned(assets.source) as THREE.Group
+    model.name = `agent-office-${variantKey}-character`
+    model.rotation.y = MODEL_YAW_OFFSET
+    model.scale.setScalar(variant.scale * appearance.scale)
+
+    const ownedMaterials: THREE.Material[] = []
+    const accent = new THREE.Color(appearance.accent)
+
+    model.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) return
+      object.castShadow = true
+      object.receiveShadow = false
+
+      const cloneSurface = (surface: THREE.Material): THREE.Material => {
+        const copy = surface.clone()
+        if (copy instanceof THREE.MeshStandardMaterial) {
+          copy.roughness = Math.max(0.72, copy.roughness)
+          copy.metalness = 0
+
+          const hsl = { h: 0, s: 0, l: 0 }
+          copy.color.getHSL(hsl)
+          if (hsl.l < 0.64) {
+            copy.color.lerp(accent, 0.3)
+          }
+        }
+        ownedMaterials.push(copy)
+        return copy
+      }
+
+      object.material = Array.isArray(object.material)
+        ? object.material.map(cloneSurface)
+        : cloneSurface(object.material)
+    })
+
+    setInteractive(model, runtime.agentId)
+
+    const mixer = new THREE.AnimationMixer(model)
+    const actions = new Map<string, THREE.AnimationAction>()
+    for (const name of Object.values(CLIPS)) {
+      const clip = assets.clips.get(name)
+      if (!clip) continue
+      const action = mixer.clipAction(clip)
+      action.setLoop(THREE.LoopRepeat, Infinity)
+      if (name === CLIPS.idle && clip.duration > 0) {
+        action.time = clip.duration * appearance.idlePhase
+      }
+      actions.set(name, action)
+    }
+
+    runtime.root.add(model)
+    runtime.rigged = {
+      model,
+      mixer,
+      actions,
+      ownedMaterials,
+      activeClip: '',
+      idleRate: appearance.idleRate,
+    }
+    runtime.fallback.visible = false
+    playRigged(runtime, true)
+    onReady?.()
+  } catch (error) {
+    console.warn(
+      `Office character variant ${variantKey} unavailable; using local fallback.`,
+      error,
+    )
+    onReady?.()
+  }
+}
+
+export function createCharacterRuntime(
+  agent: AgentRun,
+  name: string,
+  station: StationPlacement,
+  onVisualReady?: () => void,
+): RuntimeAgent {
+  const root = new THREE.Group()
+  root.userData.agentId = agent.id
+  root.position.copy(station.position)
+  root.rotation.y = station.yaw
+
+  const fallback = createFallback(agent.agent_profile_key)
+  root.add(fallback)
+
+  const { statusLight, selectionRing } = createIndicator(agent.status)
+  root.add(statusLight, selectionRing)
+
+  const { object: label, element: labelElement } = createNameplate(
+    name,
+    agent.status,
+    agent.agent_profile_key,
+  )
+  root.add(label)
+
+  setInteractive(fallback, agent.id)
+
+  const runtime: RuntimeAgent = {
+    agentId: agent.id,
+    name,
+    root,
+    fallback,
+    statusLight,
+    selectionRing,
+    label,
+    labelElement,
+    target: station.position.clone(),
+    path: [],
+    station: station.position.clone(),
+    stationYaw: station.yaw,
+    targetYaw: station.yaw,
+    finalStatus: agent.status,
+    currentStatus: agent.status,
+    moving: false,
+    pendingStatus: null,
+    pendingStatusAt: null,
+    rigged: null,
+    disposed: false,
+    lastAnimationAt: null,
+  }
+
+  void attachRiggedPresentation(
+    runtime,
+    agent.agent_profile_key,
+    onVisualReady,
+  )
+  return runtime
+}
+
+export function setCharacterStatus(
+  runtime: RuntimeAgent,
+  status: string,
+): void {
+  runtime.currentStatus = status
+
+  ;(runtime.statusLight.material as THREE.MeshBasicMaterial).color.setHex(
+    statusColor(status),
+  )
+
+  runtime.labelElement.className = [
+    'office-avatar-nameplate',
+    `state-${officeAgentState(status).key}`,
+  ].join(' ')
+
+  const secondary = runtime.labelElement.querySelector('span')
+  if (secondary) secondary.textContent = officeAgentState(status).label
+
+  playRigged(runtime)
+}
+
+function animateFallback(
+  runtime: RuntimeAgent,
+  now: number,
+  motionPaused: boolean,
+): boolean {
+  if (motionPaused) {
+    runtime.fallback.position.y = 0
+    runtime.fallback.rotation.set(0, 0, 0)
+    return false
+  }
+
+  if (runtime.moving) {
+    const phase = now * 0.009
+    runtime.fallback.position.y =
+      Math.abs(Math.sin(phase * 2)) * 0.04
+    runtime.fallback.rotation.z = Math.sin(phase) * 0.03
+    return true
+  }
+
+  const active = runtime.currentStatus.toUpperCase() === 'RUNNING'
+  runtime.fallback.position.y = active
+    ? Math.sin(now * 0.0025) * 0.012
+    : 0
+  return active
+}
+
+export function animateCharacter(
+  runtime: RuntimeAgent,
+  now: number,
+  motionPaused: boolean,
+): boolean {
+  const previous = runtime.lastAnimationAt ?? now
+  const delta = Math.min(0.05, Math.max(0, (now - previous) / 1000))
+  runtime.lastAnimationAt = now
+
+  if (!runtime.rigged) {
+    return animateFallback(runtime, now, motionPaused)
+  }
+
+  playRigged(runtime)
+  if (motionPaused) return false
+
+  runtime.rigged.mixer.update(delta)
+  return (
+    runtime.moving ||
+    ['RUNNING', 'STARTING', 'WAITING', 'BLOCKED', 'FAILED'].includes(
+      runtime.currentStatus.toUpperCase(),
+    )
+  )
+}
+
+export function disposeCharacter(runtime: RuntimeAgent): void {
+  runtime.disposed = true
+  runtime.labelElement.remove()
+
+  if (runtime.rigged) {
+    runtime.rigged.mixer.stopAllAction()
+    runtime.rigged.mixer.uncacheRoot(runtime.rigged.model)
+    runtime.rigged.ownedMaterials.forEach((material) => material.dispose())
+    runtime.root.remove(runtime.rigged.model)
+  }
+
+  runtime.fallback.traverse((object) => {
+    if (!(object instanceof THREE.Mesh)) return
+    object.geometry.dispose()
+    const materials = Array.isArray(object.material)
+      ? object.material
+      : [object.material]
+    materials.forEach((material) => material.dispose())
+  })
+
+  runtime.statusLight.geometry.dispose()
+  ;(runtime.statusLight.material as THREE.Material).dispose()
+  runtime.selectionRing.geometry.dispose()
+  ;(runtime.selectionRing.material as THREE.Material).dispose()
+}

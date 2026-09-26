@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Deterministically fetched CC0 Office View assets
+public/assets/office/*.glb
