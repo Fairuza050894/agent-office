@@ -13,6 +13,15 @@ function healthDotClass(status: string): string {
   return 'disconnected'
 }
 
+function splitSecurityLimitation(value: string): [string | null, string] {
+  const separator = value.indexOf(':')
+  if (separator < 0) return [null, value]
+
+  const key = value.slice(0, separator).trim()
+  const detail = value.slice(separator + 1).trim()
+  return [key || null, detail || value]
+}
+
 export function ExecutorsPage() {
   const [executors, setExecutors] = useState<Executor[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -106,11 +115,17 @@ export function ExecutorsPage() {
                     {executor.security_limitations.length === 0 ? (
                       <p className="executor-muted">No security limitations reported.</p>
                     ) : (
-                      <ul className="executor-limitations">
-                        {executor.security_limitations.map((limitation) => (
-                          <li key={limitation}>{limitation}</li>
-                        ))}
-                      </ul>
+                      <div className="executor-limitations">
+                        {executor.security_limitations.map((limitation) => {
+                          const [key, detail] = splitSecurityLimitation(limitation)
+                          return (
+                            <div key={limitation} className="security-limitation-row">
+                              {key && <code className="security-limitation-key">{key}</code>}
+                              <span className="security-limitation-value">{detail}</span>
+                            </div>
+                          )
+                        })}
+                      </div>
                     )}
                   </section>
                 </div>

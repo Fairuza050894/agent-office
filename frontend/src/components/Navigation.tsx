@@ -81,7 +81,7 @@ export function Navigation({ isOpen, onClose }: NavigationProps) {
         <div className="sidebar-footer">
           <span>Local-first</span>
           <span className="sidebar-footer-separator" aria-hidden="true">·</span>
-          <span>Workspace isolated</span>
+          <span>Isolated workspaces</span>
         </div>
       </aside>
     </>
