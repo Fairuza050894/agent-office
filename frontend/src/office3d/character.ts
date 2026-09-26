@@ -137,7 +137,7 @@ function createNameplate(name: string, status: string): {
   element.append(primary, secondary)
 
   const object = new CSS2DObject(element)
-  object.position.set(0, 2.66, 0)
+  object.position.set(0, 2.48, 0)
   return { object, element }
 }
 
@@ -156,6 +156,7 @@ export function createCharacterRuntime(
   root.userData.agentId = agent.id
   root.position.copy(station.position)
   root.rotation.y = station.yaw
+  root.scale.setScalar(0.78)
 
   const body = new THREE.Group()
   root.add(body)
