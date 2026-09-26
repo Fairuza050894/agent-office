@@ -254,7 +254,10 @@ describe('Phase 8 Office View', () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
 
     function BrokenRenderer() {
-      throw new Error('renderer failure')
+      if (true) {
+        throw new Error('renderer failure')
+      }
+      return null
     }
 
     render(
