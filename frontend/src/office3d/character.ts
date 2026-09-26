@@ -160,6 +160,7 @@ export interface RuntimeAgent {
   path: THREE.Vector3[]
   station: THREE.Vector3
   stationYaw: number
+  targetYaw: number
   finalStatus: string
   currentStatus: string
   moving: boolean
@@ -266,7 +267,11 @@ export function statusColor(status: string): number {
   }
 }
 
-function createNameplate(name: string, status: string): {
+function createNameplate(
+  name: string,
+  status: string,
+  profileKey: string,
+): {
   object: CSS2DObject
   element: HTMLDivElement
 } {
@@ -281,7 +286,10 @@ function createNameplate(name: string, status: string): {
   element.append(primary, secondary)
 
   const object = new CSS2DObject(element)
-  object.position.set(0, 2.18, 0)
+  const hash = stableHash(profileKey)
+  const horizontalOffset = ((hash % 5) - 2) * 0.055
+  const verticalOffset = ((hash >>> 5) % 3) * 0.07
+  object.position.set(horizontalOffset, 2.12 + verticalOffset, 0)
   return { object, element }
 }
 
@@ -485,6 +493,7 @@ export function createCharacterRuntime(
   const { object: label, element: labelElement } = createNameplate(
     name,
     agent.status,
+    agent.agent_profile_key,
   )
   root.add(label)
 
@@ -503,6 +512,7 @@ export function createCharacterRuntime(
     path: [],
     station: station.position.clone(),
     stationYaw: station.yaw,
+    targetYaw: station.yaw,
     finalStatus: agent.status,
     currentStatus: agent.status,
     moving: false,

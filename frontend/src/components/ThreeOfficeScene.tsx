@@ -13,13 +13,13 @@ import {
   type StationPlacement,
 } from '../office3d/character'
 import {
-  ENTRANCE,
-  INCIDENT,
-  WAITING,
   buildOfficePath,
+  entrancePosition,
+  incidentPosition,
   createOfficeEnvironment,
   disposeObject,
   stageCenter,
+  waitingPosition,
 } from '../office3d/environment'
 import {
   officeReplayPlan,
@@ -60,31 +60,38 @@ interface Engine {
   disposed: boolean
 }
 
-function bayOffset(index: number): THREE.Vector3 {
-  const column = index % 3
-  const row = Math.floor(index / 3)
-  return new THREE.Vector3((column - 1) * 0.78, 0, (row - 1) * 0.7)
-}
-
 function stateTarget(
   runtime: RuntimeAgent,
   status: string,
   index: number,
-): THREE.Vector3 {
+): StationPlacement {
   switch (status.toUpperCase()) {
     case 'WAITING':
-      return WAITING.clone().add(bayOffset(index))
+      return {
+        position: waitingPosition(index),
+        yaw: Math.PI * 0.5,
+      }
     case 'BLOCKED':
     case 'FAILED':
-      return INCIDENT.clone().add(bayOffset(index))
+      return {
+        position: incidentPosition(index),
+        yaw: -Math.PI * 0.5,
+      }
     default:
-      return runtime.station.clone()
+      return {
+        position: runtime.station.clone(),
+        yaw: runtime.stationYaw,
+      }
   }
 }
 
-function moveRuntime(runtime: RuntimeAgent, target: THREE.Vector3): void {
-  runtime.target.copy(target)
-  runtime.path = buildOfficePath(runtime.root.position, target)
+function moveRuntime(
+  runtime: RuntimeAgent,
+  target: StationPlacement,
+): void {
+  runtime.target.copy(target.position)
+  runtime.targetYaw = target.yaw
+  runtime.path = buildOfficePath(runtime.root.position, target.position)
   runtime.moving = runtime.path.length > 0
 }
 
@@ -169,13 +176,16 @@ export function ThreeOfficeScene({
             if (event.type === 'start') {
               runtime.root.visible = true
               runtime.root.position.copy(
-                ENTRANCE.clone().add(bayOffset(current.replayIndex)),
+                entrancePosition(current.replayIndex),
               )
-              runtime.root.rotation.y = Math.PI * 0.5
+              runtime.root.rotation.y = 0
               runtime.pendingStatus = null
               runtime.pendingStatusAt = null
               setCharacterStatus(runtime, 'STARTING')
-              moveRuntime(runtime, runtime.station)
+              moveRuntime(runtime, {
+                position: runtime.station.clone(),
+                yaw: runtime.stationYaw,
+              })
               current.focusTarget = runtime.station.clone()
               current.focusUntil = now + 950
             } else if (runtime.moving) {
@@ -246,7 +256,7 @@ export function ThreeOfficeScene({
             runtime.moving = runtime.path.length > 0
 
             if (!runtime.moving) {
-              runtime.root.rotation.y = runtime.stationYaw
+              runtime.root.rotation.y = runtime.targetYaw
               if (runtime.currentStatus === 'STARTING') {
                 setCharacterStatus(runtime, 'RUNNING')
                 if (runtime.pendingStatus) {
@@ -324,18 +334,18 @@ export function ThreeOfficeScene({
       scene.background = new THREE.Color(0x111820)
 
       const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100)
-      camera.position.set(12.8, 10.8, 14.2)
-      camera.lookAt(0, 0.65, 0)
+      camera.position.set(15.7, 12.3, 17.4)
+      camera.lookAt(0, 0.72, 0.35)
 
       const controls = new OrbitControls(camera, renderer.domElement)
-      controls.target.set(0, 0.65, 0)
+      controls.target.set(0, 0.72, 0.35)
       controls.enableDamping = true
       controls.dampingFactor = 0.075
       controls.enablePan = true
       controls.enableRotate = true
       controls.screenSpacePanning = true
-      controls.minDistance = 8.5
-      controls.maxDistance = 27
+      controls.minDistance = 10
+      controls.maxDistance = 34
       controls.minPolarAngle = Math.PI * 0.16
       controls.maxPolarAngle = Math.PI * 0.48
 
@@ -345,10 +355,10 @@ export function ThreeOfficeScene({
       keyLight.position.set(-7, 15, 10)
       keyLight.castShadow = true
       keyLight.shadow.mapSize.set(2048, 2048)
-      keyLight.shadow.camera.left = -14
-      keyLight.shadow.camera.right = 14
-      keyLight.shadow.camera.top = 12
-      keyLight.shadow.camera.bottom = -12
+      keyLight.shadow.camera.left = -16
+      keyLight.shadow.camera.right = 16
+      keyLight.shadow.camera.top = 14
+      keyLight.shadow.camera.bottom = -14
       scene.add(keyLight)
 
       const fillLight = new THREE.DirectionalLight(0x8fb8dc, 0.8)
@@ -518,8 +528,10 @@ export function ThreeOfficeScene({
 
         if (firstSyncRef.current) {
           runtime.root.visible = true
-          runtime.root.position.copy(target)
-          runtime.root.rotation.y = station.yaw
+          runtime.root.position.copy(target.position)
+          runtime.root.rotation.y = target.yaw
+          runtime.target.copy(target.position)
+          runtime.targetYaw = target.yaw
           runtime.path = []
           runtime.moving = false
           runtime.pendingStatus = null
@@ -527,7 +539,7 @@ export function ThreeOfficeScene({
           setCharacterStatus(runtime, agent.status)
         } else if (
           runtime.currentStatus !== agent.status ||
-          runtime.target.distanceTo(target) > 0.1
+          runtime.target.distanceTo(target.position) > 0.1
         ) {
           runtime.root.visible = true
           runtime.pendingStatus = null
@@ -582,8 +594,8 @@ export function ThreeOfficeScene({
 
     engine.runtimes.forEach((runtime) => {
       runtime.root.visible = false
-      runtime.root.position.copy(ENTRANCE)
-      runtime.root.rotation.y = Math.PI * 0.5
+      runtime.root.position.copy(entrancePosition(0))
+      runtime.root.rotation.y = 0
       runtime.path = []
       runtime.moving = false
       runtime.pendingStatus = null

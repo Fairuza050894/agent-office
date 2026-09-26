@@ -12,25 +12,23 @@ Phase 8 intentionally follows the spatial grammar studied in
 `W17ant/Claude-Office` without copying its room image, sprites, characters, or
 product identity.
 
-The 3D room now maps the main-office coordinates from that reference into
-world space:
+The 3D room follows the compact, lived-in spatial grammar of the reference,
+but uses original Three.js geometry and a purpose-built Agent Office floorplan.
 
-- three dense workstation clusters
-- dedicated agent desk spots
-- a right/back entry flow
-- lounge area
-- water cooler
-- coffee counter
-- filing cabinet
-- printer station
-- plants
-- whiteboard
-- large office windows
-- warm wood floor
-- suspended light fixtures
+The current startup-office layout is organized into five recognizable zones:
 
-The Claude-Office desk/agent coordinates are treated as layout reference data;
-Agent Office renders its own Three.js geometry.
+- central open workspace with eight deterministic factual workstations
+- glass meeting room with table, chairs, wall display, and whiteboard surface
+- pantry/cafe with counter, coffee machine, island, stools, refrigerator, and warm pendants
+- recreation/game room with game table, display, seating, and cooler accent lighting
+- lounge/focus area with sofa, tables, plants, and enclosed focus booths
+
+Supporting office fixtures include a review/incident wall, storage, plants,
+large windows, warm wood floor, rugs, task surfaces, and suspended lighting.
+
+These areas are environmental context only. The presence of a meeting room,
+pantry, or game room does not imply that an AgentRun is meeting, drinking,
+playing, collaborating, or taking a break.
 
 ## Character cast
 
@@ -91,19 +89,29 @@ Office View never invents:
 - fire drills
 - completion forecasts
 
-## Movement
+## Movement and collision correctness
 
 World-space movement remains owned by Agent Office.
 
-Characters traverse a bounded office route from the factual entry area toward
-their assigned workstation. Their root object rotates toward the actual travel
-vector.
+Every factual workstation now has a deterministic station anchor outside the
+desk footprint, a final facing direction, and an approach route connected to a
+shared safe aisle. Waiting and incident destinations use their own deterministic
+clearance bays.
+
+When a character moves between canonical states, routing first exits the source
+anchor through its known approach path, traverses the shared aisle, and then
+enters the destination path. It must not cut directly through desk geometry.
+
+The office navigation module includes deterministic geometry checks that verify
+core workstation, waiting, and incident routes do not intersect expanded desk
+collision volumes. Final position and final yaw are both state-driven.
 
 The Quaternius source rigs visually face -Z, so each loaded model receives a
 fixed 180-degree local yaw. This corrects the source-model convention without
 reversing canonical travel direction.
 
-Historical replay still derives ordering from persisted AgentRun timestamps.
+Historical replay still derives ordering from persisted AgentRun timestamps and
+uses the same safe navigation paths as Live state.
 
 ## Camera
 
@@ -123,7 +131,9 @@ changes Run state.
 ## Labels and shadows
 
 Role/state labels use HTML/CSS overlay rendering through CSS2DRenderer, which
-keeps text readable independent of camera angle.
+keeps text readable independent of camera angle. Their offsets are stable per
+role so adjacent characters do not all project labels from exactly the same
+screen-space height.
 
 The Three.js renderer uses soft shadow maps and real scene lighting. The floor
 receives character/furniture shadows; lighting and animation do not fabricate
