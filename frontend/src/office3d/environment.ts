@@ -3,24 +3,74 @@ import * as THREE from 'three'
 import type { AgentRun, RunStage } from '../api'
 import type { StationPlacement } from './character'
 
-export const ENTRANCE = new THREE.Vector3(4.75, 0, -2.45)
-export const WAITING = new THREE.Vector3(-7.0, 0, 4.15)
-export const INCIDENT = new THREE.Vector3(6.8, 0, 3.75)
+const OFFICE_WIDTH = 18
+const OFFICE_DEPTH = 12
+
+function officePoint(xPercent: number, yPercent: number): THREE.Vector3 {
+  return new THREE.Vector3(
+    ((xPercent - 50) / 100) * OFFICE_WIDTH,
+    0,
+    ((yPercent - 62) / 100) * OFFICE_DEPTH,
+  )
+}
+
+export const ENTRANCE = new THREE.Vector3(3.15, 0, -5.0)
+export const WAITING = officePoint(17, 71)
+export const INCIDENT = officePoint(86, 66)
 export const CORRIDOR_Z = 0.15
 
-interface StageLayout {
-  center: THREE.Vector3
+interface AgentSpot {
+  id: string
+  x: number
+  y: number
   yaw: number
 }
 
-const STAGE_LAYOUT: StageLayout[] = [
-  { center: new THREE.Vector3(-6.25, 0, 2.35), yaw: -0.22 },
-  { center: new THREE.Vector3(-3.25, 0, 1.8), yaw: 0.22 },
-  { center: new THREE.Vector3(-3.05, 0, -1.15), yaw: -0.18 },
-  { center: new THREE.Vector3(-0.25, 0, -1.55), yaw: 0.18 },
-  { center: new THREE.Vector3(0.8, 0, 4.0), yaw: Math.PI - 0.2 },
-  { center: new THREE.Vector3(4.15, 0, 3.35), yaw: Math.PI + 0.2 },
+const AGENT_SPOTS: AgentSpot[] = [
+  { id: 'spot-1', x: 25.8, y: 71.0, yaw: 0 },
+  { id: 'spot-2', x: 37.9, y: 68.2, yaw: 0 },
+  { id: 'spot-3', x: 26.9, y: 59.2, yaw: 0 },
+  { id: 'spot-4', x: 38.5, y: 55.2, yaw: 0 },
+  { id: 'spot-5', x: 48.9, y: 52.9, yaw: 0 },
+  { id: 'spot-6', x: 38.8, y: 43.6, yaw: 0 },
+  { id: 'spot-7', x: 52.7, y: 78.8, yaw: 0 },
+  { id: 'spot-8', x: 65.9, y: 75.8, yaw: 0 },
+  { id: 'spot-9', x: 55.2, y: 66.8, yaw: 0 },
+  { id: 'spot-10', x: 68.7, y: 66.2, yaw: 0 },
 ]
+
+const ROLE_SPOTS: Record<string, string> = {
+  architect: 'spot-5',
+  explorer: 'spot-4',
+  'backend-developer': 'spot-2',
+  'frontend-developer': 'spot-1',
+  'qa-reviewer': 'spot-7',
+  'security-reviewer': 'spot-8',
+  'ux-reviewer': 'spot-3',
+  verifier: 'spot-9',
+  'documentation-writer': 'spot-10',
+}
+
+const DESK_POINTS = [
+  [42.4, 50.4],
+  [46.7, 53.0],
+  [39.9, 55.2],
+  [31.4, 64.8],
+  [35.4, 67.5],
+  [27.9, 70.0],
+  [59.0, 73.7],
+  [62.6, 76.0],
+  [55.4, 78.7],
+  [66.6, 71.1],
+] as const
+
+const PLANT_POINTS = [
+  [91.9, 64.7],
+  [43.2, 37.9],
+  [32.0, 71.2],
+  [89.2, 65.7],
+  [60.2, 80.4],
+] as const
 
 function standardMaterial(
   color: number,
@@ -68,107 +118,27 @@ function addCylinder(
   return mesh
 }
 
-function stageColor(status: string): number {
-  switch (status.toUpperCase()) {
-    case 'RUNNING':
-      return 0x334f65
-    case 'COMPLETED':
-      return 0x355447
-    case 'WAITING':
-      return 0x665534
-    case 'BLOCKED':
-    case 'FAILED':
-      return 0x643f3d
-    default:
-      return 0x3f4d5b
-  }
-}
-
-export function stageCenter(index: number): THREE.Vector3 {
-  if (index < STAGE_LAYOUT.length) {
-    return STAGE_LAYOUT[index].center.clone()
-  }
-  const row = Math.floor(index / 3)
-  const column = index % 3
-  return new THREE.Vector3((column - 1) * 3.2, 0, (row - 1) * 2.6)
-}
-
-function stageYaw(index: number): number {
-  return STAGE_LAYOUT[index]?.yaw ?? 0
-}
-
-function localStationOffset(index: number, count: number): THREE.Vector3 {
-  if (count <= 1) return new THREE.Vector3()
-  const side = index % 2 === 0 ? -0.68 : 0.68
-  const row = Math.floor(index / 2)
-  return new THREE.Vector3(side, 0, row * -0.8)
-}
-
-function rotateLocal(
-  offset: THREE.Vector3,
-  yaw: number,
-): THREE.Vector3 {
-  return offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw)
-}
-
-function makeFloorLabel(text: string): THREE.Mesh {
-  const canvas = document.createElement('canvas')
-  canvas.width = 640
-  canvas.height = 128
-  const context = canvas.getContext('2d')
-  if (!context) throw new Error('2D canvas context is unavailable.')
-
-  context.clearRect(0, 0, canvas.width, canvas.height)
-  context.fillStyle = 'rgba(9, 15, 22, 0.78)'
-  context.roundRect(8, 8, 624, 112, 18)
-  context.fill()
-  context.fillStyle = '#dfe8ef'
-  context.font = '700 42px system-ui, -apple-system, sans-serif'
-  context.textAlign = 'center'
-  context.textBaseline = 'middle'
-  context.fillText(text, canvas.width / 2, canvas.height / 2, 560)
-
-  const texture = new THREE.CanvasTexture(canvas)
-  texture.colorSpace = THREE.SRGBColorSpace
-  texture.minFilter = THREE.LinearFilter
-  texture.magFilter = THREE.LinearFilter
-  texture.generateMipmaps = false
-
-  const mesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(1.8, 0.36),
-    new THREE.MeshBasicMaterial({
-      map: texture,
-      transparent: true,
-      toneMapped: false,
-      depthWrite: false,
-    }),
-  )
-  mesh.rotation.x = -Math.PI / 2
-  mesh.position.y = 0.055
-  mesh.userData.disposableTexture = texture
-  return mesh
-}
-
 function createStandingDesk(
   position: THREE.Vector3,
-  yaw: number,
+  yaw = 0,
 ): THREE.Group {
   const desk = new THREE.Group()
   desk.position.copy(position)
   desk.rotation.y = yaw
+  desk.scale.setScalar(0.88)
 
-  const topZ = 0.72
-  addBox(desk, [1.35, 0.1, 0.62], [0, 1.01, topZ], 0x8b6948)
-  addBox(desk, [0.07, 0.97, 0.07], [-0.52, 0.49, topZ - 0.2], 0x2b3643)
-  addBox(desk, [0.07, 0.97, 0.07], [0.52, 0.49, topZ - 0.2], 0x2b3643)
-  addBox(desk, [0.07, 0.97, 0.07], [-0.52, 0.49, topZ + 0.2], 0x2b3643)
-  addBox(desk, [0.07, 0.97, 0.07], [0.52, 0.49, topZ + 0.2], 0x2b3643)
+  addBox(desk, [1.45, 0.09, 0.72], [0, 0.98, 0], 0x8b6748)
+  addBox(desk, [0.06, 0.94, 0.06], [-0.57, 0.49, -0.23], 0x303b46)
+  addBox(desk, [0.06, 0.94, 0.06], [0.57, 0.49, -0.23], 0x303b46)
+  addBox(desk, [0.06, 0.94, 0.06], [-0.57, 0.49, 0.23], 0x303b46)
+  addBox(desk, [0.06, 0.94, 0.06], [0.57, 0.49, 0.23], 0x303b46)
 
-  addBox(desk, [0.66, 0.4, 0.055], [0, 1.34, topZ + 0.12], 0x111821)
-  addBox(desk, [0.56, 0.3, 0.02], [0, 1.34, topZ + 0.085], 0x436d8d)
-  addBox(desk, [0.05, 0.3, 0.05], [0, 1.17, topZ + 0.05], 0x3e4b59)
-  addBox(desk, [0.48, 0.035, 0.19], [0, 1.075, topZ - 0.13], 0x5c6875)
+  addBox(desk, [0.72, 0.43, 0.055], [0, 1.32, 0.09], 0x141b24)
+  addBox(desk, [0.62, 0.33, 0.018], [0, 1.32, 0.055], 0x4a789b)
+  addBox(desk, [0.045, 0.3, 0.045], [0, 1.14, 0.03], 0x485562)
+  addBox(desk, [0.48, 0.035, 0.2], [0, 1.04, -0.2], 0x65727d)
 
+  addBox(desk, [0.18, 0.42, 0.42], [0.55, 0.72, 0.02], 0x293541)
   return desk
 }
 
@@ -176,13 +146,13 @@ function createPlant(position: THREE.Vector3): THREE.Group {
   const plant = new THREE.Group()
   plant.position.copy(position)
 
-  addCylinder(plant, 0.24, 0.36, [0, 0.18, 0], 0x765941)
-  const leaf = standardMaterial(0x426f54, 0.92)
+  addCylinder(plant, 0.22, 0.34, [0, 0.17, 0], 0xa37b5b)
+  const leaf = standardMaterial(0x3f7657, 0.92)
 
   for (const [x, y, z, scale] of [
-    [0, 0.68, 0, 0.36],
-    [-0.18, 0.62, 0.03, 0.24],
-    [0.18, 0.67, -0.03, 0.26],
+    [0, 0.72, 0, 0.38],
+    [-0.19, 0.63, 0.02, 0.25],
+    [0.19, 0.69, -0.02, 0.27],
   ] as Array<[number, number, number, number]>) {
     const crown = new THREE.Mesh(
       new THREE.SphereGeometry(scale, 14, 10),
@@ -196,51 +166,193 @@ function createPlant(position: THREE.Vector3): THREE.Group {
   return plant
 }
 
-function createFiling(position: THREE.Vector3): THREE.Group {
+function createWaterCooler(position: THREE.Vector3): THREE.Group {
   const group = new THREE.Group()
   group.position.copy(position)
-  addBox(group, [0.9, 1.3, 0.55], [0, 0.65, 0], 0x303b47)
-  for (const y of [0.36, 0.72, 1.08]) {
-    addBox(group, [0.76, 0.03, 0.02], [0, y, 0.285], 0x667483)
-  }
+  addBox(group, [0.48, 0.9, 0.4], [0, 0.45, 0], 0xc5ced6)
+  addCylinder(group, 0.2, 0.55, [0, 1.12, 0], 0x6ba8c8)
+  addBox(group, [0.06, 0.1, 0.08], [-0.1, 0.67, 0.22], 0x477ba3)
+  addBox(group, [0.06, 0.1, 0.08], [0.1, 0.67, 0.22], 0xb85c54)
   return group
 }
 
 function createPrinterStation(position: THREE.Vector3): THREE.Group {
   const group = new THREE.Group()
   group.position.copy(position)
-  addBox(group, [1.2, 0.78, 0.62], [0, 0.39, 0], 0x384552)
-  addBox(group, [0.82, 0.42, 0.64], [0, 0.94, 0], 0x9da8b2)
-  addBox(group, [0.54, 0.08, 0.42], [0, 1.18, -0.03], 0xd5dce2)
+  addBox(group, [1.45, 0.84, 0.64], [0, 0.42, 0], 0x58636d)
+  addBox(group, [0.9, 0.4, 0.62], [0, 0.98, 0], 0xd2d8dd)
+  addBox(group, [0.6, 0.08, 0.4], [0, 1.23, -0.03], 0xf4f4f0)
   return group
 }
 
 function createCoffeeCounter(position: THREE.Vector3): THREE.Group {
   const group = new THREE.Group()
   group.position.copy(position)
-  addBox(group, [2.4, 0.84, 0.72], [0, 0.42, 0], 0x535e67)
-  addBox(group, [2.48, 0.08, 0.78], [0, 0.87, 0], 0x8a6b4b)
-  addBox(group, [0.5, 0.62, 0.42], [-0.55, 1.2, 0], 0x202832)
-  addCylinder(group, 0.09, 0.2, [0.3, 1.04, 0], 0xd1d5d7)
-  addCylinder(group, 0.09, 0.2, [0.6, 1.04, 0], 0xd1d5d7)
+  addBox(group, [2.3, 0.82, 0.7], [0, 0.41, 0], 0x58616a)
+  addBox(group, [2.4, 0.08, 0.76], [0, 0.86, 0], 0x855f42)
+  addBox(group, [0.54, 0.62, 0.4], [-0.55, 1.19, 0], 0x202933)
+  addCylinder(group, 0.08, 0.18, [0.25, 1.02, 0], 0xf0ebe4)
+  addCylinder(group, 0.08, 0.18, [0.5, 1.02, 0], 0xf0ebe4)
+  return group
+}
+
+function createFiling(position: THREE.Vector3): THREE.Group {
+  const group = new THREE.Group()
+  group.position.copy(position)
+  addBox(group, [0.82, 1.22, 0.5], [0, 0.61, 0], 0x59636d)
+  for (const y of [0.32, 0.62, 0.92]) {
+    addBox(group, [0.66, 0.025, 0.02], [0, y, 0.26], 0x9ca8b2)
+  }
+  return group
+}
+
+function createWhiteboard(position: THREE.Vector3): THREE.Group {
+  const board = new THREE.Group()
+  board.position.copy(position)
+
+  addBox(board, [3.1, 1.65, 0.08], [0, 1.85, 0], 0xb8c2ca)
+  addBox(board, [2.92, 1.48, 0.025], [0, 1.85, 0.055], 0xe7eceb)
+
+  const notes = [
+    [-0.85, 2.1, 0xdea653],
+    [-0.36, 1.72, 0x6f9dc4],
+    [0.18, 2.18, 0xd77a6d],
+    [0.7, 1.74, 0x7daa70],
+    [0.92, 2.2, 0xd5b65f],
+  ] as const
+
+  for (const [x, y, color] of notes) {
+    addBox(board, [0.28, 0.22, 0.018], [x, y, 0.09], color)
+  }
+
+  return board
+}
+
+function createWindowWall(parent: THREE.Group): void {
+  const glass = new THREE.MeshStandardMaterial({
+    color: 0x244561,
+    emissive: 0x10253a,
+    emissiveIntensity: 0.8,
+    roughness: 0.28,
+    metalness: 0.08,
+    transparent: true,
+    opacity: 0.72,
+  })
+
+  for (let index = 0; index < 4; index += 1) {
+    const panel = new THREE.Mesh(
+      new THREE.BoxGeometry(1.85, 3.0, 0.08),
+      glass.clone(),
+    )
+    panel.position.set(-6.4 + index * 1.95, 1.55, -5.91)
+    panel.receiveShadow = true
+    parent.add(panel)
+
+    addBox(
+      parent,
+      [0.07, 3.15, 0.12],
+      [-7.38 + index * 1.95, 1.55, -5.88],
+      0x26323f,
+    )
+  }
+
+  addBox(parent, [0.07, 3.15, 0.12], [0.42, 1.55, -5.88], 0x26323f)
+
+  for (const [x, height] of [
+    [-7.1, 1.4],
+    [-5.7, 2.1],
+    [-4.5, 1.2],
+    [-3.2, 2.45],
+    [-1.8, 1.75],
+  ] as Array<[number, number]>) {
+    addBox(
+      parent,
+      [0.8, height, 0.3],
+      [x, height / 2 - 0.15, -6.45],
+      0x0d1825,
+    )
+  }
+}
+
+function createDoor(position: THREE.Vector3): THREE.Group {
+  const group = new THREE.Group()
+  group.position.copy(position)
+  addBox(group, [1.2, 2.55, 0.14], [0, 1.27, 0], 0x5b4639)
+  addBox(group, [0.95, 2.3, 0.03], [0, 1.24, 0.085], 0x6d5141)
+  addCylinder(group, 0.04, 0.12, [0.37, 1.18, 0.13], 0xc9a768)
   return group
 }
 
 function createLounge(parent: THREE.Group): void {
-  addBox(parent, [2.75, 0.05, 2.15], [-6.75, 0.03, 4.05], 0x394a50)
-  addBox(parent, [1.65, 0.36, 0.58], [-7.15, 0.29, 4.35], 0x465d79)
-  addBox(parent, [1.65, 0.58, 0.18], [-7.15, 0.58, 4.62], 0x465d79)
-  addBox(parent, [0.8, 0.1, 0.58], [-5.85, 0.35, 4.0], 0x8a704f)
-  addCylinder(parent, 0.05, 0.48, [-5.85, 0.14, 4.0], 0x4b535b)
+  const rug = addBox(parent, [3.4, 0.035, 2.4], [-6.8, 0.025, 3.6], 0x46535d)
+  rug.receiveShadow = true
+  addBox(parent, [1.8, 0.38, 0.62], [-7.3, 0.3, 3.85], 0x385a7a)
+  addBox(parent, [1.8, 0.64, 0.18], [-7.3, 0.6, 4.13], 0x385a7a)
+  addBox(parent, [0.92, 0.1, 0.58], [-5.8, 0.34, 3.55], 0xa27b54)
+  addCylinder(parent, 0.055, 0.48, [-5.8, 0.14, 3.55], 0x4b535b)
+}
+
+function createCeilingLights(parent: THREE.Group): void {
+  const material = new THREE.MeshStandardMaterial({
+    color: 0xf4dfb4,
+    emissive: 0xffd991,
+    emissiveIntensity: 2.2,
+    roughness: 0.38,
+  })
+
+  for (const x of [-3.6, 2.2]) {
+    const fixture = new THREE.Mesh(
+      new THREE.BoxGeometry(3.2, 0.13, 0.38),
+      material.clone(),
+    )
+    fixture.position.set(x, 3.45, -1.0)
+    fixture.castShadow = false
+    parent.add(fixture)
+
+    addBox(parent, [0.045, 0.8, 0.045], [x - 1.2, 3.85, -1.0], 0x313b45)
+    addBox(parent, [0.045, 0.8, 0.045], [x + 1.2, 3.85, -1.0], 0x313b45)
+  }
+}
+
+function createWoodFloor(parent: THREE.Group): void {
+  const floor = addBox(parent, [18, 0.16, 12], [0, -0.04, 0], 0x6b4f3c)
+  floor.receiveShadow = true
+
+  const lineMaterial = new THREE.LineBasicMaterial({
+    color: 0x4d382d,
+    transparent: true,
+    opacity: 0.42,
+  })
+
+  const vertices: number[] = []
+  for (let z = -5.7; z <= 5.7; z += 0.48) {
+    vertices.push(-8.9, 0.055, z, 8.9, 0.055, z)
+  }
+
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute(
+    'position',
+    new THREE.Float32BufferAttribute(vertices, 3),
+  )
+  parent.add(new THREE.LineSegments(geometry, lineMaterial))
+}
+
+function roleSpot(
+  profileKey: string,
+  used: Set<string>,
+): AgentSpot {
+  const preferred = ROLE_SPOTS[profileKey]
+  const preferredSpot = AGENT_SPOTS.find(
+    (spot) => spot.id === preferred && !used.has(spot.id),
+  )
+  if (preferredSpot) return preferredSpot
+
+  const available = AGENT_SPOTS.find((spot) => !used.has(spot.id))
+  return available ?? AGENT_SPOTS[used.size % AGENT_SPOTS.length]
 }
 
 export function disposeObject(root: THREE.Object3D): void {
   root.traverse((object) => {
-    const disposableTexture = object.userData.disposableTexture as
-      | THREE.Texture
-      | undefined
-    disposableTexture?.dispose()
-
     if (object instanceof THREE.Mesh || object instanceof THREE.LineSegments) {
       object.geometry.dispose()
       const materials = Array.isArray(object.material)
@@ -258,122 +370,59 @@ function clearGroup(group: THREE.Group): void {
   }
 }
 
+export function stageCenter(index: number): THREE.Vector3 {
+  const fallback = AGENT_SPOTS[index % AGENT_SPOTS.length]
+  return officePoint(fallback.x, fallback.y)
+}
+
 export function createOfficeEnvironment(
   environment: THREE.Group,
-  stages: RunStage[],
+  _stages: RunStage[],
   agents: AgentRun[],
 ): Map<string, StationPlacement> {
   clearGroup(environment)
 
-  const slab = addBox(environment, [18.4, 0.32, 12.4], [0, -0.2, 0], 0x111821)
-  slab.receiveShadow = true
+  addBox(environment, [18.5, 0.34, 12.5], [0, -0.22, 0], 0x111821)
+  createWoodFloor(environment)
 
-  const floor = addBox(environment, [18, 0.14, 12], [0, -0.04, 0], 0x2b3742)
-  floor.receiveShadow = true
+  addBox(environment, [18, 3.1, 0.16], [0, 1.52, -5.94], 0x51616f)
+  addBox(environment, [0.16, 3.1, 12], [-8.92, 1.52, 0], 0x4a5967)
+  addBox(environment, [0.16, 3.1, 12], [8.92, 1.52, 0], 0x4a5967)
 
-  const grid = new THREE.GridHelper(18, 24, 0x455563, 0x36434f)
-  grid.position.y = 0.04
-  grid.scale.z = 12 / 18
-  environment.add(grid)
+  createWindowWall(environment)
+  environment.add(createDoor(new THREE.Vector3(3.15, 0, -5.82)))
+  environment.add(createWhiteboard(new THREE.Vector3(6.1, 0, -5.79)))
+  environment.add(createWaterCooler(officePoint(53, 45)))
+  environment.add(createCoffeeCounter(officePoint(78.5, 50.2)))
+  environment.add(createFiling(officePoint(45, 56.5)))
+  environment.add(createPrinterStation(officePoint(85.4, 56.8)))
 
-  // Claude-Office inspired open-plan shell: three workstation clusters,
-  // a central aisle, and utility anchors instead of six boxed rooms.
-  addBox(environment, [18, 1.5, 0.16], [0, 0.7, -5.92], 0x1c2630)
-  addBox(environment, [0.16, 1.5, 12], [-8.92, 0.7, 0], 0x1c2630)
-  addBox(environment, [0.16, 1.5, 3.1], [8.92, 0.7, -4.42], 0x1c2630)
-  addBox(environment, [0.16, 1.5, 6.7], [8.92, 0.7, 2.65], 0x1c2630)
+  DESK_POINTS.forEach(([x, y], index) => {
+    const desk = createStandingDesk(officePoint(x, y))
+    if (index === 1 || index === 4 || index === 7) {
+      addBox(desk, [0.05, 0.9, 1.35], [0.75, 1.18, 0], 0x546b78)
+    }
+    environment.add(desk)
+  })
 
-  const aisle = addBox(environment, [13.3, 0.025, 0.82], [0.65, 0.035, CORRIDOR_Z], 0x566674)
-  aisle.receiveShadow = true
-
-  addBox(environment, [0.78, 0.025, 7.5], [4.75, 0.035, 1.75], 0x4a5966)
-
-  // Three compact cluster carpets approximate Claude-Office's back,
-  // front-left, and right standing-desk groups.
-  addBox(environment, [5.5, 0.035, 3.25], [-4.7, 0.025, 2.05], 0x314840)
-  addBox(environment, [5.8, 0.035, 3.05], [-1.65, 0.025, -1.45], 0x34444d)
-  addBox(environment, [6.1, 0.035, 3.2], [2.65, 0.025, 3.55], 0x354b43)
-
-  const stations = new Map<string, StationPlacement>()
-  const sortedStages = stages
-    .slice()
-    .sort((left, right) => left.order_hint - right.order_hint)
-
-  sortedStages.forEach((stage, stageIndex) => {
-    const center = stageCenter(stageIndex)
-    const yaw = stageYaw(stageIndex)
-    const stageAgents = agents.filter(
-      (agent) => agent.stage_key === stage.stage_key,
-    )
-
-    const accent = addBox(
-      environment,
-      [2.0, 0.025, 1.65],
-      [center.x, 0.055, center.z],
-      stageColor(stage.status),
-    )
-    accent.receiveShadow = true
-
-    const label = makeFloorLabel(stage.stage_key)
-    const labelOffset = rotateLocal(new THREE.Vector3(0, 0, -0.72), yaw)
-    label.position.x = center.x + labelOffset.x
-    label.position.z = center.z + labelOffset.z
-    label.rotation.z = -yaw
-    label.scale.setScalar(0.72)
-    environment.add(label)
-
-    stageAgents.forEach((agent, agentIndex) => {
-      const local = rotateLocal(
-        localStationOffset(agentIndex, stageAgents.length),
-        yaw,
-      )
-      const placement: StationPlacement = {
-        position: center.clone().add(local),
-        yaw,
-      }
-      stations.set(agent.id, placement)
-      environment.add(createStandingDesk(placement.position, placement.yaw))
-    })
+  PLANT_POINTS.forEach(([x, y]) => {
+    environment.add(createPlant(officePoint(x, y)))
   })
 
   createLounge(environment)
-  environment.add(createCoffeeCounter(new THREE.Vector3(6.95, 0, -1.45)))
-  environment.add(createFiling(new THREE.Vector3(0.2, 0, 0.95)))
-  environment.add(createPrinterStation(new THREE.Vector3(7.0, 0, 1.55)))
+  createCeilingLights(environment)
 
-  for (const point of [
-    new THREE.Vector3(-7.8, 0, -4.75),
-    new THREE.Vector3(-6.55, 0, 3.2),
-    new THREE.Vector3(6.85, 0, 4.7),
-    new THREE.Vector3(1.25, 0, -4.6),
-  ]) {
-    environment.add(createPlant(point))
-  }
+  const stations = new Map<string, StationPlacement>()
+  const used = new Set<string>()
 
-  const waitingLabel = makeFloorLabel('WAITING')
-  waitingLabel.position.set(WAITING.x, 0.06, WAITING.z - 0.75)
-  waitingLabel.scale.setScalar(0.58)
-  environment.add(waitingLabel)
-
-  const incidentPad = addBox(
-    environment,
-    [1.8, 0.035, 1.45],
-    [INCIDENT.x, 0.04, INCIDENT.z],
-    0x68413f,
-  )
-  incidentPad.receiveShadow = true
-  const incidentLabel = makeFloorLabel('INCIDENT')
-  incidentLabel.position.set(INCIDENT.x, 0.06, INCIDENT.z)
-  incidentLabel.scale.setScalar(0.56)
-  environment.add(incidentLabel)
-
-  const entryPad = addBox(
-    environment,
-    [1.35, 0.035, 1.2],
-    [ENTRANCE.x, 0.04, ENTRANCE.z],
-    0x3e5265,
-  )
-  entryPad.receiveShadow = true
+  agents.forEach((agent) => {
+    const spot = roleSpot(agent.agent_profile_key, used)
+    used.add(spot.id)
+    stations.set(agent.id, {
+      position: officePoint(spot.x, spot.y),
+      yaw: spot.yaw,
+    })
+  })
 
   return stations
 }
