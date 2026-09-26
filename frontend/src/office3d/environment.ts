@@ -39,6 +39,110 @@ const AGENT_SPOTS: AgentSpot[] = [
   { id: 'spot-10', x: 68.7, y: 66.2, yaw: 0 },
 ]
 
+
+const SPOT_ROUTES: Record<string, Array<[number, number]>> = {
+  'spot-1': [
+    [69.9, 50.8],
+    [68.7, 66.2],
+    [55.2, 66.8],
+    [37.9, 68.2],
+    [25.8, 71.0],
+  ],
+  'spot-2': [
+    [69.9, 50.8],
+    [57.5, 51.6],
+    [47.4, 58.3],
+    [37.9, 68.2],
+  ],
+  'spot-3': [
+    [64.0, 46.6],
+    [53.3, 46.6],
+    [38.5, 55.2],
+    [26.9, 59.2],
+  ],
+  'spot-4': [
+    [64.0, 46.6],
+    [53.3, 46.6],
+    [48.9, 52.9],
+    [38.5, 55.2],
+  ],
+  'spot-5': [
+    [64.0, 46.6],
+    [53.3, 46.6],
+    [48.9, 52.9],
+  ],
+  'spot-6': [
+    [64.0, 46.6],
+    [53.3, 46.6],
+    [38.8, 43.6],
+  ],
+  'spot-7': [
+    [69.9, 50.8],
+    [68.7, 66.2],
+    [55.2, 66.8],
+    [52.7, 78.8],
+  ],
+  'spot-8': [
+    [69.9, 50.8],
+    [68.7, 66.2],
+    [65.9, 75.8],
+  ],
+  'spot-9': [
+    [69.9, 50.8],
+    [68.7, 66.2],
+    [55.2, 66.8],
+  ],
+  'spot-10': [
+    [69.9, 50.8],
+    [68.7, 66.2],
+  ],
+}
+
+function nearestSpot(target: THREE.Vector3): AgentSpot | null {
+  let nearest: AgentSpot | null = null
+  let best = Number.POSITIVE_INFINITY
+
+  for (const spot of AGENT_SPOTS) {
+    const distance = officePoint(spot.x, spot.y).distanceTo(target)
+    if (distance < best) {
+      nearest = spot
+      best = distance
+    }
+  }
+
+  return best < 0.75 ? nearest : null
+}
+
+export function buildOfficePath(
+  from: THREE.Vector3,
+  to: THREE.Vector3,
+): THREE.Vector3[] {
+  if (from.distanceTo(to) < 0.08) return []
+
+  const spot = nearestSpot(to)
+  if (spot && from.distanceTo(ENTRANCE) < 1.4) {
+    const route = (SPOT_ROUTES[spot.id] ?? [])
+      .map(([x, y]) => officePoint(x, y))
+      .filter((point) => point.distanceTo(from) > 0.08)
+
+    if (route.length === 0 || route[route.length - 1].distanceTo(to) > 0.08) {
+      route.push(to.clone())
+    }
+    return route
+  }
+
+  const points = [
+    new THREE.Vector3(from.x, 0, CORRIDOR_Z),
+    new THREE.Vector3(to.x, 0, CORRIDOR_Z),
+    to.clone(),
+  ]
+
+  return points.filter((point, index) => {
+    const previous = index === 0 ? from : points[index - 1]
+    return previous.distanceTo(point) > 0.08
+  })
+}
+
 const ROLE_SPOTS: Record<string, string> = {
   architect: 'spot-5',
   explorer: 'spot-4',
