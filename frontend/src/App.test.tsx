@@ -50,7 +50,7 @@ describe('Agent Office operational shell', () => {
     expect(within(sidebar).getByText('Agent Office')).toBeInTheDocument()
     expect(within(sidebar).getByText('Engineering control plane')).toBeInTheDocument()
     expect(within(sidebar).getByText('Local-first')).toBeInTheDocument()
-    expect(within(sidebar).getByText('Workspace isolated')).toBeInTheDocument()
+    expect(within(sidebar).getByText('Isolated workspaces')).toBeInTheDocument()
     expect(within(sidebar).queryByText('Phase 5')).not.toBeInTheDocument()
   })
 
