@@ -72,11 +72,16 @@ RunOfficePage
       └─ office3d/character.ts     humanoid rig, nameplate and state animation
 ```
 
+The scene uses the same composition principle as the reviewed office references: one
+continuous office, compact workstation clusters, small characters relative to the room,
+and a stable overhead/isometric observer view. Stage state remains visible through subtle
+floor zones rather than six visually dominant room cards.
+
 The scene includes:
 
 - WebGLRenderer
-- perspective camera
-- OrbitControls
+- fixed orthographic/isometric observer camera
+- OrbitControls configured as zoom-only; rotation and panning are locked
 - directional, fill and hemisphere lighting
 - soft shadows
 - stage zones and a central circulation corridor
