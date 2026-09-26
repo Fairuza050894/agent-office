@@ -6,19 +6,14 @@ import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js
 import type { AgentRun } from '../api'
 import { officeAgentState } from '../officeProjection'
 
-const CHARACTER_URL =
-  '/assets/office/quaternius-office-character.glb'
-const ANIMATION_URL =
-  '/assets/office/quaternius-universal-animation-library.glb'
+const CHARACTER_URL = '/assets/office/quaternius-business-man.glb'
+const MODEL_YAW_OFFSET = Math.PI
 
-const LOOP_CLIPS = [
-  'Idle_Loop',
-  'Walk_Loop',
-  'Jog_Fwd_Loop',
-  'Sitting_Idle',
-  'Sitting_Talking',
-  'Idle_Talking_Loop',
-] as const
+const CLIPS = {
+  idle: 'CharacterArmature|Idle_Neutral',
+  walk: 'CharacterArmature|Walk',
+  work: 'CharacterArmature|Interact',
+} as const
 
 interface CharacterAssets {
   source: THREE.Group
@@ -31,7 +26,6 @@ interface RiggedPresentation {
   actions: Map<string, THREE.AnimationAction>
   ownedMaterials: THREE.Material[]
   activeClip: string
-  localZ: number
 }
 
 export interface StationPlacement {
@@ -68,28 +62,10 @@ function loadCharacterAssets(): Promise<CharacterAssets> {
   if (assetPromise) return assetPromise
 
   const loader = new GLTFLoader()
-  assetPromise = Promise.all([
-    loader.loadAsync(CHARACTER_URL),
-    loader.loadAsync(ANIMATION_URL),
-  ]).then(([character, animations]) => {
-    const clips = new Map(
-      animations.animations.map((clip) => [clip.name, clip]),
-    )
-
-    animations.scene.traverse((object) => {
-      if (!(object instanceof THREE.Mesh)) return
-      object.geometry.dispose()
-      const materials = Array.isArray(object.material)
-        ? object.material
-        : [object.material]
-      materials.forEach((material) => material.dispose())
-    })
-
-    return {
-      source: character.scene,
-      clips,
-    }
-  })
+  assetPromise = loader.loadAsync(CHARACTER_URL).then((character) => ({
+    source: character.scene,
+    clips: new Map(character.animations.map((clip) => [clip.name, clip])),
+  }))
 
   assetPromise.catch(() => {
     assetPromise = null
@@ -105,6 +81,18 @@ function stableHash(value: string): number {
     hash = Math.imul(hash, 16777619)
   }
   return hash >>> 0
+}
+
+function suitTint(value: string): THREE.Color {
+  const palette = [
+    0x43566f,
+    0x52615a,
+    0x5b526d,
+    0x67534b,
+    0x465f64,
+    0x5f5360,
+  ]
+  return new THREE.Color(palette[stableHash(value) % palette.length])
 }
 
 export function statusColor(status: string): number {
@@ -138,46 +126,40 @@ function createNameplate(name: string, status: string): {
   element.append(primary, secondary)
 
   const object = new CSS2DObject(element)
-  object.position.set(0, 2.02, 0)
+  object.position.set(0, 2.16, 0)
   return { object, element }
 }
 
 function createFallback(profileKey: string): THREE.Group {
   const fallback = new THREE.Group()
-  const palette = [
-    0x5277a4,
-    0x667b55,
-    0x8d6758,
-    0x6e618f,
-    0x4f7a78,
-  ]
-  const material = new THREE.MeshStandardMaterial({
+  const palette = [0x43566f, 0x52615a, 0x5b526d, 0x67534b]
+  const suit = new THREE.MeshStandardMaterial({
     color: palette[stableHash(profileKey) % palette.length],
-    roughness: 0.72,
+    roughness: 0.8,
     metalness: 0.02,
   })
   const skin = new THREE.MeshStandardMaterial({
     color: 0xd7b08d,
-    roughness: 0.86,
+    roughness: 0.88,
   })
 
-  const torso = new THREE.Mesh(
-    new THREE.CapsuleGeometry(0.24, 0.55, 6, 12),
-    material,
+  const body = new THREE.Mesh(
+    new THREE.CapsuleGeometry(0.24, 0.58, 6, 12),
+    suit,
   )
-  torso.position.y = 1.02
-  torso.castShadow = true
-  fallback.add(torso)
+  body.position.y = 1.04
+  body.castShadow = true
+  fallback.add(body)
 
   const head = new THREE.Mesh(
-    new THREE.SphereGeometry(0.25, 16, 12),
+    new THREE.SphereGeometry(0.24, 16, 12),
     skin,
   )
-  head.position.y = 1.62
+  head.position.y = 1.68
   head.castShadow = true
   fallback.add(head)
 
-  fallback.scale.setScalar(0.86)
+  fallback.scale.setScalar(0.88)
   fallback.userData.proceduralFallback = true
   return fallback
 }
@@ -186,13 +168,13 @@ function createIndicator(
   status: string,
 ): { statusLight: THREE.Mesh; selectionRing: THREE.Mesh } {
   const statusLight = new THREE.Mesh(
-    new THREE.SphereGeometry(0.065, 12, 8),
+    new THREE.SphereGeometry(0.06, 12, 8),
     new THREE.MeshBasicMaterial({ color: statusColor(status) }),
   )
-  statusLight.position.set(0.34, 1.74, 0)
+  statusLight.position.set(0.34, 1.94, 0)
 
   const selectionRing = new THREE.Mesh(
-    new THREE.RingGeometry(0.4, 0.5, 36),
+    new THREE.RingGeometry(0.38, 0.49, 36),
     new THREE.MeshBasicMaterial({
       color: 0x4a8ad4,
       side: THREE.DoubleSide,
@@ -215,20 +197,14 @@ function setInteractive(root: THREE.Object3D, agentId: string): void {
 }
 
 function clipFor(runtime: RuntimeAgent): string {
-  if (runtime.moving) return 'Walk_Loop'
+  if (runtime.moving) return CLIPS.walk
 
   switch (runtime.currentStatus.toUpperCase()) {
     case 'RUNNING':
-      return 'Sitting_Talking'
-    case 'COMPLETED':
-      return 'Sitting_Idle'
-    case 'WAITING':
-      return 'Idle_Loop'
-    case 'BLOCKED':
-    case 'FAILED':
-      return 'Idle_Loop'
+    case 'STARTING':
+      return CLIPS.work
     default:
-      return 'Idle_Loop'
+      return CLIPS.idle
   }
 }
 
@@ -237,24 +213,22 @@ function playRigged(runtime: RuntimeAgent, force = false): void {
   if (!rigged) return
 
   const desired = clipFor(runtime)
-  const next =
-    rigged.actions.get(desired) ??
-    rigged.actions.get('Idle_Loop')
-
+  const next = rigged.actions.get(desired) ?? rigged.actions.get(CLIPS.idle)
   if (!next) return
   if (!force && rigged.activeClip === desired) return
 
   const previous = rigged.actions.get(rigged.activeClip)
-  if (previous && previous !== next) previous.fadeOut(0.18)
+  if (previous && previous !== next) previous.fadeOut(0.16)
 
   if (previous !== next || force) {
-    next.reset().fadeIn(0.18).play()
+    next.reset().fadeIn(0.16).play()
   }
   rigged.activeClip = desired
 }
 
 async function attachRiggedPresentation(
   runtime: RuntimeAgent,
+  profileKey: string,
   onReady?: () => void,
 ): Promise<void> {
   try {
@@ -262,11 +236,13 @@ async function attachRiggedPresentation(
     if (runtime.disposed) return
 
     const model = cloneSkinned(assets.source) as THREE.Group
-    model.name = 'agent-office-rigged-character'
-    model.rotation.y = Math.PI
-    model.scale.setScalar(0.86)
+    model.name = 'agent-office-business-character'
+    model.rotation.y = MODEL_YAW_OFFSET
+    model.scale.setScalar(0.95)
 
     const ownedMaterials: THREE.Material[] = []
+    const tint = suitTint(profileKey)
+
     model.traverse((object) => {
       if (!(object instanceof THREE.Mesh)) return
       object.castShadow = true
@@ -275,8 +251,16 @@ async function attachRiggedPresentation(
       const cloneSurface = (surface: THREE.Material): THREE.Material => {
         const copy = surface.clone()
         if (copy instanceof THREE.MeshStandardMaterial) {
-          copy.roughness = Math.max(0.48, copy.roughness)
-          copy.metalness = Math.min(0.18, copy.metalness)
+          copy.roughness = Math.max(0.65, copy.roughness)
+          copy.metalness = 0
+          const identity = `${object.name} ${copy.name}`.toLowerCase()
+          if (
+            identity.includes('suit') ||
+            identity.includes('body') ||
+            identity.includes('legs')
+          ) {
+            copy.color.lerp(tint, 0.34)
+          }
         }
         ownedMaterials.push(copy)
         return copy
@@ -291,7 +275,7 @@ async function attachRiggedPresentation(
 
     const mixer = new THREE.AnimationMixer(model)
     const actions = new Map<string, THREE.AnimationAction>()
-    for (const name of LOOP_CLIPS) {
+    for (const name of Object.values(CLIPS)) {
       const clip = assets.clips.get(name)
       if (!clip) continue
       const action = mixer.clipAction(clip)
@@ -306,14 +290,13 @@ async function attachRiggedPresentation(
       actions,
       ownedMaterials,
       activeClip: '',
-      localZ: 0,
     }
     runtime.fallback.visible = false
     playRigged(runtime, true)
     onReady?.()
   } catch (error) {
     console.warn(
-      'Rigged Office View character unavailable; using local fallback.',
+      'Business character unavailable; using local fallback.',
       error,
     )
     onReady?.()
@@ -368,7 +351,11 @@ export function createCharacterRuntime(
     lastAnimationAt: null,
   }
 
-  void attachRiggedPresentation(runtime, onVisualReady)
+  void attachRiggedPresentation(
+    runtime,
+    agent.agent_profile_key,
+    onVisualReady,
+  )
   return runtime
 }
 
@@ -407,24 +394,16 @@ function animateFallback(
   if (runtime.moving) {
     const phase = now * 0.009
     runtime.fallback.position.y =
-      Math.abs(Math.sin(phase * 2)) * 0.045
-    runtime.fallback.rotation.z = Math.sin(phase) * 0.035
+      Math.abs(Math.sin(phase * 2)) * 0.04
+    runtime.fallback.rotation.z = Math.sin(phase) * 0.03
     return true
   }
 
-  if (
-    ['RUNNING', 'WAITING', 'BLOCKED', 'FAILED'].includes(
-      runtime.currentStatus.toUpperCase(),
-    )
-  ) {
-    runtime.fallback.position.y =
-      Math.sin(now * 0.0025) * 0.018
-    return true
-  }
-
-  runtime.fallback.position.y = 0
-  runtime.fallback.rotation.set(0, 0, 0)
-  return false
+  runtime.fallback.position.y =
+    runtime.currentStatus.toUpperCase() === 'RUNNING'
+      ? Math.sin(now * 0.0025) * 0.012
+      : 0
+  return runtime.currentStatus.toUpperCase() === 'RUNNING'
 }
 
 export function animateCharacter(
@@ -440,25 +419,10 @@ export function animateCharacter(
     return animateFallback(runtime, now, motionPaused)
   }
 
-  const rigged = runtime.rigged
   playRigged(runtime)
-
-  const seated =
-    !runtime.moving &&
-    ['RUNNING', 'COMPLETED'].includes(
-      runtime.currentStatus.toUpperCase(),
-    )
-  const targetZ = seated ? 0.28 : 0
-  rigged.localZ = THREE.MathUtils.lerp(
-    rigged.localZ,
-    targetZ,
-    motionPaused ? 1 : Math.min(1, delta * 6),
-  )
-  rigged.model.position.z = rigged.localZ
-
   if (motionPaused) return false
 
-  rigged.mixer.update(delta)
+  runtime.rigged.mixer.update(delta)
   return true
 }
 

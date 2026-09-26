@@ -6,25 +6,16 @@ import { fileURLToPath } from 'node:url'
 const here = dirname(fileURLToPath(import.meta.url))
 const outputRoot = resolve(here, '../public/assets/office')
 
-const SOURCE_COMMIT = 'aa02a4e6d8337a0604d2da131bcbbeb1f01badf0'
-const SOURCE_REPOSITORY = 'Seyamalam/blood-league-kickoff'
+const SOURCE_COMMIT = '9ab58fecc42490b9212d62813a778c0cc8158726'
+const SOURCE_REPOSITORY = 'dantol29/wall_street_online'
 
 const assets = [
   {
-    filename: 'quaternius-office-character.glb',
-    sourcePath:
-      'public/assets/vendor/quaternius/night-striker.glb',
+    filename: 'quaternius-business-man.glb',
+    sourcePath: 'apps/client/public/assets/BusinessMan.glb',
     sha256:
-      'a466828c67a4acc9b2413212ce6d9cde235e3aed9b675680c14fd9673858f118',
-    size: 6465208,
-  },
-  {
-    filename: 'quaternius-universal-animation-library.glb',
-    sourcePath:
-      'public/assets/vendor/quaternius/universal-animation-library.glb',
-    sha256:
-      '4c748767741a3e495d89667b9a218b690ba9810b9517a12e960780e3ca72c4e9',
-    size: 2714756,
+      '82b81257c1e94cd9ee48cb1dcbe5ff506e81c9ce67cd0c5af542d8712dca546e',
+    size: 1529248,
   },
 ]
 

@@ -1,35 +1,36 @@
-# Office View character assets
+# Office View character asset
 
-The Office View uses Quaternius CC0 character and animation assets that are
-fetched deterministically during `npm run dev` and `npm run build`.
+Agent Office uses **Business Man** by Quaternius as the primary Phase 8
+humanoid because it is visibly clothed for an office setting and already ships
+with a compatible animated humanoid rig.
 
-The binary GLB files are intentionally not committed by Agent Office. The
-bootstrap script downloads pinned, already-audited conversions from:
+## License and source
 
-- repository: `Seyamalam/blood-league-kickoff`
-- commit: `aa02a4e6d8337a0604d2da131bcbbeb1f01badf0`
+- title: Business Man
+- creator: Quaternius
+- source listing: https://poly.pizza/m/JFrLIKqvCH
+- source pack: Ultimate Modular Men Pack
+- license: CC0 1.0 Universal
 
-## Character
+## Deterministic transport
 
-- upstream pack: Quaternius Universal Base Characters — Standard
-- source model: `Superhero_Male_FullBody`
-- license: CC0 1.0
-- local generated file: `quaternius-office-character.glb`
-- expected bytes: `6465208`
-- SHA-256: `a466828c67a4acc9b2413212ce6d9cde235e3aed9b675680c14fd9673858f118`
+The binary GLB is intentionally not committed to Agent Office. It is fetched
+during `npm run dev` and `npm run build` from:
 
-The upstream conversion embeds the source textures and preserves the compatible
-Quaternius humanoid rig.
+- repository: `dantol29/wall_street_online`
+- commit: `9ab58fecc42490b9212d62813a778c0cc8158726`
+- source path: `apps/client/public/assets/BusinessMan.glb`
+- local generated file: `quaternius-business-man.glb`
+- expected bytes: `1529248`
+- SHA-256: `82b81257c1e94cd9ee48cb1dcbe5ff506e81c9ce67cd0c5af542d8712dca546e`
 
-## Animation library
+The model includes its own idle, walk, run, interaction, and other animation
+clips. Agent Office currently uses the neutral idle, forward walk, and
+interaction clips.
 
-- upstream pack: Quaternius Universal Animation Library — Standard
-- license: CC0 1.0
-- local generated file: `quaternius-universal-animation-library.glb`
-- expected bytes: `2714756`
-- SHA-256: `4c748767741a3e495d89667b9a218b690ba9810b9517a12e960780e3ca72c4e9`
+## Orientation
 
-Agent Office uses non-root-motion clips so canonical AgentRun movement remains
-owned by the control plane rather than by animation root motion.
-
-The full CC0 license texts are stored beside this file.
+The source character visually faces the opposite direction from the scene's
+positive-Z movement convention. Agent Office applies a fixed 180-degree model
+yaw inside the RuntimeAgent root. World-space movement and station orientation
+remain owned by Agent Office canonical state.

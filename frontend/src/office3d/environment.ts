@@ -3,18 +3,23 @@ import * as THREE from 'three'
 import type { AgentRun, RunStage } from '../api'
 import type { StationPlacement } from './character'
 
-export const ENTRANCE = new THREE.Vector3(8.8, 0, 5.15)
-export const WAITING = new THREE.Vector3(-8.2, 0, 5.0)
-export const INCIDENT = new THREE.Vector3(8.25, 0, -5.0)
-export const CORRIDOR_Z = 0
+export const ENTRANCE = new THREE.Vector3(4.75, 0, -2.45)
+export const WAITING = new THREE.Vector3(-7.0, 0, 4.15)
+export const INCIDENT = new THREE.Vector3(6.8, 0, 3.75)
+export const CORRIDOR_Z = 0.15
 
-const STAGE_CENTERS = [
-  new THREE.Vector3(-5.7, 0, -2.75),
-  new THREE.Vector3(0, 0, -3.15),
-  new THREE.Vector3(5.55, 0, -2.7),
-  new THREE.Vector3(-5.15, 0, 2.8),
-  new THREE.Vector3(0.5, 0, 2.65),
-  new THREE.Vector3(5.65, 0, 2.9),
+interface StageLayout {
+  center: THREE.Vector3
+  yaw: number
+}
+
+const STAGE_LAYOUT: StageLayout[] = [
+  { center: new THREE.Vector3(-6.25, 0, 2.35), yaw: -0.22 },
+  { center: new THREE.Vector3(-3.25, 0, 1.8), yaw: 0.22 },
+  { center: new THREE.Vector3(-3.05, 0, -1.15), yaw: -0.18 },
+  { center: new THREE.Vector3(-0.25, 0, -1.55), yaw: 0.18 },
+  { center: new THREE.Vector3(0.8, 0, 4.0), yaw: Math.PI - 0.2 },
+  { center: new THREE.Vector3(4.15, 0, 3.35), yaw: Math.PI + 0.2 },
 ]
 
 function standardMaterial(
@@ -66,68 +71,62 @@ function addCylinder(
 function stageColor(status: string): number {
   switch (status.toUpperCase()) {
     case 'RUNNING':
-      return 0x445d72
+      return 0x334f65
     case 'COMPLETED':
-      return 0x3f5d50
+      return 0x355447
     case 'WAITING':
-      return 0x6b5d3d
+      return 0x665534
     case 'BLOCKED':
     case 'FAILED':
-      return 0x6d4644
+      return 0x643f3d
     default:
-      return 0x465462
+      return 0x3f4d5b
   }
 }
 
 export function stageCenter(index: number): THREE.Vector3 {
-  if (index < STAGE_CENTERS.length) return STAGE_CENTERS[index].clone()
+  if (index < STAGE_LAYOUT.length) {
+    return STAGE_LAYOUT[index].center.clone()
+  }
   const row = Math.floor(index / 3)
   const column = index % 3
-  return new THREE.Vector3((column - 1) * 5.5, 0, (row - 0.5) * 5.4)
+  return new THREE.Vector3((column - 1) * 3.2, 0, (row - 1) * 2.6)
 }
 
-function stationOffset(
-  index: number,
-  count: number,
-  stageIndex: number,
-): StationPlacement {
-  const backRow = stageIndex < 3
-  const yaw = backRow ? Math.PI : 0
-  const deskSide = backRow ? 0.35 : -0.35
+function stageYaw(index: number): number {
+  return STAGE_LAYOUT[index]?.yaw ?? 0
+}
 
-  if (count <= 1) {
-    return {
-      position: new THREE.Vector3(0, 0, deskSide),
-      yaw,
-    }
-  }
+function localStationOffset(index: number, count: number): THREE.Vector3 {
+  if (count <= 1) return new THREE.Vector3()
+  const side = index % 2 === 0 ? -0.68 : 0.68
+  const row = Math.floor(index / 2)
+  return new THREE.Vector3(side, 0, row * -0.8)
+}
 
-  const xOffsets = count === 2 ? [-0.9, 0.9] : [-1.0, 0.95, 0]
-  const x = xOffsets[index % xOffsets.length]
-  const depth = index > 1 ? -deskSide * 0.85 : deskSide
-
-  return {
-    position: new THREE.Vector3(x, 0, depth),
-    yaw,
-  }
+function rotateLocal(
+  offset: THREE.Vector3,
+  yaw: number,
+): THREE.Vector3 {
+  return offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw)
 }
 
 function makeFloorLabel(text: string): THREE.Mesh {
   const canvas = document.createElement('canvas')
-  canvas.width = 768
-  canvas.height = 160
+  canvas.width = 640
+  canvas.height = 128
   const context = canvas.getContext('2d')
   if (!context) throw new Error('2D canvas context is unavailable.')
 
   context.clearRect(0, 0, canvas.width, canvas.height)
-  context.fillStyle = 'rgba(13, 18, 24, 0.74)'
-  context.roundRect(8, 8, 752, 144, 22)
+  context.fillStyle = 'rgba(9, 15, 22, 0.78)'
+  context.roundRect(8, 8, 624, 112, 18)
   context.fill()
-  context.fillStyle = '#dfe7ee'
-  context.font = '700 52px system-ui, -apple-system, sans-serif'
+  context.fillStyle = '#dfe8ef'
+  context.font = '700 42px system-ui, -apple-system, sans-serif'
   context.textAlign = 'center'
   context.textBaseline = 'middle'
-  context.fillText(text, canvas.width / 2, canvas.height / 2, 690)
+  context.fillText(text, canvas.width / 2, canvas.height / 2, 560)
 
   const texture = new THREE.CanvasTexture(canvas)
   texture.colorSpace = THREE.SRGBColorSpace
@@ -136,7 +135,7 @@ function makeFloorLabel(text: string): THREE.Mesh {
   texture.generateMipmaps = false
 
   const mesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(2.4, 0.5),
+    new THREE.PlaneGeometry(1.8, 0.36),
     new THREE.MeshBasicMaterial({
       map: texture,
       transparent: true,
@@ -150,28 +149,25 @@ function makeFloorLabel(text: string): THREE.Mesh {
   return mesh
 }
 
-function createDesk(position: THREE.Vector3, yaw: number): THREE.Group {
+function createStandingDesk(
+  position: THREE.Vector3,
+  yaw: number,
+): THREE.Group {
   const desk = new THREE.Group()
   desk.position.copy(position)
   desk.rotation.y = yaw
-  desk.scale.setScalar(0.86)
 
-  addBox(desk, [1.5, 0.1, 0.72], [0, 0.68, -0.48], 0x8b6d4c)
-  addBox(desk, [0.08, 0.62, 0.08], [-0.61, 0.33, -0.71], 0x3a4652)
-  addBox(desk, [0.08, 0.62, 0.08], [0.61, 0.33, -0.71], 0x3a4652)
-  addBox(desk, [0.08, 0.62, 0.08], [-0.61, 0.33, -0.25], 0x3a4652)
-  addBox(desk, [0.08, 0.62, 0.08], [0.61, 0.33, -0.25], 0x3a4652)
+  const topZ = 0.72
+  addBox(desk, [1.35, 0.1, 0.62], [0, 1.01, topZ], 0x8b6948)
+  addBox(desk, [0.07, 0.97, 0.07], [-0.52, 0.49, topZ - 0.2], 0x2b3643)
+  addBox(desk, [0.07, 0.97, 0.07], [0.52, 0.49, topZ - 0.2], 0x2b3643)
+  addBox(desk, [0.07, 0.97, 0.07], [-0.52, 0.49, topZ + 0.2], 0x2b3643)
+  addBox(desk, [0.07, 0.97, 0.07], [0.52, 0.49, topZ + 0.2], 0x2b3643)
 
-  addBox(desk, [0.72, 0.43, 0.07], [0, 1.02, -0.58], 0x151c25)
-  addBox(desk, [0.6, 0.31, 0.025], [0, 1.02, -0.62], 0x4c7697)
-  addBox(desk, [0.05, 0.33, 0.05], [0, 0.84, -0.48], 0x3f4b58)
-  addBox(desk, [0.45, 0.04, 0.24], [0, 0.74, -0.14], 0x687686)
-
-  const chair = new THREE.Group()
-  addBox(chair, [0.45, 0.09, 0.44], [0, 0.43, 0.31], 0x273341)
-  addBox(chair, [0.45, 0.52, 0.08], [0, 0.7, 0.5], 0x273341)
-  addCylinder(chair, 0.05, 0.38, [0, 0.2, 0.31], 0x596675)
-  desk.add(chair)
+  addBox(desk, [0.66, 0.4, 0.055], [0, 1.34, topZ + 0.12], 0x111821)
+  addBox(desk, [0.56, 0.3, 0.02], [0, 1.34, topZ + 0.085], 0x436d8d)
+  addBox(desk, [0.05, 0.3, 0.05], [0, 1.17, topZ + 0.05], 0x3e4b59)
+  addBox(desk, [0.48, 0.035, 0.19], [0, 1.075, topZ - 0.13], 0x5c6875)
 
   return desk
 }
@@ -179,19 +175,18 @@ function createDesk(position: THREE.Vector3, yaw: number): THREE.Group {
 function createPlant(position: THREE.Vector3): THREE.Group {
   const plant = new THREE.Group()
   plant.position.copy(position)
-  plant.scale.setScalar(0.8)
 
-  addCylinder(plant, 0.28, 0.4, [0, 0.2, 0], 0x785c46)
-  const green = standardMaterial(0x4d765d, 0.9)
+  addCylinder(plant, 0.24, 0.36, [0, 0.18, 0], 0x765941)
+  const leaf = standardMaterial(0x426f54, 0.92)
 
   for (const [x, y, z, scale] of [
-    [0, 0.7, 0, 0.4],
-    [-0.22, 0.66, 0.04, 0.27],
-    [0.21, 0.71, -0.03, 0.29],
+    [0, 0.68, 0, 0.36],
+    [-0.18, 0.62, 0.03, 0.24],
+    [0.18, 0.67, -0.03, 0.26],
   ] as Array<[number, number, number, number]>) {
     const crown = new THREE.Mesh(
       new THREE.SphereGeometry(scale, 14, 10),
-      green.clone(),
+      leaf.clone(),
     )
     crown.position.set(x, y, z)
     crown.castShadow = true
@@ -201,38 +196,42 @@ function createPlant(position: THREE.Vector3): THREE.Group {
   return plant
 }
 
-function createShelf(position: THREE.Vector3, yaw: number): THREE.Group {
-  const shelf = new THREE.Group()
-  shelf.position.copy(position)
-  shelf.rotation.y = yaw
-  shelf.scale.setScalar(0.86)
-
-  addBox(shelf, [1.45, 1.45, 0.3], [0, 0.72, 0], 0x313f4d)
-  for (const y of [0.28, 0.68, 1.08]) {
-    addBox(shelf, [1.31, 0.045, 0.26], [0, y, 0], 0x6e7d8c)
+function createFiling(position: THREE.Vector3): THREE.Group {
+  const group = new THREE.Group()
+  group.position.copy(position)
+  addBox(group, [0.9, 1.3, 0.55], [0, 0.65, 0], 0x303b47)
+  for (const y of [0.36, 0.72, 1.08]) {
+    addBox(group, [0.76, 0.03, 0.02], [0, y, 0.285], 0x667483)
   }
+  return group
+}
 
-  const colors = [0x8b6755, 0x4f746d, 0x626d8e, 0x967451]
-  for (let index = 0; index < 8; index += 1) {
-    const row = Math.floor(index / 4)
-    const column = index % 4
-    addBox(
-      shelf,
-      [0.16, 0.24, 0.19],
-      [-0.5 + column * 0.31, 0.44 + row * 0.4, -0.02],
-      colors[index % colors.length],
-    )
-  }
+function createPrinterStation(position: THREE.Vector3): THREE.Group {
+  const group = new THREE.Group()
+  group.position.copy(position)
+  addBox(group, [1.2, 0.78, 0.62], [0, 0.39, 0], 0x384552)
+  addBox(group, [0.82, 0.42, 0.64], [0, 0.94, 0], 0x9da8b2)
+  addBox(group, [0.54, 0.08, 0.42], [0, 1.18, -0.03], 0xd5dce2)
+  return group
+}
 
-  return shelf
+function createCoffeeCounter(position: THREE.Vector3): THREE.Group {
+  const group = new THREE.Group()
+  group.position.copy(position)
+  addBox(group, [2.4, 0.84, 0.72], [0, 0.42, 0], 0x535e67)
+  addBox(group, [2.48, 0.08, 0.78], [0, 0.87, 0], 0x8a6b4b)
+  addBox(group, [0.5, 0.62, 0.42], [-0.55, 1.2, 0], 0x202832)
+  addCylinder(group, 0.09, 0.2, [0.3, 1.04, 0], 0xd1d5d7)
+  addCylinder(group, 0.09, 0.2, [0.6, 1.04, 0], 0xd1d5d7)
+  return group
 }
 
 function createLounge(parent: THREE.Group): void {
-  addBox(parent, [3.0, 0.045, 1.25], [-0.2, 0.03, 5.15], 0x4a5968)
-  addBox(parent, [1.85, 0.37, 0.56], [-0.65, 0.29, 5.2], 0x495f7b)
-  addBox(parent, [1.85, 0.56, 0.18], [-0.65, 0.55, 5.46], 0x495f7b)
-  addBox(parent, [0.9, 0.1, 0.55], [0.92, 0.34, 5.12], 0x8c745c)
-  addCylinder(parent, 0.06, 0.48, [0.92, 0.13, 5.12], 0x5d554e)
+  addBox(parent, [2.75, 0.05, 2.15], [-6.75, 0.03, 4.05], 0x394a50)
+  addBox(parent, [1.65, 0.36, 0.58], [-7.15, 0.29, 4.35], 0x465d79)
+  addBox(parent, [1.65, 0.58, 0.18], [-7.15, 0.58, 4.62], 0x465d79)
+  addBox(parent, [0.8, 0.1, 0.58], [-5.85, 0.35, 4.0], 0x8a704f)
+  addCylinder(parent, 0.05, 0.48, [-5.85, 0.14, 4.0], 0x4b535b)
 }
 
 export function disposeObject(root: THREE.Object3D): void {
@@ -266,23 +265,34 @@ export function createOfficeEnvironment(
 ): Map<string, StationPlacement> {
   clearGroup(environment)
 
-  const slab = addBox(environment, [20.4, 0.32, 13.4], [0, -0.2, 0], 0x171f29)
+  const slab = addBox(environment, [18.4, 0.32, 12.4], [0, -0.2, 0], 0x111821)
   slab.receiveShadow = true
 
-  const floor = addBox(environment, [20, 0.16, 13], [0, -0.04, 0], 0x2d3945)
+  const floor = addBox(environment, [18, 0.14, 12], [0, -0.04, 0], 0x2b3742)
   floor.receiveShadow = true
 
-  const grid = new THREE.GridHelper(20, 20, 0x566573, 0x3d4b58)
-  grid.position.y = 0.045
-  grid.scale.z = 13 / 20
+  const grid = new THREE.GridHelper(18, 24, 0x455563, 0x36434f)
+  grid.position.y = 0.04
+  grid.scale.z = 12 / 18
   environment.add(grid)
 
-  const corridor = addBox(environment, [18.7, 0.035, 0.95], [0, 0.04, 0], 0x52606e)
-  corridor.receiveShadow = true
+  // Claude-Office inspired open-plan shell: three workstation clusters,
+  // a central aisle, and utility anchors instead of six boxed rooms.
+  addBox(environment, [18, 1.5, 0.16], [0, 0.7, -5.92], 0x1c2630)
+  addBox(environment, [0.16, 1.5, 12], [-8.92, 0.7, 0], 0x1c2630)
+  addBox(environment, [0.16, 1.5, 3.1], [8.92, 0.7, -4.42], 0x1c2630)
+  addBox(environment, [0.16, 1.5, 6.7], [8.92, 0.7, 2.65], 0x1c2630)
 
-  addBox(environment, [20, 0.66, 0.14], [0, 0.3, -6.43], 0x202a35)
-  addBox(environment, [0.14, 0.66, 8.6], [-9.93, 0.3, -2.1], 0x202a35)
-  addBox(environment, [0.14, 0.66, 8.6], [9.93, 0.3, -2.1], 0x202a35)
+  const aisle = addBox(environment, [13.3, 0.025, 0.82], [0.65, 0.035, CORRIDOR_Z], 0x566674)
+  aisle.receiveShadow = true
+
+  addBox(environment, [0.78, 0.025, 7.5], [4.75, 0.035, 1.75], 0x4a5966)
+
+  // Three compact cluster carpets approximate Claude-Office's back,
+  // front-left, and right standing-desk groups.
+  addBox(environment, [5.5, 0.035, 3.25], [-4.7, 0.025, 2.05], 0x314840)
+  addBox(environment, [5.8, 0.035, 3.05], [-1.65, 0.025, -1.45], 0x34444d)
+  addBox(environment, [6.1, 0.035, 3.2], [2.65, 0.025, 3.55], 0x354b43)
 
   const stations = new Map<string, StationPlacement>()
   const sortedStages = stages
@@ -291,72 +301,79 @@ export function createOfficeEnvironment(
 
   sortedStages.forEach((stage, stageIndex) => {
     const center = stageCenter(stageIndex)
-    const rug = addBox(
-      environment,
-      [4.15, 0.045, 3.15],
-      [center.x, 0.035, center.z],
-      stageColor(stage.status),
-    )
-    rug.receiveShadow = true
-
-    const edge = new THREE.LineSegments(
-      new THREE.EdgesGeometry(rug.geometry),
-      new THREE.LineBasicMaterial({ color: 0x667684 }),
-    )
-    edge.position.copy(rug.position)
-    environment.add(edge)
-
-    const label = makeFloorLabel(stage.stage_key)
-    label.position.x = center.x
-    label.position.z = center.z + (stageIndex < 3 ? 1.25 : -1.25)
-    label.rotation.z = stageIndex < 3 ? 0 : Math.PI
-    environment.add(label)
-
+    const yaw = stageYaw(stageIndex)
     const stageAgents = agents.filter(
       (agent) => agent.stage_key === stage.stage_key,
     )
 
+    const accent = addBox(
+      environment,
+      [2.0, 0.025, 1.65],
+      [center.x, 0.055, center.z],
+      stageColor(stage.status),
+    )
+    accent.receiveShadow = true
+
+    const label = makeFloorLabel(stage.stage_key)
+    const labelOffset = rotateLocal(new THREE.Vector3(0, 0, -0.72), yaw)
+    label.position.x = center.x + labelOffset.x
+    label.position.z = center.z + labelOffset.z
+    label.rotation.z = -yaw
+    label.scale.setScalar(0.72)
+    environment.add(label)
+
     stageAgents.forEach((agent, agentIndex) => {
-      const local = stationOffset(
-        agentIndex,
-        stageAgents.length,
-        stageIndex,
+      const local = rotateLocal(
+        localStationOffset(agentIndex, stageAgents.length),
+        yaw,
       )
       const placement: StationPlacement = {
-        position: center.clone().add(local.position),
-        yaw: local.yaw,
+        position: center.clone().add(local),
+        yaw,
       }
       stations.set(agent.id, placement)
-      environment.add(createDesk(placement.position, placement.yaw))
+      environment.add(createStandingDesk(placement.position, placement.yaw))
     })
   })
 
-  const zoneData = [
-    { name: 'ENTRANCE', point: ENTRANCE, color: 0x40566a },
-    { name: 'WAITING', point: WAITING, color: 0x6d5d3d },
-    { name: 'INCIDENT', point: INCIDENT, color: 0x704643 },
-  ]
-
-  zoneData.forEach((zone) => {
-    addBox(
-      environment,
-      [1.95, 0.05, 1.2],
-      [zone.point.x, 0.04, zone.point.z],
-      zone.color,
-    )
-    const label = makeFloorLabel(zone.name)
-    label.scale.set(0.62, 0.62, 0.62)
-    label.position.x = zone.point.x
-    label.position.z = zone.point.z
-    environment.add(label)
-  })
-
-  environment.add(createPlant(new THREE.Vector3(-8.75, 0, -5.3)))
-  environment.add(createPlant(new THREE.Vector3(8.65, 0, 4.9)))
-  environment.add(createPlant(new THREE.Vector3(-8.55, 0, 4.7)))
-  environment.add(createShelf(new THREE.Vector3(-7.9, 0, -6.15), 0))
-  environment.add(createShelf(new THREE.Vector3(7.9, 0, -6.15), 0))
   createLounge(environment)
+  environment.add(createCoffeeCounter(new THREE.Vector3(6.95, 0, -1.45)))
+  environment.add(createFiling(new THREE.Vector3(0.2, 0, 0.95)))
+  environment.add(createPrinterStation(new THREE.Vector3(7.0, 0, 1.55)))
+
+  for (const point of [
+    new THREE.Vector3(-7.8, 0, -4.75),
+    new THREE.Vector3(-6.55, 0, 3.2),
+    new THREE.Vector3(6.85, 0, 4.7),
+    new THREE.Vector3(1.25, 0, -4.6),
+  ]) {
+    environment.add(createPlant(point))
+  }
+
+  const waitingLabel = makeFloorLabel('WAITING')
+  waitingLabel.position.set(WAITING.x, 0.06, WAITING.z - 0.75)
+  waitingLabel.scale.setScalar(0.58)
+  environment.add(waitingLabel)
+
+  const incidentPad = addBox(
+    environment,
+    [1.8, 0.035, 1.45],
+    [INCIDENT.x, 0.04, INCIDENT.z],
+    0x68413f,
+  )
+  incidentPad.receiveShadow = true
+  const incidentLabel = makeFloorLabel('INCIDENT')
+  incidentLabel.position.set(INCIDENT.x, 0.06, INCIDENT.z)
+  incidentLabel.scale.setScalar(0.56)
+  environment.add(incidentLabel)
+
+  const entryPad = addBox(
+    environment,
+    [1.35, 0.035, 1.2],
+    [ENTRANCE.x, 0.04, ENTRANCE.z],
+    0x3e5265,
+  )
+  entryPad.receiveShadow = true
 
   return stations
 }
