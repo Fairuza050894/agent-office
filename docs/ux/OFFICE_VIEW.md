@@ -2,63 +2,99 @@
 
 Status: Phase 8 implementation specification
 
-Office View is an optional visual projection of canonical Run state. It does not own
-workflow state and must never become the only way to understand or operate a Run.
+Office View is an optional visual projection of canonical Run state. It does
+not own workflow state and must never become the only way to understand or
+operate a Run.
 
-## Visual architecture
+## Visual target
 
-The Phase 8 renderer uses Three.js with a PerspectiveCamera, OrbitControls,
-CSS2DRenderer nameplates, canonical AgentRun movement, and raycast selection.
+Phase 8 intentionally follows the spatial grammar studied in
+`W17ant/Claude-Office` without copying its room image, sprites, characters, or
+product identity.
 
-The office composition intentionally follows the spatial grammar studied in
-`W17ant/Claude-Office`:
+The 3D room now maps the main-office coordinates from that reference into
+world space:
 
-- one open-plan room rather than six boxed stage rooms
-- three compact workstation clusters
-- standing desks instead of seated cubicles
-- a connected central aisle
-- a right-side entry flow
-- lounge/waiting, coffee, filing, printer, and plant anchors
-- factual workflow stages represented as small floor accents near stations
+- three dense workstation clusters
+- dedicated agent desk spots
+- a right/back entry flow
+- lounge area
+- water cooler
+- coffee counter
+- filing cabinet
+- printer station
+- plants
+- whiteboard
+- large office windows
+- warm wood floor
+- suspended light fixtures
 
-The implementation does not copy Claude-Office sprites, room images, characters,
-or product identity. Agent Office keeps its own Three.js geometry and canonical
-Run/Stage/AgentRun truth model.
+The Claude-Office desk/agent coordinates are treated as layout reference data;
+Agent Office renders its own Three.js geometry.
 
-## Character
+## Character cast
 
-The primary character is Quaternius **Business Man** from the Ultimate Modular
-Men Pack, distributed as CC0 1.0.
+The primary visual path is a deterministic cast of five clothed Quaternius
+CC0 humanoids:
 
-Runtime mapping:
+- male business suit
+- male casual
+- male hoodie
+- female formal/dress
+- female smart/casual
+
+Each model is rigged and contains compatible `Idle`, `Walk`, and `Run`
+clips. A local procedural silhouette exists only as an asset-load fallback.
+
+Role-to-avatar mapping is deterministic from `agent_profile_key`; avatars do
+not randomly change on reload.
+
+Exact sources, license information, transport commit, expected sizes, and Git
+blob hashes are recorded in:
 
 ```text
-movement        → CharacterArmature|Walk
-RUNNING         → CharacterArmature|Interact
-COMPLETED       → CharacterArmature|Idle_Neutral
-WAITING         → CharacterArmature|Idle_Neutral
-BLOCKED/FAILED  → CharacterArmature|Idle_Neutral
+frontend/public/assets/office/ASSET_PROVENANCE.md
 ```
 
-The model is clothed in a business suit. Per-agent suit tinting is cosmetic only
-and is derived deterministically from `agent_profile_key`.
+## Truthful state machine
 
-The source rig visually faces opposite Agent Office's positive-Z travel
-convention, so the model receives a fixed 180° local yaw. This keeps character
-faces aligned with actual path direction without changing canonical movement.
+```text
+PENDING / CREATED → waiting
+STARTING          → walking from entry to factual workstation
+RUNNING           → idle micro-motion at factual workstation
+WAITING           → waiting area
+BLOCKED / FAILED  → incident area
+COMPLETED         → terminal idle at factual workstation
+CANCELLED         → terminal neutral state
+```
 
-Exact source, license, bytes, SHA-256, and pinned transport commit live in
-`frontend/public/assets/office/ASSET_PROVENANCE.md`.
+Walking and idle motion are purely visual representations of canonical
+AgentRun state.
 
-## Layout truth
+Office View never invents:
 
-Each visual character still corresponds to exactly one persisted AgentRun.
-Stage placement is deterministic from RunStage ordering. A stage may contain
-multiple factual agents; additional agents are offset within the same workstation
-pod without creating fictional workers.
+- progress percentage
+- reasoning/thoughts
+- dialogue
+- meetings
+- coffee breaks
+- pizza deliveries
+- fire drills
+- completion forecasts
 
-WAITING and BLOCKED/FAILED destinations remain explicit factual zones.
-Historical replay still uses persisted `started_at` / `completed_at` order.
+## Movement
+
+World-space movement remains owned by Agent Office.
+
+Characters traverse a bounded office route from the factual entry area toward
+their assigned workstation. Their root object rotates toward the actual travel
+vector.
+
+The Quaternius source rigs visually face -Z, so each loaded model receives a
+fixed 180-degree local yaw. This corrects the source-model convention without
+reversing canonical travel direction.
+
+Historical replay still derives ordering from persisted AgentRun timestamps.
 
 ## Camera
 
@@ -71,8 +107,34 @@ horizontal    full 360°
 vertical      bounded above floor
 ```
 
-Office View never owns merge, cancellation, approval, Evidence, Finding,
-executor selection, or workflow state.
+OrbitControls use damping. Camera focus eases toward a selected agent and may
+briefly ease toward an agent entering a Historical replay sequence; it never
+changes Run state.
+
+## Labels and shadows
+
+Role/state labels use HTML/CSS overlay rendering through CSS2DRenderer, which
+keeps text readable independent of camera angle.
+
+The Three.js renderer uses soft shadow maps and real scene lighting. The floor
+receives character/furniture shadows; lighting and animation do not fabricate
+execution state.
+
+## Event model
+
+Live updates and Historical replay remain driven by canonical Run/AgentRun
+state and the existing event stream. Random timers do not create fictional
+agent behavior.
+
+The visual renderer is disposable: failure to load WebGL, a GLB, or an
+animation does not affect cancellation, Findings, Evidence, approvals,
+executor selection, or other operational controls.
+
+## Accessibility
+
+The 3D view remains supplemental. The ordinary HTML AgentRun roster remains
+keyboard accessible and provides the same factual selection path as 3D
+raycasting.
 
 ## Truthfulness constraints
 
