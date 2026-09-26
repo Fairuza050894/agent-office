@@ -75,7 +75,7 @@ function stateTarget(
     case 'FAILED':
       return {
         position: incidentPosition(index),
-        yaw: -Math.PI * 0.5,
+        yaw: Math.PI * 0.5,
       }
     default:
       return {

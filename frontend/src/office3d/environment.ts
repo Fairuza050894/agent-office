@@ -531,7 +531,7 @@ function addGlassPanel(
 }
 
 function createMeetingRoom(parent: THREE.Group): void {
-  const x = -7.15
+  const x = -7.25
   const z = -3.65
 
   addBox(parent, [4.7, 0.035, 4.25], [x, 0.04, z], 0x4f5961)
@@ -591,7 +591,7 @@ function createPantry(parent: THREE.Group): void {
 }
 
 function createGameRoom(parent: THREE.Group): void {
-  const x = 7.05
+  const x = 7.2
   const z = 4.25
 
   addBox(parent, [4.7, 0.04, 4.15], [x, 0.045, z], 0x3e505c)
