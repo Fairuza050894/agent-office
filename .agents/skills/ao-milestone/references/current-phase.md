@@ -3,6 +3,7 @@
 ## Current checkpoint
 
 ```text
+ec5ca17 Merge pull request #4 from Fairuza050894/ui-foundation-hardening
 0357cf1 docs: record phase 7 verification
 e1928c2 style: format phase 7 isolation tests
 bd3bfcb docs: record phase 6 verification
@@ -43,7 +44,7 @@ Current recorded status:
   - Phase 5B CLOSED — Operational Frontend Completion
 - Phase 6 CLOSED — first real executor accepted through authenticated live smoke
 - Phase 7 CLOSED — Multi-Executor / Second Project Dogfood accepted
-- Phase 8 NEXT — Office View
+- Phase 8 IN PROGRESS — truthful optional 3D Office View
 
 ## Phase 4 closure
 
@@ -109,6 +110,6 @@ The Phase 5 exit criterion is satisfied with the deterministic ReferenceExecutor
 
 Phase 6 is **CLOSED** after deterministic CI and an authenticated local Codex live smoke satisfied the first-real-executor exit criterion. The closure record is `docs/product/PHASE_6_VERIFICATION.md`. Codex CLI remains integrated through the provider-neutral ExecutorAdapter boundary with bounded execution, isolated workspace context, opt-in configuration, capability/health exposure, orchestration integration, fail-closed unknown-state handling, deterministic tests, and retained smoke-workspace evidence.
 
-Phase 7 is **CLOSED** after multi-Project isolation, explicit executor switching, no-silent-fallback behavior, concurrent Project independence, and two dogfood scenarios passed the acceptance gate. The closure record is `docs/product/PHASE_7_VERIFICATION.md`. SQLite schema v10 enforces cross-Project ownership for Workspaces, AgentRun-scoped Events, and candidate Workspaces; the operational UI requires an explicit compatible executor selection before resuming an executor-unavailable Run; and deterministic dogfood exercises documentation-only and unrelated application bug-fix workflows through the provider-neutral execution boundary. Phase 8 is **NEXT** and owns Office View.
+Phase 7 is **CLOSED** after multi-Project isolation, explicit executor switching, no-silent-fallback behavior, concurrent Project independence, and two dogfood scenarios passed the acceptance gate. The closure record is `docs/product/PHASE_7_VERIFICATION.md`. SQLite schema v10 enforces cross-Project ownership for Workspaces, AgentRun-scoped Events, and candidate Workspaces; the operational UI requires an explicit compatible executor selection before resuming an executor-unavailable Run; and deterministic dogfood exercises documentation-only and unrelated application bug-fix workflows through the provider-neutral execution boundary. Phase 8 is **IN PROGRESS** and owns Office View. The pre-Phase-8 visual foundation from PR #4 is merged; Office View must follow `ao-ui-quality`, remain optional, use only canonical Run/Stage/AgentRun/Event truth, preserve operational UI independence, and use original or clearly licensed visual assets.
 
 Do not introduce auto-commit, auto-merge, force-push, destructive Git, or heuristic conflict resolution unless a later approved milestone explicitly changes those contracts.
