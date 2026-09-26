@@ -43,7 +43,7 @@ interface Engine {
   renderer: THREE.WebGLRenderer
   labels: CSS2DRenderer
   scene: THREE.Scene
-  camera: THREE.PerspectiveCamera
+  camera: THREE.OrthographicCamera
   controls: OrbitControls
   environment: THREE.Group
   agents: THREE.Group
@@ -334,7 +334,7 @@ export function ThreeOfficeScene({
       renderer.outputColorSpace = THREE.SRGBColorSpace
       renderer.toneMapping = THREE.ACESFilmicToneMapping
       renderer.toneMappingExposure = 1.05
-      renderer.setClearColor(0xcbd5df, 1)
+      renderer.setClearColor(0x111820, 1)
       renderer.domElement.className = 'office-three-canvas'
       renderer.domElement.setAttribute(
         'aria-label',
@@ -349,26 +349,27 @@ export function ThreeOfficeScene({
       host.appendChild(labels.domElement)
 
       const scene = new THREE.Scene()
-      scene.background = new THREE.Color(0xcbd5df)
-      scene.fog = new THREE.Fog(0xcbd5df, 34, 54)
+      scene.background = new THREE.Color(0x111820)
 
-      const camera = new THREE.PerspectiveCamera(31, 1, 0.1, 100)
-      camera.position.set(11.8, 11.8, 15.2)
-      camera.lookAt(0, 0.55, 0)
+      const camera = new THREE.OrthographicCamera(-10, 10, 7.5, -7.5, 0.1, 100)
+      camera.position.set(14.5, 18.5, 14.5)
+      camera.lookAt(0, 0.45, 0)
+      camera.zoom = 1.04
+      camera.updateProjectionMatrix()
 
       const controls = new OrbitControls(camera, renderer.domElement)
-      controls.target.set(0, 0.55, 0)
+      controls.target.set(0, 0.45, 0)
       controls.enableDamping = false
       controls.enablePan = true
-      controls.minDistance = 10
-      controls.maxDistance = 27
-      controls.minPolarAngle = Math.PI * 0.22
-      controls.maxPolarAngle = Math.PI * 0.46
+      controls.enableRotate = false
+      controls.screenSpacePanning = true
+      controls.minZoom = 0.8
+      controls.maxZoom = 1.75
 
-      scene.add(new THREE.HemisphereLight(0xf8fbff, 0x596879, 2.25))
+      scene.add(new THREE.HemisphereLight(0xdce9f4, 0x1a232d, 2.0))
 
-      const keyLight = new THREE.DirectionalLight(0xfff5df, 3.25)
-      keyLight.position.set(-8, 15, 9)
+      const keyLight = new THREE.DirectionalLight(0xfff0d2, 2.8)
+      keyLight.position.set(-7, 15, 10)
       keyLight.castShadow = true
       keyLight.shadow.mapSize.set(2048, 2048)
       keyLight.shadow.camera.left = -14
@@ -377,8 +378,8 @@ export function ThreeOfficeScene({
       keyLight.shadow.camera.bottom = -12
       scene.add(keyLight)
 
-      const fillLight = new THREE.DirectionalLight(0xcfe2ff, 1.15)
-      fillLight.position.set(10, 8, -8)
+      const fillLight = new THREE.DirectionalLight(0x8fb8dc, 0.8)
+      fillLight.position.set(10, 10, -7)
       scene.add(fillLight)
 
       const environment = new THREE.Group()
@@ -408,8 +409,13 @@ export function ThreeOfficeScene({
       const resize = () => {
         if (!host.isConnected || !engine) return
         const width = Math.max(host.clientWidth, 320)
-        const height = Math.max(host.clientHeight, 520)
-        camera.aspect = width / height
+        const height = Math.max(host.clientHeight, 480)
+        const aspect = width / height
+        const viewHeight = 14.6
+        camera.left = (-viewHeight * aspect) / 2
+        camera.right = (viewHeight * aspect) / 2
+        camera.top = viewHeight / 2
+        camera.bottom = -viewHeight / 2
         camera.updateProjectionMatrix()
         renderer.setSize(width, height, false)
         labels.setSize(width, height)
