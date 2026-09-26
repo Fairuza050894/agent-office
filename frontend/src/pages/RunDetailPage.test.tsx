@@ -5,6 +5,7 @@ import type {
   AgentEvent,
   AgentRun,
   Evidence,
+  Executor,
   Finding,
   Project,
   Run,
@@ -29,6 +30,34 @@ const PROJECT: Project = {
   created_at: '2026-09-16T08:00:00Z',
   updated_at: '2026-09-16T08:00:00Z',
   archived_at: null,
+}
+
+
+const REFERENCE_EXECUTOR: Executor = {
+  id: '00000000-0000-4000-8000-000000000001',
+  kind: 'REFERENCE',
+  name: 'Reference Executor',
+  status: 'AVAILABLE',
+  runtime_version: '1',
+  health_summary: 'Deterministic local executor is available.',
+  last_check: '2026-09-25T00:00:00Z',
+  capabilities: [
+    {
+      capability: 'START_EXECUTION',
+      support: 'SUPPORTED',
+      limitations: null,
+      source: 'reference-executor',
+      checked_at: '2026-09-25T00:00:00Z',
+    },
+    {
+      capability: 'STATUS_QUERY',
+      support: 'SUPPORTED',
+      limitations: null,
+      source: 'reference-executor',
+      checked_at: '2026-09-25T00:00:00Z',
+    },
+  ],
+  security_limitations: [],
 }
 
 const TASK: Task = {
@@ -253,6 +282,7 @@ function makeFetch(run: Run = RUN) {
     const method = init?.method?.toUpperCase() ?? 'GET'
 
     if (method === 'GET' && url === `/api/runs/${run.id}`) return jsonResponse(run)
+    if (method === 'GET' && url === '/api/executors') return jsonResponse([REFERENCE_EXECUTOR])
     if (method === 'GET' && url === `/api/projects/${PROJECT.id}`) return jsonResponse(PROJECT)
     if (method === 'GET' && url === `/api/tasks/${TASK.id}`) return jsonResponse(TASK)
     if (method === 'GET' && url === `/api/runs/${run.id}/stages`) return jsonResponse([STAGE])
@@ -402,6 +432,47 @@ describe('RunDetailPage Phase 5 operational behavior', () => {
     ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Reconcile' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Resume' })).not.toBeInTheDocument()
+  })
+
+  it('requires explicit compatible executor selection before resuming an unavailable-executor Run', async () => {
+    const unavailableExecutorId = '10000000-0000-4000-8000-000000000099'
+    const blocked: Run = {
+      ...RUN,
+      status: 'BLOCKED',
+      requested_executor_id: unavailableExecutorId,
+      resolved_executor_id: null,
+      workflow_snapshot_id: null,
+      failure_code: 'EXECUTOR_UNAVAILABLE',
+      failure_summary: 'No registered Executor could be resolved for this Run.',
+      started_at: null,
+      candidate_workspace_id: null,
+    }
+    const fetchMock = makeFetch(blocked)
+    vi.stubGlobal('fetch', fetchMock)
+    renderPage(blocked)
+
+    const select = await screen.findByLabelText('Compatible executor')
+    const resume = screen.getByRole('button', { name: 'Resume' })
+
+    expect(resume).toBeDisabled()
+    expect(screen.getByText(/does not silently fall back/)).toBeInTheDocument()
+    await screen.findByRole('option', { name: /Reference Executor/ })
+
+    fireEvent.change(select, { target: { value: REFERENCE_EXECUTOR.id } })
+    expect(resume).toBeEnabled()
+    fireEvent.click(resume)
+
+    await waitFor(() => {
+      const call = fetchMock.mock.calls.find(
+        ([input, options]) =>
+          requestUrl(input) === `/api/runs/${blocked.id}/resume` &&
+          options?.method === 'POST',
+      )
+      expect(call).toBeDefined()
+      expect(JSON.parse(String(call?.[1]?.body))).toEqual({
+        executor_id: REFERENCE_EXECUTOR.id,
+      })
+    })
   })
 
   it('keeps original blocker text visible and requires a reason for risk acceptance', async () => {

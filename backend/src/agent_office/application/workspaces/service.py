@@ -111,6 +111,11 @@ class WorkspaceService:
         return self._repository.find_by_owner(agent_run_id)
 
     def allocate_for_agent_run(self, run: Run, agent_run: AgentRun) -> Workspace:
+        if agent_run.run_id != run.id or agent_run.project_id != run.project_id:
+            raise WorkspaceOwnershipError(
+                "AgentRun scope does not match the Run/Project requesting a Workspace."
+            )
+
         if agent_run.access_mode not in WRITE_ACCESS_MODES:
             raise WorkspaceAllocationError(
                 None,
@@ -120,11 +125,23 @@ class WorkspaceService:
 
         if agent_run.workspace_id is not None:
             recorded = self._repository.get(agent_run.workspace_id)
-            if (
-                recorded is not None
-                and recorded.run_id == run.id
-                and recorded.status not in {WorkspaceStatus.RELEASED, WorkspaceStatus.FAILED}
-            ):
+
+            if recorded is None:
+                raise WorkspaceOwnershipError(
+                    "AgentRun references a Workspace that is not durably registered."
+                )
+
+            if recorded.run_id != run.id or recorded.project_id != run.project_id:
+                raise WorkspaceOwnershipError(
+                    "AgentRun references a Workspace outside its Run/Project ownership scope."
+                )
+
+            if recorded.owner_agent_run_id not in {None, agent_run.id}:
+                raise WorkspaceOwnershipError(
+                    "AgentRun references a Workspace owned by a different active writer."
+                )
+
+            if recorded.status not in {WorkspaceStatus.RELEASED, WorkspaceStatus.FAILED}:
                 return recorded
 
         project = self._projects.get_project(run.project_id)

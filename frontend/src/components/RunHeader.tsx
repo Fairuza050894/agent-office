@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { api, type Project, type Run, type Task } from '../api'
+import { useEffect, useMemo, useState } from 'react'
+import { api, type Executor, type Project, type Run, type Task } from '../api'
 
 export interface RunHeaderProps {
   run: Run
@@ -34,9 +34,22 @@ function formatTimestamp(value: string | null): string {
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString()
 }
 
+function supportsRequiredRunCapabilities(executor: Executor): boolean {
+  const support = new Map(
+    executor.capabilities.map((capability) => [capability.capability, capability.support]),
+  )
+  return (
+    support.get('START_EXECUTION') === 'SUPPORTED' &&
+    support.get('STATUS_QUERY') === 'SUPPORTED'
+  )
+}
+
 export function RunHeader({ run, project, task, onRunUpdated }: RunHeaderProps) {
   const [isActing, setIsActing] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
+  const [executors, setExecutors] = useState<Executor[]>([])
+  const [selectedExecutorId, setSelectedExecutorId] = useState('')
+  const [executorLoadError, setExecutorLoadError] = useState<string | null>(null)
   const shortId = run.id.slice(0, 8)
 
   const mutate = async (action: () => Promise<Run>) => {
@@ -63,8 +76,56 @@ export function RunHeader({ run, project, task, onRunUpdated }: RunHeaderProps) 
   const executionUnknown =
     run.failure_code === 'UNKNOWN_EXECUTION_STATE' ||
     run.failure_code === 'CANCELLATION_UNKNOWN'
+  const needsExecutorSelection =
+    run.status === 'BLOCKED' && run.failure_code === 'EXECUTOR_UNAVAILABLE'
+
+  useEffect(() => {
+    let active = true
+
+    if (!needsExecutorSelection) {
+      return () => {
+        active = false
+      }
+    }
+
+    const loadExecutors = async () => {
+      try {
+        const available = await api.listExecutors()
+        if (!active) return
+        setExecutors(available)
+        setSelectedExecutorId('')
+        setExecutorLoadError(null)
+      } catch (err) {
+        if (!active) return
+        setExecutors([])
+        setSelectedExecutorId('')
+        setExecutorLoadError(
+          err instanceof Error ? err.message : 'Compatible executor list is unavailable.',
+        )
+      }
+    }
+
+    void loadExecutors()
+
+    return () => {
+      active = false
+    }
+  }, [needsExecutorSelection])
+
+  const compatibleExecutors = useMemo(
+    () =>
+      executors.filter(
+        (executor) =>
+          ['AVAILABLE', 'DEGRADED'].includes(executor.status) &&
+          supportsRequiredRunCapabilities(executor),
+      ),
+    [executors],
+  )
+
   const canStart = run.status === 'CREATED'
-  const canResume = run.status === 'BLOCKED' && !executionUnknown
+  const showResume = run.status === 'BLOCKED' && !executionUnknown
+  const canResume =
+    showResume && (!needsExecutorSelection || selectedExecutorId.length > 0)
   const canReconcile = run.status === 'BLOCKED'
   const canCancel = activeStatuses.has(run.status)
 
@@ -77,6 +138,27 @@ export function RunHeader({ run, project, task, onRunUpdated }: RunHeaderProps) 
           <div className="run-task-title">{task?.title ?? 'Unknown Task'}</div>
         </div>
         <div className="run-header-actions" aria-label="Run controls">
+          {needsExecutorSelection && (
+            <div className="run-executor-switch">
+              <label htmlFor="resume-executor" className="form-label">
+                Compatible executor
+              </label>
+              <select
+                id="resume-executor"
+                className="form-input"
+                value={selectedExecutorId}
+                disabled={isActing}
+                onChange={(event) => setSelectedExecutorId(event.target.value)}
+              >
+                <option value="">Choose executor</option>
+                {compatibleExecutors.map((executor) => (
+                  <option key={executor.id} value={executor.id}>
+                    {executor.name} · {executor.status}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           {canStart && (
             <button
               type="button"
@@ -87,12 +169,19 @@ export function RunHeader({ run, project, task, onRunUpdated }: RunHeaderProps) 
               {isActing ? 'Starting...' : 'Start Run'}
             </button>
           )}
-          {canResume && (
+          {showResume && (
             <button
               type="button"
               className="btn btn-primary"
-              disabled={isActing}
-              onClick={() => void mutate(() => api.resumeRun(run.id))}
+              disabled={isActing || !canResume}
+              onClick={() =>
+                void mutate(() =>
+                  api.resumeRun(
+                    run.id,
+                    needsExecutorSelection ? { executor_id: selectedExecutorId } : {},
+                  ),
+                )
+              }
             >
               {isActing ? 'Resuming...' : 'Resume'}
             </button>
@@ -131,7 +220,25 @@ export function RunHeader({ run, project, task, onRunUpdated }: RunHeaderProps) 
         <div className="run-alert run-alert-danger" role="alert">
           <strong>{run.failure_code ?? 'Run blocked'}</strong>
           <span>{run.failure_summary ?? 'The backend has not supplied a more specific block summary.'}</span>
-          <span>Use Resume only after the blocking condition is resolved.</span>
+          <span>
+            {needsExecutorSelection
+              ? 'Choose a compatible executor explicitly. Agent Office does not silently fall back.'
+              : 'Use Resume only after the blocking condition is resolved.'}
+          </span>
+        </div>
+      )}
+
+      {needsExecutorSelection && compatibleExecutors.length === 0 && !executorLoadError && (
+        <div className="run-alert run-alert-warning" role="status">
+          <strong>No compatible executor is currently available.</strong>
+          <span>Resume remains disabled until an executor reports the required capabilities.</span>
+        </div>
+      )}
+
+      {executorLoadError && (
+        <div className="run-alert run-alert-warning" role="alert">
+          <strong>Executor list unavailable</strong>
+          <span>{executorLoadError}</span>
         </div>
       )}
 

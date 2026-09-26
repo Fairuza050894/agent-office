@@ -12,7 +12,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 BUSY_TIMEOUT_MS = 5000
-LATEST_SCHEMA_VERSION: int = 9
+LATEST_SCHEMA_VERSION: int = 10
 
 SCHEMA_VERSION_KEY = "schema_version"
 
@@ -644,6 +644,201 @@ def _migration_v9(connection: sqlite3.Connection) -> None:
     )
 
 
+def _migration_v10(connection: sqlite3.Connection) -> None:
+    """Enforce Phase 7 cross-Project ownership at the persistence boundary.
+
+    Existing Phase 3 foreign keys already bind Run-scoped rows to a Project for
+    stages and AgentRuns. Phase 7 closes the remaining attachment gaps for
+    Workspaces, Event AgentRun references, and candidate Workspace selection.
+
+    The migration validates historical rows before installing triggers. A
+    database containing contradictory ownership fails closed instead of silently
+    accepting the newer schema version.
+    """
+
+    checks = (
+        (
+            """
+            SELECT 1
+            FROM workspaces AS workspace
+            LEFT JOIN runs AS run
+              ON run.id = workspace.run_id
+             AND run.project_id = workspace.project_id
+            WHERE run.id IS NULL
+            LIMIT 1
+            """,
+            "Existing Workspace has a Run/Project scope mismatch.",
+        ),
+        (
+            """
+            SELECT 1
+            FROM workspaces AS workspace
+            LEFT JOIN agent_runs AS agent_run
+              ON agent_run.id = workspace.owner_agent_run_id
+             AND agent_run.run_id = workspace.run_id
+             AND agent_run.project_id = workspace.project_id
+            WHERE workspace.owner_agent_run_id IS NOT NULL
+              AND agent_run.id IS NULL
+            LIMIT 1
+            """,
+            "Existing Workspace owner belongs to a different Run or Project.",
+        ),
+        (
+            """
+            SELECT 1
+            FROM events AS event
+            LEFT JOIN agent_runs AS agent_run
+              ON agent_run.id = event.agent_run_id
+             AND agent_run.run_id = event.run_id
+             AND agent_run.project_id = event.project_id
+            WHERE event.agent_run_id IS NOT NULL
+              AND agent_run.id IS NULL
+            LIMIT 1
+            """,
+            "Existing Event references an AgentRun outside its Run/Project scope.",
+        ),
+        (
+            """
+            SELECT 1
+            FROM runs AS run
+            LEFT JOIN workspaces AS workspace
+              ON workspace.id = run.candidate_workspace_id
+             AND workspace.run_id = run.id
+             AND workspace.project_id = run.project_id
+            WHERE run.candidate_workspace_id IS NOT NULL
+              AND workspace.id IS NULL
+            LIMIT 1
+            """,
+            "Existing Run candidate Workspace belongs to a different Run or Project.",
+        ),
+    )
+
+    for statement, message in checks:
+        if connection.execute(statement).fetchone() is not None:
+            raise DatabaseVersionError(message)
+
+    connection.execute(
+        """
+        CREATE TRIGGER workspaces_scope_insert
+        BEFORE INSERT ON workspaces
+        WHEN
+            NOT EXISTS (
+                SELECT 1
+                FROM runs
+                WHERE id = NEW.run_id
+                  AND project_id = NEW.project_id
+            )
+            OR (
+                NEW.owner_agent_run_id IS NOT NULL
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM agent_runs
+                    WHERE id = NEW.owner_agent_run_id
+                      AND run_id = NEW.run_id
+                      AND project_id = NEW.project_id
+                )
+            )
+        BEGIN
+            SELECT RAISE(ABORT, 'FOREIGN KEY workspace ownership scope mismatch');
+        END
+        """
+    )
+    connection.execute(
+        """
+        CREATE TRIGGER workspaces_scope_update
+        BEFORE UPDATE OF project_id, run_id, owner_agent_run_id ON workspaces
+        WHEN
+            NOT EXISTS (
+                SELECT 1
+                FROM runs
+                WHERE id = NEW.run_id
+                  AND project_id = NEW.project_id
+            )
+            OR (
+                NEW.owner_agent_run_id IS NOT NULL
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM agent_runs
+                    WHERE id = NEW.owner_agent_run_id
+                      AND run_id = NEW.run_id
+                      AND project_id = NEW.project_id
+                )
+            )
+        BEGIN
+            SELECT RAISE(ABORT, 'FOREIGN KEY workspace ownership scope mismatch');
+        END
+        """
+    )
+    connection.execute(
+        """
+        CREATE TRIGGER events_agent_scope_insert
+        BEFORE INSERT ON events
+        WHEN NEW.agent_run_id IS NOT NULL
+         AND NOT EXISTS (
+                SELECT 1
+                FROM agent_runs
+                WHERE id = NEW.agent_run_id
+                  AND run_id = NEW.run_id
+                  AND project_id = NEW.project_id
+            )
+        BEGIN
+            SELECT RAISE(ABORT, 'FOREIGN KEY event AgentRun ownership scope mismatch');
+        END
+        """
+    )
+    connection.execute(
+        """
+        CREATE TRIGGER events_agent_scope_update
+        BEFORE UPDATE OF project_id, run_id, agent_run_id ON events
+        WHEN NEW.agent_run_id IS NOT NULL
+         AND NOT EXISTS (
+                SELECT 1
+                FROM agent_runs
+                WHERE id = NEW.agent_run_id
+                  AND run_id = NEW.run_id
+                  AND project_id = NEW.project_id
+            )
+        BEGIN
+            SELECT RAISE(ABORT, 'FOREIGN KEY event AgentRun ownership scope mismatch');
+        END
+        """
+    )
+    connection.execute(
+        """
+        CREATE TRIGGER runs_candidate_workspace_scope_insert
+        BEFORE INSERT ON runs
+        WHEN NEW.candidate_workspace_id IS NOT NULL
+         AND NOT EXISTS (
+                SELECT 1
+                FROM workspaces
+                WHERE id = NEW.candidate_workspace_id
+                  AND run_id = NEW.id
+                  AND project_id = NEW.project_id
+            )
+        BEGIN
+            SELECT RAISE(ABORT, 'FOREIGN KEY candidate Workspace ownership scope mismatch');
+        END
+        """
+    )
+    connection.execute(
+        """
+        CREATE TRIGGER runs_candidate_workspace_scope_update
+        BEFORE UPDATE OF project_id, candidate_workspace_id ON runs
+        WHEN NEW.candidate_workspace_id IS NOT NULL
+         AND NOT EXISTS (
+                SELECT 1
+                FROM workspaces
+                WHERE id = NEW.candidate_workspace_id
+                  AND run_id = NEW.id
+                  AND project_id = NEW.project_id
+            )
+        BEGIN
+            SELECT RAISE(ABORT, 'FOREIGN KEY candidate Workspace ownership scope mismatch');
+        END
+        """
+    )
+
+
 MIGRATIONS: dict[int, Callable[[sqlite3.Connection], None]] = {
     1: _migration_v1,
     2: _migration_v2,
@@ -654,6 +849,7 @@ MIGRATIONS: dict[int, Callable[[sqlite3.Connection], None]] = {
     7: _migration_v7,
     8: _migration_v8,
     9: _migration_v9,
+    10: _migration_v10,
 }
 
 
