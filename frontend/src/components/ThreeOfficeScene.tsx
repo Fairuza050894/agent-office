@@ -81,7 +81,7 @@ function stableHash(value: string): number {
 }
 
 function agentColor(value: string): number {
-  const palette = [0x4f6d9a, 0x6d5b8c, 0x3f7b6a, 0x8a6547, 0x5f7087, 0x775d78]
+  const palette = [0x3f6f9f, 0x735f9a, 0x3e806a, 0x9a6748, 0x526f8d, 0x8b5f7e]
   return palette[stableHash(value) % palette.length]
 }
 
@@ -104,16 +104,16 @@ function statusColor(status: string): number {
 function stageColor(status: string): number {
   switch (status.toUpperCase()) {
     case 'RUNNING':
-      return 0xdde8f3
+      return 0xb8cde2
     case 'COMPLETED':
-      return 0xdfe9e3
+      return 0xc3d9cb
     case 'WAITING':
-      return 0xf0e7d6
+      return 0xe3d4b7
     case 'BLOCKED':
     case 'FAILED':
-      return 0xf0dedb
+      return 0xdcb9b5
     default:
-      return 0xe6e9ed
+      return 0xd7dee7
   }
 }
 
@@ -146,36 +146,84 @@ function makeTextSprite(text: string, secondary?: string): {
   texture: THREE.CanvasTexture
 } {
   const canvas = document.createElement('canvas')
-  canvas.width = 512
-  canvas.height = 128
+  canvas.width = 1024
+  canvas.height = 240
   const context = canvas.getContext('2d')
   if (!context) throw new Error('2D canvas context is unavailable.')
 
   context.clearRect(0, 0, canvas.width, canvas.height)
-  context.fillStyle = 'rgba(18, 25, 37, 0.88)'
-  context.roundRect(8, 10, 496, 106, 12)
+  context.fillStyle = 'rgba(25, 34, 48, 0.94)'
+  context.roundRect(10, 12, 1004, 214, 24)
   context.fill()
-  context.fillStyle = '#f7f9fb'
-  context.font = '600 30px system-ui, sans-serif'
-  context.fillText(text, 24, 55)
+  context.strokeStyle = 'rgba(255, 255, 255, 0.18)'
+  context.lineWidth = 4
+  context.stroke()
+
+  context.fillStyle = '#ffffff'
+  context.font = '700 54px system-ui, -apple-system, sans-serif'
+  context.textBaseline = 'middle'
+  context.fillText(text, 42, 88, 930)
+
   if (secondary) {
-    context.fillStyle = '#b7c0cc'
-    context.font = '500 20px ui-monospace, monospace'
-    context.fillText(secondary, 24, 91)
+    context.fillStyle = '#c8d2df'
+    context.font = '600 32px ui-monospace, SFMono-Regular, monospace'
+    context.fillText(secondary, 42, 162, 930)
   }
 
   const texture = new THREE.CanvasTexture(canvas)
   texture.colorSpace = THREE.SRGBColorSpace
   texture.minFilter = THREE.LinearFilter
+  texture.magFilter = THREE.LinearFilter
+  texture.generateMipmaps = false
+
   const material = new THREE.SpriteMaterial({
     map: texture,
     transparent: true,
     depthTest: false,
+    depthWrite: false,
   })
   const sprite = new THREE.Sprite(material)
-  sprite.scale.set(2.7, 0.68, 1)
-  sprite.renderOrder = 20
+  sprite.scale.set(3.15, 0.74, 1)
+  sprite.renderOrder = 30
   return { sprite, texture }
+}
+
+function makeFloorLabel(text: string, secondary?: string): THREE.Mesh {
+  const canvas = document.createElement('canvas')
+  canvas.width = 1024
+  canvas.height = 256
+  const context = canvas.getContext('2d')
+  if (!context) throw new Error('2D canvas context is unavailable.')
+
+  context.fillStyle = '#eef2f6'
+  context.fillRect(0, 0, canvas.width, canvas.height)
+  context.fillStyle = '#273347'
+  context.font = '700 70px system-ui, -apple-system, sans-serif'
+  context.textAlign = 'center'
+  context.textBaseline = 'middle'
+  context.fillText(text, canvas.width / 2, 96, 920)
+  if (secondary) {
+    context.fillStyle = '#647186'
+    context.font = '600 34px ui-monospace, SFMono-Regular, monospace'
+    context.fillText(secondary, canvas.width / 2, 176, 920)
+  }
+
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.colorSpace = THREE.SRGBColorSpace
+  texture.minFilter = THREE.LinearFilter
+  texture.magFilter = THREE.LinearFilter
+  texture.generateMipmaps = false
+
+  const material = new THREE.MeshBasicMaterial({
+    map: texture,
+    transparent: false,
+    toneMapped: false,
+  })
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 0.8), material)
+  mesh.rotation.x = -Math.PI / 2
+  mesh.position.y = 0.086
+  mesh.userData.disposableTexture = texture
+  return mesh
 }
 
 function addBox(
@@ -198,14 +246,19 @@ function addBox(
 function createDesk(position: THREE.Vector3): THREE.Group {
   const desk = new THREE.Group()
   desk.position.copy(position)
-  addBox(desk, [1.7, 0.12, 0.78], [0, 0.7, 0], 0xb9c1cb)
-  addBox(desk, [0.1, 0.66, 0.1], [-0.72, 0.35, -0.28], 0x8b95a3)
-  addBox(desk, [0.1, 0.66, 0.1], [0.72, 0.35, -0.28], 0x8b95a3)
-  addBox(desk, [0.1, 0.66, 0.1], [-0.72, 0.35, 0.28], 0x8b95a3)
-  addBox(desk, [0.1, 0.66, 0.1], [0.72, 0.35, 0.28], 0x8b95a3)
-  addBox(desk, [0.82, 0.48, 0.08], [0, 1.08, -0.08], 0x2c3543)
-  addBox(desk, [0.68, 0.34, 0.025], [0, 1.08, -0.13], 0x7890ab)
-  addBox(desk, [0.06, 0.38, 0.06], [0, 0.88, 0], 0x687384)
+
+  addBox(desk, [1.72, 0.12, 0.82], [0, 0.72, 0], 0xa8b2bf)
+  addBox(desk, [0.09, 0.68, 0.09], [-0.73, 0.36, -0.3], 0x667384)
+  addBox(desk, [0.09, 0.68, 0.09], [0.73, 0.36, -0.3], 0x667384)
+  addBox(desk, [0.09, 0.68, 0.09], [-0.73, 0.36, 0.3], 0x667384)
+  addBox(desk, [0.09, 0.68, 0.09], [0.73, 0.36, 0.3], 0x667384)
+
+  const monitorShell = addBox(desk, [0.84, 0.5, 0.08], [0, 1.1, -0.1], 0x253244)
+  monitorShell.castShadow = true
+  addBox(desk, [0.7, 0.36, 0.025], [0, 1.1, -0.145], 0x6f8faa)
+  addBox(desk, [0.06, 0.38, 0.06], [0, 0.9, 0], 0x566273)
+  addBox(desk, [0.46, 0.05, 0.28], [0, 0.76, 0.25], 0x8894a3)
+
   return desk
 }
 
@@ -218,41 +271,121 @@ function createAgentRuntime(
   group.userData.agentId = agent.id
   const color = agentColor(agent.agent_profile_key)
 
-  const body = addBox(group, [0.56, 0.68, 0.38], [0, 0.86, 0], color)
-  body.userData.agentId = agent.id
+  const shadow = new THREE.Mesh(
+    new THREE.CircleGeometry(0.48, 24),
+    new THREE.MeshBasicMaterial({
+      color: 0x26313e,
+      transparent: true,
+      opacity: 0.16,
+      depthWrite: false,
+    }),
+  )
+  shadow.rotation.x = -Math.PI / 2
+  shadow.position.y = 0.02
+  group.add(shadow)
+
+  const torso = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.31, 0.37, 0.72, 12),
+    new THREE.MeshStandardMaterial({ color, roughness: 0.72 }),
+  )
+  torso.position.set(0, 0.96, 0)
+  torso.castShadow = true
+  torso.userData.agentId = agent.id
+  group.add(torso)
+
+  const shirtBand = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.315, 0.345, 0.18, 12),
+    new THREE.MeshStandardMaterial({ color: 0xe9edf2, roughness: 0.78 }),
+  )
+  shirtBand.position.set(0, 1.19, 0)
+  shirtBand.castShadow = true
+  shirtBand.userData.agentId = agent.id
+  group.add(shirtBand)
 
   const head = new THREE.Mesh(
-    new THREE.SphereGeometry(0.27, 16, 12),
-    new THREE.MeshStandardMaterial({ color: 0xe5c4a7, roughness: 0.8 }),
+    new THREE.SphereGeometry(0.3, 18, 14),
+    new THREE.MeshStandardMaterial({ color: 0xe6c2a1, roughness: 0.86 }),
   )
-  head.position.set(0, 1.43, 0)
+  head.position.set(0, 1.55, 0)
   head.castShadow = true
   head.userData.agentId = agent.id
   group.add(head)
 
-  const leftLeg = addBox(group, [0.17, 0.48, 0.18], [-0.16, 0.35, 0], 0x394354)
-  const rightLeg = addBox(group, [0.17, 0.48, 0.18], [0.16, 0.35, 0], 0x394354)
+  const hair = new THREE.Mesh(
+    new THREE.SphereGeometry(0.305, 18, 10, 0, Math.PI * 2, 0, Math.PI * 0.48),
+    new THREE.MeshStandardMaterial({ color: 0x3d4755, roughness: 0.9 }),
+  )
+  hair.position.set(0, 1.57, 0)
+  hair.castShadow = true
+  hair.userData.agentId = agent.id
+  group.add(hair)
+
+  const armMaterial = new THREE.MeshStandardMaterial({ color, roughness: 0.75 })
+  const leftArm = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.075, 0.085, 0.56, 8),
+    armMaterial,
+  )
+  leftArm.position.set(-0.4, 0.94, 0)
+  leftArm.rotation.z = -0.08
+  leftArm.castShadow = true
+  leftArm.userData.agentId = agent.id
+  group.add(leftArm)
+
+  const rightArm = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.075, 0.085, 0.56, 8),
+    armMaterial.clone(),
+  )
+  rightArm.position.set(0.4, 0.94, 0)
+  rightArm.rotation.z = 0.08
+  rightArm.castShadow = true
+  rightArm.userData.agentId = agent.id
+  group.add(rightArm)
+
+  const trouserMaterial = new THREE.MeshStandardMaterial({
+    color: 0x354255,
+    roughness: 0.84,
+  })
+  const leftLeg = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.1, 0.105, 0.52, 8),
+    trouserMaterial,
+  )
+  leftLeg.position.set(-0.14, 0.38, 0)
+  leftLeg.castShadow = true
   leftLeg.userData.agentId = agent.id
+  group.add(leftLeg)
+
+  const rightLeg = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.1, 0.105, 0.52, 8),
+    trouserMaterial.clone(),
+  )
+  rightLeg.position.set(0.14, 0.38, 0)
+  rightLeg.castShadow = true
   rightLeg.userData.agentId = agent.id
+  group.add(rightLeg)
+
+  addBox(group, [0.22, 0.1, 0.34], [-0.14, 0.1, 0.06], 0x253142).userData.agentId =
+    agent.id
+  addBox(group, [0.22, 0.1, 0.34], [0.14, 0.1, 0.06], 0x253142).userData.agentId =
+    agent.id
 
   const statusLight = new THREE.Mesh(
-    new THREE.SphereGeometry(0.1, 12, 8),
+    new THREE.SphereGeometry(0.085, 12, 8),
     new THREE.MeshBasicMaterial({ color: statusColor(agent.status) }),
   )
-  statusLight.position.set(0.43, 1.52, 0)
+  statusLight.position.set(0.42, 1.62, 0)
   group.add(statusLight)
 
   const selectionRing = new THREE.Mesh(
-    new THREE.RingGeometry(0.54, 0.66, 32),
+    new THREE.RingGeometry(0.52, 0.66, 40),
     new THREE.MeshBasicMaterial({
-      color: 0x3f7ad6,
+      color: 0x2f73c8,
       side: THREE.DoubleSide,
       transparent: true,
-      opacity: 0.9,
+      opacity: 0.95,
     }),
   )
   selectionRing.rotation.x = -Math.PI / 2
-  selectionRing.position.y = 0.025
+  selectionRing.position.y = 0.028
   selectionRing.visible = false
   group.add(selectionRing)
 
@@ -260,7 +393,7 @@ function createAgentRuntime(
     name,
     officeAgentState(agent.status).label,
   )
-  label.position.set(0, 2.15, 0)
+  label.position.set(0, 2.28, 0)
   group.add(label)
   group.position.copy(station)
 
@@ -292,7 +425,7 @@ function replaceAgentLabel(runtime: RuntimeAgent, status: string): void {
     runtime.name,
     officeAgentState(status).label,
   )
-  sprite.position.set(0, 2.15, 0)
+  sprite.position.set(0, 2.28, 0)
   runtime.label = sprite
   runtime.labelTexture = texture
   runtime.group.add(sprite)
@@ -354,17 +487,38 @@ function createEnvironment(
 ): Map<string, THREE.Vector3> {
   clearGroup(engine.environment)
 
-  const floor = addBox(engine.environment, [22, 0.26, 16], [0, -0.18, 0], 0xe5e8ec)
+  const slab = addBox(
+    engine.environment,
+    [22.6, 0.48, 16.6],
+    [0, -0.34, 0],
+    0x687585,
+  )
+  slab.receiveShadow = true
+
+  const floor = addBox(
+    engine.environment,
+    [22, 0.22, 16],
+    [0, -0.08, 0],
+    0xbac5d0,
+  )
   floor.receiveShadow = true
 
-  const grid = new THREE.GridHelper(22, 22, 0xc5cbd3, 0xd8dde3)
-  grid.position.y = -0.035
+  const grid = new THREE.GridHelper(22, 22, 0x8f9cab, 0xaab5c1)
+  grid.position.y = 0.038
   grid.scale.z = 16 / 22
   engine.environment.add(grid)
 
-  addBox(engine.environment, [22, 1.1, 0.2], [0, 0.45, -7.9], 0xcbd2da)
-  addBox(engine.environment, [0.2, 1.1, 16], [-10.9, 0.45, 0], 0xcbd2da)
-  addBox(engine.environment, [0.2, 1.1, 16], [10.9, 0.45, 0], 0xcbd2da)
+  const corridor = addBox(
+    engine.environment,
+    [20.4, 0.07, 1.18],
+    [0, 0.045, 0],
+    0x8f9faf,
+  )
+  corridor.receiveShadow = true
+
+  addBox(engine.environment, [22, 1.15, 0.22], [0, 0.48, -7.9], 0x788594)
+  addBox(engine.environment, [0.22, 1.15, 16], [-10.9, 0.48, 0], 0x788594)
+  addBox(engine.environment, [0.22, 1.15, 16], [10.9, 0.48, 0], 0x788594)
 
   const stations = new Map<string, THREE.Vector3>()
   const sortedStages = stages.slice().sort((a, b) => a.order_hint - b.order_hint)
@@ -386,14 +540,13 @@ function createEnvironment(
     edges.position.copy(tile.position)
     engine.environment.add(edges)
 
-    const { sprite, texture } = makeTextSprite(
+    const stageLabel = makeFloorLabel(
       stage.stage_key,
       `Stage ${stage.order_hint} · ${stage.status}`,
     )
-    sprite.position.set(center.x, 0.42, center.z - 2.25)
-    sprite.scale.set(2.9, 0.72, 1)
-    sprite.userData.disposableTexture = texture
-    engine.environment.add(sprite)
+    stageLabel.position.x = center.x
+    stageLabel.position.z = center.z + 2.05
+    engine.environment.add(stageLabel)
 
     const stageAgents = agents.filter((agent) => agent.stage_key === stage.stage_key)
     stageAgents.forEach((agent, agentIndex) => {
@@ -406,17 +559,23 @@ function createEnvironment(
   })
 
   const zones = [
-    { name: 'ENTRANCE', point: ENTRANCE, color: 0xdde4ed },
-    { name: 'WAITING', point: WAITING, color: 0xeee5d4 },
-    { name: 'INCIDENT', point: INCIDENT, color: 0xefdeda },
+    { name: 'ENTRANCE', point: ENTRANCE, color: 0xb8c7d8 },
+    { name: 'WAITING', point: WAITING, color: 0xd7c79f },
+    { name: 'INCIDENT', point: INCIDENT, color: 0xd7aaa6 },
   ]
   zones.forEach((zone) => {
-    addBox(engine.environment, [2.6, 0.08, 1.7], [zone.point.x, 0, zone.point.z], zone.color)
-    const { sprite, texture } = makeTextSprite(zone.name)
-    sprite.position.set(zone.point.x, 0.45, zone.point.z)
-    sprite.scale.set(1.8, 0.45, 1)
-    sprite.userData.disposableTexture = texture
-    engine.environment.add(sprite)
+    addBox(
+      engine.environment,
+      [2.55, 0.1, 1.65],
+      [zone.point.x, 0.035, zone.point.z],
+      zone.color,
+    )
+    const label = makeFloorLabel(zone.name)
+    label.scale.set(0.72, 0.72, 0.72)
+    label.position.x = zone.point.x
+    label.position.z = zone.point.z
+    label.position.y = 0.094
+    engine.environment.add(label)
   })
 
   ;[
@@ -638,30 +797,34 @@ export function ThreeOfficeScene({
       renderer.shadowMap.enabled = true
       renderer.shadowMap.type = THREE.PCFSoftShadowMap
       renderer.outputColorSpace = THREE.SRGBColorSpace
-      renderer.setClearColor(0xf0f2f5, 1)
+      renderer.setClearColor(0xd8e0e8, 1)
+      renderer.toneMapping = THREE.ACESFilmicToneMapping
+      renderer.toneMappingExposure = 1.08
       renderer.domElement.className = 'office-three-canvas'
       renderer.domElement.setAttribute('aria-label', 'Interactive 3D office scene')
       renderer.domElement.tabIndex = 0
       host.appendChild(renderer.domElement)
 
       const scene = new THREE.Scene()
-      scene.background = new THREE.Color(0xf0f2f5)
+      scene.background = new THREE.Color(0xd8e0e8)
+      scene.fog = new THREE.Fog(0xd8e0e8, 32, 52)
 
-      const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 100)
-      camera.position.set(13.5, 13.5, 17.5)
-      camera.lookAt(0, 0, 0)
+      const camera = new THREE.PerspectiveCamera(33, 1, 0.1, 100)
+      camera.position.set(12.8, 14.8, 17.2)
+      camera.lookAt(0, 0.35, 0)
 
       const controls = new OrbitControls(camera, renderer.domElement)
-      controls.target.set(0, 0.3, 0)
-      controls.enableDamping = false
+      controls.target.set(0, 0.35, 0)
+      controls.enableDamping = true
+      controls.dampingFactor = 0.08
       controls.enablePan = true
       controls.minDistance = 11
       controls.maxDistance = 30
       controls.minPolarAngle = Math.PI * 0.2
       controls.maxPolarAngle = Math.PI * 0.47
 
-      scene.add(new THREE.HemisphereLight(0xffffff, 0x9ca6b3, 2.1))
-      const keyLight = new THREE.DirectionalLight(0xffffff, 3)
+      scene.add(new THREE.HemisphereLight(0xf8fbff, 0x667485, 2.35))
+      const keyLight = new THREE.DirectionalLight(0xfff8eb, 3.2)
       keyLight.position.set(-7, 15, 10)
       keyLight.castShadow = true
       keyLight.shadow.mapSize.set(2048, 2048)
@@ -693,7 +856,10 @@ export function ThreeOfficeScene({
       }
       engineRef.current = engine
 
-      const render = () => renderer.render(scene, camera)
+      const render = () => {
+        controls.update()
+        renderer.render(scene, camera)
+      }
       const resize = () => {
         if (!host.isConnected) return
         const width = Math.max(host.clientWidth, 320)
