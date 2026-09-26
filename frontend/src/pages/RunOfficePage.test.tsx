@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
+import type { ReactElement } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import App from '../App'
@@ -14,7 +15,7 @@ import type {
   Workspace,
 } from '../api'
 import { OfficeRendererBoundary } from '../components/OfficeRendererBoundary'
-import { officeAgentState } from '../components/OfficeScene'
+import { officeAgentState } from '../officeProjection'
 
 const PROJECT: Project = {
   id: '11111111-1111-4111-8111-111111111111',
@@ -253,11 +254,8 @@ describe('Phase 8 Office View', () => {
   it('keeps operational navigation available when the local renderer fails', () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
 
-    function BrokenRenderer() {
-      if (true) {
-        throw new Error('renderer failure')
-      }
-      return null
+    function BrokenRenderer(): ReactElement {
+      throw new Error('renderer failure')
     }
 
     render(

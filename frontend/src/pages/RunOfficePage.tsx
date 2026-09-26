@@ -14,11 +14,8 @@ import {
 } from '../api'
 import { EmptyState } from '../components/EmptyState'
 import { OfficeRendererBoundary } from '../components/OfficeRendererBoundary'
-import {
-  OfficeScene,
-  officeAgentState,
-  officeLatestAgentEvent,
-} from '../components/OfficeScene'
+import { OfficeScene } from '../components/OfficeScene'
+import { officeAgentState, officeLatestAgentEvent } from '../officeProjection'
 import { PageHeader } from '../components/PageHeader'
 import { Link } from '../router/Link'
 
@@ -46,7 +43,9 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
   const [profiles, setProfiles] = useState<AgentProfile[]>([])
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null)
   const [motionPaused, setMotionPaused] = useState(false)
-  const [liveState, setLiveState] = useState<LiveState>('disconnected')
+  const [liveState, setLiveState] = useState<LiveState>(() =>
+    typeof EventSource === 'undefined' ? 'unsupported' : 'disconnected',
+  )
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -128,14 +127,13 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
   }, [runId])
 
   useEffect(() => {
-    void refreshAll()
+    void Promise.resolve().then(refreshAll)
   }, [refreshAll])
 
   useEffect(() => {
     let active = true
 
     if (typeof EventSource === 'undefined') {
-      setLiveState('unsupported')
       return () => {
         active = false
       }

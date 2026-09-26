@@ -8,6 +8,7 @@ import type {
   RunStage,
   Workspace,
 } from '../api'
+import { officeAgentState, officeLatestAgentEvent } from '../officeProjection'
 
 export interface OfficeSceneProps {
   stages: RunStage[]
@@ -19,11 +20,6 @@ export interface OfficeSceneProps {
   selectedAgentId: string | null
   onSelectAgent: (agentId: string) => void
   motionPaused: boolean
-}
-
-interface OfficeState {
-  key: string
-  label: string
 }
 
 interface StageProjection {
@@ -54,30 +50,6 @@ const EVENT_LABELS: Record<string, string> = {
   'test.completed': 'Test completed',
 }
 
-function officeState(status: string): OfficeState {
-  switch (status.toUpperCase()) {
-    case 'PENDING':
-    case 'CREATED':
-      return { key: 'pending', label: 'Waiting to start' }
-    case 'STARTING':
-      return { key: 'starting', label: 'Starting' }
-    case 'RUNNING':
-      return { key: 'running', label: 'Running' }
-    case 'WAITING':
-      return { key: 'waiting', label: 'Waiting' }
-    case 'BLOCKED':
-      return { key: 'blocked', label: 'Blocked' }
-    case 'FAILED':
-      return { key: 'failed', label: 'Failed' }
-    case 'COMPLETED':
-      return { key: 'completed', label: 'Completed' }
-    case 'CANCELLED':
-      return { key: 'cancelled', label: 'Cancelled' }
-    default:
-      return { key: 'unknown', label: status || 'Unknown' }
-  }
-}
-
 function profileName(agent: AgentRun, profiles: Map<string, AgentProfile>): string {
   return profiles.get(agent.agent_profile_key)?.name ?? agent.agent_profile_key
 }
@@ -93,15 +65,6 @@ function initials(value: string): string {
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase() ?? '')
     .join('')
-}
-
-function latestAgentEvent(agentId: string, events: AgentEvent[]): AgentEvent | null {
-  return (
-    events
-      .filter((event) => event.agent_run_id === agentId)
-      .slice()
-      .sort((left, right) => right.occurred_at.localeCompare(left.occurred_at))[0] ?? null
-  )
 }
 
 function eventClass(event: AgentEvent | null): string {
@@ -249,9 +212,9 @@ export function OfficeScene({
                   ) : (
                     <div className="office-workstation-grid">
                       {stage.agents.map((agent) => {
-                        const state = officeState(agent.status)
+                        const state = officeAgentState(agent.status)
                         const name = profileName(agent, profileByKey)
-                        const latestEvent = latestAgentEvent(agent.id, events)
+                        const latestEvent = officeLatestAgentEvent(agent.id, events)
                         const executor = executorById.get(agent.executor_id)
                         const workspace = agent.workspace_id
                           ? workspaceById.get(agent.workspace_id)
@@ -336,15 +299,4 @@ export function OfficeScene({
       </div>
     </section>
   )
-}
-
-export function officeAgentState(status: string): OfficeState {
-  return officeState(status)
-}
-
-export function officeLatestAgentEvent(
-  agentId: string,
-  events: AgentEvent[],
-): AgentEvent | null {
-  return latestAgentEvent(agentId, events)
 }
