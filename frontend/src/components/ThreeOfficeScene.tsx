@@ -43,7 +43,7 @@ interface Engine {
   renderer: THREE.WebGLRenderer
   labels: CSS2DRenderer
   scene: THREE.Scene
-  camera: THREE.OrthographicCamera
+  camera: THREE.PerspectiveCamera
   controls: OrbitControls
   environment: THREE.Group
   agents: THREE.Group
@@ -351,19 +351,21 @@ export function ThreeOfficeScene({
       const scene = new THREE.Scene()
       scene.background = new THREE.Color(0x111820)
 
-      const camera = new THREE.OrthographicCamera(-10, 10, 7.5, -7.5, 0.1, 100)
-      camera.position.set(14.5, 18.5, 14.5)
-      camera.lookAt(0, 0.45, 0)
-      camera.zoom = 1.04
-      camera.updateProjectionMatrix()
+      const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100)
+      camera.position.set(12.8, 10.8, 14.2)
+      camera.lookAt(0, 0.65, 0)
 
       const controls = new OrbitControls(camera, renderer.domElement)
-      controls.target.set(0, 0.45, 0)
-      controls.enableDamping = false
-      controls.enablePan = false
-      controls.enableRotate = false
-      controls.minZoom = 0.9
-      controls.maxZoom = 1.35
+      controls.target.set(0, 0.65, 0)
+      controls.enableDamping = true
+      controls.dampingFactor = 0.08
+      controls.enablePan = true
+      controls.enableRotate = true
+      controls.screenSpacePanning = true
+      controls.minDistance = 8.5
+      controls.maxDistance = 27
+      controls.minPolarAngle = Math.PI * 0.16
+      controls.maxPolarAngle = Math.PI * 0.48
 
       scene.add(new THREE.HemisphereLight(0xdce9f4, 0x1a232d, 2.0))
 
@@ -409,12 +411,7 @@ export function ThreeOfficeScene({
         if (!host.isConnected || !engine) return
         const width = Math.max(host.clientWidth, 320)
         const height = Math.max(host.clientHeight, 480)
-        const aspect = width / height
-        const viewHeight = 14.6
-        camera.left = (-viewHeight * aspect) / 2
-        camera.right = (viewHeight * aspect) / 2
-        camera.top = viewHeight / 2
-        camera.bottom = -viewHeight / 2
+        camera.aspect = width / height
         camera.updateProjectionMatrix()
         renderer.setSize(width, height, false)
         labels.setSize(width, height)
@@ -424,7 +421,10 @@ export function ThreeOfficeScene({
       resizeObserver = new ResizeObserver(resize)
       resizeObserver.observe(host)
       resize()
-      controls.addEventListener('change', render)
+      controls.addEventListener('change', () => {
+        controls.update()
+        render()
+      })
 
       const raycaster = new THREE.Raycaster()
       const pointer = new THREE.Vector2()
@@ -525,7 +525,11 @@ export function ThreeOfficeScene({
       let runtime = engine.runtimes.get(agent.id)
 
       if (!runtime) {
-        runtime = createCharacterRuntime(agent, name, station)
+        runtime = createCharacterRuntime(agent, name, station, () => {
+          if (engine.disposed) return
+          renderEngine(engine)
+          if (!motionPausedRef.current) startLoop()
+        })
         engine.runtimes.set(agent.id, runtime)
         engine.agents.add(runtime.root)
       } else {
