@@ -80,9 +80,11 @@
   position: relative;
   height: clamp(540px, 66vh, 760px);
   overflow: hidden;
-  border-top: 1px solid var(--ao-line);
-  border-bottom: 1px solid var(--ao-line);
-  background: #f0f2f5;
+  border: 1px solid #c8d0da;
+  background: #d8e0e8;
+  box-shadow:
+    0 12px 32px rgba(31, 43, 58, .08),
+    inset 0 0 0 1px rgba(255, 255, 255, .45);
 }
 
 .office-three-canvas {
@@ -121,8 +123,11 @@
   display: flex;
   align-items: stretch;
   overflow-x: auto;
-  border-bottom: 1px solid var(--ao-line);
+  border: 1px solid #d6dce4;
+  border-top: 0;
+  background: #f8fafc;
   scrollbar-width: thin;
+  scroll-snap-type: x proximity;
 }
 
 .office-agent-button {
@@ -130,8 +135,9 @@
   grid-template-columns: 8px auto;
   grid-template-rows: auto auto;
   column-gap: 7px;
-  min-width: 148px;
-  padding: 9px 12px;
+  min-width: 164px;
+  padding: 10px 13px;
+  scroll-snap-align: start;
   border: 0;
   border-right: 1px solid var(--ao-line-soft);
   background: transparent;
@@ -176,8 +182,8 @@
 
 .office-agent-button > span:nth-child(2) {
   overflow: hidden;
-  font-size: .68rem;
-  font-weight: 650;
+  font-size: .7rem;
+  font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -185,7 +191,7 @@
 .office-agent-button small {
   grid-column: 2;
   color: var(--ao-faint);
-  font-size: .59rem;
+  font-size: .61rem;
 }
 
 .office-agent-roster-empty {
