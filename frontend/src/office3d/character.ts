@@ -219,14 +219,14 @@ function clipFor(runtime: RuntimeAgent): string {
 
   switch (runtime.currentStatus.toUpperCase()) {
     case 'RUNNING':
-      return 'Sitting_Idle'
+      return 'Sitting_Talking'
     case 'COMPLETED':
       return 'Sitting_Idle'
     case 'WAITING':
       return 'Idle_Loop'
     case 'BLOCKED':
     case 'FAILED':
-      return 'Idle_Talking_Loop'
+      return 'Idle_Loop'
     default:
       return 'Idle_Loop'
   }

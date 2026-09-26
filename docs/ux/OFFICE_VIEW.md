@@ -17,7 +17,7 @@ workflow state and must never become the only way to understand or operate a Run
 ```text
 RunStage         → spatial office zone
 AgentRun         → exactly one character/workstation
-AgentRun.status  → character pose, status and destination
+AgentRun.status  → character animation, status and destination
 canonical Event  → bounded factual signal / refresh trigger
 Workspace        → factual detail label
 Executor         → factual detail label
@@ -29,19 +29,19 @@ No visual character exists without a persisted AgentRun.
 
 ```text
 PENDING / CREATED → waiting to start
-STARTING          → entering / moving to factual workstation
-RUNNING           → working-at-station animation
-WAITING           → waiting-zone idle animation
-BLOCKED           → incident-zone alert animation
-FAILED            → incident-zone alert animation
-COMPLETED         → completed neutral pose
-CANCELLED         → cancelled neutral pose
+STARTING          → entering / walking to factual workstation
+RUNNING           → active seated workstation animation
+WAITING           → waiting-zone idle
+BLOCKED           → incident-zone idle + explicit blocked status
+FAILED            → incident-zone idle + explicit failed status
+COMPLETED         → seated workstation idle
+CANCELLED         → terminal neutral state
 unknown           → explicit unknown presentation
 ```
 
 The animation is a representation of canonical state, not a progress estimate.
-A RUNNING character may use a repetitive work pose, but Office View never derives a
-percentage, token count, typing speed, reasoning state, or completion forecast from it.
+RUNNING motion never implies a percentage, token count, reasoning trace, typing speed,
+dialogue, or completion forecast.
 
 ## Event mapping
 
@@ -67,44 +67,92 @@ The renderer uses Three.js 0.181.x.
 ```text
 RunOfficePage
   └─ OfficeScene
-      ├─ ThreeOfficeScene          orchestration / camera / replay / picking
-      ├─ office3d/environment.ts   office, stages, furniture, workstation placement
-      └─ office3d/character.ts     humanoid rig, nameplate and state animation
+      ├─ ThreeOfficeScene          camera / movement / replay / picking
+      ├─ office3d/environment.ts   office / stages / furniture / stations
+      └─ office3d/character.ts     rigged GLB / mixer / labels / fallback
 ```
 
-The scene uses the same composition principle as the reviewed office references: one
-continuous office, compact workstation clusters, small characters relative to the room,
-and a stable overhead/isometric observer view. Stage state remains visible through subtle
-floor zones rather than six visually dominant room cards.
+The scene uses one continuous office with compact workstation clusters. RunStage state is
+projected through floor regions without turning each stage into a dominant room card.
 
 The scene includes:
 
 - WebGLRenderer
-- fixed orthographic/isometric observer camera
-- OrbitControls configured as zoom-only; rotation and panning are locked
+- PerspectiveCamera
+- OrbitControls with full horizontal orbit
+- bounded vertical orbit to keep the camera above the floor
+- bounded zoom distance and optional panning
 - directional, fill and hemisphere lighting
 - soft shadows
-- stage zones and a central circulation corridor
-- desks, monitors, chairs, shelving, plants and a lounge area
-- procedural stylized humanoid characters
+- stage zones and central circulation corridor
+- desks, monitors, chairs, shelving, plants and lounge furniture
+- textured rigged humanoid GLB characters
+- Quaternius non-root-motion animation clips
 - DOM/CSS nameplates rendered with Three.js CSS2DRenderer
 - raycasting for character selection
 - an ordinary HTML roster for keyboard-accessible selection
 
-The character module deliberately separates character implementation from simulation state.
-A future audited rigged glTF character can replace the procedural mesh without changing the
-AgentRun mapping, movement engine or operational truth model.
+The character implementation is isolated from Run state. A failed character-asset load
+falls back to a local procedural silhouette without breaking the operational Run page.
 
-## Character motion
+## Character assets and animation
 
-Movement is deterministic and bounded.
+Phase 8 uses the free Standard editions of:
+
+- Quaternius Universal Base Characters
+- Quaternius Universal Animation Library
+
+Both are released under CC0 1.0.
+
+The binary assets are fetched during `npm run dev` and `npm run build` by:
+
+```text
+frontend/scripts/fetch-office-assets.mjs
+```
+
+The fetcher is deterministic:
+
+- upstream repository is pinned to an exact commit
+- each output file has a fixed expected byte size
+- each output file is SHA-256 verified before use
+- incomplete or mismatched output is removed
+- browser runtime loads only the resulting local `/assets/office/` files
+
+Exact provenance, hashes, source paths and license copies live in:
+
+```text
+frontend/public/assets/office/ASSET_PROVENANCE.md
+frontend/public/assets/office/LICENSE-BASE-CHARACTERS.txt
+frontend/public/assets/office/LICENSE-ANIMATIONS.txt
+```
+
+The current character source is a textured conversion of Quaternius
+`Superhero_Male_FullBody` with the compatible 65-bone universal humanoid rig.
+The animation library uses the matching skeleton.
+
+Current presentation mapping uses:
+
+```text
+movement        → Walk_Loop
+RUNNING         → Sitting_Talking
+COMPLETED       → Sitting_Idle
+WAITING         → Idle_Loop
+BLOCKED/FAILED  → Idle_Loop
+```
+
+The `Sitting_Talking` clip is used only as visually active seated body motion. Agent Office
+does not claim that a RUNNING agent is literally talking.
+
+## Character movement
+
+Movement remains deterministic and owned by Agent Office rather than root motion.
 
 ```text
 entrance
    ↓
 central corridor
    ↓
-RunStage workstation
+factual RunStage workstation
 ```
 
 State destinations:
@@ -113,31 +161,47 @@ State destinations:
 STARTING / RUNNING → stage workstation
 WAITING            → waiting area
 BLOCKED / FAILED   → incident area
-COMPLETED          → stage workstation, terminal pose
-CANCELLED          → stage workstation, terminal pose
+COMPLETED          → stage workstation
 ```
 
-The runtime character has explicit visual poses:
-
-- walk cycle while traversing waypoints
-- working-at-desk loop for RUNNING
-- quiet waiting idle for WAITING
-- alert idle for BLOCKED / FAILED
-- neutral terminal pose for COMPLETED / CANCELLED
+The animation library provides articulated locomotion and seated motion while the canonical
+control plane owns world-space character translation.
 
 No random wandering, fictional meetings, coffee breaks, dialogue, or collaboration is
 generated.
 
+## Camera controls
+
+Office View is a real 3D observer scene rather than a fixed screenshot composition.
+
+Default camera:
+
+```text
+PerspectiveCamera
+position  12.8, 10.8, 14.2
+target    0, 0.65, 0
+FOV       38°
+```
+
+Controls:
+
+```text
+left drag     orbit
+right drag    pan
+wheel         zoom
+horizontal    full 360°
+vertical      bounded above the floor
+distance      8.5 – 27 scene units
+```
+
+The bounds prevent accidental under-floor views while preserving free inspection of the
+office from any horizontal angle.
+
 ## Render-loop policy
 
-The animation loop is demand-aware:
-
-- movement keeps frames running
-- STARTING / RUNNING / WAITING / BLOCKED / FAILED visual poses may keep frames running
-- terminal idle state does not require a continuous render loop
-- OrbitControls render on interaction
-- paused motion suppresses character animation
-- no backend polling loop is introduced by Office View
+The animation loop runs for active rigged characters and movement. OrbitControls render on
+interaction. Pausing motion suppresses character animation. Office View introduces no
+backend polling loop.
 
 The SSE list remains bounded to the latest normalized events and the visible signal list is
 bounded to six relevant events.
@@ -152,8 +216,8 @@ Historical replay · timing compressed
 
 Replay uses persisted AgentRun `started_at` and `completed_at` facts. It preserves factual
 ordering while compressing time for observability. Characters enter through the office
-entrance, traverse the corridor, reach their factual stage workstation, and temporarily show
-the RUNNING work pose before terminal state.
+entrance, traverse the corridor, reach their factual stage workstation, and show the
+RUNNING presentation before terminal state.
 
 Replay is explicitly labelled and must never be presented as live execution.
 
@@ -161,7 +225,7 @@ Replay is explicitly labelled and must never be presented as live execution.
 
 Office rendering is isolated from canonical workflow execution.
 
-If WebGL or the renderer fails:
+If WebGL, GLB loading, animation loading, or the renderer fails:
 
 - the operational Run remains available
 - cancellation remains available
@@ -170,7 +234,7 @@ If WebGL or the renderer fails:
 - approvals remain available
 - executor selection remains available
 
-The Office renderer has a local fallback instead of failing the Run page.
+The Office renderer and character layer have local fallbacks instead of failing the Run page.
 
 ## Accessibility
 
@@ -182,48 +246,27 @@ detail as 3D raycasting.
 
 Office View is not required for any control-plane action.
 
-## Visual assets and provenance
+## Reference research
 
-Current Phase 8 visual geometry is generated inside Agent Office.
+Implementation patterns were studied from:
 
-There are no bundled third-party:
-
-- character models
-- textures
-- stock images
-- sprite sheets
-- icon packs
-- remote fonts
-
-Runtime dependency:
-
-- `three` 0.181.x — MIT License
-
-The implementation was informed by public reference patterns in:
-
-- `W17ant/Claude-Office` — position targets, path-oriented movement and office presence
-- `wickedapp/openclaw-office` — event-driven office/task visualization
-- `Shubhamsaboo/awesome-llm-apps` — Three.js scene/camera/render-loop patterns
+- `W17ant/Claude-Office` — office presence, position targets and path-oriented movement
+- `wickedapp/openclaw-office` — event-driven task/agent presentation
+- `Shubhamsaboo/awesome-llm-apps` — Three.js renderer/camera integration patterns
 
 No visual asset or product identity from those repositories is copied.
 
-### Audited character-upgrade candidate
-
-Quaternius Universal Base Characters and Universal Animation Library were evaluated as a
-future character replacement because their free distributions are CC0 and provide rigged
-humanoid glTF/GLB assets and locomotion/idle animation libraries.
-
-They are **not vendored in the repository at this Phase 8 checkpoint**. If added later, the
-binary assets, exact upstream source, license text, checksums and modifications must be
-recorded before merge.
+The Quaternius assets enter Agent Office through their own documented CC0 provenance rather
+than being copied from those reference applications.
 
 ## Truthfulness constraints
 
 Office View must not:
 
-- create placeholder workers that do not correspond to AgentRuns
+- create workers that do not correspond to AgentRuns
 - fabricate progress percentages
 - fabricate thinking/reasoning activity
+- fabricate dialogue from animation
 - infer test success without canonical Evidence/Event truth
 - imply merge or deploy status
 - hide blockers behind visual presentation
