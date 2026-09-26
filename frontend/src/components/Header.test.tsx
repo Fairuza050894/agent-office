@@ -50,12 +50,12 @@ describe('backend reachability indicator', () => {
 
     expect(
       await screen.findByText(
-        'Backend Reachable',
+        'Backend online',
       ),
     ).toBeInTheDocument()
 
     expect(
-      screen.getByText('(/health ok)'),
+      screen.getByText('/health'),
     ).toBeInTheDocument()
   })
 
@@ -79,7 +79,7 @@ describe('backend reachability indicator', () => {
 
     expect(
       await screen.findByText(
-        'Backend Disconnected',
+        'Backend offline',
       ),
     ).toBeInTheDocument()
 
@@ -91,7 +91,7 @@ describe('backend reachability indicator', () => {
 
     expect(
       await screen.findByText(
-        'Backend Reachable',
+        'Backend online',
       ),
     ).toBeInTheDocument()
 

@@ -38,7 +38,7 @@ afterEach(() => {
 })
 
 describe('Agent Office operational shell', () => {
-  it('renders semantic shell landmarks and Phase 5 identity', () => {
+  it('renders semantic shell landmarks and local-first product identity', () => {
     render(<App initialPath="/settings" />)
 
     expect(screen.getByRole('link', { name: 'Skip to main content' })).toHaveAttribute('href', '#main-content')
@@ -48,9 +48,10 @@ describe('Agent Office operational shell', () => {
 
     const sidebar = screen.getByRole('complementary', { name: 'Sidebar Navigation' })
     expect(within(sidebar).getByText('Agent Office')).toBeInTheDocument()
-    expect(within(sidebar).getByText('Control Plane')).toBeInTheDocument()
-    expect(within(sidebar).getByText('Local-First')).toBeInTheDocument()
-    expect(within(sidebar).getByText('Phase 5')).toBeInTheDocument()
+    expect(within(sidebar).getByText('Engineering control plane')).toBeInTheDocument()
+    expect(within(sidebar).getByText('Local-first')).toBeInTheDocument()
+    expect(within(sidebar).getByText('Workspace isolated')).toBeInTheDocument()
+    expect(within(sidebar).queryByText('Phase 5')).not.toBeInTheDocument()
   })
 
   it('renders required global navigation plus Tasks utility registry', () => {
