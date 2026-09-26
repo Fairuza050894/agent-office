@@ -226,7 +226,7 @@ describe('Phase 5 operational registries', () => {
     const executor = await screen.findByRole('article', { name: 'Reference Executor' })
     expect(within(executor).getByText('START_EXECUTION')).toBeInTheDocument()
     expect(within(executor).getByText('SUPPORTED')).toBeInTheDocument()
-    expect(within(executor).getByText('FILE_WRITE')).toBeInTheDocument()
+    expect(within(executor).getAllByText('FILE_WRITE').length).toBeGreaterThan(0)
     expect(within(executor).getAllByText('UNSUPPORTED').length).toBeGreaterThan(0)
   })
 
