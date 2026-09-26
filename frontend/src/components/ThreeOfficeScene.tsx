@@ -731,7 +731,8 @@ export function ThreeOfficeScene({
         resizeObserver?.disconnect()
         controls.removeEventListener('change', render)
         renderer.domElement.removeEventListener('click', handleClick)
-        if (engine?.frame !== null) cancelAnimationFrame(engine.frame)
+        const frame = engine?.frame
+        if (frame !== null && frame !== undefined) cancelAnimationFrame(frame)
         if (engine) engine.disposed = true
         disposeObject(scene)
         controls.dispose()
