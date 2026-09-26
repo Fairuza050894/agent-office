@@ -6,13 +6,54 @@ import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js
 import type { AgentRun } from '../api'
 import { officeAgentState } from '../officeProjection'
 
-const CHARACTER_URL = '/assets/office/quaternius-business-man.glb'
+type CharacterVariantKey = 'suit' | 'casual' | 'hoodie' | 'dress' | 'smart'
+
+interface CharacterVariant {
+  url: string
+  scale: number
+}
+
 const MODEL_YAW_OFFSET = Math.PI
 
+const CHARACTER_VARIANTS: Record<CharacterVariantKey, CharacterVariant> = {
+  suit: {
+    url: '/assets/office/char-m-suit.glb',
+    scale: 0.98,
+  },
+  casual: {
+    url: '/assets/office/char-m-casual.glb',
+    scale: 0.98,
+  },
+  hoodie: {
+    url: '/assets/office/char-m-hoodie.glb',
+    scale: 0.98,
+  },
+  dress: {
+    url: '/assets/office/char-f-dress.glb',
+    scale: 0.98,
+  },
+  smart: {
+    url: '/assets/office/char-f-smart.glb',
+    scale: 0.98,
+  },
+}
+
+const ROLE_VARIANTS: Record<string, CharacterVariantKey> = {
+  architect: 'suit',
+  explorer: 'hoodie',
+  'backend-developer': 'casual',
+  'frontend-developer': 'smart',
+  'qa-reviewer': 'dress',
+  'security-reviewer': 'suit',
+  'ux-reviewer': 'smart',
+  verifier: 'casual',
+  'documentation-writer': 'dress',
+}
+
 const CLIPS = {
-  idle: 'CharacterArmature|Idle_Neutral',
-  walk: 'CharacterArmature|Walk',
-  work: 'CharacterArmature|Interact',
+  idle: 'Idle',
+  walk: 'Walk',
+  run: 'Run',
 } as const
 
 interface CharacterAssets {
@@ -56,23 +97,7 @@ export interface RuntimeAgent {
   lastAnimationAt: number | null
 }
 
-let assetPromise: Promise<CharacterAssets> | null = null
-
-function loadCharacterAssets(): Promise<CharacterAssets> {
-  if (assetPromise) return assetPromise
-
-  const loader = new GLTFLoader()
-  assetPromise = loader.loadAsync(CHARACTER_URL).then((character) => ({
-    source: character.scene,
-    clips: new Map(character.animations.map((clip) => [clip.name, clip])),
-  }))
-
-  assetPromise.catch(() => {
-    assetPromise = null
-  })
-
-  return assetPromise
-}
+const assetPromises = new Map<CharacterVariantKey, Promise<CharacterAssets>>()
 
 function stableHash(value: string): number {
   let hash = 2166136261
@@ -83,16 +108,50 @@ function stableHash(value: string): number {
   return hash >>> 0
 }
 
-function suitTint(value: string): THREE.Color {
-  const palette = [
-    0x43566f,
-    0x52615a,
-    0x5b526d,
-    0x67534b,
-    0x465f64,
-    0x5f5360,
+export function officeCharacterVariant(profileKey: string): CharacterVariantKey {
+  const explicit = ROLE_VARIANTS[profileKey]
+  if (explicit) return explicit
+
+  const fallback: CharacterVariantKey[] = [
+    'suit',
+    'casual',
+    'hoodie',
+    'dress',
+    'smart',
   ]
-  return new THREE.Color(palette[stableHash(value) % palette.length])
+  return fallback[stableHash(profileKey) % fallback.length]
+}
+
+function loadCharacterAssets(
+  variantKey: CharacterVariantKey,
+): Promise<CharacterAssets> {
+  const existing = assetPromises.get(variantKey)
+  if (existing) return existing
+
+  const variant = CHARACTER_VARIANTS[variantKey]
+  const loader = new GLTFLoader()
+  const pending = loader.loadAsync(variant.url).then((character) => {
+    const clips = new Map(
+      character.animations.map((clip) => [clip.name, clip]),
+    )
+
+    if (!clips.has(CLIPS.idle) || !clips.has(CLIPS.walk)) {
+      throw new Error(
+        `Office character ${variantKey} is missing required Idle/Walk clips.`,
+      )
+    }
+
+    return {
+      source: character.scene,
+      clips,
+    }
+  })
+
+  assetPromises.set(variantKey, pending)
+  pending.catch(() => {
+    assetPromises.delete(variantKey)
+  })
+  return pending
 }
 
 export function statusColor(status: string): number {
@@ -126,7 +185,7 @@ function createNameplate(name: string, status: string): {
   element.append(primary, secondary)
 
   const object = new CSS2DObject(element)
-  object.position.set(0, 2.16, 0)
+  object.position.set(0, 2.18, 0)
   return { object, element }
 }
 
@@ -135,12 +194,12 @@ function createFallback(profileKey: string): THREE.Group {
   const palette = [0x43566f, 0x52615a, 0x5b526d, 0x67534b]
   const suit = new THREE.MeshStandardMaterial({
     color: palette[stableHash(profileKey) % palette.length],
-    roughness: 0.8,
-    metalness: 0.02,
+    roughness: 0.82,
+    metalness: 0.01,
   })
   const skin = new THREE.MeshStandardMaterial({
     color: 0xd7b08d,
-    roughness: 0.88,
+    roughness: 0.9,
   })
 
   const body = new THREE.Mesh(
@@ -168,10 +227,10 @@ function createIndicator(
   status: string,
 ): { statusLight: THREE.Mesh; selectionRing: THREE.Mesh } {
   const statusLight = new THREE.Mesh(
-    new THREE.SphereGeometry(0.06, 12, 8),
+    new THREE.SphereGeometry(0.055, 12, 8),
     new THREE.MeshBasicMaterial({ color: statusColor(status) }),
   )
-  statusLight.position.set(0.34, 1.94, 0)
+  statusLight.position.set(0.32, 1.96, 0)
 
   const selectionRing = new THREE.Mesh(
     new THREE.RingGeometry(0.38, 0.49, 36),
@@ -198,14 +257,7 @@ function setInteractive(root: THREE.Object3D, agentId: string): void {
 
 function clipFor(runtime: RuntimeAgent): string {
   if (runtime.moving) return CLIPS.walk
-
-  switch (runtime.currentStatus.toUpperCase()) {
-    case 'RUNNING':
-    case 'STARTING':
-      return CLIPS.work
-    default:
-      return CLIPS.idle
-  }
+  return CLIPS.idle
 }
 
 function playRigged(runtime: RuntimeAgent, force = false): void {
@@ -215,13 +267,19 @@ function playRigged(runtime: RuntimeAgent, force = false): void {
   const desired = clipFor(runtime)
   const next = rigged.actions.get(desired) ?? rigged.actions.get(CLIPS.idle)
   if (!next) return
+
+  const running =
+    !runtime.moving &&
+    ['RUNNING', 'STARTING'].includes(runtime.currentStatus.toUpperCase())
+  next.setEffectiveTimeScale(runtime.moving ? 1 : running ? 1.05 : 0.82)
+
   if (!force && rigged.activeClip === desired) return
 
   const previous = rigged.actions.get(rigged.activeClip)
-  if (previous && previous !== next) previous.fadeOut(0.16)
+  if (previous && previous !== next) previous.fadeOut(0.18)
 
   if (previous !== next || force) {
-    next.reset().fadeIn(0.16).play()
+    next.reset().fadeIn(0.18).play()
   }
   rigged.activeClip = desired
 }
@@ -231,17 +289,19 @@ async function attachRiggedPresentation(
   profileKey: string,
   onReady?: () => void,
 ): Promise<void> {
+  const variantKey = officeCharacterVariant(profileKey)
+
   try {
-    const assets = await loadCharacterAssets()
+    const assets = await loadCharacterAssets(variantKey)
     if (runtime.disposed) return
 
+    const variant = CHARACTER_VARIANTS[variantKey]
     const model = cloneSkinned(assets.source) as THREE.Group
-    model.name = 'agent-office-business-character'
+    model.name = `agent-office-${variantKey}-character`
     model.rotation.y = MODEL_YAW_OFFSET
-    model.scale.setScalar(0.95)
+    model.scale.setScalar(variant.scale)
 
     const ownedMaterials: THREE.Material[] = []
-    const tint = suitTint(profileKey)
 
     model.traverse((object) => {
       if (!(object instanceof THREE.Mesh)) return
@@ -251,16 +311,8 @@ async function attachRiggedPresentation(
       const cloneSurface = (surface: THREE.Material): THREE.Material => {
         const copy = surface.clone()
         if (copy instanceof THREE.MeshStandardMaterial) {
-          copy.roughness = Math.max(0.65, copy.roughness)
+          copy.roughness = Math.max(0.72, copy.roughness)
           copy.metalness = 0
-          const identity = `${object.name} ${copy.name}`.toLowerCase()
-          if (
-            identity.includes('suit') ||
-            identity.includes('body') ||
-            identity.includes('legs')
-          ) {
-            copy.color.lerp(tint, 0.34)
-          }
         }
         ownedMaterials.push(copy)
         return copy
@@ -296,7 +348,7 @@ async function attachRiggedPresentation(
     onReady?.()
   } catch (error) {
     console.warn(
-      'Business character unavailable; using local fallback.',
+      `Office character variant ${variantKey} unavailable; using local fallback.`,
       error,
     )
     onReady?.()
@@ -399,11 +451,11 @@ function animateFallback(
     return true
   }
 
-  runtime.fallback.position.y =
-    runtime.currentStatus.toUpperCase() === 'RUNNING'
-      ? Math.sin(now * 0.0025) * 0.012
-      : 0
-  return runtime.currentStatus.toUpperCase() === 'RUNNING'
+  const active = runtime.currentStatus.toUpperCase() === 'RUNNING'
+  runtime.fallback.position.y = active
+    ? Math.sin(now * 0.0025) * 0.012
+    : 0
+  return active
 }
 
 export function animateCharacter(
@@ -423,7 +475,12 @@ export function animateCharacter(
   if (motionPaused) return false
 
   runtime.rigged.mixer.update(delta)
-  return true
+  return (
+    runtime.moving ||
+    ['RUNNING', 'STARTING', 'WAITING', 'BLOCKED', 'FAILED'].includes(
+      runtime.currentStatus.toUpperCase(),
+    )
+  )
 }
 
 export function disposeCharacter(runtime: RuntimeAgent): void {
