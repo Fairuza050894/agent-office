@@ -51,7 +51,7 @@ const ROLE_APPEARANCES: Record<string, CharacterAppearance> = {
   architect: {
     id: 'architect-navy',
     variant: 'suit',
-    scale: 1.03,
+    scale: 1.0,
     accent: 0x365f86,
     idleRate: 0.84,
     idlePhase: 0.12,
@@ -67,7 +67,7 @@ const ROLE_APPEARANCES: Record<string, CharacterAppearance> = {
   'backend-developer': {
     id: 'backend-teal',
     variant: 'casual',
-    scale: 1.01,
+    scale: 1.03,
     accent: 0x34766f,
     idleRate: 0.93,
     idlePhase: 0.28,
@@ -83,7 +83,7 @@ const ROLE_APPEARANCES: Record<string, CharacterAppearance> = {
   'qa-reviewer': {
     id: 'qa-amber',
     variant: 'dress',
-    scale: 0.97,
+    scale: 0.95,
     accent: 0xa97d34,
     idleRate: 0.89,
     idlePhase: 0.35,
@@ -91,7 +91,7 @@ const ROLE_APPEARANCES: Record<string, CharacterAppearance> = {
   'security-reviewer': {
     id: 'security-burgundy',
     variant: 'suit',
-    scale: 1.06,
+    scale: 1.09,
     accent: 0x814448,
     idleRate: 0.8,
     idlePhase: 0.72,
@@ -99,7 +99,7 @@ const ROLE_APPEARANCES: Record<string, CharacterAppearance> = {
   verifier: {
     id: 'verifier-green',
     variant: 'casual',
-    scale: 0.96,
+    scale: 0.94,
     accent: 0x477553,
     idleRate: 0.97,
     idlePhase: 0.53,
@@ -107,7 +107,7 @@ const ROLE_APPEARANCES: Record<string, CharacterAppearance> = {
   'documentation-writer': {
     id: 'documentation-blue',
     variant: 'dress',
-    scale: 1.01,
+    scale: 1.04,
     accent: 0x4a6d9a,
     idleRate: 0.87,
     idlePhase: 0.19,
@@ -416,8 +416,8 @@ async function attachRiggedPresentation(
 
           const hsl = { h: 0, s: 0, l: 0 }
           copy.color.getHSL(hsl)
-          if (hsl.l < 0.62 && hsl.s > 0.08) {
-            copy.color.lerp(accent, 0.18)
+          if (hsl.l < 0.64) {
+            copy.color.lerp(accent, 0.3)
           }
         }
         ownedMaterials.push(copy)
