@@ -360,11 +360,10 @@ export function ThreeOfficeScene({
       const controls = new OrbitControls(camera, renderer.domElement)
       controls.target.set(0, 0.45, 0)
       controls.enableDamping = false
-      controls.enablePan = true
+      controls.enablePan = false
       controls.enableRotate = false
-      controls.screenSpacePanning = true
-      controls.minZoom = 0.8
-      controls.maxZoom = 1.75
+      controls.minZoom = 0.9
+      controls.maxZoom = 1.35
 
       scene.add(new THREE.HemisphereLight(0xdce9f4, 0x1a232d, 2.0))
 
