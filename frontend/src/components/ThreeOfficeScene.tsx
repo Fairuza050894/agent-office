@@ -815,8 +815,7 @@ export function ThreeOfficeScene({
 
       const controls = new OrbitControls(camera, renderer.domElement)
       controls.target.set(0, 0.35, 0)
-      controls.enableDamping = true
-      controls.dampingFactor = 0.08
+      controls.enableDamping = false
       controls.enablePan = true
       controls.minDistance = 11
       controls.maxDistance = 30
@@ -856,10 +855,7 @@ export function ThreeOfficeScene({
       }
       engineRef.current = engine
 
-      const render = () => {
-        controls.update()
-        renderer.render(scene, camera)
-      }
+      const render = () => renderer.render(scene, camera)
       const resize = () => {
         if (!host.isConnected) return
         const width = Math.max(host.clientWidth, 320)
