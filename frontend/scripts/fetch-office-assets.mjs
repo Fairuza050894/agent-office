@@ -6,30 +6,58 @@ import { fileURLToPath } from 'node:url'
 const here = dirname(fileURLToPath(import.meta.url))
 const outputRoot = resolve(here, '../public/assets/office')
 
-const SOURCE_COMMIT = '9ab58fecc42490b9212d62813a778c0cc8158726'
-const SOURCE_REPOSITORY = 'dantol29/wall_street_online'
+const SOURCE_COMMIT = '6d73cc9e68839b469f35a2fe11e246eaab2ae426'
+const SOURCE_REPOSITORY = 'JadenB9/casino-simulator'
 
 const assets = [
   {
-    filename: 'quaternius-business-man.glb',
-    sourcePath: 'apps/client/public/assets/BusinessMan.glb',
-    sha256:
-      '82b81257c1e94cd9ee48cb1dcbe5ff506e81c9ce67cd0c5af542d8712dca546e',
-    size: 1529248,
+    filename: 'char-m-suit.glb',
+    sourcePath: 'client/public/assets/models/char-m-suit.glb',
+    gitBlobSha: '32c16cc24a32b0760102d3fd7646dd97d4682efc',
+    size: 440404,
+  },
+  {
+    filename: 'char-m-casual.glb',
+    sourcePath: 'client/public/assets/models/char-m-casual.glb',
+    gitBlobSha: '22200677afc9ef3a9250ccdbf10bb52a1fc9c884',
+    size: 395328,
+  },
+  {
+    filename: 'char-m-hoodie.glb',
+    sourcePath: 'client/public/assets/models/char-m-hoodie.glb',
+    gitBlobSha: '86d6622910bccb45a76c842102baba3ee2d6d170',
+    size: 418592,
+  },
+  {
+    filename: 'char-f-dress.glb',
+    sourcePath: 'client/public/assets/models/char-f-dress.glb',
+    gitBlobSha: 'e655f78f69908d5f53400bf32a970b31c15f81d5',
+    size: 415408,
+  },
+  {
+    filename: 'char-f-smart.glb',
+    sourcePath: 'client/public/assets/models/char-f-smart.glb',
+    gitBlobSha: 'ce39fe182e39e6a44118e5ed1fc33c16167e8804',
+    size: 433156,
   },
 ]
 
-function digest(buffer) {
-  return createHash('sha256').update(buffer).digest('hex')
+function gitBlobSha(buffer) {
+  const header = Buffer.from(`blob ${buffer.byteLength}\0`)
+  return createHash('sha1').update(header).update(buffer).digest('hex')
+}
+
+function validBuffer(buffer, expected) {
+  return (
+    buffer.byteLength === expected.size &&
+    gitBlobSha(buffer) === expected.gitBlobSha
+  )
 }
 
 async function validExisting(path, expected) {
   try {
     const buffer = await readFile(path)
-    return (
-      buffer.byteLength === expected.size &&
-      digest(buffer) === expected.sha256
-    )
+    return validBuffer(buffer, expected)
   } catch {
     return false
   }
@@ -57,16 +85,9 @@ async function fetchAsset(asset) {
   }
 
   const buffer = Buffer.from(await response.arrayBuffer())
-  if (buffer.byteLength !== asset.size) {
+  if (!validBuffer(buffer, asset)) {
     throw new Error(
-      `Unexpected size for ${asset.filename}: ${buffer.byteLength} bytes`,
-    )
-  }
-
-  const actual = digest(buffer)
-  if (actual !== asset.sha256) {
-    throw new Error(
-      `Checksum mismatch for ${asset.filename}: expected ${asset.sha256}, got ${actual}`,
+      `Integrity mismatch for ${asset.filename}; expected ${asset.size} bytes / Git blob ${asset.gitBlobSha}`,
     )
   }
 
