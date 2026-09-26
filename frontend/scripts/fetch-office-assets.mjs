@@ -47,11 +47,44 @@ function gitBlobSha(buffer) {
   return createHash('sha1').update(header).update(buffer).digest('hex')
 }
 
-function validBuffer(buffer, expected) {
-  return (
-    buffer.byteLength === expected.size &&
-    gitBlobSha(buffer) === expected.gitBlobSha
+function animationNames(buffer) {
+  const view = new DataView(
+    buffer.buffer,
+    buffer.byteOffset,
+    buffer.byteLength,
   )
+  let offset = 12
+
+  while (offset + 8 <= buffer.byteLength) {
+    const chunkLength = view.getUint32(offset, true)
+    const chunkType = view.getUint32(offset + 4, true)
+
+    if (chunkType === 0x4e4f534a) {
+      const json = JSON.parse(
+        buffer
+          .subarray(offset + 8, offset + 8 + chunkLength)
+          .toString('utf8')
+          .replace(/\0+$/, ''),
+      )
+      return new Set((json.animations ?? []).map((animation) => animation.name))
+    }
+
+    offset += 8 + chunkLength
+  }
+
+  return new Set()
+}
+
+function validBuffer(buffer, expected) {
+  if (
+    buffer.byteLength !== expected.size ||
+    gitBlobSha(buffer) !== expected.gitBlobSha
+  ) {
+    return false
+  }
+
+  const clips = animationNames(buffer)
+  return ['Idle', 'Walk', 'Run'].every((name) => clips.has(name))
 }
 
 async function validExisting(path, expected) {
