@@ -63,11 +63,13 @@ Events remain facts, not current-state authority. SSE event bursts are coalesced
 
 ## Performance design
 
-The Phase 8 renderer uses native DOM and CSS perspective rather than WebGL.
+The Phase 8 renderer uses an original SVG/DOM isometric operations floor rather than WebGL. RunStages are spatial rooms on one continuous map; AgentRuns are interactive workstation nodes layered over the floor geometry.
 
 Consequences:
 
 - no requestAnimationFrame render loop
+- one continuous isometric workflow floor instead of repeated stage cards
+- bounded 75–125% operator zoom without camera animation
 - no GPU scene lifecycle
 - no 3D package dependency
 - no idle polling loop

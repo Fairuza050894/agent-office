@@ -269,7 +269,7 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
     <div className="page-view office-view">
       <PageHeader
         title="Office View"
-        description={`Run #${run.id.slice(0, 8)} · ${task?.title ?? 'Unknown task'} · optional 3D projection of canonical execution state.`}
+        description={`${task?.title ?? 'Unknown task'} · Run #${run.id.slice(0, 8)} · ${agents.length} factual AgentRun${agents.length === 1 ? '' : 's'} across ${stages.length} workflow stage${stages.length === 1 ? '' : 's'}.`}
         action={
           <Link href={`/runs/${run.id}`} className="btn btn-secondary">
             Operational Run
@@ -333,77 +333,77 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
           />
         </OfficeRendererBoundary>
 
-        <aside className="office-detail-panel" aria-label="Selected AgentRun details">
-          {selectedAgent && selectedState ? (
-            <>
-              <div className="office-detail-header">
+        {selectedAgent && selectedState && (
+          <aside className="office-detail-panel" aria-label="Selected AgentRun details">
+            <div className="office-detail-header">
+              <div>
                 <span>AgentRun detail</span>
                 <h2>
                   {selectedProfile?.name ?? selectedAgent.agent_profile_key}
                 </h2>
                 <code>{selectedAgent.id}</code>
               </div>
-
-              <dl className="office-detail-facts">
-                <div>
-                  <dt>Role</dt>
-                  <dd>{selectedProfile?.name ?? selectedAgent.agent_profile_key}</dd>
-                </div>
-                <div>
-                  <dt>State</dt>
-                  <dd>{selectedState.label} · {selectedAgent.status}</dd>
-                </div>
-                <div>
-                  <dt>Executor</dt>
-                  <dd>
-                    {selectedExecutor?.name ?? selectedAgent.executor_id}
-                    {selectedExecutor?.runtime_version
-                      ? ` · ${selectedExecutor.runtime_version}`
-                      : ''}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Stage</dt>
-                  <dd>
-                    {selectedAgent.stage_key}
-                    {selectedStage ? ` · ${selectedStage.status}` : ''}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Workspace type</dt>
-                  <dd>{selectedWorkspace?.kind ?? 'Unavailable'}</dd>
-                </div>
-                <div>
-                  <dt>Started</dt>
-                  <dd>{formatTimestamp(selectedAgent.started_at)}</dd>
-                </div>
-                <div>
-                  <dt>Last factual activity</dt>
-                  <dd>
-                    {selectedEvent
-                      ? `${selectedEvent.event_type} · ${formatTimestamp(selectedEvent.occurred_at)}`
-                      : `No agent-scoped Event recorded · AgentRun updated ${formatTimestamp(selectedAgent.updated_at)}`}
-                  </dd>
-                </div>
-              </dl>
-
-              {selectedAgent.reason_summary && (
-                <div className="office-detail-note">
-                  <strong>{selectedAgent.reason_code ?? 'AgentRun note'}</strong>
-                  <span>{selectedAgent.reason_summary}</span>
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="office-detail-empty">
-              <strong>Select an AgentRun</strong>
-              <p>
-                Click a character to inspect its role, state, executor, stage,
-                workspace type, start time, and latest factual Event.
-              </p>
+              <button
+                type="button"
+                className="office-detail-close"
+                aria-label="Close AgentRun detail"
+                onClick={() => setSelectedAgentId(null)}
+              >
+                ×
+              </button>
             </div>
-          )}
-        </aside>
+
+            <dl className="office-detail-facts">
+              <div>
+                <dt>Role</dt>
+                <dd>{selectedProfile?.name ?? selectedAgent.agent_profile_key}</dd>
+              </div>
+              <div>
+                <dt>State</dt>
+                <dd>{selectedState.label} · {selectedAgent.status}</dd>
+              </div>
+              <div>
+                <dt>Executor</dt>
+                <dd>
+                  {selectedExecutor?.name ?? selectedAgent.executor_id}
+                  {selectedExecutor?.runtime_version
+                    ? ` · ${selectedExecutor.runtime_version}`
+                    : ''}
+                </dd>
+              </div>
+              <div>
+                <dt>Stage</dt>
+                <dd>
+                  {selectedAgent.stage_key}
+                  {selectedStage ? ` · ${selectedStage.status}` : ''}
+                </dd>
+              </div>
+              <div>
+                <dt>Workspace type</dt>
+                <dd>{selectedWorkspace?.kind ?? 'Unavailable'}</dd>
+              </div>
+              <div>
+                <dt>Started</dt>
+                <dd>{formatTimestamp(selectedAgent.started_at)}</dd>
+              </div>
+              <div>
+                <dt>Last factual activity</dt>
+                <dd>
+                  {selectedEvent
+                    ? `${selectedEvent.event_type} · ${formatTimestamp(selectedEvent.occurred_at)}`
+                    : `No agent-scoped Event recorded · AgentRun updated ${formatTimestamp(selectedAgent.updated_at)}`}
+                </dd>
+              </div>
+            </dl>
+
+            {selectedAgent.reason_summary && (
+              <div className="office-detail-note">
+                <strong>{selectedAgent.reason_code ?? 'AgentRun note'}</strong>
+                <span>{selectedAgent.reason_summary}</span>
+              </div>
+            )}
+          </aside>
+        )}
       </div>
 
       <div className="office-accessibility-note">
