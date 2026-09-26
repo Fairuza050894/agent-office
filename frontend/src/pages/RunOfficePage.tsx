@@ -42,7 +42,9 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
   const [executors, setExecutors] = useState<Executor[]>([])
   const [profiles, setProfiles] = useState<AgentProfile[]>([])
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null)
-  const [motionPaused, setMotionPaused] = useState(false)\n  const [officeMode, setOfficeMode] = useState<'live' | 'replay'>('live')\n  const [replayNonce, setReplayNonce] = useState(0)
+  const [motionPaused, setMotionPaused] = useState(false)
+  const [officeMode, setOfficeMode] = useState<'live' | 'replay'>('live')
+  const [replayNonce, setReplayNonce] = useState(0)
   const [liveState, setLiveState] = useState<LiveState>(() =>
     typeof EventSource === 'undefined' ? 'unsupported' : 'disconnected',
   )
