@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -223,9 +223,11 @@ describe('Phase 5 operational registries', () => {
   it('renders factual executor runtime, capabilities, and security limitations', async () => {
     vi.stubGlobal('fetch', vi.fn(registryFetch))
     render(<ExecutorsPage />)
-    expect(await screen.findByText('Reference Executor')).toBeInTheDocument()
-    expect(screen.getByText(/START_EXECUTION: SUPPORTED/)).toBeInTheDocument()
-    expect(screen.getByText('FILE_WRITE: UNSUPPORTED')).toBeInTheDocument()
+    const executor = await screen.findByRole('article', { name: 'Reference Executor' })
+    expect(within(executor).getByText('START_EXECUTION')).toBeInTheDocument()
+    expect(within(executor).getByText('SUPPORTED')).toBeInTheDocument()
+    expect(within(executor).getAllByText('FILE_WRITE').length).toBeGreaterThan(0)
+    expect(within(executor).getAllByText('UNSUPPORTED').length).toBeGreaterThan(0)
   })
 
   it('renders normalized global Activity from persisted Run events', async () => {

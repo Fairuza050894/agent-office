@@ -2,7 +2,25 @@ import { useEffect, useState } from 'react'
 import { api, type Executor } from '../api'
 import { EmptyState } from '../components/EmptyState'
 import { PageHeader } from '../components/PageHeader'
-import { TableShell } from '../components/TableShell'
+
+function supportClass(value: string): string {
+  return `capability-support support-${value.toLowerCase()}`
+}
+
+function healthDotClass(status: string): string {
+  if (status === 'AVAILABLE') return 'connected'
+  if (status === 'DEGRADED') return 'checking'
+  return 'disconnected'
+}
+
+function splitSecurityLimitation(value: string): [string | null, string] {
+  const separator = value.indexOf(':')
+  if (separator < 0) return [null, value]
+
+  const key = value.slice(0, separator).trim()
+  const detail = value.slice(separator + 1).trim()
+  return [key || null, detail || value]
+}
 
 export function ExecutorsPage() {
   const [executors, setExecutors] = useState<Executor[]>([])
@@ -29,9 +47,8 @@ export function ExecutorsPage() {
   return (
     <div className="page-view executors-view">
       <PageHeader
-        eyebrow="ENGINEERING"
         title="Executors"
-        description="Factual adapter health, runtime version, capabilities, and security limitations."
+        description="Runtime health, capabilities, and enforced security boundaries for every registered adapter."
       />
 
       <div className="page-content">
@@ -40,21 +57,81 @@ export function ExecutorsPage() {
         ) : error ? (
           <div className="status-feedback" role="alert"><p className="status-error-text">{error}</p></div>
         ) : executors.length === 0 ? (
-          <EmptyState title="No executors registered." message="The backend has no registered executor adapter." detail="Phase 5 does not invent executor health or capability data." />
+          <EmptyState
+            title="No executors registered."
+            message="The backend has no registered executor adapter."
+            detail="Unavailable executor state is shown explicitly rather than inferred."
+          />
         ) : (
-          <TableShell columns={['Executor', 'Kind', 'Status', 'Runtime', 'Capabilities', 'Security limitations', 'Last checked']} caption="Executor registry" emptyTitle="No executors." emptyMessage="No executor adapters exist.">
+          <div className="executor-list">
             {executors.map((executor) => (
-              <tr key={executor.id}>
-                <td><strong>{executor.name}</strong><div className="cell-secondary"><code>{executor.id}</code></div></td>
-                <td>{executor.kind}</td>
-                <td><span className="badge badge-neutral">{executor.status}</span><div className="cell-secondary">{executor.health_summary ?? 'No health summary'}</div></td>
-                <td>{executor.runtime_version ?? 'Unavailable'}</td>
-                <td className="cell-wrap">{executor.capabilities.map((item) => `${item.capability}: ${item.support}`).join(', ')}</td>
-                <td className="cell-wrap">{executor.security_limitations.length ? executor.security_limitations.join(', ') : 'None reported'}</td>
-                <td>{new Date(executor.last_check).toLocaleString()}</td>
-              </tr>
+              <article
+                key={executor.id}
+                className="executor-panel"
+                aria-labelledby={`executor-${executor.id}-name`}
+              >
+                <header className="executor-panel-header">
+                  <div>
+                    <div className="executor-kind">{executor.kind}</div>
+                    <h2 id={`executor-${executor.id}-name`} className="executor-name">{executor.name}</h2>
+                    <code className="executor-id">{executor.id}</code>
+                  </div>
+                  <div className={`executor-health status-${executor.status.toLowerCase()}`}>
+                    <span className={`status-dot ${healthDotClass(executor.status)}`} aria-hidden="true" />
+                    <span>{executor.status}</span>
+                  </div>
+                </header>
+
+                <dl className="executor-facts">
+                  <div>
+                    <dt>Runtime</dt>
+                    <dd>{executor.runtime_version ?? 'Unavailable'}</dd>
+                  </div>
+                  <div>
+                    <dt>Last checked</dt>
+                    <dd>{new Date(executor.last_check).toLocaleString()}</dd>
+                  </div>
+                  <div className="executor-health-summary">
+                    <dt>Health</dt>
+                    <dd>{executor.health_summary ?? 'No health summary reported.'}</dd>
+                  </div>
+                </dl>
+
+                <div className="executor-detail-grid">
+                  <section aria-labelledby={`executor-${executor.id}-capabilities`}>
+                    <h3 id={`executor-${executor.id}-capabilities`} className="executor-section-title">Capabilities</h3>
+                    <div className="capability-list">
+                      {executor.capabilities.map((item) => (
+                        <div key={item.capability} className="capability-row">
+                          <code>{item.capability}</code>
+                          <span className={supportClass(item.support)}>{item.support}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+
+                  <section aria-labelledby={`executor-${executor.id}-security`}>
+                    <h3 id={`executor-${executor.id}-security`} className="executor-section-title">Security boundary</h3>
+                    {executor.security_limitations.length === 0 ? (
+                      <p className="executor-muted">No security limitations reported.</p>
+                    ) : (
+                      <div className="executor-limitations">
+                        {executor.security_limitations.map((limitation) => {
+                          const [key, detail] = splitSecurityLimitation(limitation)
+                          return (
+                            <div key={limitation} className="security-limitation-row">
+                              {key && <code className="security-limitation-key">{key}</code>}
+                              <span className="security-limitation-value">{detail}</span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </section>
+                </div>
+              </article>
             ))}
-          </TableShell>
+          </div>
         )}
       </div>
     </div>

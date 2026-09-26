@@ -25,6 +25,18 @@ function activeAgent(agent: AgentRun): boolean {
   return ['CREATED', 'STARTING', 'RUNNING', 'WAITING'].includes(agent.status)
 }
 
+function SummaryItem({ value, label, detail }: { value: number; label: string; detail: string }) {
+  return (
+    <div className="summary-item">
+      <strong className="summary-value">{value}</strong>
+      <div>
+        <div className="summary-label">{label}</div>
+        <div className="summary-detail">{detail}</div>
+      </div>
+    </div>
+  )
+}
+
 export function OverviewPage() {
   const [projects, setProjects] = useState<Project[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
@@ -89,11 +101,12 @@ export function OverviewPage() {
   const tasksById = useMemo(() => new Map(tasks.map((task) => [task.id, task])), [tasks])
   const activeRuns = runs.filter((run) => !TERMINAL.has(run.status))
   const attentionRuns = runs.filter((run) => run.status === 'BLOCKED' || run.failure_code === 'UNKNOWN_EXECUTION_STATE')
+  const onlineExecutors = executors.filter((executor) => ['AVAILABLE', 'DEGRADED'].includes(executor.status))
 
   if (isLoading) {
     return (
       <div className="page-view overview-view">
-        <PageHeader eyebrow="WORK" title="Overview" description="Canonical operational status." />
+        <PageHeader title="Overview" description="Canonical operational status." />
         <div className="status-feedback" role="status"><span className="status-spinner" /> Loading overview...</div>
       </div>
     )
@@ -102,7 +115,7 @@ export function OverviewPage() {
   if (error) {
     return (
       <div className="page-view overview-view">
-        <PageHeader eyebrow="WORK" title="Overview" description="Canonical operational status." />
+        <PageHeader title="Overview" description="Canonical operational status." />
         <div className="status-feedback" role="alert">
           <p className="status-error-text">{error}</p>
           <button type="button" className="btn btn-secondary" onClick={() => void load()}>Retry</button>
@@ -114,23 +127,26 @@ export function OverviewPage() {
   return (
     <div className="page-view overview-view">
       <PageHeader
-        eyebrow="WORK"
         title="Overview"
-        description="Backend-derived attention items, active Runs, executor status, and recent normalized activity."
+        description="Live control-plane state derived from Projects, Runs, Executors, and normalized Events."
       />
+
+      <div className="overview-summary" aria-label="Operational summary">
+        <SummaryItem value={projects.length} label="Projects" detail="registered repositories" />
+        <SummaryItem value={activeRuns.length} label="Active runs" detail="non-terminal execution" />
+        <SummaryItem value={onlineExecutors.length} label="Executors online" detail="available or degraded" />
+        <SummaryItem value={attentionRuns.length} label="Needs attention" detail="blocked or unknown" />
+      </div>
 
       <div className="overview-grid">
         <section className="dashboard-section" aria-labelledby="heading-needs-attention">
           <div className="section-header">
-            <h2 id="heading-needs-attention" className="section-title">Needs Attention</h2>
+            <h2 id="heading-needs-attention" className="section-title">Needs attention</h2>
             <span className="section-meta">{attentionRuns.length} actionable</span>
           </div>
           <div className="section-body">
             {attentionRuns.length === 0 ? (
-              <EmptyState
-                title="No items requiring attention"
-                message="No blocked or unknown-execution Run is currently reported."
-              />
+              <EmptyState title="No items requiring attention" message="No blocked or unknown-execution Run is currently reported." />
             ) : (
               <TableShell columns={['Run', 'Project', 'State', 'Cause', 'Action']} caption="Runs requiring attention" emptyTitle="No attention items." emptyMessage="No Runs require attention.">
                 {attentionRuns.map((run) => (
@@ -149,15 +165,14 @@ export function OverviewPage() {
 
         <section className="dashboard-section" aria-labelledby="heading-active-runs">
           <div className="section-header">
-            <h2 id="heading-active-runs" className="section-title">Active Runs</h2>
+            <h2 id="heading-active-runs" className="section-title">Active runs</h2>
             <span className="section-meta">{activeRuns.length} active</span>
           </div>
           <div className="section-body">
             {activeRuns.length === 0 ? (
-              <EmptyState
-                title="No active runs in progress"
-                message="Create a Run from a Task and start it from Run Detail."
-              />
+              <EmptyState title="No active runs in progress" message="Create a Run from a Task and start it from Run Detail.">
+                {projects.length === 0 && <Link href="/projects">Register a project</Link>}
+              </EmptyState>
             ) : (
               <TableShell columns={['Run', 'Project', 'Task', 'Stage', 'Active agents', 'Executor', 'State', 'Started']} caption="Active execution Runs" emptyTitle="No active Runs." emptyMessage="No active Runs exist.">
                 {activeRuns.map((run) => {
@@ -185,7 +200,10 @@ export function OverviewPage() {
 
         <div className="overview-split">
           <section className="dashboard-section" aria-labelledby="heading-executors">
-            <div className="section-header"><h2 id="heading-executors" className="section-title">Executor Status</h2></div>
+            <div className="section-header">
+              <h2 id="heading-executors" className="section-title">Executors</h2>
+              <Link href="/executors">Inspect registry</Link>
+            </div>
             <div className="section-body">
               {executors.length === 0 ? (
                 <EmptyState title="No executors registered" message="The backend has no executor adapters." />
@@ -193,8 +211,11 @@ export function OverviewPage() {
                 <div className="overview-resource-list">
                   {executors.map((executor) => (
                     <div key={executor.id} className="overview-resource-row">
-                      <div><strong>{executor.name}</strong><div className="cell-secondary">{executor.kind} · runtime {executor.runtime_version ?? 'Unavailable'}</div></div>
-                      <span className="badge badge-neutral">{executor.status}</span>
+                      <div>
+                        <strong>{executor.name}</strong>
+                        <div className="cell-secondary">{executor.kind} · {executor.runtime_version ?? 'runtime unavailable'}</div>
+                      </div>
+                      <span className={`status-inline status-${executor.status.toLowerCase()}`}>{executor.status}</span>
                     </div>
                   ))}
                 </div>
@@ -203,7 +224,10 @@ export function OverviewPage() {
           </section>
 
           <section className="dashboard-section" aria-labelledby="heading-activity">
-            <div className="section-header"><h2 id="heading-activity" className="section-title">Recent Activity</h2></div>
+            <div className="section-header">
+              <h2 id="heading-activity" className="section-title">Recent activity</h2>
+              <Link href="/activity">Open activity</Link>
+            </div>
             <div className="section-body">
               {events.length === 0 ? (
                 <EmptyState title="No recent events recorded" message="No normalized Run event has been persisted yet." />
@@ -211,7 +235,10 @@ export function OverviewPage() {
                 <div className="overview-resource-list">
                   {events.map((event) => (
                     <div key={event.id} className="overview-resource-row">
-                      <div><strong>{event.event_type}</strong><div className="cell-secondary">{event.source} · {new Date(event.occurred_at).toLocaleString()}</div></div>
+                      <div>
+                        <strong className="technical-label">{event.event_type}</strong>
+                        <div className="cell-secondary">{event.source} · {new Date(event.occurred_at).toLocaleString()}</div>
+                      </div>
                       <Link href={`/runs/${event.run_id}`}>Run</Link>
                     </div>
                   ))}
