@@ -46,8 +46,10 @@ Current recorded status:
 - Phase 7 CLOSED — Multi-Executor / Second Project Dogfood accepted
 - Phase 8 IN PROGRESS — truthful optional 3D Office View
   - current working branch: `phase-8-work`
-  - PR #5 remains draft and must not be auto-merged
+  - visual implementation checkpoint accepted at `131c0d8`
+  - PR #5 remains unmerged; checkpoint is being promoted from draft to review
   - current visual work includes deterministic eight-role cast, persistent live sidebar, canonical replay synchronization, furniture-safe navigation anchors, and a multi-zone startup-office environment
+  - known minor visual follow-up: meeting-room chairs currently face outward and should be rotated toward the conference table
 
 ## Phase 4 closure
 
