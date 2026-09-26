@@ -10,9 +10,6 @@ export interface EmptyStateProps {
 export function EmptyState({ title, message, detail, children }: EmptyStateProps) {
   return (
     <div className="empty-state" role="status">
-      <div className="empty-state-badge" aria-hidden="true">
-        —
-      </div>
       <h3 className="empty-state-title">{title}</h3>
       <p className="empty-state-message">{message}</p>
       {detail && <p className="empty-state-detail">{detail}</p>}

@@ -64,17 +64,10 @@ export function Header({
 
   const statusText =
     status === 'connected'
-      ? 'Backend Reachable'
+      ? 'Backend online'
       : status === 'checking'
-        ? 'Connecting...'
-        : 'Backend Disconnected'
-
-  const statusSubtext =
-    status === 'connected'
-      ? '(/health ok)'
-      : status === 'checking'
-        ? '(Checking)'
-        : '(Offline)'
+        ? 'Checking backend'
+        : 'Backend offline'
 
   return (
     <header className="app-header" role="banner">
@@ -91,14 +84,7 @@ export function Header({
           <span className="nav-toggle-bar" />
         </button>
 
-        <div className="header-breadcrumb" aria-label="Breadcrumb">
-          <span className="breadcrumb-root">Agent Office</span>
-          <span
-            className="breadcrumb-separator"
-            aria-hidden="true"
-          >
-            /
-          </span>
+        <div className="header-breadcrumb" aria-label="Current view">
           <span className="breadcrumb-current">
             {activeItem ? activeItem.label : 'Operations'}
           </span>
@@ -110,9 +96,9 @@ export function Header({
           className={`system-pill ${status}`}
           title={
             status === 'connected'
-              ? 'Agent Office backend reachable'
+              ? 'Agent Office backend reachable at /health'
               : status === 'checking'
-                ? 'Checking backend reachability...'
+                ? 'Checking backend reachability'
                 : 'Backend unreachable'
           }
           role="status"
@@ -123,7 +109,7 @@ export function Header({
             aria-hidden="true"
           />
           <span className="status-text">{statusText}</span>
-          <span className="status-subtext">{statusSubtext}</span>
+          <span className="status-subtext">/health</span>
 
           {status === 'disconnected' && (
             <button

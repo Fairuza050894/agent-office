@@ -6,6 +6,13 @@ export interface NavigationProps {
   onClose?: () => void
 }
 
+const SECTION_LABELS: Record<NavSection, string> = {
+  WORK: 'Work',
+  ENGINEERING: 'Engineering',
+  OBSERVABILITY: 'Observability',
+  CONTROL: 'Control',
+}
+
 export function Navigation({ isOpen, onClose }: NavigationProps) {
   const getItemsBySection = (section: NavSection) =>
     NAV_ITEMS.filter((item) => item.section === section)
@@ -24,9 +31,10 @@ export function Navigation({ isOpen, onClose }: NavigationProps) {
         aria-label="Sidebar Navigation"
       >
         <div className="sidebar-brand">
+          <div className="brand-mark" aria-hidden="true">AO</div>
           <div className="brand-header">
-            <span className="brand-eyebrow">Control Plane</span>
             <span className="brand-title">Agent Office</span>
+            <span className="brand-subtitle">Engineering control plane</span>
           </div>
           {onClose && (
             <button
@@ -46,7 +54,7 @@ export function Navigation({ isOpen, onClose }: NavigationProps) {
             return (
               <div key={section} className="nav-section">
                 <div className="nav-section-title" id={`section-${section.toLowerCase()}`}>
-                  {section}
+                  {SECTION_LABELS[section]}
                 </div>
                 <ul
                   className="nav-list"
@@ -60,7 +68,6 @@ export function Navigation({ isOpen, onClose }: NavigationProps) {
                         activeClassName="active"
                         onClick={onClose}
                       >
-                        <span className="nav-indicator" aria-hidden="true" />
                         <span className="nav-label">{item.label}</span>
                       </Link>
                     </li>
@@ -72,14 +79,9 @@ export function Navigation({ isOpen, onClose }: NavigationProps) {
         </nav>
 
         <div className="sidebar-footer">
-          <div className="sidebar-meta">
-            <span className="meta-label">Mode</span>
-            <span className="meta-value">Local-First</span>
-          </div>
-          <div className="sidebar-meta">
-            <span className="meta-label">Phase</span>
-            <span className="meta-value">Phase 5</span>
-          </div>
+          <span>Local-first</span>
+          <span className="sidebar-footer-separator" aria-hidden="true">·</span>
+          <span>Workspace isolated</span>
         </div>
       </aside>
     </>
