@@ -41,6 +41,7 @@ security-sensitive work
 
 frontend/UX work
 → docs/ux/INFORMATION_ARCHITECTURE.md
+→ .agents/skills/ao-ui-quality/SKILL.md
 ```
 
 Read the full document only when the task genuinely spans the whole contract or targeted sections are insufficient.
@@ -597,6 +598,11 @@ fake KPI rings
 fake health scores
 AI sparkle decoration
 ```
+
+All frontend and UX work must also follow `.agents/skills/ao-ui-quality/SKILL.md`.
+That skill defines the Agent Office visual language, density target, anti-AI-slop review,
+and screenshot-based quality gate. Do not trade operational truth or accessibility for
+visual novelty.
 
 ---
 

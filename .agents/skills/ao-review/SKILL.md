@@ -19,6 +19,8 @@ Review before recommending a commit.
 8. ownership boundaries
 9. restart behavior
 10. security-negative behavior
+11. for frontend changes, `.agents/skills/ao-ui-quality/SKILL.md`
+12. for frontend changes, screenshot-level hierarchy, density, empty states, and stale UI copy
 
 ## High-priority defect classes
 
@@ -41,6 +43,10 @@ Look specifically for:
 - main-working-tree mutation
 - fabricated tests/review/Evidence
 - cleanup of uncertain external state
+- generic card soup or giant empty-state containers in operational UI
+- machine enum dumps that are difficult to scan
+- decorative UI that implies state not supported by backend truth
+- stale phase/milestone labels hard-coded into frontend presentation
 
 ## Output
 
