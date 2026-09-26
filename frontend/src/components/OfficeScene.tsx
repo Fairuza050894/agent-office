@@ -98,7 +98,7 @@ export function OfficeScene({
       <div className="office-scene-heading">
         <div>
           <strong>Live office</strong>
-          <span>Canonical AgentRun state · drag to orbit · wheel to zoom</span>
+          <span>Canonical AgentRun state · fixed isometric view · drag to pan · wheel to zoom</span>
         </div>
         <span className="office-render-mode">
           {mode === 'replay'
