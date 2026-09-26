@@ -42,7 +42,7 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
   const [executors, setExecutors] = useState<Executor[]>([])
   const [profiles, setProfiles] = useState<AgentProfile[]>([])
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null)
-  const [motionPaused, setMotionPaused] = useState(false)
+  const [motionPaused, setMotionPaused] = useState(false)\n  const [officeMode, setOfficeMode] = useState<'live' | 'replay'>('live')\n  const [replayNonce, setReplayNonce] = useState(0)
   const [liveState, setLiveState] = useState<LiveState>(() =>
     typeof EventSource === 'undefined' ? 'unsupported' : 'disconnected',
   )
@@ -302,6 +302,27 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
           <button
             type="button"
             className="btn btn-secondary btn-sm"
+            aria-pressed={officeMode === 'replay'}
+            onClick={() => {
+              setOfficeMode('replay')
+              setMotionPaused(false)
+              setReplayNonce((current) => current + 1)
+            }}
+          >
+            Historical replay
+          </button>
+          {officeMode === 'replay' && (
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => setOfficeMode('live')}
+            >
+              Live state
+            </button>
+          )}
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
             aria-pressed={motionPaused}
             onClick={() => setMotionPaused((current) => !current)}
           >
@@ -330,6 +351,8 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
             selectedAgentId={selectedAgentId}
             onSelectAgent={setSelectedAgentId}
             motionPaused={motionPaused}
+            mode={officeMode}
+            replayNonce={replayNonce}
           />
         </OfficeRendererBoundary>
 

@@ -120,3 +120,45 @@ Office View must not:
 - hide blockers behind visual presentation
 - use Event history as the only current-state source
 - animate unknown state into success
+
+
+## Phase 8 Three.js simulation revision
+
+The first card-like and SVG-only Office prototypes were rejected during screenshot review because
+they did not create the intended sense of a living engineering office.
+
+The accepted implementation direction uses an original low-poly Three.js office:
+
+- real WebGL scene, perspective camera, lighting, shadows, orbit and zoom
+- RunStage zones rendered as floor areas
+- one low-poly character per factual AgentRun
+- one workstation per instantiated stage AgentRun
+- click picking through raycasting
+- deterministic waypoint movement through the central corridor
+- demand-bounded animation loop that stops when no character is moving
+- initial live load snaps to canonical state instead of fabricating an entrance event
+- later canonical state transitions cause spatial movement
+
+### Historical replay
+
+Completed Runs expose an explicit `Historical replay · timing compressed` mode.
+
+Replay uses persisted AgentRun `started_at` and `completed_at` timestamps. It preserves
+factual ordering while compressing long wall-clock durations. Characters enter through the
+office entrance and walk to their factual stage workstation. Completion changes their factual
+state but does not invent coffee breaks, conversations, typing progress, or collaboration.
+
+### Reference provenance
+
+The implementation was informed by public MIT-licensed patterns in:
+
+- W17ant/Claude-Office — position targets, waypoint/path-oriented movement, agent spots
+- wickedapp/openclaw-office — event-driven office presence and workflow animation
+- Shubhamsaboo/awesome-llm-apps — Three.js renderer/camera/lighting/render-loop example
+
+No character sprite, office image, generated room background, 3D model, texture, dialogue,
+or other visual asset from those repositories is copied into Agent Office.
+
+Runtime rendering dependency:
+
+- `three` 0.181.x — MIT License
