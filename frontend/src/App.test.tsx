@@ -234,6 +234,9 @@ describe('Agent Office operational shell', () => {
         if (url === '/api/projects') return jsonResponse([project])
         if (url === '/api/executors') return jsonResponse([executor])
         if (url === '/api/agent-profiles') return jsonResponse(profiles)
+        if (url === `/api/projects/${project.id}/composer/threads`) {
+          return jsonResponse([])
+        }
         if (url === '/api/composer/threads') return jsonResponse(thread)
         if (url === `/api/composer/threads/${thread.id}/messages`) {
           return jsonResponse(message)
@@ -321,9 +324,147 @@ describe('Agent Office operational shell', () => {
     expect(within(planningTeam).getByText('DEFERRED')).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: 'Deferred' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Start Run' })).toBeDisabled()
+    expect(screen.getByLabelText('Composer planning history')).toHaveValue(thread.id)
+    expect(
+      within(screen.getByLabelText('Composer planning history')).getByRole('option', {
+        name: 'Continue TDP · ACTIVE',
+      }),
+    ).toBeInTheDocument()
 
     fireEvent.click(within(planningTeam).getByRole('button', { name: 'Accept team' }))
     expect(await within(planningTeam).findByText('ACCEPTED')).toBeInTheDocument()
+  })
+
+  it('restores persisted planning history when the Office project reopens', async () => {
+    const project = {
+      id: '81111111-1111-4111-8111-111111111111',
+      name: 'Persisted TDP',
+      repository: { name: 'technical-documentation-platform' },
+      default_branch: 'main',
+      preferred_executor_id: null,
+      default_workflow_id: null,
+      status: 'ACTIVE',
+      created_at: '2026-09-27T08:00:00Z',
+      updated_at: '2026-09-27T08:00:00Z',
+      archived_at: null,
+    }
+    const executor = {
+      id: '82222222-2222-4222-8222-222222222222',
+      kind: 'REFERENCE',
+      name: 'Reference Executor',
+      status: 'AVAILABLE',
+      runtime_version: '1',
+      health_summary: 'Available.',
+      last_check: '2026-09-27T08:00:00Z',
+      capabilities: [],
+      security_limitations: [],
+    }
+    const thread = {
+      id: '84444444-4444-4444-8444-444444444444',
+      project_id: project.id,
+      requested_intent: 'AUTO',
+      resolved_intent: 'PLAN',
+      status: 'ACTIVE',
+      title: 'Project re-entry planning',
+      timezone: 'Asia/Jakarta',
+      executor_id: executor.id,
+      workflow_id: null,
+      created_at: '2026-09-27T08:01:00Z',
+      updated_at: '2026-09-27T08:02:00Z',
+      completed_at: null,
+    }
+    const persistedMessage = {
+      id: '85555555-5555-4555-8555-555555555555',
+      thread_id: thread.id,
+      actor_type: 'USER',
+      role_key: null,
+      message_kind: 'USER_PROMPT',
+      content: 'Continue the existing project after a break.',
+      created_at: '2026-09-27T08:01:01Z',
+    }
+    const team = {
+      id: '86666666-6666-4666-8666-666666666666',
+      thread_id: thread.id,
+      phase: 'PLANNING',
+      status: 'ACCEPTED',
+      rationale_summary: 'Restore the persisted planning cell.',
+      created_at: '2026-09-27T08:01:02Z',
+      decided_at: '2026-09-27T08:01:30Z',
+      members: [
+        {
+          role_key: 'product-manager',
+          disposition: 'INCLUDED',
+          reason: 'Own scope and user decisions.',
+          order_hint: 0,
+        },
+      ],
+    }
+    const brief = {
+      id: '87777777-7777-4777-8777-777777777777',
+      thread_id: thread.id,
+      artifact_type: 'BRIEF',
+      title: 'Project re-entry brief',
+      content: {
+        project: project.name,
+        repository_state: 'NOT_INSPECTED_IN_PHASE_9C',
+      },
+      author_role_key: 'system-analyst',
+      status: 'OPEN',
+      created_at: '2026-09-27T08:01:02Z',
+      updated_at: '2026-09-27T08:01:02Z',
+    }
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url =
+          typeof input === 'string'
+            ? input
+            : input instanceof URL
+              ? input.toString()
+              : input.url
+
+        if (url === '/api/projects') return jsonResponse([project])
+        if (url === '/api/executors') return jsonResponse([executor])
+        if (url === '/api/agent-profiles') return jsonResponse([])
+        if (url === `/api/projects/${project.id}/composer/threads`) {
+          return jsonResponse([thread])
+        }
+        if (url === `/api/composer/threads/${thread.id}/messages`) {
+          return jsonResponse([persistedMessage])
+        }
+        if (url === `/api/composer/threads/${thread.id}/team-proposals`) {
+          return jsonResponse([team])
+        }
+        if (url === `/api/composer/threads/${thread.id}/artifacts`) {
+          return jsonResponse([brief])
+        }
+        if (url === `/api/composer/threads/${thread.id}/requirements`) {
+          return jsonResponse([])
+        }
+        if (url === `/api/composer/threads/${thread.id}/events`) {
+          return jsonResponse({ events: [], next_cursor: null })
+        }
+
+        throw new Error(`Unexpected fetch call in persisted planning test: ${url}`)
+      }),
+    )
+
+    render(<App initialPath="/office" />)
+
+    const composer = await screen.findByRole('region', { name: 'Universal Composer' })
+    await waitFor(() => {
+      expect(within(composer).getByLabelText('Composer planning history')).toHaveValue(
+        thread.id,
+      )
+    })
+
+    expect(within(composer).getByText('Continue the existing project after a break.')).toBeInTheDocument()
+    expect(within(composer).getByText(/ACTIVE/)).toBeInTheDocument()
+    expect(
+      await screen.findByRole('region', { name: 'Planning team proposal' }),
+    ).toHaveTextContent('ACCEPTED')
+    expect(screen.getByRole('button', { name: 'Start Run' })).toBeDisabled()
   })
 
   it('renders backend-derived Overview empty states without fake KPIs', async () => {
