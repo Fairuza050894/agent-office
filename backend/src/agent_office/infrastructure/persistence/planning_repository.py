@@ -92,7 +92,7 @@ class SQLiteComposerThreadRepository(ComposerThreadRepository):
                 WHERE id = ?
                 """,
                 (
-                    _optional_enum(thread.resolved_intent),
+                    _optional_intent(thread.resolved_intent),
                     thread.status.value,
                     thread.title,
                     thread.timezone,
@@ -649,11 +649,8 @@ def _optional_id(value: object | None) -> str | None:
     return None if value is None else str(value)
 
 
-def _optional_enum(value: object | None) -> str | None:
-    if value is None:
-        return None
-    enum_value = getattr(value, "value", None)
-    return str(value) if enum_value is None else str(enum_value)
+def _optional_intent(value: ComposerIntent | None) -> str | None:
+    return None if value is None else value.value
 
 
 def _parse_optional_id[_IdT: DomainId](
