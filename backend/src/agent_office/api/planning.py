@@ -31,14 +31,17 @@ from agent_office.api.planning_models import (
     CreateComposerThreadRequest,
     PlanningArtifactResponse,
     PlanningEventPageResponse,
+    PlanningQuestionDecisionResponse,
     PlanningEventResponse,
     RequirementCandidateResponse,
+    ResolvePlanningQuestionRequest,
     TeamProposalResponse,
 )
 from agent_office.application.planning import (
     MAX_PLANNING_EVENT_PAGE_SIZE,
     ComposerThreadNotFoundError,
     ComposerThreadService,
+    PlanningArtifactNotFoundError,
     PlanningArtifactService,
     PlanningEventCursor,
     PlanningEventService,
@@ -54,6 +57,7 @@ from agent_office.domain import (
     ComposerThreadId,
     DomainInvariantError,
     ExecutorId,
+    PlanningArtifactId,
     PlanningEvent,
     PlanningEventId,
     ProjectId,
@@ -279,6 +283,37 @@ def list_artifacts(
     except ComposerThreadNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     return [PlanningArtifactResponse.from_domain(artifact) for artifact in artifacts]
+
+
+@router.post(
+    "/api/planning-artifacts/{artifact_id}/resolve",
+    response_model=PlanningQuestionDecisionResponse,
+)
+def resolve_planning_question(
+    artifact_id: UUID,
+    request: ResolvePlanningQuestionRequest,
+    service: ArtifactServiceDependency,
+) -> PlanningQuestionDecisionResponse:
+    try:
+        question, decision = service.resolve_question(
+            PlanningArtifactId(artifact_id),
+            selected_option=request.selected_option,
+            note=request.note,
+        )
+    except PlanningArtifactNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except PlanningTransitionError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    except DomainInvariantError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(exc),
+        ) from exc
+
+    return PlanningQuestionDecisionResponse(
+        question=PlanningArtifactResponse.from_domain(question),
+        decision=PlanningArtifactResponse.from_domain(decision),
+    )
 
 
 @router.get(
