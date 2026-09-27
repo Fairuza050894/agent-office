@@ -793,3 +793,113 @@ MVP_ACCEPTANCE.md
 ```
 
 These documents must remain consistent with the invariants above.
+
+
+## 37. Phase 9 Planning Architecture
+
+Phase 9 introduces a second durable application boundary alongside operational
+execution.
+
+```text
+Universal Composer UI
+        │
+        ▼
+Planning API
+        │
+        ▼
+Planning Application Services
+├── ComposerThreadService
+├── TeamProposalService
+├── PlanningArtifactService
+├── RequirementService
+└── PlanningEventService
+        │
+        ├──────────────► AuditService
+        │                 explicit requirement decisions
+        ▼
+Planning Persistence
+├── composer_threads
+├── composer_messages
+├── team_proposals
+├── team_proposal_members
+├── planning_artifacts
+├── requirement_candidates
+└── planning_events
+```
+
+This boundary is intentionally independent from:
+
+```text
+Run Coordinator
+Workflow Orchestrator
+AgentRun Coordinator
+Workspace Coordinator
+Operational Event Store
+```
+
+### Realtime boundary
+
+Planning updates use a dedicated planning event endpoint:
+
+```text
+/api/composer/threads/{thread_id}/events
+/api/composer/threads/{thread_id}/events/stream
+```
+
+This stream is separate from Run Event SSE.
+
+The frontend must not merge the two histories into one canonical event model.
+
+### Persistence version
+
+Phase 9B advances SQLite schema version:
+
+```text
+v10 → v11
+```
+
+The migration is additive and retains all existing operational tables.
+
+### PlanningRuntime port
+
+The application core depends on a PlanningRuntime protocol rather than a provider
+SDK.
+
+Conceptual operations:
+
+```text
+describe_capabilities()
+contribute(role_key, instruction)
+cancel()
+```
+
+Phase 9B ships only a deterministic ReferencePlanningRuntime.
+
+A real planning adapter in a later phase must prove read-only repository access.
+A provider that cannot enforce the required boundary must not be silently used
+for planning.
+
+### Security
+
+Planning content has bounded size and rejects secret-bearing structured keys.
+
+Project-scoped requirements and PlanningEvents are storage-enforced to match the
+owning ComposerThread Project.
+
+Planning does not receive Workspace write authority.
+
+### Promotion boundary
+
+Phase 9B does not promote a RequirementCandidate into Task/Run execution.
+
+The future bridge is conceptually:
+
+```text
+ComposerThread
+→ APPROVED RequirementCandidate
+→ explicit ExecutionProposal
+→ explicit user Start Run
+→ Task / Run
+```
+
+That bridge belongs to a later Phase 9 slice.
