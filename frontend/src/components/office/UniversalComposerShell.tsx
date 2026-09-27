@@ -103,7 +103,7 @@ export function UniversalComposerShell({
           </div>
           {messages.length > 0 && (
             <div className="office-composer-history">
-              {messages.slice(-3).map((message) => (
+              {messages.map((message) => (
                 <div key={message.id} className="office-composer-message">
                   <span>{message.actor_type === 'USER' ? 'You' : message.role_key ?? 'System'}</span>
                   <p>{message.content}</p>
@@ -173,7 +173,7 @@ export function UniversalComposerShell({
           className="office-composer-select"
           aria-label="Composer executor"
           value={executorId}
-          disabled={executors.length === 0 || isSubmitting}
+          disabled={executors.length === 0 || isSubmitting || isThreadLoading}
           onChange={(event) => setExecutorId(event.target.value)}
         >
           {executors.length === 0 && <option value="">No executor</option>}
