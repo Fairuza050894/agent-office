@@ -438,7 +438,7 @@ body {
 }
 
 .office-operations-dock.dock-expanded {
-  height: min(62vh, 620px);
+  height: min(46vh, 500px);
 }
 
 .office-dock-header {
@@ -1361,7 +1361,7 @@ body {
 }
 
 .office-operations-dock.dock-expanded {
-  height: min(36vh, 350px);
+  height: min(46vh, 500px);
 }
 
 .office-dock-header {
@@ -2339,4 +2339,50 @@ body {
   border-color: rgba(239, 106, 103, .26);
   background: rgba(239, 106, 103, .055);
   color: #d9908e;
+}
+
+/* Phase 9C rendered split-pane hardening */
+
+@media (min-width: 901px) {
+  .office-shell-focus .app-main {
+    height: calc(100vh - 44px);
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .office-shell-focus .office-workspace:not(.office-maximized) {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .office-shell-focus .office-workspace:not(.office-maximized) .office-command-rail,
+  .office-shell-focus .office-workspace:not(.office-maximized) .office-composer,
+  .office-shell-focus .office-workspace:not(.office-maximized) .office-operations-dock,
+  .office-shell-focus .office-workspace:not(.office-maximized) .office-workspace-note {
+    flex: 0 0 auto;
+  }
+
+  .office-shell-focus .office-workspace:not(.office-maximized) .office-workspace-scene {
+    min-height: 220px;
+    flex: 1 1 auto;
+    overflow: hidden;
+  }
+
+  .office-shell-focus .office-workspace:not(.office-maximized) .office-renderer {
+    display: flex;
+    height: 100%;
+    min-height: 0;
+    flex-direction: column;
+  }
+
+  .office-shell-focus .office-workspace:not(.office-maximized) .office-scene-heading {
+    flex: 0 0 auto;
+  }
+
+  .office-shell-focus .office-workspace:not(.office-maximized) .office-three-host {
+    height: auto;
+    min-height: 0;
+    flex: 1 1 auto;
+  }
 }
