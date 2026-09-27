@@ -81,10 +81,28 @@ No planning UI action may fabricate operational execution.
 
 ## Current quality gate
 
-The previous Phase 9C head passed frontend and repository verification but
-exposed a backend constructor-wiring regression after the Decision Queue
-extension. That wiring has been corrected on the current branch.
+Implementation checkpoint:
 
-Do not mark Phase 9C accepted or promote PR #10 until the current head completes
-the full backend/frontend/repository CI gate and rendered planning interaction is
-reviewed.
+```text
+b277332 style: finish phase 9c formatter output
+```
+
+GitHub Actions run `36309052874` is GREEN:
+
+```text
+backend pytest      657 passed
+ruff                passed
+ruff format         203 files already formatted
+mypy                0 issues / 136 source files
+frontend vitest     15 files / 71 tests passed
+frontend typecheck  passed
+frontend lint       0 errors / 2 existing warnings
+frontend build      passed
+repository check    passed
+```
+
+The Decision Queue extension is covered by backend truth-separation/audit tests
+and dedicated frontend dock interaction tests.
+
+Phase 9C remains IN PROGRESS only for the rendered planning interaction gate.
+Keep PR #10 Draft until that visual/interaction review is accepted.
