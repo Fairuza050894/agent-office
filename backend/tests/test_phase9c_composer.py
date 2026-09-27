@@ -383,7 +383,6 @@ def test_phase9c_adds_vnext_roles_without_removing_legacy_profiles() -> None:
     } <= keys
 
 
-
 def test_decision_queue_resolution_is_durable_audited_and_non_operational(
     harness_factory: HarnessFactory,
 ) -> None:
@@ -398,9 +397,7 @@ def test_decision_queue_resolution_is_durable_audited_and_non_operational(
     )
 
     question = next(
-        artifact
-        for artifact in prepared["artifacts"]
-        if artifact["artifact_type"] == "QUESTION"
+        artifact for artifact in prepared["artifacts"] if artifact["artifact_type"] == "QUESTION"
     )
 
     response = harness.client.post(
@@ -423,14 +420,9 @@ def test_decision_queue_resolution_is_durable_audited_and_non_operational(
     assert thread_after.status_code == 200
     assert thread_after.json()["status"] == "ACTIVE"
 
-    artifacts = harness.client.get(
-        f"/api/composer/threads/{thread['id']}/artifacts"
-    )
+    artifacts = harness.client.get(f"/api/composer/threads/{thread['id']}/artifacts")
     assert artifacts.status_code == 200
-    assert {
-        (artifact["artifact_type"], artifact["status"])
-        for artifact in artifacts.json()
-    } >= {
+    assert {(artifact["artifact_type"], artifact["status"]) for artifact in artifacts.json()} >= {
         ("QUESTION", "RESOLVED"),
         ("DECISION", "RESOLVED"),
     }
