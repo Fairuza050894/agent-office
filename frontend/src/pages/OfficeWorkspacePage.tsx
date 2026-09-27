@@ -85,19 +85,16 @@ export function OfficeWorkspacePage() {
     ])
       .then(([loadedProjects, loadedExecutors, loadedProfiles]) => {
         if (!active) return
+        const initialProjectId =
+          loadedProjects.find((project) => project.status === 'ACTIVE')?.id ??
+          loadedProjects[0]?.id ??
+          ''
+
         setProjects(loadedProjects)
         setExecutors(loadedExecutors)
         setProfiles(loadedProfiles)
-        setSelectedProjectId((current) => {
-          if (current && loadedProjects.some((project) => project.id === current)) {
-            return current
-          }
-          return (
-            loadedProjects.find((project) => project.status === 'ACTIVE')?.id ??
-            loadedProjects[0]?.id ??
-            ''
-          )
-        })
+        setSelectedProjectId(initialProjectId)
+        setIsRestoringThread(Boolean(initialProjectId))
         setRegistryError(null)
       })
       .catch((reason) => {
@@ -121,21 +118,10 @@ export function OfficeWorkspacePage() {
     let active = true
 
     if (!selectedProjectId) {
-      setPlanningThreads([])
-      setActiveThread(null)
-      setResolution(null)
-      setMessages([])
-      setPlanningTeam(null)
-      setPlanningArtifacts([])
-      setPlanningRequirements([])
-      setPlanningEvents([])
       return () => {
         active = false
       }
     }
-
-    setIsRestoringThread(true)
-    setComposerError(null)
 
     api
       .listProjectComposerThreads(selectedProjectId)
@@ -209,6 +195,7 @@ export function OfficeWorkspacePage() {
 
   const resetPlanningView = (projectId: string) => {
     setSelectedProjectId(projectId)
+    setIsRestoringThread(Boolean(projectId))
     setPlanningThreads([])
     setActiveThread(null)
     setResolution(null)
@@ -473,7 +460,7 @@ export function OfficeWorkspacePage() {
       </div>
 
       <UniversalComposerShell
-        key={selectedProjectId || 'unscoped'}
+        key={`${selectedProjectId || 'unscoped'}:${activeThread?.id ?? 'new'}`}
         projects={projects}
         selectedProjectId={selectedProjectId}
         onProjectChange={resetPlanningView}
