@@ -106,3 +106,35 @@ and dedicated frontend dock interaction tests.
 
 Phase 9C remains IN PROGRESS only for the rendered planning interaction gate.
 Keep PR #10 Draft until that visual/interaction review is accepted.
+
+
+## Phase 9C verification record
+
+```text
+docs/product/PHASE_9C_VERIFICATION.md
+```
+
+Current status:
+
+- functional behavior: PASS
+- planning / operational truth separation: PASS
+- CI: PASS
+- reference-pattern adoption contract: PASS
+- rendered interaction review: PENDING
+
+Reference-derived improvements currently implemented:
+
+- durable QUESTION / Decision Queue
+- immutable planning decision resolution
+- durable DECISION artifacts
+- explicit deferred ACTION artifacts
+- RequirementCandidate decision controls
+- separate planning Activity history
+
+Roadmap contracts strengthened for later slices:
+
+- Phase 9D: SQLite v12 RoleMemory
+- Phase 9E: SQLite v13 promotion + conflict-aware change areas
+- Phase 9F: safe Activity Interpreter
+
+PR #10 remains Draft until rendered planning interaction review is accepted.
