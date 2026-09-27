@@ -452,12 +452,11 @@ describe('Agent Office operational shell', () => {
 
     render(<App initialPath="/office" />)
 
-    const composer = await screen.findByRole('region', { name: 'Universal Composer' })
+    await screen.findByRole('region', { name: 'Universal Composer' })
     await waitFor(() => {
-      expect(within(composer).getByLabelText('Composer planning history')).toHaveValue(
-        thread.id,
-      )
+      expect(screen.getByLabelText('Composer planning history')).toHaveValue(thread.id)
     })
+    const composer = screen.getByRole('region', { name: 'Universal Composer' })
 
     expect(
       within(composer).getByText('Continue the existing project after a break.'),
