@@ -14,6 +14,7 @@ export type OfficePresenceState =
   | 'WAITING_USER'
   | 'LUNCH_BREAK'
   | 'COFFEE_BREAK'
+  | 'PRAYER_BREAK'
   | 'SOCIAL_BREAK'
   | 'OFFLINE'
 
@@ -58,10 +59,22 @@ export interface OfficeAmbientWindow {
     | 'coffee'
     | 'wrap-up'
     | 'after-hours'
+    | 'scheduled'
   label: string
   floor: OfficeFloorKey
   zone: OfficeZoneKey
   presence: OfficePresenceState
+}
+
+export interface OfficeScheduledEvent {
+  id: string
+  label: string
+  startsAt: string
+  endsAt: string
+  floor: OfficeFloorKey
+  zone: OfficeZoneKey
+  presence: OfficePresenceState
+  priority: number
 }
 
 export const OFFICE_FLOORS: OfficeFloorDefinition[] = [
@@ -176,7 +189,29 @@ function ambientWindowForHour(hour: number): OfficeAmbientWindow {
   }
 }
 
-export function officeAmbientWindow(now = new Date()): OfficeAmbientWindow {
+export function officeAmbientWindow(
+  now = new Date(),
+  scheduledEvents: OfficeScheduledEvent[] = [],
+): OfficeAmbientWindow {
+  const activeScheduled = scheduledEvents
+    .filter((event) => {
+      const startsAt = new Date(event.startsAt).getTime()
+      const endsAt = new Date(event.endsAt).getTime()
+      const current = now.getTime()
+      return Number.isFinite(startsAt) && Number.isFinite(endsAt) && current >= startsAt && current < endsAt
+    })
+    .sort((left, right) => right.priority - left.priority)[0]
+
+  if (activeScheduled) {
+    return {
+      key: 'scheduled',
+      label: activeScheduled.label,
+      floor: activeScheduled.floor,
+      zone: activeScheduled.zone,
+      presence: activeScheduled.presence,
+    }
+  }
+
   return ambientWindowForHour(now.getHours())
 }
 
@@ -210,8 +245,9 @@ export function planningPresenceMembers(
 export function ambientOfficeMembers(
   profiles: AgentProfile[],
   now = new Date(),
+  scheduledEvents: OfficeScheduledEvent[] = [],
 ): OfficePresenceMember[] {
-  const window = officeAmbientWindow(now)
+  const window = officeAmbientWindow(now, scheduledEvents)
   const known = profileByKey(profiles)
 
   return LIVING_OFFICE_CORE_ROLES.flatMap((roleKey, index) => {
@@ -226,7 +262,8 @@ export function ambientOfficeMembers(
       window.key === 'arrival' ||
       window.key === 'lunch' ||
       window.key === 'coffee' ||
-      window.key === 'after-hours'
+      window.key === 'after-hours' ||
+      window.key === 'scheduled'
 
     return [
       {
@@ -236,11 +273,13 @@ export function ambientOfficeMembers(
         status: useAmbientZone ? window.presence : 'AVAILABLE',
         floor: useAmbientZone ? window.floor : home.floor,
         zone: useAmbientZone
-          ? index % 2 === 0
+          ? window.key === 'scheduled'
             ? window.zone
-            : window.key === 'after-hours'
-              ? 'game-corner'
-              : 'lounge'
+            : index % 2 === 0
+              ? window.zone
+              : window.key === 'after-hours'
+                ? 'game-corner'
+                : 'lounge'
           : home.zone,
         truth: 'AMBIENT',
       },
@@ -253,7 +292,10 @@ export function livingOfficeMembers(
   proposal: TeamProposal | null,
   profiles: AgentProfile[],
   now = new Date(),
+  scheduledEvents: OfficeScheduledEvent[] = [],
 ): OfficePresenceMember[] {
   const planning = planningPresenceMembers(thread, proposal, profiles)
-  return planning.length > 0 ? planning : ambientOfficeMembers(profiles, now)
+  return planning.length > 0
+    ? planning
+    : ambientOfficeMembers(profiles, now, scheduledEvents)
 }
