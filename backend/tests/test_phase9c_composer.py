@@ -381,3 +381,108 @@ def test_phase9c_adds_vnext_roles_without_removing_legacy_profiles() -> None:
         "qa-engineer",
         "technical-writer",
     } <= keys
+
+
+
+def test_decision_queue_resolution_is_durable_audited_and_non_operational(
+    harness_factory: HarnessFactory,
+) -> None:
+    harness = harness_factory()
+    project = harness.register_project("Decision Queue")
+    thread = _new_thread(harness, project["id"], intent="RUN")
+
+    prepared = _prepare(
+        harness,
+        str(thread["id"]),
+        "Implement the approved feature now.",
+    )
+
+    question = next(
+        artifact
+        for artifact in prepared["artifacts"]
+        if artifact["artifact_type"] == "QUESTION"
+    )
+
+    response = harness.client.post(
+        f"/api/planning-artifacts/{question['id']}/resolve",
+        json={"selected_option": "option_a"},
+    )
+    assert response.status_code == 200, response.text
+    resolved = response.json()
+
+    assert resolved["question"]["status"] == "RESOLVED"
+    assert resolved["decision"]["artifact_type"] == "DECISION"
+    assert resolved["decision"]["status"] == "RESOLVED"
+    assert resolved["decision"]["content"]["question_artifact_id"] == question["id"]
+    assert resolved["decision"]["content"]["selected_option"] == "option_a"
+    assert resolved["decision"]["content"]["selected_value"] == (
+        "Continue in read-only planning mode."
+    )
+
+    thread_after = harness.client.get(f"/api/composer/threads/{thread['id']}")
+    assert thread_after.status_code == 200
+    assert thread_after.json()["status"] == "ACTIVE"
+
+    artifacts = harness.client.get(
+        f"/api/composer/threads/{thread['id']}/artifacts"
+    )
+    assert artifacts.status_code == 200
+    assert {
+        (artifact["artifact_type"], artifact["status"])
+        for artifact in artifacts.json()
+    } >= {
+        ("QUESTION", "RESOLVED"),
+        ("DECISION", "RESOLVED"),
+    }
+
+    events = harness.client.get(f"/api/composer/threads/{thread['id']}/events")
+    assert events.status_code == 200
+    assert "planning.artifact.resolved" in {
+        event["event_type"] for event in events.json()["events"]
+    }
+
+    database = harness.app.state.project_database
+    with database.connection() as connection:
+        audit = connection.execute(
+            """
+            SELECT action, target_type, target_id
+            FROM audit_records
+            WHERE action = 'PLANNING_DECISION_RECORDED'
+            """
+        ).fetchone()
+        assert audit is not None
+        assert audit["target_type"] == "PLANNING_ARTIFACT"
+        assert audit["target_id"] == question["id"]
+
+        assert connection.execute("SELECT COUNT(*) FROM tasks").fetchone()[0] == 0
+        assert connection.execute("SELECT COUNT(*) FROM runs").fetchone()[0] == 0
+        assert connection.execute("SELECT COUNT(*) FROM agent_runs").fetchone()[0] == 0
+        assert connection.execute("SELECT COUNT(*) FROM workspaces").fetchone()[0] == 0
+        assert connection.execute("SELECT COUNT(*) FROM events").fetchone()[0] == 0
+
+    second = harness.client.post(
+        f"/api/planning-artifacts/{question['id']}/resolve",
+        json={"selected_option": "option_b"},
+    )
+    assert second.status_code == 409
+
+
+def test_decision_queue_rejects_undeclared_option(
+    harness_factory: HarnessFactory,
+) -> None:
+    harness = harness_factory()
+    project = harness.register_project("Decision Validation")
+    thread = _new_thread(harness, project["id"], intent="RUN")
+    prepared = _prepare(harness, str(thread["id"]), "Run the change now.")
+
+    question = next(
+        artifact
+        for artifact in prepared["artifacts"]
+        if artifact["artifact_type"] == "QUESTION"
+    )
+
+    response = harness.client.post(
+        f"/api/planning-artifacts/{question['id']}/resolve",
+        json={"selected_option": "option_z"},
+    )
+    assert response.status_code == 409
