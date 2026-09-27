@@ -124,7 +124,7 @@ def _has_any_marker(text: str, markers: tuple[str, ...]) -> bool:
     """Match words/phrases without treating substrings like "ui" in requirement as UI."""
 
     return any(
-        re.search(rf"(?<!\\w){re.escape(marker.strip())}(?!\\w)", text) is not None
+        re.search(rf"(?<!\w){re.escape(marker.strip())}(?!\w)", text) is not None
         for marker in markers
         if marker.strip()
     )
