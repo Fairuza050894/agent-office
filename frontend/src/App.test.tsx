@@ -361,7 +361,7 @@ describe('Agent Office operational shell', () => {
       name: 'Resize Operations Dock',
     })
     fireEvent.keyDown(resizeHandle, { key: 'ArrowUp' })
-    expect(operationsDock).toHaveStyle({ height: '276px' })
+    expect(operationsDock).toHaveStyle({ height: '250px' })
     expect(screen.getByLabelText('Composer planning history')).toHaveValue(thread.id)
     expect(
       within(screen.getByLabelText('Composer planning history')).getByRole('option', {
