@@ -12,6 +12,7 @@ from agent_office.domain import (
     ComposerThread,
     ComposerThreadId,
     PlanningArtifact,
+    PlanningArtifactId,
     PlanningEvent,
     PlanningEventId,
     ProjectId,
@@ -82,6 +83,12 @@ class TeamProposalRepository(Protocol):
 
 class PlanningArtifactRepository(Protocol):
     def add(self, artifact: PlanningArtifact) -> None: ...
+    def get(self, artifact_id: PlanningArtifactId) -> PlanningArtifact | None: ...
+    def resolve_question(
+        self,
+        question: PlanningArtifact,
+        decision: PlanningArtifact,
+    ) -> None: ...
     def list_by_thread(self, thread_id: ComposerThreadId) -> tuple[PlanningArtifact, ...]: ...
 
 
