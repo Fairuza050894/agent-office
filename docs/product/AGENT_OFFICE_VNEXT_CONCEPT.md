@@ -1,7 +1,7 @@
 # Agent Office vNext — Product Concept / PRD
 
 Status: Proposed
-Version: 0.1
+Version: 0.2
 Working branch: `phase-9-concept`
 Scope: post-Phase-8 product evolution
 Implementation status: not started
@@ -16,13 +16,16 @@ The goal is not to turn Agent Office into a decorative AI-company simulator. The
 
 > if Agent Office cannot prove an operational activity happened, it must not present that activity as execution fact.
 
-The proposed vNext experience combines three clearly separated modes:
+The proposed vNext experience combines three clearly separated truth modes and one universal interaction surface:
 
 1. **Operational Mode** — factual engineering execution
 2. **Ambient Idle Mode** — non-canonical office life when no engineering Run is active
 3. **Brainstorm / Planning Mode** — explicit AI-assisted ideation with structured notes, requirements, decisions, and questions
+4. **Universal Composer** — one project-aware entry point for Ask, Plan, Brainstorm, and Run intents
 
 These modes may share the same virtual office environment and role identities, but they must not share the same truth semantics.
+
+vNext also changes the organizational model. Agent Office no longer assumes a fixed cast where every role participates in every request. It forms a temporary team based on the selected Project, requested intent, repository truth, risk, and implementation scope.
 
 ---
 
@@ -166,7 +169,10 @@ Example:
 ```text
 User starts Brainstorm Session
         ↓
-Architect + Explorer + QA + Security + Documentation roles join
+Agent Office proposes a Planning Cell
+        ↓
+Product Manager + Principal Engineer + System Analyst
++ Product Designer / QA / Security when relevant
         ↓
 Structured proposal turns
         ↓
@@ -179,6 +185,8 @@ Open questions / risks are surfaced
 User approves / rejects / defers
         ↓
 Approved items may become Task / PRD input
+        ↓
+Implementation team is formed only after scope approval
 ```
 
 ---
@@ -268,33 +276,76 @@ Lighting changes must not imply execution state unless explicitly tied to canoni
 
 The 3D scene should become the dominant viewport.
 
-Target desktop behavior:
+The preferred vNext desktop composition is:
 
 ```text
-Office scene: approximately 85–90% of content viewport
-Compact live log: floating corner panel
-Selected Agent detail: transient inspector / drawer
-Global controls: slim command rail
+FULL-WIDTH OFFICE / WORLD
+        ↓
+UNIVERSAL COMPOSER
+        ↓
+COLLAPSIBLE BOTTOM OPERATIONS DOCK
 ```
 
-The current persistent full-height right sidebar should evolve into an on-demand inspector.
+Target desktop behavior:
 
-### 6.2 Compact live log
+- Office scene consumes nearly the full content width
+- normal bottom dock is approximately 220–280 px tall
+- collapsed dock is approximately 44–56 px tall
+- expanded dock may use approximately 35–40% of viewport height
+- maximize mode can collapse the dock to a thin strip
+- selected Agent detail remains transient / on-demand
 
-Default log presentation:
+The current Phase 8 persistent full-height right sidebar should not remain the default layout.
 
-- docked to lower-right
-- approximately 300–360 px wide
-- shows 3–5 latest canonical signals
-- timestamp + role/source + short human-readable event
+### 6.2 Bottom Operations Dock
+
+The Operations Dock is the default home for high-frequency operational information.
+
+Recommended structure:
+
+```text
+┌────────────────────────────────────────┬───────────────────────┐
+│ ACTIVITY / FINDINGS / EVIDENCE         │ ACTIVE TEAM           │
+│                                        │                       │
+│ compact factual event stream           │ role + factual state  │
+└────────────────────────────────────────┴───────────────────────┘
+```
+
+The dock should support tabs rather than displaying every information class simultaneously:
+
+- Activity
+- Team
+- Findings
+- Evidence
+- Terminal / executor output when supported
+
+Default Activity presentation:
+
+- 3–8 recent canonical signals depending on dock height
+- timestamp
+- role/source
+- short human-readable event
 - subtle live indicator
-- scroll only when expanded
-- can collapse to one line
-- can expand to full event inspector
+- scroll when expanded
+- no giant cards
 
-The compact log must not obscure the primary work area.
+The Team region should show only roles relevant to the current context. In an active Run this means instantiated AgentRuns. In planning it means the selected Planning Cell. In Ambient Mode it means OfficePersonas and must not use operational status language.
 
-### 6.3 Selected Agent inspector
+### 6.3 Universal Composer placement
+
+The Universal Composer sits immediately above the Operations Dock or inside its upper rail.
+
+It must remain accessible while the user watches the Office View.
+
+Its compact context row may include:
+
+```text
+[Project] [Branch] [Mode] [Workflow] [Executor] [+ Context]
+```
+
+The composer is specified in detail in the Universal Composer section below.
+
+### 6.4 Selected Agent inspector
 
 Clicking a character or roster item should open a compact inspector containing:
 
@@ -315,7 +366,7 @@ The inspector may appear as:
 
 It should close without changing Run state.
 
-### 6.4 Maximize / Focus Office
+### 6.5 Maximize / Focus Office
 
 Office View should support a true maximize mode.
 
@@ -365,16 +416,17 @@ Recommended internal name:
 OfficePersona
 ```
 
-An OfficePersona may reuse the deterministic visual identity of:
+An OfficePersona may reuse the deterministic visual identity of the vNext role catalog:
 
-- Architect
-- Explorer
-- Backend Developer
-- Frontend Developer
-- QA Reviewer
+- Product Manager
+- System Analyst
+- Principal Engineer
+- Product Designer
+- Backend Engineer
+- Frontend Engineer
+- QA Engineer
 - Security Reviewer
-- Verifier
-- Documentation Writer
+- Technical Writer
 
 The UI must not show operational status pills such as RUNNING or COMPLETED for these personas.
 
@@ -452,11 +504,11 @@ Date:
 2026-09-27 10:00 WIB
 
 Participants:
-Architect
-Explorer
-QA Reviewer
-Security Reviewer
-Documentation Writer
+Product Manager
+Principal Engineer
+System Analyst
+QA Engineer
+Technical Writer
 ```
 
 ### 8.2 Session header
@@ -583,9 +635,13 @@ Preferred presentation:
 Example:
 
 ```text
-ARCHITECT
+PRODUCT MANAGER
 Proposal
 Separate candidate screening from interview scheduling.
+
+PRINCIPAL ENGINEER
+Constraint
+Scheduling must remain independent from screening state transitions.
 
 → Requirement candidate created
 REQ-07 · Candidate screening orchestration
@@ -613,7 +669,476 @@ No generated requirement becomes approved simply because multiple agents agree.
 
 ---
 
-## 9. Date, Time, and Temporal Context
+## 9. Universal Composer
+
+### 9.1 Purpose
+
+Universal Composer is the primary conversational and command entry point for Agent Office.
+
+The user should not need to navigate through a multi-page form merely to ask about a Project, resume old work, start a planning session, or launch an approved implementation.
+
+The composer accepts:
+
+- Project scope
+- user instruction
+- optional repository context
+- optional Run / Finding / Evidence context
+- optional Workflow
+- optional Executor
+- intent
+
+The composer must remain project-aware. Repository-changing work must target a registered Project rather than an arbitrary ungoverned filesystem path.
+
+### 9.2 Supported intents
+
+The composer supports five intent values:
+
+```text
+AUTO
+ASK
+PLAN
+BRAINSTORM
+RUN
+```
+
+#### AUTO
+
+Default mode.
+
+Agent Office classifies the request into ASK, PLAN, BRAINSTORM, or RUN.
+
+AUTO may prepare an implementation proposal, but it must not silently begin repository-changing execution.
+
+Before a RUN starts, the user must see the selected Project, approved scope, proposed execution team, Workflow, and Executor and explicitly start the Run.
+
+#### ASK
+
+Read-only question about selected Project context.
+
+Examples:
+
+- "What architecture does TDP use now?"
+- "Where is authentication implemented?"
+- "What did the last Run change?"
+
+ASK does not create a Task or Run unless the user promotes the conversation.
+
+#### PLAN
+
+Repository-aware planning without implementation.
+
+Use PLAN when:
+
+- returning to a Project after a long gap
+- requirements are unclear
+- change impact must be discovered first
+- implementation scope needs approval
+
+PLAN should normally form a small Planning Cell rather than activate the full role catalog.
+
+#### BRAINSTORM
+
+Explicit multi-role ideation.
+
+BRAINSTORM creates a BrainstormSession and structured planning artifacts.
+
+It may use the meeting room spatially.
+
+#### RUN
+
+Creates an engineering Task/Run from sufficiently clear and approved scope.
+
+RUN must not bypass required planning or approval gates merely because the user entered imperative language.
+
+### 9.3 Composer interaction
+
+Recommended compact layout:
+
+```text
+[Project: TDP ▼] [AUTO ▼] [Codex ▼] [+ Context]
+
+┌─────────────────────────────────────────────────────────────┐
+│ Continue TDP. Review the current state and propose what     │
+│ should be improved next.                                   │
+└─────────────────────────────────────────────────────────────┘
+
+                                         [Send] [Start Run]
+```
+
+Preferred keyboard model:
+
+```text
+Enter       -> send / continue conversation
+Cmd+Enter   -> request Run start or confirmation
+```
+
+A Run still requires a valid executable scope.
+
+### 9.4 Project scoping
+
+The Project selector should use the existing Project Registry.
+
+When a Project is selected, Agent Office can resolve:
+
+- repository path
+- default branch
+- preferred Executor
+- Workflow defaults
+- project verification commands
+- project-specific constraints
+- relevant historical Runs
+
+If a user names a Project ambiguously in free text, Agent Office may suggest a Project but must request confirmation before repository-changing execution.
+
+### 9.5 Context attachments
+
+The composer may attach first-class Agent Office context:
+
+- file or directory
+- previous Run
+- Task
+- Finding
+- Evidence
+- BrainstormSession
+- RequirementCandidate
+- Project documentation
+- PR / issue integration when available
+
+The context rail should remain compact.
+
+---
+
+## 10. Dynamic Team Formation
+
+### 10.1 Principle
+
+Agent Office should not activate every role for every request.
+
+It should form the smallest team that materially contributes to the current phase.
+
+Team formation is based on:
+
+- intent
+- Project
+- repository state
+- approved requirements
+- change surface
+- risk
+- required independent review
+- documentation impact
+
+The user should be able to understand why a role is included or excluded.
+
+### 10.2 Role catalog
+
+#### Product Manager
+
+Owns:
+
+- problem framing
+- user/business objective
+- scope
+- RequirementCandidates
+- prioritization proposal
+- acceptance outcome
+- open product questions
+
+Product Manager does not approve requirements on behalf of the user.
+
+#### System Analyst
+
+Owns:
+
+- repository discovery
+- current implementation truth
+- dependency identification
+- existing tests/docs/configuration
+- historical context
+- impact mapping
+
+System Analyst answers:
+
+> What actually exists now?
+
+#### Principal Engineer
+
+Owns:
+
+- architecture impact
+- technical design
+- cross-cutting constraints
+- implementation strategy
+- engineering standards
+- technical risk
+- high-level technical review
+
+Principal Engineer answers:
+
+> How should we build or change this safely?
+
+#### Product Designer
+
+Activated when work affects:
+
+- user flow
+- information architecture
+- interaction
+- visual hierarchy
+- accessibility
+- significant frontend experience
+
+Owns:
+
+- UX proposal
+- interaction states
+- layout
+- design acceptance notes
+
+#### Backend Engineer
+
+Activated when approved scope requires backend implementation.
+
+Owns bounded backend code changes in an isolated Workspace.
+
+#### Frontend Engineer
+
+Activated when approved scope requires frontend implementation.
+
+Owns bounded frontend code changes in an isolated Workspace.
+
+#### QA Engineer
+
+Participates in two possible stages:
+
+1. pre-implementation acceptance/test strategy
+2. post-implementation independent verification
+
+Owns:
+
+- acceptance scenarios
+- regression strategy
+- test execution
+- Findings
+
+#### Security Reviewer
+
+Conditional role.
+
+Activated for security-relevant scope such as:
+
+- authorization
+- authentication
+- credentials / secrets
+- filesystem safety
+- networking
+- dependency risk
+- destructive operations
+- permission boundaries
+
+Security Reviewer remains review-oriented and should not silently implement fixes.
+
+#### Technical Writer
+
+Owns:
+
+- requirement traceability
+- user-facing documentation
+- API documentation
+- operational documentation
+- release notes where applicable
+- final documentation consistency
+
+Technical Writer should normally join after scope stabilizes, though it may join planning when documentation itself is the product scope.
+
+### 10.3 User role
+
+The human user remains the ultimate Product Owner / Approver.
+
+AI roles may recommend, challenge, summarize, and propose.
+
+They must not silently approve:
+
+- requirements
+- major scope changes
+- merge
+- production deployment
+- destructive repository action
+
+### 10.4 Advisory business role
+
+A future optional role may be called:
+
+```text
+Product Strategist
+```
+
+or
+
+```text
+Business Reviewer
+```
+
+This role may challenge value, prioritization, or business assumptions.
+
+It must remain advisory.
+
+Do not model a fictional CEO / VP persona with implied authority over the user.
+
+### 10.5 System components are not personas
+
+The following should not be presented as office employees:
+
+- Orchestrator
+- Verification Gate
+- Workspace Manager
+- Event Store / Event System
+- scheduler / runtime infrastructure
+
+These are system capabilities.
+
+The Phase 8 `Verifier` persona should evolve toward a non-persona `Verification Gate` concept.
+
+### 10.6 Example — Project re-entry
+
+User:
+
+```text
+Project: Technical Documentation Platform
+Mode: AUTO
+
+"Continue TDP. We have not worked on it for a while.
+Review the current state and decide what should be worked on next."
+```
+
+Expected classification:
+
+```text
+AUTO -> PLAN
+```
+
+Initial Planning Cell:
+
+```text
+Product Manager
+Principal Engineer
+System Analyst
+
++ Product Designer only if current gaps involve UX
++ QA Engineer when acceptance/test implications need early input
++ Security Reviewer only if the discovered scope is security relevant
+```
+
+Backend Engineer and Frontend Engineer are not automatically activated.
+
+Initial output:
+
+```text
+PROJECT RE-ENTRY BRIEF
+
+Current state
+Observed gaps
+Requirement candidates
+Technical constraints
+Open questions
+Risks
+Proposed implementation scope
+Expected implementation roles
+Expected review roles
+Documentation impact
+```
+
+The user then approves, rejects, edits, or defers RequirementCandidates.
+
+Only after approval does Agent Office form the implementation team.
+
+### 10.7 Example — approved implementation
+
+Approved scope:
+
+```text
+REQ-021
+REQ-024
+```
+
+Agent Office may propose:
+
+```text
+Implementation team
+- Backend Engineer
+- Frontend Engineer
+
+Independent review
+- QA Engineer
+- Security Reviewer
+
+Knowledge
+- Technical Writer
+```
+
+Roles that have no material contribution remain inactive.
+
+---
+
+## 11. Planning Before Implementation
+
+For ambiguous, broad, stale, or high-impact requests, Agent Office should favor:
+
+```text
+DISCOVER
+   ↓
+PLAN
+   ↓
+USER APPROVAL
+   ↓
+IMPLEMENT
+   ↓
+REVIEW
+   ↓
+REMEDIATE if needed
+   ↓
+VERIFY
+   ↓
+DOCUMENT
+```
+
+This is not a requirement that every small task uses a heavyweight process.
+
+Examples:
+
+Typo in documentation:
+
+```text
+Technical Writer
+→ Verification Gate
+```
+
+Small isolated bug:
+
+```text
+System Analyst
+→ relevant Engineer
+→ QA Engineer
+→ Verification Gate
+```
+
+Security-sensitive feature:
+
+```text
+Product Manager
++ System Analyst
++ Principal Engineer
++ Security Reviewer
+→ user scope approval
+→ relevant Engineers
+→ QA Engineer
++ Security Reviewer
+→ Verification Gate
+→ Technical Writer
+```
+
+---
+
+## 12. Date, Time, and Temporal Context
 
 ### 9.1 Global command rail
 
@@ -650,7 +1175,7 @@ If edits become important, use:
 
 ---
 
-## 10. Top Command Rail
+## 13. Top Command Rail
 
 Replace oversized page chrome with a compact command rail.
 
@@ -680,7 +1205,7 @@ The command rail should remain compact enough that the 3D scene retains vertical
 
 ---
 
-## 11. Power UX
+## 14. Power UX
 
 ### 11.1 Camera presets
 
@@ -758,7 +1283,7 @@ Shortcuts must not conflict with text input.
 
 ---
 
-## 12. Notification Philosophy
+## 15. Notification Philosophy
 
 Notifications should be meaningful and quiet.
 
@@ -795,7 +1320,7 @@ The compact log should absorb routine activity.
 
 ---
 
-## 13. Futuristic Visual Details
+## 16. Futuristic Visual Details
 
 Allowed:
 
@@ -822,7 +1347,7 @@ The target is **future professional**, not sci-fi decoration.
 
 ---
 
-## 14. Truth Model
+## 17. Truth Model
 
 The product must make data class differences explicit.
 
@@ -875,7 +1400,7 @@ Their **content**, however, remains proposed until explicitly approved where app
 
 ---
 
-## 15. Mode Visual Language
+## 18. Mode Visual Language
 
 The user should never need to guess which truth model is active.
 
@@ -926,7 +1451,7 @@ Generated requirements are visibly marked `PROPOSED` until approved.
 
 ---
 
-## 16. Anti-AI-Slop Design Rules
+## 19. Anti-AI-Slop Design Rules
 
 All vNext UI should follow these rules:
 
@@ -947,7 +1472,7 @@ All vNext UI should follow these rules:
 
 ---
 
-## 17. Performance Requirements
+## 20. Performance Requirements
 
 The visual system must degrade gracefully.
 
@@ -972,7 +1497,7 @@ Ambient Mode must never consume enough resources to interfere with an active exe
 
 ---
 
-## 18. Accessibility
+## 21. Accessibility
 
 Requirements:
 
@@ -987,7 +1512,7 @@ Requirements:
 
 ---
 
-## 19. Suggested Information Architecture
+## 22. Suggested Information Architecture
 
 Primary shell:
 
@@ -998,14 +1523,14 @@ Work
   Runs
   Tasks
 
-Engineering
-  Agents
-  Workflows
-  Executors
-
 Planning
   Brainstorms
   Requirements
+
+Engineering
+  Team / Roles
+  Workflows
+  Executors
 
 Observability
   Activity
@@ -1016,36 +1541,40 @@ Control
   Settings
 ```
 
+The primary day-to-day entry point is the Universal Composer, not a requirement that users navigate these sections before every request.
+
 The Planning section should only be added once Brainstorm Mode has real persistent records.
 
 ---
 
-## 20. Conceptual Screen — Office
+## 23. Conceptual Screen — Office
 
 ```text
-┌────────────────────────────────────────────────────────────────────┐
-│ Project / Run      LIVE      2 active · 1 waiting      27 Sep 00:42│
-├────────────────────────────────────────────────────────────────────┤
-│                                                                    │
-│                                                                    │
-│                        3D OFFICE                                   │
-│                                                                    │
-│                                                                    │
-│                                                       ┌──────────┐ │
-│                                                       │ 3 latest │ │
-│                                                       │ signals  │ │
-│                                                       └──────────┘ │
-│                                                                    │
-├────────────────────────────────────────────────────────────────────┤
-│ agent roster / scene controls / camera presets                     │
-└────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│ TDP · LIVE · 2 active · 1 waiting                    27 Sep · 10:53  │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│                                                                      │
+│                         FULL OFFICE VIEW                             │
+│                                                                      │
+│                                                                      │
+│                                                                      │
+├──────────────────────────────────────────────────────────────────────┤
+│ [TDP ▼] [AUTO ▼] [Codex ▼] [+ Context]                              │
+│ [ Continue the project and review what should be done next... ] [→] │
+├──────────────────────────────────────────┬───────────────────────────┤
+│ ACTIVITY                                 │ TEAM                      │
+│ 10:52 Planning session started           │ ● Product Manager        │
+│ 10:53 Repository analysis ready          │ ● Principal Engineer     │
+│ 10:53 Requirements proposed              │ ● System Analyst         │
+└──────────────────────────────────────────┴───────────────────────────┘
 ```
 
-Clicking a character opens the inspector instead of permanently reserving 25–28% of the scene.
+The bottom dock is collapsible. Clicking a factual AgentRun opens the inspector instead of permanently reserving 25–28% of the scene.
 
 ---
 
-## 21. Conceptual Screen — Brainstorm
+## 24. Conceptual Screen — Brainstorm
 
 ```text
 ┌────────────────────────────────────────────────────────────────────┐
@@ -1054,7 +1583,7 @@ Clicking a character opens the inspector instead of permanently reserving 25–2
 │                                               │ REQUIREMENTS       │
 │          MEETING ROOM / WHITEBOARD            │                    │
 │                                               │ REQ-01 Proposed    │
-│   Architect  Explorer  QA  Security           │ REQ-02 Approved    │
+│ PM  Principal  Analyst  QA  Security           │ REQ-02 Approved    │
 │                                               │ REQ-03 Deferred    │
 │      [notes projected on board]               │                    │
 │                                               │ Open questions  2  │
@@ -1066,7 +1595,7 @@ Clicking a character opens the inspector instead of permanently reserving 25–2
 
 ---
 
-## 22. Success Criteria
+## 25. Success Criteria
 
 The concept is successful when implementation can satisfy all of the following:
 
@@ -1092,11 +1621,30 @@ The concept is successful when implementation can satisfy all of the following:
 - no ambient action enters canonical Event history
 - factual Run start immediately takes precedence
 
+### Universal Composer
+
+- user can Ask, Plan, Brainstorm, or Run from one project-aware composer
+- AUTO may classify intent but cannot silently execute repository-changing work
+- Project Registry provides repository scope and defaults
+- previous Run / Finding / Evidence / Requirement context can be attached
+- ambiguous repository scope requires confirmation before execution
+
+### Dynamic team formation
+
+- Agent Office proposes the smallest useful team for the current phase
+- planning does not automatically activate implementation roles
+- role inclusion/exclusion is explainable
+- Backend / Frontend roles activate only when approved scope requires them
+- QA may contribute before and after implementation
+- Security is conditional on relevant risk
+- Technical Writer joins based on documentation impact
+- user remains final Product Owner / Approver
+
 ### Brainstorm experience
 
 - user can explicitly start a Brainstorm Session
 - session has date, time, timezone, title, participants, and status
-- roles produce concise visible proposals rather than hidden reasoning
+- selected planning roles produce concise visible proposals rather than hidden reasoning
 - system creates structured notes and candidate requirements
 - requirements remain PROPOSED until user approval
 - user can approve, reject, defer, and edit requirement candidates
@@ -1111,7 +1659,7 @@ The concept is successful when implementation can satisfy all of the following:
 
 ---
 
-## 23. Non-Goals
+## 26. Non-Goals
 
 This concept does not authorize:
 
@@ -1129,7 +1677,7 @@ This concept does not authorize:
 
 ---
 
-## 24. Recommended Product Decisions
+## 27. Recommended Product Decisions
 
 The following defaults are recommended for implementation:
 
@@ -1141,14 +1689,21 @@ The following defaults are recommended for implementation:
 6. **Brainstorm output is structured into notes / requirements / decisions / risks instead of being primarily a chat transcript.**
 7. **Requirement approval is always explicit user action.**
 8. **Office View gets a real maximize mode.**
-9. **The persistent Phase 8 right sidebar evolves into compact log + on-demand inspector.**
-10. **The same role appearance can be reused across modes, but mode badges and status language must clearly distinguish persona from AgentRun.**
-11. **Dark UI redesign should cover the application shell, not just the Office View.**
-12. **Mission-control polish should remain restrained and professional.**
+9. **The persistent Phase 8 right sidebar evolves into a collapsible Bottom Operations Dock + on-demand inspector.**
+10. **Universal Composer becomes the primary interaction surface for ASK / PLAN / BRAINSTORM / RUN.**
+11. **AUTO may infer intent but never silently starts repository-changing execution.**
+12. **Agent Office dynamically forms the smallest useful team instead of activating every role.**
+13. **The human user remains the final Product Owner / Approver.**
+14. **Principal Engineer replaces the generic Architect persona for vNext technical leadership.**
+15. **System Analyst replaces Explorer for repository/current-state discovery.**
+16. **Verification Gate is a system capability, not an office persona.**
+17. **The same role appearance can be reused across modes, but mode badges and status language must clearly distinguish persona from AgentRun.**
+18. **Dark UI redesign should cover the application shell, not just the Office View.**
+19. **Mission-control polish should remain restrained and professional.**
 
 ---
 
-## 25. Future Extensions
+## 28. Future Extensions
 
 After the core vNext concept proves useful, possible extensions include:
 
@@ -1170,12 +1725,12 @@ These are not required for the first implementation slice.
 
 ---
 
-## 26. Product Principle
+## 29. Product Principle
 
 Agent Office vNext should feel more alive without becoming less trustworthy.
 
 The governing rule is:
 
-> **Operational facts are facts. Ambient life is visibly illustrative. Brainstorm content is visibly proposed until approved.**
+> **Operational facts are facts. Ambient life is visibly illustrative. Brainstorm content is visibly proposed until approved. The office forms the smallest useful team for the work, and the human remains the final approver.**
 
 That distinction allows the product to become more immersive, futuristic, and collaborative without sacrificing engineering credibility.
