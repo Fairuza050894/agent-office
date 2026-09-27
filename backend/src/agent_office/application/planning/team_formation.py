@@ -189,7 +189,8 @@ class DynamicTeamFormationService:
                     "No additional system-analysis role is required by the resolved planning facts."
                 ),
                 "principal-engineer": (
-                    "No additional architecture or dependency review is required by the explicit scope."
+                    "No additional architecture or dependency review is required "
+                    "by the explicit scope."
                 ),
                 "product-designer": (
                     "No user-interface or user-experience scope was identified."
@@ -204,7 +205,8 @@ class DynamicTeamFormationService:
                     "No explicit acceptance, regression, test, or defect scope was identified."
                 ),
                 "security-reviewer": (
-                    "No explicit authentication, permission, secret, filesystem, or network risk was identified."
+                    "No explicit authentication, permission, secret, filesystem, "
+                    "or network risk was identified."
                 ),
                 "technical-writer": (
                     "No explicit documentation scope was identified."
