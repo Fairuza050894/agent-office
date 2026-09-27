@@ -337,6 +337,7 @@ export function shouldShowOfficeNameplate(
     'COFFEE_BREAK',
     'LUNCH_BREAK',
     'SOCIAL_BREAK',
+    'PRAYER_BREAK',
     'AVAILABLE',
     'BLOCKED',
     'FAILED',
@@ -360,6 +361,7 @@ export function statusColor(status: string): number {
     case 'COFFEE_BREAK':
     case 'LUNCH_BREAK':
     case 'SOCIAL_BREAK':
+    case 'PRAYER_BREAK':
       return 0xd09a35
     case 'BLOCKED':
     case 'FAILED':
@@ -732,6 +734,7 @@ export function animateCharacter(
       'COFFEE_BREAK',
       'LUNCH_BREAK',
       'SOCIAL_BREAK',
+      'PRAYER_BREAK',
       'BLOCKED',
       'FAILED',
     ].includes(
