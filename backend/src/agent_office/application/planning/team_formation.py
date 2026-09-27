@@ -192,9 +192,7 @@ class DynamicTeamFormationService:
                     "No additional architecture or dependency review is required "
                     "by the explicit scope."
                 ),
-                "product-designer": (
-                    "No user-interface or user-experience scope was identified."
-                ),
+                "product-designer": ("No user-interface or user-experience scope was identified."),
                 "backend-engineer": (
                     "No backend implementation role is activated for this planning turn."
                 ),
@@ -208,9 +206,7 @@ class DynamicTeamFormationService:
                     "No explicit authentication, permission, secret, filesystem, "
                     "or network risk was identified."
                 ),
-                "technical-writer": (
-                    "No explicit documentation scope was identified."
-                ),
+                "technical-writer": ("No explicit documentation scope was identified."),
             }
             for role_key in _ROLE_CATALOG:
                 add(
