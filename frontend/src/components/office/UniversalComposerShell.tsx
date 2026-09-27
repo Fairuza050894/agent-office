@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import type { Executor, Project } from '../../api'
 
@@ -25,11 +25,6 @@ export function UniversalComposerShell({
 }: UniversalComposerShellProps) {
   const [intent, setIntent] = useState<ComposerIntent>('AUTO')
   const [instruction, setInstruction] = useState('')
-  const [executorId, setExecutorId] = useState(selectedExecutorId ?? '')
-
-  useEffect(() => {
-    setExecutorId(selectedExecutorId ?? '')
-  }, [selectedExecutorId])
 
   return (
     <section className="office-composer" aria-label="Universal Composer">
@@ -66,11 +61,11 @@ export function UniversalComposerShell({
         </select>
 
         <select
+          key={selectedExecutorId ?? 'no-executor'}
           className="office-composer-select"
           aria-label="Composer executor"
-          value={executorId}
+          defaultValue={selectedExecutorId ?? ''}
           disabled={executors.length === 0}
-          onChange={(event) => setExecutorId(event.target.value)}
         >
           {executors.length === 0 && <option value="">No executor</option>}
           {executors.map((executor) => (
