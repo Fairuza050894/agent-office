@@ -274,8 +274,7 @@ class ComposerPreparationResponse(BaseModel):
                 preparation.team_members,
             ),
             artifacts=[
-                PlanningArtifactResponse.from_domain(artifact)
-                for artifact in preparation.artifacts
+                PlanningArtifactResponse.from_domain(artifact) for artifact in preparation.artifacts
             ],
             requirements=[
                 RequirementCandidateResponse.from_domain(requirement)
