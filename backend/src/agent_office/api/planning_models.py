@@ -281,3 +281,29 @@ class ComposerPreparationResponse(BaseModel):
                 for requirement in preparation.requirements
             ],
         )
+
+
+class ResolvePlanningQuestionRequest(BaseModel):
+    selected_option: str = Field(min_length=1, max_length=64)
+    note: str | None = Field(default=None, max_length=2_000)
+
+    @field_validator("selected_option")
+    @classmethod
+    def normalize_selected_option(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized.startswith("option_"):
+            raise ValueError("selected_option must reference a declared option")
+        return normalized
+
+    @field_validator("note")
+    @classmethod
+    def normalize_note(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        return normalized or None
+
+
+class PlanningQuestionDecisionResponse(BaseModel):
+    question: PlanningArtifactResponse
+    decision: PlanningArtifactResponse
