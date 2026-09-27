@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import App from './App'
@@ -299,6 +299,10 @@ describe('Agent Office operational shell', () => {
     render(<App initialPath="/office" />)
 
     const composer = await screen.findByRole('region', { name: 'Universal Composer' })
+    await waitFor(() => {
+      expect(within(composer).getByLabelText('Composer project')).toHaveValue(project.id)
+    })
+
     const input = within(composer).getByLabelText('Ask Agent Office')
     fireEvent.change(input, {
       target: { value: 'Lanjutkan project TDP yang sudah lama tidak kita handle.' },
