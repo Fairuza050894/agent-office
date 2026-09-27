@@ -14,6 +14,8 @@ import type {
   Evidence,
   HealthResponse,
   PlanningArtifact,
+  PlanningEventPageResponse,
+  PlanningQuestionDecision,
   Project,
   RegisterProjectRequest,
   RequirementCandidate,
@@ -241,6 +243,32 @@ export const api = {
     }),
   listPlanningArtifacts: (threadId: string): Promise<PlanningArtifact[]> =>
     request(`/api/composer/threads/${encodeURIComponent(threadId)}/artifacts`),
+  resolvePlanningQuestion: (
+    artifactId: string,
+    selectedOption: string,
+    note?: string,
+  ): Promise<PlanningQuestionDecision> =>
+    request(`/api/planning-artifacts/${encodeURIComponent(artifactId)}/resolve`, {
+      method: 'POST',
+      body: JSON.stringify({
+        selected_option: selectedOption,
+        note: note || null,
+      }),
+    }),
   listRequirementCandidates: (threadId: string): Promise<RequirementCandidate[]> =>
     request(`/api/composer/threads/${encodeURIComponent(threadId)}/requirements`),
+  approveRequirement: (requirementId: string): Promise<RequirementCandidate> =>
+    request(`/api/requirements/${encodeURIComponent(requirementId)}/approve`, {
+      method: 'POST',
+    }),
+  rejectRequirement: (requirementId: string): Promise<RequirementCandidate> =>
+    request(`/api/requirements/${encodeURIComponent(requirementId)}/reject`, {
+      method: 'POST',
+    }),
+  deferRequirement: (requirementId: string): Promise<RequirementCandidate> =>
+    request(`/api/requirements/${encodeURIComponent(requirementId)}/defer`, {
+      method: 'POST',
+    }),
+  listPlanningEvents: (threadId: string): Promise<PlanningEventPageResponse> =>
+    request(`/api/composer/threads/${encodeURIComponent(threadId)}/events`),
 }
