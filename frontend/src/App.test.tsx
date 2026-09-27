@@ -11,6 +11,7 @@ function jsonResponse(body: unknown): Response {
 }
 
 beforeEach(() => {
+  window.localStorage.clear()
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL) => {
@@ -81,6 +82,24 @@ describe('Agent Office operational shell', () => {
     const nav = screen.getByRole('navigation', { name: 'Primary Navigation' })
     expect(within(nav).getByRole('link', { name: 'Overview' })).toHaveAttribute('aria-current', 'page')
     expect(within(nav).getByRole('link', { name: 'Projects' })).not.toHaveAttribute('aria-current')
+  })
+
+  it('collapses and restores Office navigation without leaving the workspace', async () => {
+    render(<App initialPath="/office" />)
+
+    await screen.findByRole('heading', { level: 1, name: 'Office' })
+    const sidebar = screen.getByRole('complementary', { name: 'Sidebar Navigation' })
+    const collapse = screen.getByRole('button', { name: 'Collapse Office navigation' })
+
+    expect(sidebar).not.toHaveClass('sidebar-collapsed')
+    fireEvent.click(collapse)
+    expect(sidebar).toHaveClass('sidebar-collapsed')
+    expect(
+      screen.getByRole('button', { name: 'Expand Office navigation' }),
+    ).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Expand Office navigation' }))
+    expect(sidebar).not.toHaveClass('sidebar-collapsed')
   })
 
   it('renders the Phase 9A Office-first workspace shell', async () => {
@@ -332,6 +351,17 @@ describe('Agent Office operational shell', () => {
     expect(within(planningTeam).getByText('EXCLUDED')).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: 'Deferred' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Start Run' })).toBeDisabled()
+    expect(
+      screen.getByText('Not inspected yet · Phase 9D read-only context'),
+    ).toBeInTheDocument()
+    const operationsDock = screen.getByRole('region', {
+      name: 'Bottom Operations Dock',
+    })
+    const resizeHandle = within(operationsDock).getByRole('separator', {
+      name: 'Resize Operations Dock',
+    })
+    fireEvent.keyDown(resizeHandle, { key: 'ArrowUp' })
+    expect(operationsDock).toHaveStyle({ height: '276px' })
     expect(screen.getByLabelText('Composer planning history')).toHaveValue(thread.id)
     expect(
       within(screen.getByLabelText('Composer planning history')).getByRole('option', {
