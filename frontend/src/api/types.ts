@@ -485,3 +485,26 @@ export interface ComposerPreparation {
   artifacts: PlanningArtifact[]
   requirements: RequirementCandidate[]
 }
+
+
+export interface PlanningEvent {
+  id: string
+  thread_id: string
+  project_id: string | null
+  event_type: string
+  role_key: string | null
+  occurred_at: string
+  recorded_at: string
+  sequence: number
+  payload: Record<string, string | number | boolean | null>
+}
+
+export interface PlanningEventPageResponse {
+  events: PlanningEvent[]
+  next_cursor: string | null
+}
+
+export interface PlanningQuestionDecision {
+  question: PlanningArtifact
+  decision: PlanningArtifact
+}
