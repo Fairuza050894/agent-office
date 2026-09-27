@@ -196,9 +196,7 @@ class RequirementCandidateResponse(BaseModel):
         return cls(
             id=str(requirement.id),
             thread_id=str(requirement.thread_id),
-            project_id=(
-                None if requirement.project_id is None else str(requirement.project_id)
-            ),
+            project_id=(None if requirement.project_id is None else str(requirement.project_id)),
             title=requirement.title,
             problem=requirement.problem,
             requirement=requirement.requirement,
