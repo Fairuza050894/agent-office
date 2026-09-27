@@ -298,11 +298,12 @@ describe('Agent Office operational shell', () => {
 
     render(<App initialPath="/office" />)
 
-    const composer = await screen.findByRole('region', { name: 'Universal Composer' })
+    await screen.findByRole('region', { name: 'Universal Composer' })
     await waitFor(() => {
-      expect(within(composer).getByLabelText('Composer project')).toHaveValue(project.id)
+      expect(screen.getByLabelText('Composer project')).toHaveValue(project.id)
     })
 
+    const composer = screen.getByRole('region', { name: 'Universal Composer' })
     const input = within(composer).getByLabelText('Ask Agent Office')
     fireEvent.change(input, {
       target: { value: 'Lanjutkan project TDP yang sudah lama tidak kita handle.' },
