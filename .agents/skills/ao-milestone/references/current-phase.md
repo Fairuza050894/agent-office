@@ -2,59 +2,67 @@
 
 ## Current checkpoint
 
+Current base:
+
 ```text
-93a733e fix: wire planning decision audit service correctly
-34fc345 test: cover planning decision dock
-125d185 test: verify durable planning decisions
-2cc9c5c style: satisfy phase 9c backend quality gates
-a685882 Merge pull request #9 from Fairuza050894/phase-9b-work
+main@bcdd43e
+Phase 9C PR #10 merged
 ```
 
-Current status:
+Current work:
+
+```text
+branch: phase-10-living-office
+checkpoint: 55bf7dd
+phase: Phase 10A — Living 3D Agent Office Foundation
+```
+
+## Status
 
 - Phase 0–8 CLOSED
-- Phase 9 IN PROGRESS — Agent Office vNext
-  - Phase 9A CLOSED — Office-first dark control-room shell
-  - Phase 9B CLOSED — planning domain + SQLite v11
-  - Phase 9C IN PROGRESS — Universal Composer + Dynamic Team Formation
-  - current branch: `phase-9c-work`
-  - current PR: #10 (Draft)
-  - Phase 9D must not begin before Phase 9C is merged
+- Phase 9 vNext
+  - Phase 9A CLOSED
+  - Phase 9B CLOSED
+  - Phase 9C CLOSED / MERGED
+  - Phase 9D not started
+  - Phase 9E not started
+  - Phase 9F operational Activity Interpreter remains future work
+- Phase 10 Living 3D Agent Office
+  - Phase 10A IN PROGRESS — foundation implemented; rendered review pending
 
-## Phase 9C implemented scope
+Phase 10A is intentionally presentation-only and does not depend on unimplemented
+Phase 9D/9E execution behavior.
 
-Current Phase 9C provides:
+It may project existing durable Phase 9C planning truth and presentation-only
+ambient schedule state, but it may not fabricate future execution truth.
 
-- functional Universal Composer Send path
-- conservative deterministic intent resolver
-- Dynamic Team Formation
-- vNext role catalog without deleting legacy keys
-- Project Re-entry BRIEF
-- deferred implementation ACTION artifact
-- durable Decision Queue
-- explicit QUESTION options + recommendation
-- immutable QUESTION resolution
-- DECISION artifact creation
-- planning-decision AuditRecord
-- explicit RequirementCandidate Approve / Defer / Reject controls
-- planning Activity based on separate PlanningEvent history
-- planning team Accept / Reject
-- no automatic Task / Run / AgentRun / Workspace creation
-- Start Run remains disabled until the later promotion phase
+## Phase 10A implemented scope
 
-Reference-derived design contract:
+Current Phase 10A provides:
 
-```text
-docs/product/PHASE_9_REFERENCE_PATTERN_ADOPTION.md
-```
-
-The reference patterns adopted now are shared planning artifacts, explicit
-questions/decisions, and deferred work. Role memory is reserved for Phase 9D.
-Safe telemetry-to-animation Activity Interpreter is reserved for Phase 9F.
+- Living Office floor catalog
+  - L1 Commons
+  - L2 Build
+  - L3 Strategy
+- floor selector inside `/office`
+- distinct procedural floor environments
+- typed Office zone catalog and deterministic zone anchors
+- planning TeamProposal -> 3D planning presence
+- INCLUDED-only planning-role visibility
+- AWAITING_USER -> Waiting for you presence
+- ambient office rhythm when no planning team is active
+- arrival / focus / lunch / coffee / wrap-up / after-hours windows
+- reduced after-hours occupancy
+- provider-ready scheduled ambience
+- PRAYER_BREAK state without hard-coded prayer times
+- bounded/selective scheduled-event participation
+- generic Office character runtime shared by operational and presentation presence
+- Office presence/floor truth label
+- backwards-compatible operational Run Office default behavior
 
 ## Truthfulness boundary
 
-Planning truth remains:
+Canonical planning truth remains:
 
 ```text
 ComposerThread
@@ -65,7 +73,7 @@ RequirementCandidate
 PlanningEvent
 ```
 
-Operational execution truth remains:
+Canonical operational truth remains:
 
 ```text
 Task
@@ -77,75 +85,77 @@ Finding
 Evidence
 ```
 
-No planning UI action may fabricate operational execution.
+Living Office presentation truth:
+
+```text
+OfficeFloor
+OfficeZone
+OfficePresenceMember
+OfficeScheduledEvent
+```
+
+Presentation rules:
+
+- animation is never evidence
+- presence is not execution
+- ambient presence may not claim repository mutation
+- planning presence may not be presented as AgentRun
+- DEFERRED / EXCLUDED roles may not appear as active planning workers
 
 ## Current quality gate
 
 Implementation checkpoint:
 
 ```text
-607d90c style: apply phase 9c formatter output
+55bf7dd test: keep scheduled ambience assertion timezone-independent
 ```
 
-GitHub Actions run `36314791584` is GREEN:
+GitHub Actions run `36332181958` is GREEN:
 
 ```text
 backend pytest      657 passed
 ruff                passed
 ruff format         203 files already formatted
 mypy                0 issues / 136 source files
-frontend vitest     15 files / 72 tests passed
+frontend vitest     16 files / 80 tests passed
 frontend typecheck  passed
 frontend lint       0 errors / 2 existing warnings
 frontend build      passed
 repository check    passed
 ```
 
-The Decision Queue extension is covered by backend truth-separation/audit tests
-and dedicated frontend dock interaction tests.
+## Phase 10A rendered gate
 
-Phase 9C hardening additionally verifies:
+Pending local visual review of:
 
-- persisted planning-thread rehydration and history selection
-- OPEN/unprepared thread recovery without rewriting resolved planning turns
-- explicit INCLUDED / DEFERRED / EXCLUDED role explanations
-- truth-complete Project Re-entry BRIEF placeholders for repository facts that
-  Phase 9C has not inspected
+- L1/L2/L3 visual distinction
+- floor switching
+- after-hours ambient presence
+- TDP planning-team presence on L3
+- AWAITING_USER presentation
+- compatibility with Composer and Operations Dock
+- collision/placement quality
 
-Phase 9C remains IN PROGRESS only for the rendered planning interaction gate.
-Keep PR #10 Draft until that visual/interaction review is accepted.
-
-
-## Phase 9C verification record
+## Design and verification records
 
 ```text
-docs/product/PHASE_9C_VERIFICATION.md
+docs/product/LIVING_3D_AGENT_OFFICE_PRD.md
+docs/architecture/LIVING_OFFICE_TECHNICAL_DESIGN.md
+docs/product/PHASE_10A_VERIFICATION.md
 ```
 
-Current status:
+## Deferred intentionally
 
-- functional behavior: PASS
-- planning / operational truth separation: PASS
-- CI: PASS
-- reference-pattern adoption contract: PASS
-- rendered interaction review: PENDING
+Not implemented in Phase 10A:
 
-Reference-derived improvements currently implemented:
+- persistent office settings/timezone
+- real prayer-time provider
+- rich seated/typing/meeting/coffee/game animation vocabulary
+- factual operational Activity Interpreter
+- ambient/planning character inspector
+- rooftop floor
+- full time-of-day lighting
+- role-scoped memory / Phase 9D runtime work
 
-- durable QUESTION / Decision Queue
-- immutable planning decision resolution
-- durable DECISION artifacts
-- explicit deferred ACTION artifacts
-- RequirementCandidate decision controls
-- separate planning Activity history
-- persisted planning history rehydration
-- explicit EXCLUDED-role explanations
-- truth-complete Project Re-entry Brief placeholders
-
-Roadmap contracts strengthened for later slices:
-
-- Phase 9D: SQLite v12 RoleMemory
-- Phase 9E: SQLite v13 promotion + conflict-aware change areas
-- Phase 9F: safe Activity Interpreter
-
-PR #10 remains Draft until rendered planning interaction review is accepted.
+Keep the Phase 10 pull request Draft until the rendered Living Office interaction
+gate is accepted. Merge remains manual only.
