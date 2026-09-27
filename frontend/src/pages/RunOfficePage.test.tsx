@@ -204,7 +204,7 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('Phase 8 Office View', () => {
+describe('Phase 9A Office Workspace', () => {
   it('maps every required AgentRun state explicitly', () => {
     expect(officeAgentState('PENDING')).toEqual({ key: 'pending', label: 'Waiting to start' })
     expect(officeAgentState('STARTING')).toEqual({ key: 'starting', label: 'Starting' })
@@ -215,29 +215,37 @@ describe('Phase 8 Office View', () => {
     expect(officeAgentState('COMPLETED')).toEqual({ key: 'completed', label: 'Completed' })
   })
 
-  it('routes to a truthful office with exactly one visible character per AgentRun', async () => {
+  it('renders a full-width office with bottom operations dock and on-demand inspector', async () => {
     vi.stubGlobal('fetch', officeFetch())
     render(<App initialPath={`/runs/${RUN.id}/office`} />)
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Office View' })).toBeInTheDocument()
-    const projection = screen.getByRole('region', { name: 'Run office 3D projection' })
-    const agentButton = within(projection).getByRole('button', {
-      name: 'Backend Developer, Running',
+    const dock = await screen.findByRole('region', {
+      name: 'Bottom Operations Dock',
+    })
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Office View' }),
+    ).toBeInTheDocument()
+
+    const projection = screen.getByRole('region', {
+      name: 'Run office 3D projection',
+    })
+    expect(projection.querySelectorAll('.office-agent-button')).toHaveLength(0)
+    expect(
+      screen.queryByRole('complementary', { name: 'Live office sidebar' }),
+    ).not.toBeInTheDocument()
+
+    const team = within(dock).getByRole('region', { name: 'Active team' })
+    const agentButton = within(team).getByRole('button', {
+      name: /Backend Developer.*Running/i,
     })
 
-    expect(projection.querySelectorAll('.office-agent-button')).toHaveLength(1)
-    expect(screen.getByText('1 AgentRun')).toBeInTheDocument()
-    expect(screen.queryByText(/72%/)).not.toBeInTheDocument()
-
-    const sidebar = screen.getByRole('complementary', { name: 'Live office sidebar' })
-    expect(within(sidebar).getByText('No agent selected')).toBeInTheDocument()
-    expect(
-      within(sidebar).getByRole('region', { name: 'Recent factual office signals' }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Universal Composer' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Start Run' })).toBeDisabled()
 
     fireEvent.click(agentButton)
 
-    const detail = within(sidebar).getByRole('region', {
+    const detail = screen.getByRole('complementary', {
       name: 'Selected AgentRun details',
     })
     expect(within(detail).getAllByText('Backend Developer').length).toBeGreaterThan(0)
@@ -246,17 +254,38 @@ describe('Phase 8 Office View', () => {
     expect(within(detail).getByText('IMPLEMENTATION · RUNNING')).toBeInTheDocument()
     expect(within(detail).getByText('GIT_WORKTREE · ao/office')).toBeInTheDocument()
     expect(within(detail).getByText(/Agent started/)).toBeInTheDocument()
+
+    fireEvent.click(within(detail).getByRole('button', { name: 'Close AgentRun inspector' }))
+    expect(
+      screen.queryByRole('complementary', { name: 'Selected AgentRun details' }),
+    ).not.toBeInTheDocument()
   })
 
-  it('renders only factual event signals and creates no worker when AgentRuns are absent', async () => {
+  it('renders only factual dock activity and creates no worker when AgentRuns are absent', async () => {
     vi.stubGlobal('fetch', officeFetch([]))
     render(<App initialPath={`/runs/${RUN.id}/office`} />)
 
-    const projection = await screen.findByRole('region', { name: 'Run office 3D projection' })
+    const projection = await screen.findByRole('region', {
+      name: 'Run office 3D projection',
+    })
     expect(projection.querySelectorAll('.office-agent-button')).toHaveLength(0)
-    expect(screen.getByText('No AgentRuns instantiated for this Run.')).toBeInTheDocument()
-    expect(screen.getByText('Verification completed')).toBeInTheDocument()
-    expect(screen.getByText('142 passed · 2 failed')).toBeInTheDocument()
+
+    const dock = screen.getByRole('region', { name: 'Bottom Operations Dock' })
+    expect(within(dock).getByText('No factual AgentRun is active in this scope.')).toBeInTheDocument()
+    expect(within(dock).getByText(/Verification completed/)).toBeInTheDocument()
+    expect(within(dock).getByText(/142 passed · 2 failed/)).toBeInTheDocument()
+  })
+
+  it('supports maximize without changing canonical Run state', async () => {
+    vi.stubGlobal('fetch', officeFetch())
+    render(<App initialPath={`/runs/${RUN.id}/office`} />)
+
+    const maximize = await screen.findByRole('button', { name: 'Maximize' })
+    fireEvent.click(maximize)
+    expect(screen.getByRole('button', { name: 'Exit maximize' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('region', { name: 'Bottom Operations Dock' }),
+    ).toHaveClass('dock-collapsed')
   })
 
   it('keeps operational navigation available when the local renderer fails', () => {

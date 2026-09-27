@@ -251,6 +251,17 @@ function loadCharacterAssets(
   return pending
 }
 
+export function shouldShowOfficeNameplate(
+  status: string,
+  selected: boolean,
+): boolean {
+  if (selected) return true
+
+  return ['RUNNING', 'STARTING', 'WAITING', 'BLOCKED', 'FAILED'].includes(
+    status.toUpperCase(),
+  )
+}
+
 export function statusColor(status: string): number {
   switch (status.toUpperCase()) {
     case 'RUNNING':
@@ -549,7 +560,25 @@ export function setCharacterStatus(
   const secondary = runtime.labelElement.querySelector('span')
   if (secondary) secondary.textContent = officeAgentState(status).label
 
+  const selected = runtime.labelElement.classList.contains('is-selected')
+  runtime.labelElement.classList.toggle(
+    'is-nameplate-visible',
+    shouldShowOfficeNameplate(status, selected),
+  )
+
   playRigged(runtime)
+}
+
+export function setCharacterSelected(
+  runtime: RuntimeAgent,
+  selected: boolean,
+): void {
+  runtime.selectionRing.visible = selected
+  runtime.labelElement.classList.toggle('is-selected', selected)
+  runtime.labelElement.classList.toggle(
+    'is-nameplate-visible',
+    shouldShowOfficeNameplate(runtime.currentStatus, selected),
+  )
 }
 
 function animateFallback(

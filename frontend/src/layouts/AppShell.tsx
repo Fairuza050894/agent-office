@@ -17,10 +17,13 @@ import { NotFoundPage } from '../pages/NotFoundPage'
 import { RunDetailPage } from '../pages/RunDetailPage'
 import { ProjectDetailPage } from '../pages/ProjectDetailPage'
 import { RunOfficePage } from '../pages/RunOfficePage'
+import { OfficeWorkspacePage } from '../pages/OfficeWorkspacePage'
 
 export function AppShell() {
   const { currentPath } = useRouter()
   const [isNavOpen, setIsNavOpen] = useState(false)
+  const isOfficeFocus =
+    currentPath === '/office' || /^\/runs\/[^/]+\/office$/.test(currentPath)
 
   // Close drawer on Escape key
   useEffect(() => {
@@ -53,6 +56,8 @@ export function AppShell() {
     }
 
     switch (currentPath) {
+      case '/office':
+        return <OfficeWorkspacePage />
       case '/overview':
         return <OverviewPage />
       case '/projects':
@@ -81,7 +86,7 @@ export function AppShell() {
   }
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${isOfficeFocus ? 'office-shell-focus' : ''}`}>
       <a href="#main-content" className="skip-link">
         Skip to main content
       </a>

@@ -1,0 +1,37 @@
+:root {
+  --ao-canvas: #071019;
+  --ao-canvas-raised: #0a141e;
+  --ao-surface: #0e1822;
+  --ao-surface-2: #13212d;
+  --ao-surface-3: #192936;
+  --ao-surface-hover: #1d3040;
+  --ao-border: #243542;
+  --ao-border-strong: #314857;
+  --ao-text: #d8e3ec;
+  --ao-text-strong: #edf4f8;
+  --ao-text-muted: #8ca0b3;
+  --ao-text-faint: #617587;
+  --ao-live: #53c7f0;
+  --ao-success: #48c78e;
+  --ao-waiting: #e3b341;
+  --ao-error: #ef6a67;
+  --ao-planning: #a78bfa;
+  --ao-focus: #60c9f2;
+  --ao-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --ao-radius-sm: 4px;
+  --ao-radius-md: 7px;
+  --ao-shadow-panel: 0 18px 45px rgba(0, 0, 0, .24);
+
+  /* Legacy visual-foundation aliases.
+     App.css still references these names; Phase 9A dark tokens own the values. */
+  --ao-bg: var(--ao-canvas);
+  --ao-sidebar: #09121b;
+  --ao-sidebar-border: #1c2b37;
+  --ao-muted: var(--ao-text-muted);
+  --ao-faint: var(--ao-text-faint);
+  --ao-line: var(--ao-border);
+  --ao-line-soft: #182a36;
+  --ao-accent: var(--ao-live);
+  --ao-warning: var(--ao-waiting);
+  --ao-danger: var(--ao-error);
+}

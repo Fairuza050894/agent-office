@@ -62,6 +62,6 @@ PR #5 was merged on 2026-09-26.
 
 Phase 8 is therefore CLOSED.
 
-The known meeting-room chair orientation issue remains a cosmetic follow-up and
-does not reopen Phase 8 because it does not affect canonical state, navigation
-safety, replay semantics, or operational correctness.
+The meeting-room chair orientation issue recorded at Phase 8 closure was a
+cosmetic follow-up only. It is corrected during Phase 9A without changing the
+accepted Phase 8 canonical-state, navigation, or replay contracts.

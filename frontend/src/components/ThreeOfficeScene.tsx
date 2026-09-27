@@ -8,6 +8,7 @@ import {
   animateCharacter,
   createCharacterRuntime,
   disposeCharacter,
+  setCharacterSelected,
   setCharacterStatus,
   type RuntimeAgent,
   type StationPlacement,
@@ -227,8 +228,10 @@ export function ThreeOfficeScene({
       }
 
       current.runtimes.forEach((runtime) => {
-        runtime.selectionRing.visible =
-          runtime.agentId === selectedAgentIdRef.current
+        setCharacterSelected(
+          runtime,
+          runtime.agentId === selectedAgentIdRef.current,
+        )
 
         if (
           runtime.pendingStatus &&
@@ -334,18 +337,18 @@ export function ThreeOfficeScene({
       scene.background = new THREE.Color(0x111820)
 
       const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100)
-      camera.position.set(15.7, 12.3, 17.4)
-      camera.lookAt(0, 0.72, 0.35)
+      camera.position.set(13.65, 10.75, 15.2)
+      camera.lookAt(0, 0.68, 0.3)
 
       const controls = new OrbitControls(camera, renderer.domElement)
-      controls.target.set(0, 0.72, 0.35)
+      controls.target.set(0, 0.68, 0.3)
       controls.enableDamping = true
       controls.dampingFactor = 0.075
       controls.enablePan = true
       controls.enableRotate = true
       controls.screenSpacePanning = true
-      controls.minDistance = 10
-      controls.maxDistance = 34
+      controls.minDistance = 8.5
+      controls.maxDistance = 30
       controls.minPolarAngle = Math.PI * 0.16
       controls.maxPolarAngle = Math.PI * 0.48
 
@@ -521,7 +524,7 @@ export function ThreeOfficeScene({
         runtime.finalStatus = agent.status
       }
 
-      runtime.selectionRing.visible = selectedAgentId === agent.id
+      setCharacterSelected(runtime, selectedAgentId === agent.id)
 
       if (mode === 'live') {
         const target = stateTarget(runtime, agent.status, agentIndex)
@@ -569,7 +572,7 @@ export function ThreeOfficeScene({
     if (!engine) return
 
     engine.runtimes.forEach((runtime) => {
-      runtime.selectionRing.visible = runtime.agentId === selectedAgentId
+      setCharacterSelected(runtime, runtime.agentId === selectedAgentId)
     })
 
     if (selectedAgentId) {

@@ -59,6 +59,7 @@ describe('Agent Office operational shell', () => {
 
     const nav = screen.getByRole('navigation', { name: 'Primary Navigation' })
     for (const label of [
+      'Office',
       'Overview',
       'Projects',
       'Runs',
@@ -80,6 +81,23 @@ describe('Agent Office operational shell', () => {
     const nav = screen.getByRole('navigation', { name: 'Primary Navigation' })
     expect(within(nav).getByRole('link', { name: 'Overview' })).toHaveAttribute('aria-current', 'page')
     expect(within(nav).getByRole('link', { name: 'Projects' })).not.toHaveAttribute('aria-current')
+  })
+
+  it('renders the Phase 9A Office-first workspace shell', async () => {
+    render(<App initialPath="/office" />)
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Office' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('region', { name: 'Office workspace 3D environment' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Universal Composer' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('region', { name: 'Bottom Operations Dock' }),
+    ).toHaveClass('dock-collapsed')
+    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Start Run' })).toBeDisabled()
   })
 
   it('renders backend-derived Overview empty states without fake KPIs', async () => {
