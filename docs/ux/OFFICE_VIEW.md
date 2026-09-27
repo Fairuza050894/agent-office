@@ -139,18 +139,48 @@ The Three.js renderer uses soft shadow maps and real scene lighting. The floor
 receives character/furniture shadows; lighting and animation do not fabricate
 execution state.
 
-## Viewport and live sidebar
+## Phase 9A Office-first workspace
 
-Desktop Office View uses a scene-first split layout:
+Phase 9A replaces the Phase 8 permanent right sidebar with an Office-first
+workspace.
 
-- approximately 73% for the Three.js room and accessible AgentRun roster
-- approximately 27% for a persistent live-control sidebar
+Primary routes:
 
-The sidebar does not cover the 3D room. Its upper section contains the selected
-AgentRun's factual role, state, stage, executor, workspace, timestamps, and
-compact technical identifiers. Its lower section is a scrollable vertical
-canonical Event stream. The earlier bottom signal table/list and floating
-AgentRun detail overlay are not part of the target layout.
+```text
+/office
+/runs/:runId/office
+```
+
+`/office` is the project-aware workspace shell. It may render the Office
+environment without factual AgentRuns when no Run is selected. This is not
+Ambient Mode; Phase 9A does not create illustrative personas.
+
+The Run-scoped route remains backward compatible and continues to project
+canonical AgentRun/Event state.
+
+Desktop structure:
+
+```text
+compact command rail
+full-width Three.js Office
+Universal Composer shell
+collapsible Bottom Operations Dock
+```
+
+The Bottom Operations Dock holds the compact canonical activity feed and factual
+AgentRun team list. It supports collapsed, normal, and expanded states.
+
+Selecting a factual AgentRun opens an on-demand inspector over the scene. Agent
+detail no longer reserves a permanent column.
+
+The Universal Composer in Phase 9A is an interaction shell only. Project,
+intent, Executor, instruction, and future context controls are visible, but
+Send / Start Run remain disabled until Phase 9 planning/promotion domain support
+is implemented. The shell must not fabricate a response or mutate a repository.
+
+Office workspace maximize mode temporarily covers ordinary application chrome,
+retains an explicit exit control, and exits with Escape. Maximizing changes
+presentation only; it never changes Run state.
 
 ## Event model
 

@@ -27,11 +27,12 @@ Current recorded status:
 - Phase 6 CLOSED — first real executor accepted through authenticated live smoke
 - Phase 7 CLOSED — Multi-Executor / Second Project Dogfood accepted
 - Phase 8 CLOSED — truthful 3D Office View merged through PR #5
-- Phase 9 PLANNING — Agent Office vNext
+- Phase 9 IN PROGRESS — Agent Office vNext
   - concept merged through PR #6
+  - technical roadmap merged through PR #7
   - Universal Composer + Dynamic Team Formation accepted as product direction
-  - current working branch: `phase-9-roadmap`
-  - next implementation target after roadmap acceptance: Phase 9A
+  - current working branch: `phase-9a-work`
+  - current implementation slice: Phase 9A — Dark Control-Room Shell + Office Workspace
 
 ## Phase 8 closure
 
@@ -89,15 +90,24 @@ Phase 9 does not alter the following accepted contracts:
 - no destructive main-tree Git operation
 - legacy WorkflowSnapshots and AgentProfile keys retain historical meaning
 
-## Next target
-
-After this roadmap is reviewed and merged:
+## Current target
 
 ```text
 Phase 9A — Dark Control-Room Shell + Office Workspace
 ```
 
-Phase 9A is frontend-first and must not introduce planning persistence or a new
-runtime in the same PR.
+Phase 9A is frontend-first and does not introduce planning persistence, schema
+migration, RequirementCandidate records, or a new planning runtime.
 
-Do not begin 9B until the 9A visual/interaction gate is accepted.
+Current acceptance target:
+
+- dark control-room shell across existing application surfaces
+- new `/office` workspace route
+- full-width Office scene for Run-scoped views
+- collapsible Bottom Operations Dock
+- Universal Composer shell with execution disabled
+- selected AgentRun inspector on demand
+- maximize / Escape behavior
+- historical Run Office compatibility
+
+Do not begin Phase 9B until the Phase 9A visual/interaction gate is accepted.

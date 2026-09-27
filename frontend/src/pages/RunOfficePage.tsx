@@ -13,6 +13,10 @@ import {
   type Workspace,
 } from '../api'
 import { EmptyState } from '../components/EmptyState'
+import { AgentInspector } from '../components/office/AgentInspector'
+import { BottomOperationsDock } from '../components/office/BottomOperationsDock'
+import { OfficeCommandRail } from '../components/office/OfficeCommandRail'
+import { UniversalComposerShell } from '../components/office/UniversalComposerShell'
 import { OfficeRendererBoundary } from '../components/OfficeRendererBoundary'
 import { OfficeScene } from '../components/OfficeScene'
 import {
@@ -21,8 +25,7 @@ import {
   officeReplayRange,
   type OfficeReplayRange,
 } from '../office3d/replay'
-import { officeCharacterAppearance } from '../office3d/character'
-import { officeAgentState, officeLatestAgentEvent } from '../officeProjection'
+import { officeLatestAgentEvent } from '../officeProjection'
 import { PageHeader } from '../components/PageHeader'
 import { Link } from '../router/Link'
 
@@ -31,60 +34,6 @@ export interface RunOfficePageProps {
 }
 
 type LiveState = 'connected' | 'disconnected' | 'unsupported'
-
-const EVENT_LABELS: Record<string, string> = {
-  'agent.started': 'Agent started',
-  'agent.waiting': 'Agent waiting',
-  'agent.completed': 'Agent completed',
-  'agent.failed': 'Agent failed',
-  'review.finding.created': 'Review finding created',
-  'test.started': 'Verification started',
-  'test.completed': 'Verification completed',
-}
-
-function humanizeEventType(eventType: string): string {
-  const explicit = EVENT_LABELS[eventType]
-  if (explicit) return explicit
-  return eventType
-    .replace(/[._-]+/g, ' ')
-    .replace(/\b\w/g, (letter) => letter.toUpperCase())
-}
-
-function signalDetail(event: AgentEvent): string {
-  const summary = event.payload.summary
-  if (typeof summary === 'string' && summary.trim()) return summary.trim()
-
-  const title = event.payload.title
-  if (typeof title === 'string' && title.trim()) return title.trim()
-
-  if (event.event_type === 'test.completed') {
-    const passed = event.payload.passed
-    const failed = event.payload.failed
-    const details: string[] = []
-    if (typeof passed === 'number') details.push(`${passed} passed`)
-    if (typeof failed === 'number') details.push(`${failed} failed`)
-    if (details.length > 0) return details.join(' · ')
-  }
-
-  return event.source
-}
-
-function signalTone(eventType: string): string {
-  if (eventType.includes('failed') || eventType.includes('blocked')) return 'critical'
-  if (eventType.includes('completed') || eventType.includes('resolved')) return 'success'
-  if (eventType.includes('waiting') || eventType.includes('finding')) return 'attention'
-  return 'neutral'
-}
-
-function shortId(value: string): string {
-  return value.length > 12 ? `${value.slice(0, 8)}…` : value
-}
-
-function formatTimestamp(value: string | null): string {
-  if (!value) return 'Unavailable'
-  const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleString()
-}
 
 export function RunOfficePage({ runId }: RunOfficePageProps) {
   const [run, setRun] = useState<Run | null>(null)
@@ -98,6 +47,7 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
   const [profiles, setProfiles] = useState<AgentProfile[]>([])
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null)
   const [motionPaused, setMotionPaused] = useState(false)
+  const [isMaximized, setIsMaximized] = useState(false)
   const [officeMode, setOfficeMode] = useState<'live' | 'replay'>('live')
   const [replayNonce, setReplayNonce] = useState(0)
   const [replayStartedAt, setReplayStartedAt] = useState<number | null>(null)
@@ -270,11 +220,6 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
     () => agents.find((agent) => agent.id === selectedAgentId) ?? null,
     [agents, selectedAgentId],
   )
-  const agentById = useMemo(
-    () => new Map(agents.map((agent) => [agent.id, agent])),
-    [agents],
-  )
-
   useEffect(() => {
     if (
       officeMode !== 'replay' ||
@@ -293,6 +238,17 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
 
     return () => window.clearInterval(timer)
   }, [officeMode, replayNonce, replayRangeSnapshot, replayStartedAt])
+
+  useEffect(() => {
+    if (!isMaximized) return
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsMaximized(false)
+    }
+
+    window.addEventListener('keydown', handleEscape)
+    return () => window.removeEventListener('keydown', handleEscape)
+  }, [isMaximized])
 
   const recentSignals = useMemo(() => {
     const cutoff =
@@ -366,312 +322,155 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
   const selectedEvent = selectedAgent
     ? officeLatestAgentEvent(selectedAgent.id, events)
     : null
-  const selectedState = selectedAgent
-    ? officeAgentState(selectedAgent.status)
-    : null
 
   return (
-    <div className="page-view office-view">
-      <PageHeader
+    <div
+      className={`page-view office-view office-workspace ${isMaximized ? 'office-maximized' : ''}`}
+    >
+      <OfficeCommandRail
         title="Office View"
-        description={`${task?.title ?? 'Unknown task'} · Run #${run.id.slice(0, 8)} · ${agents.length} factual AgentRun${agents.length === 1 ? '' : 's'} across ${stages.length} workflow stage${stages.length === 1 ? '' : 's'}.`}
-        action={
-          <Link href={`/runs/${run.id}`} className="btn btn-secondary">
-            Operational Run
-          </Link>
-        }
-      />
-
-      <div className="office-control-bar">
-        <div className="office-run-context">
-          <strong>{project?.name ?? run.project_id}</strong>
-          <span className={`status-inline status-${run.status.toLowerCase()}`}>
-            {run.status}
-          </span>
-          <span>{agents.length} AgentRun{agents.length === 1 ? '' : 's'}</span>
-          <span>{stages.length} stage{stages.length === 1 ? '' : 's'}</span>
-        </div>
-
-        <div className="office-view-controls">
-          <span className="office-live-state" role="status">
-            <span
-              className={`status-dot ${liveState === 'connected' ? 'connected' : 'disconnected'}`}
-              aria-hidden="true"
-            />
-            {liveState === 'connected'
-              ? 'Live Events'
-              : liveState === 'unsupported'
-                ? 'Manual refresh'
-                : 'Live disconnected'}
-          </span>
-          <button
-            type="button"
-            className="btn btn-secondary btn-sm"
-            aria-pressed={officeMode === 'replay'}
-            onClick={() => {
-              const range = officeReplayRange(agents, events)
-              setReplayRangeSnapshot(range)
-              setReplayStartedAt(performance.now())
-              setReplayElapsed(0)
-              setOfficeMode('replay')
-              setMotionPaused(false)
-              setReplayNonce((current) => current + 1)
-            }}
-          >
-            Historical replay
-          </button>
-          {officeMode === 'replay' && (
+        projectName={project?.name ?? run.project_id}
+        modeLabel={officeMode === 'replay' ? 'Historical replay' : 'Live'}
+        statusLabel={run.status}
+        meta={`${agents.length} AgentRun${agents.length === 1 ? '' : 's'} · ${stages.length} stage${stages.length === 1 ? '' : 's'}`}
+        actions={
+          <>
+            <span className="office-live-state" role="status">
+              <span
+                className={`status-dot ${liveState === 'connected' ? 'connected' : 'disconnected'}`}
+                aria-hidden="true"
+              />
+              {liveState === 'connected'
+                ? 'Live'
+                : liveState === 'unsupported'
+                  ? 'Manual'
+                  : 'Disconnected'}
+            </span>
             <button
               type="button"
               className="btn btn-secondary btn-sm"
+              aria-pressed={officeMode === 'replay'}
               onClick={() => {
-                setOfficeMode('live')
-                setReplayStartedAt(null)
-                setReplayRangeSnapshot(null)
-                setReplayElapsed(null)
+                const range = officeReplayRange(agents, events)
+                setReplayRangeSnapshot(range)
+                setReplayStartedAt(performance.now())
+                setReplayElapsed(0)
+                setOfficeMode('replay')
+                setMotionPaused(false)
+                setReplayNonce((current) => current + 1)
               }}
             >
-              Live state
+              Replay
             </button>
-          )}
-          <button
-            type="button"
-            className="btn btn-secondary btn-sm"
-            aria-pressed={motionPaused}
-            disabled={officeMode === 'replay'}
-            title={
-              officeMode === 'replay'
-                ? 'Historical replay uses one shared playback clock.'
-                : undefined
-            }
-            onClick={() => setMotionPaused((current) => !current)}
-          >
-            {motionPaused ? 'Resume motion' : 'Pause motion'}
-          </button>
-          <button
-            type="button"
-            className="btn btn-secondary btn-sm"
-            disabled={isRefreshing}
-            onClick={() => void refreshAll()}
-          >
-            {isRefreshing ? 'Refreshing...' : 'Refresh'}
-          </button>
-        </div>
-      </div>
-
-      <div className="office-layout">
-        <div className="office-scene-column">
-          <OfficeRendererBoundary operationalHref={`/runs/${run.id}`}>
-            <OfficeScene
-              stages={stages}
-              agents={agents}
-              profiles={profiles}
-              selectedAgentId={selectedAgentId}
-              onSelectAgent={setSelectedAgentId}
-              motionPaused={motionPaused}
-              mode={officeMode}
-              replayNonce={replayNonce}
-              replayStartedAt={replayStartedAt}
-              replayRange={replayRangeSnapshot}
-            />
-          </OfficeRendererBoundary>
-        </div>
-
-        <aside className="office-live-sidebar" aria-label="Live office sidebar">
-          <section
-            className="office-sidebar-section office-selected-agent"
-            aria-label="Selected AgentRun details"
-          >
-            <div className="office-sidebar-heading">
-              <div>
-                <span className="office-sidebar-kicker">Selected AgentRun</span>
-                <strong>
-                  {selectedAgent
-                    ? selectedProfile?.name ?? selectedAgent.agent_profile_key
-                    : 'No agent selected'}
-                </strong>
-              </div>
-              {selectedAgent && selectedState && (
-                <span
-                  className={`office-state-pill state-${selectedState.key}`}
-                >
-                  {selectedState.label}
-                </span>
-              )}
-            </div>
-
-            {selectedAgent && selectedState ? (
-              <>
-                <div className="office-agent-identity">
-                  <span
-                    className="office-agent-avatar"
-                    style={{
-                      backgroundColor: `#${officeCharacterAppearance(
-                        selectedAgent.agent_profile_key,
-                      ).accent
-                        .toString(16)
-                        .padStart(6, '0')}`,
-                    }}
-                    aria-hidden="true"
-                  >
-                    {(selectedProfile?.name ?? selectedAgent.agent_profile_key)
-                      .split(/\s+/)
-                      .map((part) => part[0])
-                      .join('')
-                      .slice(0, 2)
-                      .toUpperCase()}
-                  </span>
-                  <div>
-                    <strong>
-                      {selectedProfile?.name ?? selectedAgent.agent_profile_key}
-                    </strong>
-                    <span>
-                      {selectedAgent.status} · attempt {selectedAgent.attempt}
-                    </span>
-                  </div>
-                </div>
-
-                <dl className="office-detail-facts">
-                  <div>
-                    <dt>Stage</dt>
-                    <dd>
-                      {selectedAgent.stage_key}
-                      {selectedStage ? ` · ${selectedStage.status}` : ''}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>Executor</dt>
-                    <dd>
-                      {selectedExecutor?.name ?? selectedAgent.executor_id}
-                      {selectedExecutor?.runtime_version
-                        ? ` · ${selectedExecutor.runtime_version}`
-                        : ''}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>Workspace</dt>
-                    <dd>
-                      {selectedWorkspace
-                        ? `${selectedWorkspace.kind}${selectedWorkspace.git_branch ? ` · ${selectedWorkspace.git_branch}` : ''}`
-                        : 'Unavailable'}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>Started</dt>
-                    <dd>{formatTimestamp(selectedAgent.started_at)}</dd>
-                  </div>
-                  <div className="office-detail-fact-wide">
-                    <dt>Last factual activity</dt>
-                    <dd>
-                      {selectedEvent
-                        ? `${humanizeEventType(selectedEvent.event_type)} · ${formatTimestamp(selectedEvent.occurred_at)}`
-                        : `No agent-scoped Event · updated ${formatTimestamp(selectedAgent.updated_at)}`}
-                    </dd>
-                  </div>
-                </dl>
-
-                {selectedAgent.reason_summary && (
-                  <div className="office-detail-note">
-                    <strong>{selectedAgent.reason_code ?? 'AgentRun note'}</strong>
-                    <span>{selectedAgent.reason_summary}</span>
-                  </div>
-                )}
-
-                <div className="office-technical-refs">
-                  <span>
-                    AgentRun <code>{selectedAgent.id}</code>
-                  </span>
-                  <span>
-                    Profile <code>{selectedAgent.agent_profile_key}</code>
-                  </span>
-                  <span>
-                    Executor <code>{shortId(selectedAgent.executor_id)}</code>
-                  </span>
-                  {selectedAgent.workspace_id && (
-                    <span>
-                      Workspace <code>{shortId(selectedAgent.workspace_id)}</code>
-                    </span>
-                  )}
-                </div>
-              </>
-            ) : (
-              <div className="office-selection-prompt">
-                <strong>Select an agent in the room or roster.</strong>
-                <span>
-                  Factual status, executor, workspace, and latest activity will
-                  appear here without covering the scene.
-                </span>
-              </div>
+            {officeMode === 'replay' && (
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => {
+                  setOfficeMode('live')
+                  setReplayStartedAt(null)
+                  setReplayRangeSnapshot(null)
+                  setReplayElapsed(null)
+                }}
+              >
+                Live
+              </button>
             )}
-          </section>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              aria-pressed={motionPaused}
+              disabled={officeMode === 'replay'}
+              title={
+                officeMode === 'replay'
+                  ? 'Historical replay uses one shared playback clock.'
+                  : undefined
+              }
+              onClick={() => setMotionPaused((current) => !current)}
+            >
+              {motionPaused ? 'Resume' : 'Pause'}
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              disabled={isRefreshing}
+              onClick={() => void refreshAll()}
+            >
+              {isRefreshing ? 'Refreshing…' : 'Refresh'}
+            </button>
+            <Link href={`/runs/${run.id}`} className="btn btn-secondary btn-sm">
+              Run
+            </Link>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => setIsMaximized((current) => !current)}
+            >
+              {isMaximized ? 'Exit maximize' : 'Maximize'}
+            </button>
+          </>
+        }
+      />
 
-          <section
-            className="office-sidebar-section office-signal-feed"
-            aria-label="Recent factual office signals"
-          >
-            <div className="office-sidebar-heading">
-              <div>
-                <span className="office-sidebar-kicker">Canonical event stream</span>
-                <strong>Recent signals</strong>
-              </div>
-              <span className="office-feed-mode">
-                {officeMode === 'replay' ? 'Replay' : 'Live'}
-              </span>
-            </div>
+      <div className="office-workspace-scene">
+        <OfficeRendererBoundary operationalHref={`/runs/${run.id}`}>
+          <OfficeScene
+            stages={stages}
+            agents={agents}
+            profiles={profiles}
+            selectedAgentId={selectedAgentId}
+            onSelectAgent={setSelectedAgentId}
+            motionPaused={motionPaused}
+            mode={officeMode}
+            replayNonce={replayNonce}
+            replayStartedAt={replayStartedAt}
+            replayRange={replayRangeSnapshot}
+            showRoster={false}
+          />
+        </OfficeRendererBoundary>
 
-            {recentSignals.length === 0 ? (
-              <div className="office-signal-empty">
-                {officeMode === 'replay'
-                  ? 'No canonical Event has occurred at this replay timestamp.'
-                  : 'No canonical Event has been recorded for this Run.'}
-              </div>
-            ) : (
-              <div className="office-signal-list">
-                {recentSignals.map((event) => {
-                  const eventAgent = event.agent_run_id
-                    ? agentById.get(event.agent_run_id)
-                    : undefined
-                  const eventRole = eventAgent
-                    ? profileByKey.get(eventAgent.agent_profile_key)?.name ??
-                      eventAgent.agent_profile_key
-                    : event.source
-
-                  return (
-                    <article key={event.id} className="office-signal">
-                      <span
-                        className={`office-signal-dot tone-${signalTone(
-                          event.event_type,
-                        )}`}
-                        aria-hidden="true"
-                      />
-                      <div className="office-signal-copy">
-                        <div className="office-signal-meta">
-                          <strong>{eventRole}</strong>
-                          <time dateTime={event.occurred_at}>
-                            {new Date(event.occurred_at).toLocaleTimeString()}
-                          </time>
-                        </div>
-                        <span className="office-signal-type">
-                          {humanizeEventType(event.event_type)}
-                        </span>
-                        <span className="office-signal-detail">
-                          {signalDetail(event)}
-                        </span>
-                      </div>
-                    </article>
-                  )
-                })}
-              </div>
-            )}
-          </section>
-        </aside>
+        {selectedAgent && (
+          <AgentInspector
+            agent={selectedAgent}
+            profile={selectedProfile}
+            executor={selectedExecutor}
+            workspace={selectedWorkspace}
+            stage={selectedStage}
+            latestEvent={selectedEvent}
+            onClose={() => setSelectedAgentId(null)}
+          />
+        )}
       </div>
 
-      <div className="office-accessibility-note">
-        Office View is optional. Cancellation, Findings, Evidence, executor selection,
-        approvals, and all canonical execution state remain available in the operational
-        Run view.
-      </div>
+      <UniversalComposerShell
+        projects={project ? [project] : []}
+        selectedProjectId={project?.id ?? ''}
+        projectLocked
+        executors={executors}
+        selectedExecutorId={
+          run.resolved_executor_id ?? run.requested_executor_id ?? null
+        }
+        contextLabel={
+          project
+            ? `${project.repository.name} · Run #${run.id.slice(0, 8)}`
+            : `Run #${run.id.slice(0, 8)}`
+        }
+      />
+
+      <BottomOperationsDock
+        events={recentSignals}
+        agents={agents}
+        profiles={profiles}
+        selectedAgentId={selectedAgentId}
+        onSelectAgent={setSelectedAgentId}
+        modeLabel={officeMode === 'replay' ? 'Historical replay' : 'Canonical live state'}
+      />
+
+      <p className="office-workspace-note">
+        Office View remains a projection. Cancellation, Findings, Evidence,
+        executor selection, approvals, and canonical execution state remain
+        available in the operational Run view.
+      </p>
     </div>
   )
 }

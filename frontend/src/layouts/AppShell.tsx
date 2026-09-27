@@ -17,6 +17,7 @@ import { NotFoundPage } from '../pages/NotFoundPage'
 import { RunDetailPage } from '../pages/RunDetailPage'
 import { ProjectDetailPage } from '../pages/ProjectDetailPage'
 import { RunOfficePage } from '../pages/RunOfficePage'
+import { OfficeWorkspacePage } from '../pages/OfficeWorkspacePage'
 
 export function AppShell() {
   const { currentPath } = useRouter()
@@ -53,6 +54,8 @@ export function AppShell() {
     }
 
     switch (currentPath) {
+      case '/office':
+        return <OfficeWorkspacePage />
       case '/overview':
         return <OverviewPage />
       case '/projects':

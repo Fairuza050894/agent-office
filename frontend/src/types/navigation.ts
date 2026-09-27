@@ -18,6 +18,13 @@ export const NAV_SECTIONS: NavSection[] = [
 export const NAV_ITEMS: NavItem[] = [
   // WORK
   {
+    id: 'office',
+    label: 'Office',
+    path: '/office',
+    section: 'WORK',
+    description: 'Office-first command workspace for project-scoped work and operational monitoring.',
+  },
+  {
     id: 'overview',
     label: 'Overview',
     path: '/overview',
