@@ -142,6 +142,7 @@ describe('living office model', () => {
         zone: 'quiet-room' as const,
         presence: 'PRAYER_BREAK' as const,
         priority: 80,
+        maxParticipants: 2,
       },
     ]
 
@@ -151,8 +152,13 @@ describe('living office model', () => {
     expect(window.key).toBe('scheduled')
     expect(window.presence).toBe('PRAYER_BREAK')
     expect(window.zone).toBe('quiet-room')
-    expect(members.every((member) => member.status === 'PRAYER_BREAK')).toBe(true)
-    expect(members.every((member) => member.zone === 'quiet-room')).toBe(true)
+    expect(
+      members.filter((member) => member.status === 'PRAYER_BREAK'),
+    ).toHaveLength(2)
+    expect(
+      members.filter((member) => member.zone === 'quiet-room'),
+    ).toHaveLength(2)
+    expect(members.some((member) => member.status === 'COFFEE_BREAK')).toBe(true)
   })
 
   it('reduces ambient occupancy after hours instead of fabricating work', () => {
