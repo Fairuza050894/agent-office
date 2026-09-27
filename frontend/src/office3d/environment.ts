@@ -151,8 +151,8 @@ const ZONE_PLACEMENTS: Record<OfficeZoneKey, StationPlacement[]> = {
     { position: point(7.65, 4.8), yaw: -Math.PI * 0.5 },
   ],
   'quiet-room': [
-    { position: point(-7.35, -3.65), yaw: 0 },
-    { position: point(-6.55, -3.65), yaw: 0 },
+    { position: point(-4.15, -2.0), yaw: 0 },
+    { position: point(-3.1, -2.0), yaw: 0 },
   ],
   'engineering-pod': WORKSTATIONS.map((workstation) => ({
     position: workstation.station.clone(),
