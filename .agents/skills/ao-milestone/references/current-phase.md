@@ -3,28 +3,10 @@
 ## Current checkpoint
 
 ```text
-ec5ca17 Merge pull request #4 from Fairuza050894/ui-foundation-hardening
-0357cf1 docs: record phase 7 verification
-e1928c2 style: format phase 7 isolation tests
-bd3bfcb docs: record phase 6 verification
-948bfb5 docs: align phase 6 milestone status
-e22e546 style: format phase 6 integration test
-ac2e5f6 Merge pull request #1 from Fairuza050894/phase-5b-work
-34f14db chore: harden repository whitespace verification
-99101ca chore: clean phase 5a frontend whitespace
-0422636 feat: add phase 5a operational run visibility
-16a1b3c docs: close phase 4 acceptance
-7db2585 feat: close candidate lifecycle and cleanup semantics
-a9671af docs: complete phase 4c2 verification
-ce1a7e9 feat: add multi-writer integration workspace
-2c58887 docs: complete phase 4c1 verification
-0e06de6 feat: enforce candidate truth and evidence freshness
-02955a2 chore: harden agent context workflow
-c92466c chore: add agent workflow skills
-2ec69b7 docs: complete phase 4b verification
-9383f79 feat: add review findings and verification evidence
-eceaff1 docs: complete phase 4a workspace verification
-510ddb5 feat: add isolated workspace safety foundation
+db34358 Merge pull request #6 from Fairuza050894/phase-9-concept
+30f2686 Merge pull request #5 from Fairuza050894/phase-8-work
+fe44213 docs: record phase 8 visual checkpoint
+131c0d8 fix: tighten office aisle clearance
 ```
 
 Current recorded status:
@@ -44,77 +26,78 @@ Current recorded status:
   - Phase 5B CLOSED — Operational Frontend Completion
 - Phase 6 CLOSED — first real executor accepted through authenticated live smoke
 - Phase 7 CLOSED — Multi-Executor / Second Project Dogfood accepted
-- Phase 8 IN PROGRESS — truthful optional 3D Office View
-  - current working branch: `phase-8-work`
-  - visual implementation checkpoint accepted at `131c0d8`
-  - PR #5 remains unmerged; checkpoint is being promoted from draft to review
-  - current visual work includes deterministic eight-role cast, persistent live sidebar, canonical replay synchronization, furniture-safe navigation anchors, and a multi-zone startup-office environment
-  - known minor visual follow-up: meeting-room chairs currently face outward and should be rotated toward the conference table
+- Phase 8 CLOSED — truthful 3D Office View merged through PR #5
+- Phase 9 PLANNING — Agent Office vNext
+  - concept merged through PR #6
+  - Universal Composer + Dynamic Team Formation accepted as product direction
+  - current working branch: `phase-9-roadmap`
+  - next implementation target after roadmap acceptance: Phase 9A
 
-## Phase 4 closure
+## Phase 8 closure
 
-Phase 4 is **CLOSED** after canonical verification on 2026-09-20.
-
-The final Phase 4 implementation checkpoint is:
+Phase 8 closure record:
 
 ```text
-7db2585 feat: close candidate lifecycle and cleanup semantics
+docs/product/PHASE_8_VERIFICATION.md
 ```
 
-The combined closure record is:
+Accepted implementation baseline:
 
 ```text
-docs/product/PHASE_4_VERIFICATION.md
+131c0d8 fix: tighten office aisle clearance
 ```
 
-Phase 4 established the complete ReferenceExecutor-driven write-safety boundary:
-
-- isolated managed Git worktrees for write-capable execution
-- durable one-writer ownership and parallel-writer separation
-- main working tree protection across execution, review, cancellation, and cleanup
-- read-only review with durable Finding lifecycle and append-only Evidence
-- bounded verification commands and truthful completion gates
-- durable explicit `Run.candidate_workspace_id`
-- deterministic candidate-state fingerprinting beyond commit SHA
-- stale Evidence rejection after candidate mutation
-- managed `INTEGRATION_WORKTREE` for multiple relevant writers
-- fail-closed handling of overlapping writer paths before integration target mutation
-- restart-safe candidate identity and Evidence
-- safe cleanup/reconciliation of candidate and integration Workspaces
-- historical completion truth after a clean completed candidate is safely released
-- no automatic commit, merge to the default branch, rebase, cherry-pick, push, force-push, or destructive main-tree Git operation
-
-The final canonical repository gate observed:
+Final merged PR head:
 
 ```text
-backend pytest      612 passed, 2 dependency warnings
-ruff                passed
-ruff format         171 files already formatted
-mypy                passed (117 source files)
-frontend vitest     7 files passed, 39 tests passed
-frontend typecheck  passed
-frontend lint       passed
-frontend build      passed
-git diff --check    passed
-expected xfail      0
+fe44213 docs: record phase 8 visual checkpoint
 ```
 
-The two Python warnings are existing FastAPI/Starlette dependency deprecations and are not Phase 4 blockers.
+PR #5 was merged as `30f2686`.
 
-## Phase boundary
+Phase 8 preserved canonical Run / AgentRun / Event truth while adding the
+optional Three.js Office projection, deterministic role presentation,
+Historical replay, furniture-safe navigation, and startup-office zones.
 
-Phase 4 closes with `ReferenceExecutor` only.
+## Phase 9 boundary
 
-Phase 5 is **CLOSED** after Phase 5B completed the operational frontend acceptance surface.
+The merged vNext concept is defined by:
 
-Phase 5A — Operational Visibility Core established truthful Run Overview, Findings, Evidence, and normalized Activity.
+```text
+docs/product/AGENT_OFFICE_VNEXT_CONCEPT.md
+docs/product/UNIVERSAL_COMPOSER_AND_TEAM_FORMATION.md
+```
 
-Phase 5B — Operational Frontend Completion added the remaining Run Workflow, Agents, Changes, and Tests views; backend-derived global registries and Overview; Project Detail; factual Executor and AgentProfile registries; bounded operator controls; blocked and unknown-execution UX; and SSE disconnect recovery.
+The technical delivery plan is:
 
-The Phase 5 exit criterion is satisfied with the deterministic ReferenceExecutor: its workflow can be operated and inspected from the UI without Office View.
+```text
+docs/product/PHASE_9_TECHNICAL_ROADMAP.md
+docs/architecture/ADR-0002-planning-operational-boundary.md
+```
 
-Phase 6 is **CLOSED** after deterministic CI and an authenticated local Codex live smoke satisfied the first-real-executor exit criterion. The closure record is `docs/product/PHASE_6_VERIFICATION.md`. Codex CLI remains integrated through the provider-neutral ExecutorAdapter boundary with bounded execution, isolated workspace context, opt-in configuration, capability/health exposure, orchestration integration, fail-closed unknown-state handling, deterministic tests, and retained smoke-workspace evidence.
+Phase 9 does not alter the following accepted contracts:
 
-Phase 7 is **CLOSED** after multi-Project isolation, explicit executor switching, no-silent-fallback behavior, concurrent Project independence, and two dogfood scenarios passed the acceptance gate. The closure record is `docs/product/PHASE_7_VERIFICATION.md`. SQLite schema v10 enforces cross-Project ownership for Workspaces, AgentRun-scoped Events, and candidate Workspaces; the operational UI requires an explicit compatible executor selection before resuming an executor-unavailable Run; and deterministic dogfood exercises documentation-only and unrelated application bug-fix workflows through the provider-neutral execution boundary. Phase 8 is **IN PROGRESS** and owns Office View. The pre-Phase-8 visual foundation from PR #4 is merged; Office View must follow `ao-ui-quality`, remain optional, use only canonical Run/Stage/AgentRun/Event truth, preserve operational UI independence, and use original or clearly licensed visual assets. The current Phase 8 visual gate requires characters to use furniture-safe deterministic station/route anchors and treats meeting, pantry/cafe, recreation, lounge, and focus areas as environmental context only; those rooms must never create fictional AgentRun behavior.
+- Project Registry scopes repository access
+- operational Run state remains authoritative
+- planning truth is separate from Run Event truth
+- Ambient Office state is non-canonical presentation state
+- human approval is required before proposed requirements become executable scope
+- write agents use isolated Workspaces/worktrees
+- no auto commit unless explicitly enabled by a later accepted milestone
+- no auto merge
+- no force push
+- no destructive main-tree Git operation
+- legacy WorkflowSnapshots and AgentProfile keys retain historical meaning
 
-Do not introduce auto-commit, auto-merge, force-push, destructive Git, or heuristic conflict resolution unless a later approved milestone explicitly changes those contracts.
+## Next target
+
+After this roadmap is reviewed and merged:
+
+```text
+Phase 9A — Dark Control-Room Shell + Office Workspace
+```
+
+Phase 9A is frontend-first and must not introduce planning persistence or a new
+runtime in the same PR.
+
+Do not begin 9B until the 9A visual/interaction gate is accepted.
