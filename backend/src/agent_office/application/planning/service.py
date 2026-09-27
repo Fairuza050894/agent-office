@@ -113,9 +113,13 @@ class PlanningEventService:
         limit: int = DEFAULT_PLANNING_EVENT_PAGE_SIZE,
         after: PlanningEventCursor | None = None,
     ) -> tuple[PlanningEvent, ...]:
-        bounded = DEFAULT_PLANNING_EVENT_PAGE_SIZE if limit < 1 else min(
-            limit,
-            MAX_PLANNING_EVENT_PAGE_SIZE,
+        bounded = (
+            DEFAULT_PLANNING_EVENT_PAGE_SIZE
+            if limit < 1
+            else min(
+                limit,
+                MAX_PLANNING_EVENT_PAGE_SIZE,
+            )
         )
         return self._repository.list_by_thread(thread_id, limit=bounded, after=after)
 
