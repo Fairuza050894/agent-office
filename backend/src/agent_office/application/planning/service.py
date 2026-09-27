@@ -461,9 +461,7 @@ class PlanningArtifactService:
     def get(self, artifact_id: PlanningArtifactId) -> PlanningArtifact:
         artifact = self._repository.get(artifact_id)
         if artifact is None:
-            raise PlanningArtifactNotFoundError(
-                f"Planning artifact {artifact_id} was not found"
-            )
+            raise PlanningArtifactNotFoundError(f"Planning artifact {artifact_id} was not found")
         return artifact
 
     def resolve_question(
@@ -477,16 +475,12 @@ class PlanningArtifactService:
         if question.artifact_type is not PlanningArtifactType.QUESTION:
             raise PlanningTransitionError("Only QUESTION artifacts can be resolved")
         if question.status is not PlanningArtifactStatus.OPEN:
-            raise PlanningTransitionError(
-                "Planning question decision is immutable once recorded"
-            )
+            raise PlanningTransitionError("Planning question decision is immutable once recorded")
 
         normalized_option = selected_option.strip()
         content = dict(question.content)
         selected_value = content.get(normalized_option)
-        if not normalized_option.startswith("option_") or not isinstance(
-            selected_value, str
-        ):
+        if not normalized_option.startswith("option_") or not isinstance(selected_value, str):
             raise PlanningTransitionError(
                 "Selected planning option is not declared by this question"
             )
