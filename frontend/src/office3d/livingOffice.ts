@@ -75,6 +75,8 @@ export interface OfficeScheduledEvent {
   zone: OfficeZoneKey
   presence: OfficePresenceState
   priority: number
+  maxParticipants?: number
+  roleKeys?: string[]
 }
 
 export const OFFICE_FLOORS: OfficeFloorDefinition[] = [
@@ -189,18 +191,32 @@ function ambientWindowForHour(hour: number): OfficeAmbientWindow {
   }
 }
 
+function activeScheduledEvent(
+  now: Date,
+  scheduledEvents: OfficeScheduledEvent[],
+): OfficeScheduledEvent | null {
+  const current = now.getTime()
+  return (
+    scheduledEvents
+      .filter((event) => {
+        const startsAt = new Date(event.startsAt).getTime()
+        const endsAt = new Date(event.endsAt).getTime()
+        return (
+          Number.isFinite(startsAt) &&
+          Number.isFinite(endsAt) &&
+          current >= startsAt &&
+          current < endsAt
+        )
+      })
+      .sort((left, right) => right.priority - left.priority)[0] ?? null
+  )
+}
+
 export function officeAmbientWindow(
   now = new Date(),
   scheduledEvents: OfficeScheduledEvent[] = [],
 ): OfficeAmbientWindow {
-  const activeScheduled = scheduledEvents
-    .filter((event) => {
-      const startsAt = new Date(event.startsAt).getTime()
-      const endsAt = new Date(event.endsAt).getTime()
-      const current = now.getTime()
-      return Number.isFinite(startsAt) && Number.isFinite(endsAt) && current >= startsAt && current < endsAt
-    })
-    .sort((left, right) => right.priority - left.priority)[0]
+  const activeScheduled = activeScheduledEvent(now, scheduledEvents)
 
   if (activeScheduled) {
     return {
@@ -247,41 +263,60 @@ export function ambientOfficeMembers(
   now = new Date(),
   scheduledEvents: OfficeScheduledEvent[] = [],
 ): OfficePresenceMember[] {
-  const window = officeAmbientWindow(now, scheduledEvents)
+  const baseline = ambientWindowForHour(now.getHours())
+  const scheduled = activeScheduledEvent(now, scheduledEvents)
   const known = profileByKey(profiles)
+  let scheduledParticipants = 0
 
   return LIVING_OFFICE_CORE_ROLES.flatMap((roleKey, index) => {
     const profile = known.get(roleKey)
     if (!profile || profile.status !== 'ACTIVE') return []
 
+    const targeted =
+      scheduled !== null &&
+      (scheduled.roleKeys === undefined || scheduled.roleKeys.includes(roleKey)) &&
+      scheduledParticipants < (scheduled.maxParticipants ?? 4)
+
+    if (targeted) {
+      scheduledParticipants += 1
+      return [
+        {
+          id: `ambient:${roleKey}`,
+          agent_profile_key: roleKey,
+          name: profile.name,
+          status: scheduled.presence,
+          floor: scheduled.floor,
+          zone: scheduled.zone,
+          truth: 'AMBIENT' as const,
+        },
+      ]
+    }
+
     const home = ROLE_HOME_ZONE[roleKey]
-    const afterHours = window.key === 'after-hours'
+    const afterHours = baseline.key === 'after-hours'
     if (afterHours && index > 1) return []
 
     const useAmbientZone =
-      window.key === 'arrival' ||
-      window.key === 'lunch' ||
-      window.key === 'coffee' ||
-      window.key === 'after-hours' ||
-      window.key === 'scheduled'
+      baseline.key === 'arrival' ||
+      baseline.key === 'lunch' ||
+      baseline.key === 'coffee' ||
+      baseline.key === 'after-hours'
 
     return [
       {
         id: `ambient:${roleKey}`,
         agent_profile_key: roleKey,
         name: profile.name,
-        status: useAmbientZone ? window.presence : 'AVAILABLE',
-        floor: useAmbientZone ? window.floor : home.floor,
+        status: useAmbientZone ? baseline.presence : 'AVAILABLE',
+        floor: useAmbientZone ? baseline.floor : home.floor,
         zone: useAmbientZone
-          ? window.key === 'scheduled'
-            ? window.zone
-            : index % 2 === 0
-              ? window.zone
-              : window.key === 'after-hours'
-                ? 'game-corner'
-                : 'lounge'
+          ? index % 2 === 0
+            ? baseline.zone
+            : baseline.key === 'after-hours'
+              ? 'game-corner'
+              : 'lounge'
           : home.zone,
-        truth: 'AMBIENT',
+        truth: 'AMBIENT' as const,
       },
     ]
   })
