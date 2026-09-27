@@ -119,6 +119,18 @@ _REENTRY_MARKERS = (
     "existing project",
 )
 
+_ROLE_CATALOG = (
+    "product-manager",
+    "system-analyst",
+    "principal-engineer",
+    "product-designer",
+    "backend-engineer",
+    "frontend-engineer",
+    "qa-engineer",
+    "security-reviewer",
+    "technical-writer",
+)
+
 
 def _has_any_marker(text: str, markers: tuple[str, ...]) -> bool:
     """Match words/phrases without treating substrings like "ui" in requirement as UI."""
@@ -168,6 +180,43 @@ class DynamicTeamFormationService:
                 )
             )
 
+        def add_excluded_roles() -> None:
+            excluded_reasons = {
+                "product-manager": (
+                    "No product-scope ownership is required by the resolved planning facts."
+                ),
+                "system-analyst": (
+                    "No additional system-analysis role is required by the resolved planning facts."
+                ),
+                "principal-engineer": (
+                    "No additional architecture or dependency review is required by the explicit scope."
+                ),
+                "product-designer": (
+                    "No user-interface or user-experience scope was identified."
+                ),
+                "backend-engineer": (
+                    "No backend implementation role is activated for this planning turn."
+                ),
+                "frontend-engineer": (
+                    "No frontend implementation role is activated for this planning turn."
+                ),
+                "qa-engineer": (
+                    "No explicit acceptance, regression, test, or defect scope was identified."
+                ),
+                "security-reviewer": (
+                    "No explicit authentication, permission, secret, filesystem, or network risk was identified."
+                ),
+                "technical-writer": (
+                    "No explicit documentation scope was identified."
+                ),
+            }
+            for role_key in _ROLE_CATALOG:
+                add(
+                    role_key,
+                    TeamMemberDisposition.EXCLUDED,
+                    excluded_reasons[role_key],
+                )
+
         if resolution.resolved_intent is ComposerIntent.ASK:
             add(
                 "system-analyst",
@@ -192,6 +241,7 @@ class DynamicTeamFormationService:
                     TeamMemberDisposition.INCLUDED,
                     "The question includes authentication, permission, secret, or network risk.",
                 )
+            add_excluded_roles()
             return TeamFormationDecision(
                 phase=TeamPhase.PLANNING,
                 rationale_summary="ASK uses a minimal read-only specialist cell.",
@@ -299,6 +349,7 @@ class DynamicTeamFormationService:
                 "until scope is approved."
             )
 
+        add_excluded_roles()
         return TeamFormationDecision(
             phase=TeamPhase.PLANNING,
             rationale_summary=rationale,
