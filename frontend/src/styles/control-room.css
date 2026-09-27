@@ -837,6 +837,10 @@ body {
 
 /* Office routes use a denser navigation shell without changing other pages. */
 
+.sidebar-collapse-btn {
+  display: none;
+}
+
 @media (min-width: 769px) {
   .office-shell-focus .app-sidebar {
     width: 188px;
