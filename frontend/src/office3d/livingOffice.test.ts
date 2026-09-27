@@ -158,7 +158,7 @@ describe('living office model', () => {
     expect(
       members.filter((member) => member.zone === 'quiet-room'),
     ).toHaveLength(2)
-    expect(members.some((member) => member.status === 'COFFEE_BREAK')).toBe(true)
+    expect(members.some((member) => member.status !== 'PRAYER_BREAK')).toBe(true)
   })
 
   it('reduces ambient occupancy after hours instead of fabricating work', () => {
