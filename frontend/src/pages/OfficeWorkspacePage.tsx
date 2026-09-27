@@ -425,10 +425,15 @@ export function OfficeWorkspacePage() {
 
   const planningMode =
     resolution?.resolved_intent ?? activeThread?.resolved_intent ?? null
+  const ambientWindow = useMemo(() => officeAmbientWindow(officeNow), [officeNow])
   const workspaceMembers = useMemo(
     () => livingOfficeMembers(activeThread, planningTeam, profiles, officeNow),
     [activeThread, officeNow, planningTeam, profiles],
   )
+  const officePresenceLabel =
+    activeThread && planningTeam
+      ? `${activeThread.status === 'AWAITING_USER' ? 'Waiting for you' : 'Planning'} presence`
+      : `${ambientWindow.label} · ambient`
 
   return (
     <div
@@ -479,6 +484,7 @@ export function OfficeWorkspacePage() {
             floor={selectedFloor}
             workspaceMembers={workspaceMembers}
             onFloorChange={setSelectedFloor}
+            presenceLabel={officePresenceLabel}
           />
         </OfficeRendererBoundary>
       </div>
