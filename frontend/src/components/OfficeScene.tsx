@@ -26,6 +26,7 @@ export interface OfficeSceneProps {
   floor?: OfficeFloorKey
   workspaceMembers?: OfficePresenceMember[]
   onFloorChange?: (floor: OfficeFloorKey) => void
+  presenceLabel?: string | null
 }
 
 function profileName(
@@ -51,6 +52,7 @@ export function OfficeScene({
   floor = 'build',
   workspaceMembers = [],
   onFloorChange,
+  presenceLabel = null,
 }: OfficeSceneProps) {
   const profileByKey = useMemo(
     () => new Map(profiles.map((profile) => [profile.key, profile])),
@@ -97,7 +99,12 @@ export function OfficeScene({
           )}
           <span className="office-render-mode">
             {presentation === 'workspace'
-              ? `${OFFICE_FLOORS.find((candidate) => candidate.key === floor)?.label ?? 'Office'} floor`
+              ? [
+                  `${OFFICE_FLOORS.find((candidate) => candidate.key === floor)?.label ?? 'Office'} floor`,
+                  presenceLabel,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')
               : mode === 'replay'
                 ? 'Historical replay · factual timestamps compressed'
                 : 'Canonical state'}
