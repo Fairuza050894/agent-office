@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import re
 
 from agent_office.application.planning.intent import IntentResolution
 from agent_office.domain import ComposerIntent, TeamMemberDisposition, TeamPhase
@@ -119,6 +120,16 @@ _REENTRY_MARKERS = (
 )
 
 
+def _has_any_marker(text: str, markers: tuple[str, ...]) -> bool:
+    """Match words/phrases without treating substrings like "ui" in requirement as UI."""
+
+    return any(
+        re.search(rf"(?<!\\w){re.escape(marker.strip())}(?!\\w)", text) is not None
+        for marker in markers
+        if marker.strip()
+    )
+
+
 class DynamicTeamFormationService:
     """Produce the smallest useful planning team from explicit facts."""
 
@@ -131,14 +142,14 @@ class DynamicTeamFormationService:
     ) -> TeamFormationDecision:
         text = " ".join(instruction.strip().lower().split())
 
-        ui_scope = any(marker in text for marker in _UI_MARKERS)
-        security_scope = any(marker in text for marker in _SECURITY_MARKERS)
-        qa_scope = any(marker in text for marker in _QA_MARKERS)
-        doc_scope = any(marker in text for marker in _DOC_MARKERS)
-        backend_scope = any(marker in text for marker in _BACKEND_MARKERS)
-        frontend_scope = any(marker in text for marker in _FRONTEND_MARKERS)
-        architecture_scope = any(marker in text for marker in _ARCH_MARKERS)
-        reentry = any(marker in text for marker in _REENTRY_MARKERS)
+        ui_scope = _has_any_marker(text, _UI_MARKERS)
+        security_scope = _has_any_marker(text, _SECURITY_MARKERS)
+        qa_scope = _has_any_marker(text, _QA_MARKERS)
+        doc_scope = _has_any_marker(text, _DOC_MARKERS)
+        backend_scope = _has_any_marker(text, _BACKEND_MARKERS)
+        frontend_scope = _has_any_marker(text, _FRONTEND_MARKERS)
+        architecture_scope = _has_any_marker(text, _ARCH_MARKERS)
+        reentry = _has_any_marker(text, _REENTRY_MARKERS)
 
         members: list[TeamFormationMember] = []
 
