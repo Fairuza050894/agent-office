@@ -205,9 +205,7 @@ class ComposerThreadService:
         if thread.resolved_intent is not None:
             if thread.resolved_intent is resolved_intent:
                 return thread
-            raise PlanningTransitionError(
-                "Composer intent resolution is immutable once recorded"
-            )
+            raise PlanningTransitionError("Composer intent resolution is immutable once recorded")
 
         now = utc_now(self._clock)
         resolved = replace(
