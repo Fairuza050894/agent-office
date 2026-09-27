@@ -239,9 +239,7 @@ class SQLiteTeamProposalRepository(TeamProposalRepository):
                     ),
                 )
                 if cursor.rowcount != 1:
-                    raise PlanningPersistenceError(
-                        f"Team proposal {proposal.id} was not found"
-                    )
+                    raise PlanningPersistenceError(f"Team proposal {proposal.id} was not found")
         except sqlite3.IntegrityError as exc:
             raise PlanningPersistenceError("Team proposal decision was rejected") from exc
 
