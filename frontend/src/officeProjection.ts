@@ -28,6 +28,8 @@ export function officeAgentState(status: string): OfficeState {
       return { key: 'waiting', label: 'Lunch break' }
     case 'SOCIAL_BREAK':
       return { key: 'waiting', label: 'Social break' }
+    case 'PRAYER_BREAK':
+      return { key: 'waiting', label: 'Prayer break' }
     case 'WAITING_USER':
       return { key: 'waiting', label: 'Waiting for you' }
     case 'WAITING':
