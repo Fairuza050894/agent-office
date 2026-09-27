@@ -54,9 +54,7 @@ class RequirementCandidate:
             ("rationale", rationale),
         ):
             if not value or len(value) > MAX_REQUIREMENT_TEXT_LENGTH:
-                raise DomainInvariantError(
-                    f"Requirement {label} must be bounded and non-empty"
-                )
+                raise DomainInvariantError(f"Requirement {label} must be bounded and non-empty")
 
         if hint == "":
             hint = None
