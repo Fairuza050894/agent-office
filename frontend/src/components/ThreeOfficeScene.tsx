@@ -10,6 +10,7 @@ import {
   disposeCharacter,
   setCharacterSelected,
   setCharacterStatus,
+  type OfficeCharacterSource,
   type RuntimeAgent,
   type StationPlacement,
 } from '../office3d/character'
@@ -22,6 +23,11 @@ import {
   stageCenter,
   waitingPosition,
 } from '../office3d/environment'
+import type {
+  OfficeFloorKey,
+  OfficePresenceMember,
+  OfficeZoneKey,
+} from '../office3d/livingOffice'
 import {
   officeReplayPlan,
   type OfficeReplayEvent,
@@ -39,6 +45,14 @@ export interface ThreeOfficeSceneProps {
   replayNonce: number
   replayStartedAt: number | null
   replayRange: OfficeReplayRange | null
+  floor?: OfficeFloorKey
+  workspaceMembers?: OfficePresenceMember[]
+}
+
+interface SceneMember extends OfficeCharacterSource {
+  name: string
+  zone?: OfficeZoneKey
+  stageKey?: string
 }
 
 interface Engine {
@@ -120,6 +134,8 @@ export function ThreeOfficeScene({
   replayNonce,
   replayStartedAt,
   replayRange,
+  floor = 'build',
+  workspaceMembers = [],
 }: ThreeOfficeSceneProps) {
   const hostRef = useRef<HTMLDivElement>(null)
   const engineRef = useRef<Engine | null>(null)
@@ -478,13 +494,35 @@ export function ThreeOfficeScene({
     const profileByKey = new Map(
       profiles.map((profile) => [profile.key, profile]),
     )
+    const visibleWorkspaceMembers = workspaceMembers.filter(
+      (member) => member.floor === floor,
+    )
+    const sceneMembers: SceneMember[] = [
+      ...agents.map((agent) => ({
+        id: agent.id,
+        agent_profile_key: agent.agent_profile_key,
+        name:
+          profileByKey.get(agent.agent_profile_key)?.name ??
+          agent.agent_profile_key,
+        status: agent.status,
+        stageKey: agent.stage_key,
+      })),
+      ...visibleWorkspaceMembers.map((member) => ({
+        id: member.id,
+        agent_profile_key: member.agent_profile_key,
+        name: member.name,
+        status: member.status,
+        zone: member.zone,
+      })),
+    ]
     const stations = createOfficeEnvironment(
       engine.environment,
       stages,
-      agents,
+      sceneMembers,
+      floor,
     )
 
-    const liveIds = new Set(agents.map((agent) => agent.id))
+    const liveIds = new Set(sceneMembers.map((member) => member.id))
 
     engine.runtimes.forEach((runtime, id) => {
       if (!liveIds.has(id)) {
@@ -494,40 +532,39 @@ export function ThreeOfficeScene({
       }
     })
 
-    agents.forEach((agent, agentIndex) => {
-      const stageIndex = Math.max(
-        0,
-        stages.findIndex((stage) => stage.stage_key === agent.stage_key),
-      )
+    sceneMembers.forEach((member, memberIndex) => {
+      const stageIndex = member.stageKey
+        ? Math.max(
+            0,
+            stages.findIndex((stage) => stage.stage_key === member.stageKey),
+          )
+        : memberIndex
       const fallback: StationPlacement = {
         position: stageCenter(stageIndex),
         yaw: stageIndex < 3 ? Math.PI : 0,
       }
-      const station = stations.get(agent.id) ?? fallback
-      const name =
-        profileByKey.get(agent.agent_profile_key)?.name ??
-        agent.agent_profile_key
+      const station = stations.get(member.id) ?? fallback
 
-      let runtime = engine.runtimes.get(agent.id)
+      let runtime = engine.runtimes.get(member.id)
 
       if (!runtime) {
-        runtime = createCharacterRuntime(agent, name, station, () => {
+        runtime = createCharacterRuntime(member, member.name, station, () => {
           if (engine.disposed) return
           renderEngine(engine)
           if (!motionPausedRef.current) startLoop()
         })
-        engine.runtimes.set(agent.id, runtime)
+        engine.runtimes.set(member.id, runtime)
         engine.agents.add(runtime.root)
       } else {
         runtime.station.copy(station.position)
         runtime.stationYaw = station.yaw
-        runtime.finalStatus = agent.status
+        runtime.finalStatus = member.status
       }
 
-      setCharacterSelected(runtime, selectedAgentId === agent.id)
+      setCharacterSelected(runtime, selectedAgentId === member.id)
 
       if (mode === 'live') {
-        const target = stateTarget(runtime, agent.status, agentIndex)
+        const target = stateTarget(runtime, member.status, memberIndex)
 
         if (firstSyncRef.current) {
           runtime.root.visible = true
@@ -539,15 +576,15 @@ export function ThreeOfficeScene({
           runtime.moving = false
           runtime.pendingStatus = null
           runtime.pendingStatusAt = null
-          setCharacterStatus(runtime, agent.status)
+          setCharacterStatus(runtime, member.status)
         } else if (
-          runtime.currentStatus !== agent.status ||
+          runtime.currentStatus !== member.status ||
           runtime.target.distanceTo(target.position) > 0.1
         ) {
           runtime.root.visible = true
           runtime.pendingStatus = null
           runtime.pendingStatusAt = null
-          setCharacterStatus(runtime, agent.status)
+          setCharacterStatus(runtime, member.status)
           moveRuntime(runtime, target)
         }
       }
@@ -565,7 +602,16 @@ export function ThreeOfficeScene({
     firstSyncRef.current = false
     renderEngine(engine)
     if (mode === 'live') startLoop()
-  }, [agents, mode, profiles, selectedAgentId, stages, startLoop])
+  }, [
+    agents,
+    floor,
+    mode,
+    profiles,
+    selectedAgentId,
+    stages,
+    startLoop,
+    workspaceMembers,
+  ])
 
   useEffect(() => {
     const engine = engineRef.current
