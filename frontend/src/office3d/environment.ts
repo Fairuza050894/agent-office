@@ -2,6 +2,7 @@ import * as THREE from 'three'
 
 import type { AgentRun, RunStage } from '../api'
 import type { StationPlacement } from './character'
+import type { OfficeFloorKey, OfficeZoneKey } from './livingOffice'
 
 const OFFICE_WIDTH = 20
 const OFFICE_DEPTH = 14
@@ -18,6 +19,12 @@ interface Workstation {
   station: THREE.Vector3
   yaw: number
   route: THREE.Vector3[]
+}
+
+export interface OfficeEnvironmentMember {
+  id: string
+  agent_profile_key: string
+  zone?: OfficeZoneKey
 }
 
 interface Obstacle {
