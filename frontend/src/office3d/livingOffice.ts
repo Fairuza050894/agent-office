@@ -275,7 +275,7 @@ export function ambientOfficeMembers(
     const targeted =
       scheduled !== null &&
       (scheduled.roleKeys === undefined || scheduled.roleKeys.includes(roleKey)) &&
-      scheduledParticipants < (scheduled.maxParticipants ?? 4)
+      scheduledParticipants < (scheduled.maxParticipants ?? 2)
 
     if (targeted) {
       scheduledParticipants += 1
