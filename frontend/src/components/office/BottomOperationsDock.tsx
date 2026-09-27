@@ -6,6 +6,7 @@ import type {
   AgentRun,
   ComposerThread,
   PlanningArtifact,
+  PlanningEvent,
   RequirementCandidate,
   TeamProposal,
 } from '../../api'
@@ -33,9 +34,18 @@ export interface BottomOperationsDockProps {
   planningTeam?: TeamProposal | null
   planningArtifacts?: PlanningArtifact[]
   planningRequirements?: RequirementCandidate[]
+  planningEvents?: PlanningEvent[]
   onAcceptPlanningTeam?: () => Promise<void> | void
   onRejectPlanningTeam?: () => Promise<void> | void
+  onResolvePlanningQuestion?: (
+    artifactId: string,
+    selectedOption: string,
+  ) => Promise<void> | void
+  onApproveRequirement?: (requirementId: string) => Promise<void> | void
+  onRejectRequirement?: (requirementId: string) => Promise<void> | void
+  onDeferRequirement?: (requirementId: string) => Promise<void> | void
   planningDecisionBusy?: boolean
+  planningActionBusy?: boolean
 }
 
 const EVENT_LABELS: Record<string, string> = {
@@ -83,6 +93,22 @@ function eventDetail(event: AgentEvent): string {
   return eventLabel(event)
 }
 
+function planningEventLabel(event: PlanningEvent): string {
+  return event.event_type.replace(/[._-]+/g, ' ')
+}
+
+function planningEventDetail(event: PlanningEvent): string {
+  const summary = event.payload.reason_summary ?? event.payload.title
+  if (typeof summary === 'string' && summary.trim()) return summary.trim()
+
+  const selectedOption = event.payload.selected_option
+  if (typeof selectedOption === 'string' && selectedOption.trim()) {
+    return selectedOption.replaceAll('_', ' ')
+  }
+
+  return planningEventLabel(event)
+}
+
 function planningArtifactsForTab(
   tab: DockTab,
   artifacts: PlanningArtifact[],
@@ -109,7 +135,11 @@ function planningArtifactsForTab(
 
 function PlanningArtifactList({ artifacts }: { artifacts: PlanningArtifact[] }) {
   if (artifacts.length === 0) {
-    return <div className="office-dock-empty">No planning artifact in this category.</div>
+    return (
+      <div className="office-dock-empty">
+        No planning artifact in this category.
+      </div>
+    )
   }
 
   return (
@@ -118,7 +148,7 @@ function PlanningArtifactList({ artifacts }: { artifacts: PlanningArtifact[] }) 
         <article key={artifact.id} className="office-planning-artifact">
           <div className="office-planning-artifact-head">
             <strong>{artifact.title}</strong>
-            <span>{artifact.artifact_type}</span>
+            <span>{artifact.status}</span>
           </div>
           <dl>
             {Object.entries(artifact.content).map(([key, value]) => (
@@ -134,10 +164,85 @@ function PlanningArtifactList({ artifacts }: { artifacts: PlanningArtifact[] }) 
   )
 }
 
+function QuestionList({
+  questions,
+  onResolve,
+  busy,
+}: {
+  questions: PlanningArtifact[]
+  onResolve?: (artifactId: string, selectedOption: string) => Promise<void> | void
+  busy: boolean
+}) {
+  if (questions.length === 0) {
+    return (
+      <div className="office-dock-empty">
+        No open decision or planning question in this thread.
+      </div>
+    )
+  }
+
+  return (
+    <>
+      {questions.map((question) => {
+        const options = Object.entries(question.content)
+          .filter(
+            ([key, value]) =>
+              key.startsWith('option_') &&
+              typeof value === 'string' &&
+              value.trim().length > 0,
+          )
+          .sort(([left], [right]) => left.localeCompare(right))
+
+        return (
+          <article key={question.id} className="office-planning-question">
+            <div className="office-planning-artifact-head">
+              <strong>{question.title}</strong>
+              <span>{question.status}</span>
+            </div>
+            <p>{String(question.content.question ?? 'Decision required')}</p>
+            {question.content.recommendation && (
+              <div className="office-planning-recommendation">
+                <span>Recommendation</span>
+                <strong>{String(question.content.recommendation)}</strong>
+              </div>
+            )}
+            <div className="office-planning-options">
+              {options.map(([key, value], index) => (
+                <button
+                  key={key}
+                  type="button"
+                  className="office-planning-option"
+                  disabled={
+                    busy ||
+                    question.status !== 'OPEN' ||
+                    onResolve === undefined
+                  }
+                  onClick={() => void onResolve?.(question.id, key)}
+                >
+                  <span>{String.fromCharCode(65 + index)}</span>
+                  <strong>{String(value)}</strong>
+                </button>
+              ))}
+            </div>
+          </article>
+        )
+      })}
+    </>
+  )
+}
+
 function RequirementList({
   requirements,
+  onApprove,
+  onReject,
+  onDefer,
+  busy,
 }: {
   requirements: RequirementCandidate[]
+  onApprove?: (requirementId: string) => Promise<void> | void
+  onReject?: (requirementId: string) => Promise<void> | void
+  onDefer?: (requirementId: string) => Promise<void> | void
+  busy: boolean
 }) {
   if (requirements.length === 0) {
     return (
@@ -159,8 +264,73 @@ function RequirementList({
           {requirement.acceptance_hint && (
             <small>Acceptance · {requirement.acceptance_hint}</small>
           )}
+          {requirement.status === 'PROPOSED' && (
+            <div className="office-requirement-actions">
+              <button
+                type="button"
+                className="office-team-decision accept"
+                disabled={busy || onApprove === undefined}
+                onClick={() => void onApprove?.(requirement.id)}
+              >
+                Approve
+              </button>
+              <button
+                type="button"
+                className="office-team-decision"
+                disabled={busy || onDefer === undefined}
+                onClick={() => void onDefer?.(requirement.id)}
+              >
+                Defer
+              </button>
+              <button
+                type="button"
+                className="office-team-decision danger"
+                disabled={busy || onReject === undefined}
+                onClick={() => void onReject?.(requirement.id)}
+              >
+                Reject
+              </button>
+            </div>
+          )}
         </article>
       ))}
+    </>
+  )
+}
+
+function PlanningActivity({ events }: { events: PlanningEvent[] }) {
+  if (events.length === 0) {
+    return (
+      <div className="office-dock-empty">
+        No durable PlanningEvent is available in this thread.
+      </div>
+    )
+  }
+
+  return (
+    <>
+      {events
+        .slice()
+        .sort((left, right) => right.sequence - left.sequence)
+        .map((event) => (
+          <article key={event.id} className="office-dock-event">
+            <time dateTime={event.occurred_at}>
+              {new Date(event.occurred_at).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+            </time>
+            <span className="office-dock-event-role">
+              {event.role_key ?? 'planning'}
+            </span>
+            <span className="office-dock-event-detail">
+              {planningEventLabel(event)}
+              {planningEventDetail(event) !== planningEventLabel(event)
+                ? ` · ${planningEventDetail(event)}`
+                : ''}
+            </span>
+          </article>
+        ))}
     </>
   )
 }
@@ -178,9 +348,15 @@ export function BottomOperationsDock({
   planningTeam = null,
   planningArtifacts: artifactList = [],
   planningRequirements = [],
+  planningEvents = [],
   onAcceptPlanningTeam,
   onRejectPlanningTeam,
+  onResolvePlanningQuestion,
+  onApproveRequirement,
+  onRejectRequirement,
+  onDeferRequirement,
   planningDecisionBusy = false,
+  planningActionBusy = false,
 }: BottomOperationsDockProps) {
   const [dockState, setDockState] = useState<DockState>(defaultState)
   const [activeTab, setActiveTab] = useState<DockTab>(
@@ -267,11 +443,19 @@ export function BottomOperationsDock({
                 </button>
               ))}
             </div>
-            {activeTab === 'activity' && <span>{events.length} canonical events</span>}
+            {activeTab === 'activity' && (
+              <span>
+                {planningThread
+                  ? `${planningEvents.length} planning events`
+                  : `${events.length} canonical events`}
+              </span>
+            )}
           </div>
           <div className="office-dock-scroll">
             {activeTab === 'activity' ? (
-              recent.length === 0 ? (
+              planningThread ? (
+                <PlanningActivity events={planningEvents} />
+              ) : recent.length === 0 ? (
                 <div className="office-dock-empty">
                   No canonical operational Event is available in this scope.
                 </div>
@@ -305,7 +489,19 @@ export function BottomOperationsDock({
                 })
               )
             ) : activeTab === 'requirements' ? (
-              <RequirementList requirements={planningRequirements} />
+              <RequirementList
+                requirements={planningRequirements}
+                onApprove={onApproveRequirement}
+                onReject={onRejectRequirement}
+                onDefer={onDeferRequirement}
+                busy={planningActionBusy}
+              />
+            ) : activeTab === 'questions' ? (
+              <QuestionList
+                questions={visiblePlanningArtifacts}
+                onResolve={onResolvePlanningQuestion}
+                busy={planningActionBusy}
+              />
             ) : (
               <PlanningArtifactList artifacts={visiblePlanningArtifacts} />
             )}
