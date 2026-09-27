@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import re
+from dataclasses import dataclass
 
 from agent_office.application.planning.intent import IntentResolution
 from agent_office.domain import ComposerIntent, TeamMemberDisposition, TeamPhase
