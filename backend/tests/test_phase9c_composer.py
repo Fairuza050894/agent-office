@@ -468,9 +468,7 @@ def test_decision_queue_rejects_undeclared_option(
     prepared = _prepare(harness, str(thread["id"]), "Run the change now.")
 
     question = next(
-        artifact
-        for artifact in prepared["artifacts"]
-        if artifact["artifact_type"] == "QUESTION"
+        artifact for artifact in prepared["artifacts"] if artifact["artifact_type"] == "QUESTION"
     )
 
     response = harness.client.post(
