@@ -9,6 +9,7 @@ import {
   type Executor,
   type IntentResolution,
   type PlanningArtifact,
+  type PlanningEvent,
   type Project,
   type RequirementCandidate,
   type TeamProposal,
@@ -48,8 +49,10 @@ export function OfficeWorkspacePage() {
   const [planningRequirements, setPlanningRequirements] = useState<
     RequirementCandidate[]
   >([])
+  const [planningEvents, setPlanningEvents] = useState<PlanningEvent[]>([])
   const [isPreparing, setIsPreparing] = useState(false)
   const [planningDecisionBusy, setPlanningDecisionBusy] = useState(false)
+  const [planningActionBusy, setPlanningActionBusy] = useState(false)
   const [composerError, setComposerError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -126,6 +129,7 @@ export function OfficeWorkspacePage() {
     setPlanningTeam(null)
     setPlanningArtifacts([])
     setPlanningRequirements([])
+    setPlanningEvents([])
     setComposerError(null)
   }
 
@@ -155,6 +159,16 @@ export function OfficeWorkspacePage() {
       setPlanningTeam(prepared.team_proposal)
       setPlanningArtifacts(prepared.artifacts)
       setPlanningRequirements(prepared.requirements)
+
+      try {
+        const eventPage = await api.listPlanningEvents(thread.id)
+        setPlanningEvents(eventPage.events)
+      } catch {
+        setPlanningEvents([])
+        setComposerError(
+          'Planning was prepared, but its activity timeline could not be loaded.',
+        )
+      }
     } catch (reason) {
       setComposerError(
         reason instanceof Error
@@ -177,6 +191,10 @@ export function OfficeWorkspacePage() {
           ? await api.acceptTeamProposal(planningTeam.id)
           : await api.rejectTeamProposal(planningTeam.id)
       setPlanningTeam(updated)
+      if (activeThread) {
+        const eventPage = await api.listPlanningEvents(activeThread.id)
+        setPlanningEvents(eventPage.events)
+      }
     } catch (reason) {
       setComposerError(
         reason instanceof Error
@@ -185,6 +203,77 @@ export function OfficeWorkspacePage() {
       )
     } finally {
       setPlanningDecisionBusy(false)
+    }
+  }
+
+  const resolvePlanningQuestion = async (
+    artifactId: string,
+    selectedOption: string,
+  ) => {
+    if (!activeThread) return
+
+    setPlanningActionBusy(true)
+    setComposerError(null)
+    try {
+      const result = await api.resolvePlanningQuestion(
+        artifactId,
+        selectedOption,
+      )
+      setPlanningArtifacts((current) => [
+        ...current.map((artifact) =>
+          artifact.id === result.question.id ? result.question : artifact,
+        ),
+        result.decision,
+      ])
+
+      const [thread, eventPage] = await Promise.all([
+        api.getComposerThread(activeThread.id),
+        api.listPlanningEvents(activeThread.id),
+      ])
+      setActiveThread(thread)
+      setPlanningEvents(eventPage.events)
+    } catch (reason) {
+      setComposerError(
+        reason instanceof Error
+          ? reason.message
+          : 'Unable to record the planning decision.',
+      )
+    } finally {
+      setPlanningActionBusy(false)
+    }
+  }
+
+  const decideRequirement = async (
+    requirementId: string,
+    decision: 'approve' | 'reject' | 'defer',
+  ) => {
+    if (!activeThread) return
+
+    setPlanningActionBusy(true)
+    setComposerError(null)
+    try {
+      const updated =
+        decision === 'approve'
+          ? await api.approveRequirement(requirementId)
+          : decision === 'reject'
+            ? await api.rejectRequirement(requirementId)
+            : await api.deferRequirement(requirementId)
+
+      setPlanningRequirements((current) =>
+        current.map((requirement) =>
+          requirement.id === updated.id ? updated : requirement,
+        ),
+      )
+      const eventPage = await api.listPlanningEvents(activeThread.id)
+      setPlanningEvents(eventPage.events)
+    } catch (reason) {
+      setComposerError(
+        reason instanceof Error
+          ? reason.message
+          : 'Unable to record the requirement decision.',
+      )
+    } finally {
+      setPlanningActionBusy(false)
     }
   }
 
@@ -281,9 +370,21 @@ export function OfficeWorkspacePage() {
         planningTeam={planningTeam}
         planningArtifacts={planningArtifacts}
         planningRequirements={planningRequirements}
+        planningEvents={planningEvents}
         onAcceptPlanningTeam={() => decideTeam('accept')}
         onRejectPlanningTeam={() => decideTeam('reject')}
+        onResolvePlanningQuestion={resolvePlanningQuestion}
+        onApproveRequirement={(requirementId) =>
+          decideRequirement(requirementId, 'approve')
+        }
+        onRejectRequirement={(requirementId) =>
+          decideRequirement(requirementId, 'reject')
+        }
+        onDeferRequirement={(requirementId) =>
+          decideRequirement(requirementId, 'defer')
+        }
         planningDecisionBusy={planningDecisionBusy}
+        planningActionBusy={planningActionBusy}
       />
 
       <p className="office-workspace-note">
