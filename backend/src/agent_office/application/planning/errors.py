@@ -1,5 +1,6 @@
 """Planning application errors."""
 
+
 class PlanningError(RuntimeError):
     """Base planning application error."""
 
