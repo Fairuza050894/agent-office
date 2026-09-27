@@ -105,3 +105,27 @@ class ArtifactId(DomainId):
 
 class AuditRecordId(DomainId):
     __slots__ = ()
+
+
+class ComposerThreadId(DomainId):
+    __slots__ = ()
+
+
+class ComposerMessageId(DomainId):
+    __slots__ = ()
+
+
+class TeamProposalId(DomainId):
+    __slots__ = ()
+
+
+class PlanningArtifactId(DomainId):
+    __slots__ = ()
+
+
+class RequirementCandidateId(DomainId):
+    __slots__ = ()
+
+
+class PlanningEventId(DomainId):
+    __slots__ = ()

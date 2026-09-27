@@ -12,7 +12,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 BUSY_TIMEOUT_MS = 5000
-LATEST_SCHEMA_VERSION: int = 10
+LATEST_SCHEMA_VERSION: int = 11
 
 SCHEMA_VERSION_KEY = "schema_version"
 
@@ -839,6 +839,341 @@ def _migration_v10(connection: sqlite3.Connection) -> None:
     )
 
 
+def _migration_v11(connection: sqlite3.Connection) -> None:
+    """Create Phase 9B planning-domain persistence.
+
+    Planning records are durable and restart-safe, but they are deliberately
+    separated from operational Run / AgentRun / Event truth.
+    """
+
+    connection.execute(
+        """
+        CREATE TABLE composer_threads (
+            id TEXT PRIMARY KEY,
+            project_id TEXT REFERENCES projects(id),
+            requested_intent TEXT NOT NULL
+                CHECK (requested_intent IN ('AUTO', 'ASK', 'PLAN', 'BRAINSTORM', 'RUN')),
+            resolved_intent TEXT
+                CHECK (
+                    resolved_intent IS NULL
+                    OR resolved_intent IN ('ASK', 'PLAN', 'BRAINSTORM', 'RUN')
+                ),
+            status TEXT NOT NULL
+                CHECK (status IN ('OPEN', 'ACTIVE', 'AWAITING_USER', 'COMPLETED', 'ARCHIVED')),
+            title TEXT,
+            timezone TEXT NOT NULL,
+            executor_id TEXT,
+            workflow_id TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            completed_at TEXT,
+            CHECK (
+                (
+                    status IN ('COMPLETED', 'ARCHIVED')
+                    AND completed_at IS NOT NULL
+                )
+                OR
+                (
+                    status NOT IN ('COMPLETED', 'ARCHIVED')
+                    AND completed_at IS NULL
+                )
+            )
+        )
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX composer_threads_project_idx
+        ON composer_threads (project_id, updated_at, id)
+        """
+    )
+
+    connection.execute(
+        """
+        CREATE TABLE composer_messages (
+            id TEXT PRIMARY KEY,
+            thread_id TEXT NOT NULL REFERENCES composer_threads(id),
+            actor_type TEXT NOT NULL CHECK (actor_type IN ('USER', 'ROLE', 'SYSTEM')),
+            role_key TEXT,
+            message_kind TEXT NOT NULL
+                CHECK (
+                    message_kind IN (
+                        'USER_PROMPT',
+                        'ROLE_CONTRIBUTION',
+                        'SYSTEM_SUMMARY'
+                    )
+                ),
+            content TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            CHECK (
+                (actor_type = 'ROLE' AND role_key IS NOT NULL)
+                OR
+                (actor_type <> 'ROLE' AND role_key IS NULL)
+            )
+        )
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX composer_messages_thread_idx
+        ON composer_messages (thread_id, created_at, id)
+        """
+    )
+    connection.execute(
+        """
+        CREATE TRIGGER composer_messages_append_only_update
+        BEFORE UPDATE ON composer_messages
+        BEGIN
+            SELECT RAISE(ABORT, 'composer_messages is append-only');
+        END
+        """
+    )
+    connection.execute(
+        """
+        CREATE TRIGGER composer_messages_append_only_delete
+        BEFORE DELETE ON composer_messages
+        BEGIN
+            SELECT RAISE(ABORT, 'composer_messages is append-only');
+        END
+        """
+    )
+
+    connection.execute(
+        """
+        CREATE TABLE team_proposals (
+            id TEXT PRIMARY KEY,
+            thread_id TEXT NOT NULL REFERENCES composer_threads(id),
+            phase TEXT NOT NULL
+                CHECK (phase IN ('PLANNING', 'IMPLEMENTATION', 'REVIEW', 'DOCUMENTATION')),
+            status TEXT NOT NULL
+                CHECK (status IN ('PROPOSED', 'ACCEPTED', 'REJECTED', 'SUPERSEDED')),
+            rationale_summary TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            decided_at TEXT,
+            CHECK (
+                (status = 'PROPOSED' AND decided_at IS NULL)
+                OR
+                (status <> 'PROPOSED' AND decided_at IS NOT NULL)
+            )
+        )
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX team_proposals_thread_idx
+        ON team_proposals (thread_id, created_at, id)
+        """
+    )
+
+    connection.execute(
+        """
+        CREATE TABLE team_proposal_members (
+            proposal_id TEXT NOT NULL REFERENCES team_proposals(id),
+            role_key TEXT NOT NULL,
+            disposition TEXT NOT NULL
+                CHECK (disposition IN ('INCLUDED', 'DEFERRED', 'EXCLUDED')),
+            reason TEXT NOT NULL,
+            order_hint INTEGER NOT NULL CHECK (order_hint >= 0),
+            PRIMARY KEY (proposal_id, role_key)
+        )
+        """
+    )
+
+    connection.execute(
+        """
+        CREATE TABLE planning_artifacts (
+            id TEXT PRIMARY KEY,
+            thread_id TEXT NOT NULL REFERENCES composer_threads(id),
+            artifact_type TEXT NOT NULL
+                CHECK (
+                    artifact_type IN (
+                        'BRIEF', 'NOTE', 'DECISION',
+                        'QUESTION', 'RISK', 'ACTION'
+                    )
+                ),
+            title TEXT NOT NULL,
+            content_json TEXT NOT NULL,
+            author_role_key TEXT,
+            status TEXT NOT NULL
+                CHECK (status IN ('DRAFT', 'OPEN', 'RESOLVED', 'ARCHIVED')),
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX planning_artifacts_thread_idx
+        ON planning_artifacts (thread_id, created_at, id)
+        """
+    )
+
+    connection.execute(
+        """
+        CREATE TABLE requirement_candidates (
+            id TEXT PRIMARY KEY,
+            thread_id TEXT NOT NULL REFERENCES composer_threads(id),
+            project_id TEXT REFERENCES projects(id),
+            title TEXT NOT NULL,
+            problem TEXT NOT NULL,
+            requirement TEXT NOT NULL,
+            rationale TEXT NOT NULL,
+            acceptance_hint TEXT,
+            source_roles_json TEXT NOT NULL,
+            status TEXT NOT NULL
+                CHECK (status IN ('PROPOSED', 'APPROVED', 'REJECTED', 'DEFERRED')),
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            approved_at TEXT,
+            decided_at TEXT,
+            CHECK (
+                (
+                    status = 'PROPOSED'
+                    AND approved_at IS NULL
+                    AND decided_at IS NULL
+                )
+                OR
+                (
+                    status = 'APPROVED'
+                    AND approved_at IS NOT NULL
+                    AND decided_at IS NOT NULL
+                    AND approved_at = decided_at
+                )
+                OR
+                (
+                    status IN ('REJECTED', 'DEFERRED')
+                    AND approved_at IS NULL
+                    AND decided_at IS NOT NULL
+                )
+            )
+        )
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX requirement_candidates_thread_idx
+        ON requirement_candidates (thread_id, created_at, id)
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX requirement_candidates_project_status_idx
+        ON requirement_candidates (project_id, status, created_at)
+        """
+    )
+    connection.execute(
+        """
+        CREATE TRIGGER requirement_candidates_scope_insert
+        BEFORE INSERT ON requirement_candidates
+        WHEN NOT EXISTS (
+            SELECT 1
+            FROM composer_threads
+            WHERE id = NEW.thread_id
+              AND project_id IS NEW.project_id
+        )
+        BEGIN
+            SELECT RAISE(ABORT, 'FOREIGN KEY requirement Project scope mismatch');
+        END
+        """
+    )
+    connection.execute(
+        """
+        CREATE TRIGGER requirement_candidates_scope_update
+        BEFORE UPDATE OF thread_id, project_id ON requirement_candidates
+        WHEN NOT EXISTS (
+            SELECT 1
+            FROM composer_threads
+            WHERE id = NEW.thread_id
+              AND project_id IS NEW.project_id
+        )
+        BEGIN
+            SELECT RAISE(ABORT, 'FOREIGN KEY requirement Project scope mismatch');
+        END
+        """
+    )
+    connection.execute(
+        """
+        CREATE TRIGGER requirement_candidates_terminal_status
+        BEFORE UPDATE OF status ON requirement_candidates
+        WHEN OLD.status <> 'PROPOSED'
+        BEGIN
+            SELECT RAISE(ABORT, 'requirement decision is immutable');
+        END
+        """
+    )
+    connection.execute(
+        """
+        CREATE TRIGGER requirement_candidates_no_delete
+        BEFORE DELETE ON requirement_candidates
+        BEGIN
+            SELECT RAISE(ABORT, 'requirement_candidates are never deleted');
+        END
+        """
+    )
+
+    connection.execute(
+        """
+        CREATE TABLE planning_events (
+            id TEXT PRIMARY KEY,
+            thread_id TEXT NOT NULL REFERENCES composer_threads(id),
+            project_id TEXT REFERENCES projects(id),
+            event_type TEXT NOT NULL,
+            role_key TEXT,
+            occurred_at TEXT NOT NULL,
+            recorded_at TEXT NOT NULL,
+            sequence INTEGER NOT NULL CHECK (sequence >= 0),
+            payload_json TEXT NOT NULL,
+            UNIQUE (thread_id, sequence)
+        )
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX planning_events_thread_recorded_idx
+        ON planning_events (thread_id, recorded_at, id)
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX planning_events_project_recorded_idx
+        ON planning_events (project_id, recorded_at, id)
+        """
+    )
+    connection.execute(
+        """
+        CREATE TRIGGER planning_events_scope_insert
+        BEFORE INSERT ON planning_events
+        WHEN NOT EXISTS (
+            SELECT 1
+            FROM composer_threads
+            WHERE id = NEW.thread_id
+              AND project_id IS NEW.project_id
+        )
+        BEGIN
+            SELECT RAISE(ABORT, 'FOREIGN KEY planning Event Project scope mismatch');
+        END
+        """
+    )
+    connection.execute(
+        """
+        CREATE TRIGGER planning_events_append_only_update
+        BEFORE UPDATE ON planning_events
+        BEGIN
+            SELECT RAISE(ABORT, 'planning_events is append-only');
+        END
+        """
+    )
+    connection.execute(
+        """
+        CREATE TRIGGER planning_events_append_only_delete
+        BEFORE DELETE ON planning_events
+        BEGIN
+            SELECT RAISE(ABORT, 'planning_events is append-only');
+        END
+        """
+    )
+
+
 MIGRATIONS: dict[int, Callable[[sqlite3.Connection], None]] = {
     1: _migration_v1,
     2: _migration_v2,
@@ -850,6 +1185,7 @@ MIGRATIONS: dict[int, Callable[[sqlite3.Connection], None]] = {
     8: _migration_v8,
     9: _migration_v9,
     10: _migration_v10,
+    11: _migration_v11,
 }
 
 

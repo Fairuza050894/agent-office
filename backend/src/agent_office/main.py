@@ -6,6 +6,7 @@ from fastapi import FastAPI
 
 from agent_office.api.audit import router as audit_router
 from agent_office.api.events import router as events_router
+from agent_office.api.planning import router as planning_router
 from agent_office.api.projects import router as projects_router
 from agent_office.api.recovery import router as recovery_router
 from agent_office.api.resources import router as resources_router
@@ -19,6 +20,13 @@ from agent_office.application.agents import AgentRunService
 from agent_office.application.audit import AuditService
 from agent_office.application.events import EventService
 from agent_office.application.orchestration import RunOrchestrator
+from agent_office.application.planning import (
+    ComposerThreadService,
+    PlanningArtifactService,
+    PlanningEventService,
+    RequirementService,
+    TeamProposalService,
+)
 from agent_office.application.projects import ProjectService
 from agent_office.application.recovery import RecoveryService
 from agent_office.application.review import FindingService
@@ -41,13 +49,19 @@ from agent_office.infrastructure.git import GitRepositoryInspector, GitWorktreeM
 from agent_office.infrastructure.persistence import (
     SQLiteAgentRunRepository,
     SQLiteAuditRecordRepository,
+    SQLiteComposerMessageRepository,
+    SQLiteComposerThreadRepository,
     SQLiteEventRepository,
     SQLiteEvidenceRepository,
     SQLiteFindingRepository,
+    SQLitePlanningArtifactRepository,
+    SQLitePlanningEventRepository,
     SQLiteProjectRepository,
+    SQLiteRequirementCandidateRepository,
     SQLiteRunRepository,
     SQLiteRunStageRepository,
     SQLiteTaskRepository,
+    SQLiteTeamProposalRepository,
     SQLiteWorkflowDefinitionRepository,
     SQLiteWorkflowSnapshotRepository,
     SQLiteWorkspaceRepository,
@@ -107,6 +121,31 @@ def create_app(
         event_service,
     )
     audit_service = AuditService(SQLiteAuditRecordRepository(database))
+
+    planning_event_service = PlanningEventService(SQLitePlanningEventRepository(database))
+    composer_thread_service = ComposerThreadService(
+        SQLiteComposerThreadRepository(database),
+        SQLiteComposerMessageRepository(database),
+        project_service,
+        planning_event_service,
+    )
+    team_proposal_service = TeamProposalService(
+        SQLiteTeamProposalRepository(database),
+        composer_thread_service,
+        planning_event_service,
+    )
+    planning_artifact_service = PlanningArtifactService(
+        SQLitePlanningArtifactRepository(database),
+        composer_thread_service,
+        planning_event_service,
+    )
+    requirement_service = RequirementService(
+        SQLiteRequirementCandidateRepository(database),
+        composer_thread_service,
+        planning_event_service,
+        audit_service,
+    )
+
     worktree_manager = GitWorktreeManager(resolved_settings.managed_workspace_root)
     workspace_service = WorkspaceService(
         SQLiteWorkspaceRepository(database),
@@ -177,6 +216,11 @@ def create_app(
     app.state.agent_run_service = agent_run_service
     app.state.executor_registry = executor_registry
     app.state.audit_service = audit_service
+    app.state.planning_event_service = planning_event_service
+    app.state.composer_thread_service = composer_thread_service
+    app.state.team_proposal_service = team_proposal_service
+    app.state.planning_artifact_service = planning_artifact_service
+    app.state.requirement_service = requirement_service
     app.state.recovery_service = RecoveryService(run_service, agent_run_service)
     app.state.workspace_service = workspace_service
     app.state.finding_service = finding_service
@@ -208,6 +252,7 @@ def create_app(
         )
 
     app.include_router(projects_router)
+    app.include_router(planning_router)
     app.include_router(resources_router)
     app.include_router(review_router)
     app.include_router(tasks_router)

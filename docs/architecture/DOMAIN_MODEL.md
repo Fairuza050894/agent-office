@@ -2154,3 +2154,248 @@ MVP_ACCEPTANCE.md
 ```
 
 The next document should define the workflow orchestration contract, including stage dependencies, fan-out/fan-in behavior, review gates, remediation loops, retries, cancellation, and completion semantics.
+
+
+## 36. Phase 9B Planning Domain
+
+Phase 9B introduces a persistent planning aggregate that is deliberately
+separate from the operational Run aggregate.
+
+Planning truth records that planning activity happened. It does not prove that
+engineering execution happened.
+
+### ComposerThread
+
+```text
+ComposerThread
+├── id
+├── project_id?
+├── requested_intent
+├── resolved_intent?
+├── status
+├── title?
+├── timezone
+├── executor_id?
+├── workflow_id?
+├── created_at
+├── updated_at
+└── completed_at?
+```
+
+Supported requested intents:
+
+```text
+AUTO
+ASK
+PLAN
+BRAINSTORM
+RUN
+```
+
+A resolved intent may not remain `AUTO`.
+
+Thread status:
+
+```text
+OPEN
+ACTIVE
+AWAITING_USER
+COMPLETED
+ARCHIVED
+```
+
+A Project is optional for general planning records, but later repository-changing
+execution still requires a concrete registered Project.
+
+### ComposerMessage
+
+```text
+ComposerMessage
+├── id
+├── thread_id
+├── actor_type
+├── role_key?
+├── message_kind
+├── content
+└── created_at
+```
+
+Messages are append-only.
+
+Actor types:
+
+```text
+USER
+ROLE
+SYSTEM
+```
+
+Only ROLE messages may carry a role key.
+
+### TeamProposal
+
+```text
+TeamProposal
+├── id
+├── thread_id
+├── phase
+├── status
+├── rationale_summary
+├── created_at
+├── decided_at?
+└── members*
+```
+
+Phases:
+
+```text
+PLANNING
+IMPLEMENTATION
+REVIEW
+DOCUMENTATION
+```
+
+A TeamProposal is planning truth. Accepting a proposal does not instantiate an
+AgentRun.
+
+### PlanningArtifact
+
+Structured planning output:
+
+```text
+BRIEF
+NOTE
+DECISION
+QUESTION
+RISK
+ACTION
+```
+
+Artifact content is bounded structured scalar data. Secret-bearing keys such as
+password, token, authorization, credential, or private-key fields are rejected
+before persistence.
+
+### RequirementCandidate
+
+```text
+RequirementCandidate
+├── id
+├── thread_id
+├── project_id?
+├── title
+├── problem
+├── requirement
+├── rationale
+├── acceptance_hint?
+├── source_roles*
+├── status
+├── created_at
+├── updated_at
+├── approved_at?
+└── decided_at?
+```
+
+Lifecycle:
+
+```text
+PROPOSED
+   ├── APPROVED
+   ├── REJECTED
+   └── DEFERRED
+```
+
+The first decision is immutable.
+
+APPROVED requires `approved_at == decided_at`.
+
+Requirement Project scope must equal the owning ComposerThread Project scope.
+
+Approval, rejection, and deferral are explicit USER audit actions.
+
+### PlanningEvent
+
+PlanningEvent is append-only history for the planning aggregate.
+
+It is not the operational Event entity.
+
+```text
+PlanningEvent
+├── id
+├── thread_id
+├── project_id?
+├── event_type
+├── role_key?
+├── occurred_at
+├── recorded_at
+├── sequence
+└── payload
+```
+
+Sequence is unique inside one thread.
+
+Examples:
+
+```text
+composer.thread.created
+composer.message.received
+intent.resolved
+team.proposed
+team.accepted
+team.rejected
+planning.started
+planning.contribution.recorded
+planning.artifact.created
+requirement.proposed
+requirement.approved
+requirement.rejected
+requirement.deferred
+planning.completed
+```
+
+PlanningEvent history is served through a planning-specific API/SSE boundary and
+must never be inserted into the operational Run Event table.
+
+### PlanningRuntime
+
+Phase 9B defines a provider-neutral PlanningRuntime port.
+
+The deterministic `ReferencePlanningRuntime` exists only to prove lifecycle and
+persistence boundaries.
+
+It declares:
+
+```text
+read_only = true
+structured_output = true
+cancellable = true
+```
+
+It is not production provider intelligence and is not wired to the Universal
+Composer as a real planner.
+
+Real provider planning remains a later Phase 9 slice.
+
+### Planning vs operational truth
+
+```text
+Planning
+ComposerThread
+ComposerMessage
+TeamProposal
+PlanningArtifact
+RequirementCandidate
+PlanningEvent
+
+        ≠
+
+Operational execution
+Task
+Run
+AgentRun
+Workspace
+Event
+Finding
+Evidence
+```
+
+No Phase 9B planning operation may create operational execution truth.
