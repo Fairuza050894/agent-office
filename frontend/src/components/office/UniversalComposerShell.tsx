@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import type {
   ComposerIntent,
@@ -54,20 +54,13 @@ export function UniversalComposerShell({
   messages = [],
   error = null,
 }: UniversalComposerShellProps) {
-  const [intent, setIntent] = useState<ComposerIntent>('AUTO')
+  const [intent, setIntent] = useState<ComposerIntent>(
+    activeThread?.requested_intent ?? 'AUTO',
+  )
   const [instruction, setInstruction] = useState('')
-  const [executorId, setExecutorId] = useState(selectedExecutorId ?? '')
-
-  useEffect(() => {
-    if (activeThread) {
-      setIntent(activeThread.requested_intent)
-      setExecutorId(activeThread.executor_id ?? selectedExecutorId ?? '')
-      return
-    }
-
-    setIntent('AUTO')
-    setExecutorId(selectedExecutorId ?? '')
-  }, [activeThread, selectedExecutorId])
+  const [executorId, setExecutorId] = useState(
+    activeThread?.executor_id ?? selectedExecutorId ?? '',
+  )
 
   const canSend =
     Boolean(onSubmit) &&
