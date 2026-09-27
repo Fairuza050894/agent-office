@@ -61,6 +61,7 @@ class PlanningEventType(StrEnum):
     PLANNING_STARTED = "planning.started"
     CONTRIBUTION_RECORDED = "planning.contribution.recorded"
     ARTIFACT_CREATED = "planning.artifact.created"
+    ARTIFACT_RESOLVED = "planning.artifact.resolved"
     REQUIREMENT_PROPOSED = "requirement.proposed"
     REQUIREMENT_APPROVED = "requirement.approved"
     REQUIREMENT_REJECTED = "requirement.rejected"
