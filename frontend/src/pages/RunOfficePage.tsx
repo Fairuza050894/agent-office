@@ -383,7 +383,7 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
               }
               onClick={() => setMotionPaused((current) => !current)}
             >
-              {motionPaused ? 'Resume' : 'Pause'}
+              {motionPaused ? 'Resume motion' : 'Pause motion'}
             </button>
             <button
               type="button"
@@ -394,7 +394,7 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
               {isRefreshing ? 'Refreshing…' : 'Refresh'}
             </button>
             <Link href={`/runs/${run.id}`} className="btn btn-secondary btn-sm">
-              Run
+              Run details
             </Link>
             <button
               type="button"

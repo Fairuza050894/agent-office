@@ -1434,3 +1434,414 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Phase 9A global dark-surface sweep */
+
+/* The Phase 9A shell is dark everywhere, not only on Office routes. */
+
+.page-view,
+.page-content,
+.dashboard-section,
+.settings-section,
+.executor-panel,
+.run-tab-content {
+  color: var(--ao-text);
+}
+
+.page-title,
+.page-view h1,
+.page-view h2,
+.page-view h3,
+.page-view h4,
+.summary-value,
+.summary-label,
+.section-title,
+.settings-section-title,
+.setting-name,
+.executor-name,
+.executor-section-title,
+.cell-project-name,
+.run-section-title {
+  color: var(--ao-text-strong);
+}
+
+.page-description,
+.page-eyebrow,
+.section-meta,
+.summary-detail,
+.cell-secondary,
+.setting-desc,
+.executor-id,
+.executor-muted,
+.form-hint,
+.run-muted,
+.run-section-help,
+.run-event-meta,
+.run-event-payload dt {
+  color: var(--ao-text-muted);
+}
+
+/* Shared registries */
+
+.table-container,
+.section-body,
+.settings-card,
+.settings-notice,
+.registry-toolbar,
+.modal-dialog,
+.modal-footer,
+.modal-notice,
+.run-fact-strip,
+.run-resolution,
+.run-overview-section,
+.run-path-panel {
+  border-color: var(--ao-border);
+  background: var(--ao-surface);
+  color: var(--ao-text);
+}
+
+.table-container {
+  border: 1px solid var(--ao-border);
+  border-radius: var(--ao-radius-sm);
+}
+
+.operational-table {
+  background: var(--ao-surface);
+  color: var(--ao-text);
+}
+
+.operational-table th {
+  background: #101c27;
+  border-bottom-color: var(--ao-border);
+  color: #8095a6;
+}
+
+.operational-table td {
+  background: var(--ao-surface);
+  border-bottom-color: var(--ao-line-soft);
+  color: #bdcad4;
+}
+
+.operational-table tbody tr:not(:has(.table-empty-cell)):hover,
+.operational-table tbody tr:not(:has(.table-empty-cell)):hover td {
+  background: var(--ao-surface-hover);
+}
+
+.table-empty-cell,
+.empty-state-message,
+.empty-state-detail {
+  color: var(--ao-text-muted);
+}
+
+.empty-state-badge {
+  border-color: var(--ao-border-strong);
+  background: var(--ao-surface-2);
+  color: var(--ao-text-muted);
+}
+
+/* Forms, filters, and selectors */
+
+.form-input,
+.form-textarea,
+.toolbar-select,
+.registry-toolbar select,
+.registry-toolbar input {
+  border-color: #2a3e4d;
+  background: #101d28;
+  color: var(--ao-text);
+}
+
+.form-input::placeholder,
+.form-textarea::placeholder {
+  color: #617789;
+}
+
+.form-input:disabled,
+.form-textarea:disabled,
+.toolbar-select:disabled {
+  border-color: #20323e;
+  background: #0b1720;
+  color: #5e7282;
+}
+
+.form-label,
+.toolbar-label,
+.modal-description {
+  color: #b4c3ce;
+}
+
+.form-input:focus,
+.form-textarea:focus,
+.toolbar-select:focus {
+  border-color: var(--ao-focus);
+  outline-color: var(--ao-focus);
+}
+
+/* Overview */
+
+.overview-summary {
+  border-color: var(--ao-border);
+}
+
+.summary-item {
+  border-color: var(--ao-line-soft);
+}
+
+.summary-value {
+  color: #dfeaf1;
+}
+
+.summary-label {
+  color: #b7c6d1;
+}
+
+.overview-resource-row {
+  border-bottom-color: var(--ao-line-soft);
+}
+
+.overview-resource-row strong {
+  color: #c5d3dd;
+}
+
+.technical-label {
+  color: #738a9a;
+}
+
+/* Settings / Project details */
+
+.settings-notice {
+  border: 1px solid var(--ao-border);
+  border-left: 2px solid var(--ao-live);
+  background: rgba(83, 199, 240, .045);
+}
+
+.notice-label {
+  color: #c8d6df;
+}
+
+.settings-card {
+  border: 1px solid var(--ao-border);
+  border-radius: var(--ao-radius-sm);
+}
+
+.setting-row {
+  border-bottom-color: var(--ao-line-soft);
+}
+
+.setting-value {
+  color: #b9c8d2;
+}
+
+.setting-value.mono,
+.mono-badge {
+  border: 1px solid #2a4050;
+  background: #122330;
+  color: #8bc6e5;
+}
+
+/* Executor registry */
+
+.executor-panel {
+  border-bottom-color: var(--ao-border);
+}
+
+.executor-kind,
+.executor-facts dt {
+  color: var(--ao-text-faint);
+}
+
+.executor-facts {
+  border-color: var(--ao-line-soft);
+}
+
+.executor-facts > div:not(:first-child),
+.executor-facts > div {
+  border-color: var(--ao-line-soft);
+}
+
+.executor-facts dd,
+.executor-section-title,
+.capability-row code,
+.security-limitation-key,
+.security-limitation-value,
+.executor-limitations li {
+  color: #afbfca;
+}
+
+.capability-list,
+.capability-row,
+.executor-limitations,
+.executor-limitations li,
+.security-limitation-row {
+  border-color: var(--ao-line-soft);
+}
+
+/* Run / Project tab surfaces */
+
+.run-tabs {
+  border-bottom-color: var(--ao-border);
+}
+
+.run-tab-button {
+  color: #7f94a5;
+}
+
+.run-tab-button:hover {
+  color: #c6d5df;
+}
+
+.run-tab-button.active {
+  border-bottom-color: var(--ao-live);
+  color: var(--ao-text-strong);
+}
+
+.run-fact-strip,
+.run-resolution,
+.run-overview-section,
+.run-path-panel {
+  background: var(--ao-surface);
+}
+
+.run-live-status,
+.run-finding-description,
+.run-plain-list,
+.run-path-list {
+  color: #9fb1be;
+}
+
+.run-risk-action {
+  border-top-color: var(--ao-border);
+}
+
+.run-finding {
+  background: var(--ao-surface);
+  border-top: 1px solid var(--ao-border);
+  border-right: 1px solid var(--ao-border);
+  border-bottom: 1px solid var(--ao-border);
+}
+
+/* Modal system */
+
+.modal-backdrop {
+  background: rgba(2, 8, 13, .78);
+}
+
+.modal-dialog {
+  border: 1px solid #2a3e4d;
+  background: #0c1721;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, .42);
+}
+
+.modal-header,
+.modal-footer {
+  border-color: var(--ao-border);
+}
+
+.modal-title {
+  color: var(--ao-text-strong);
+}
+
+.modal-close-btn {
+  color: #8095a6;
+}
+
+.modal-close-btn:hover {
+  background: var(--ao-surface-hover);
+  color: #edf4f8;
+}
+
+.modal-footer {
+  background: #0a151e;
+}
+
+.modal-notice {
+  border: 1px solid var(--ao-border);
+  border-left: 2px solid var(--ao-live);
+  background: rgba(83, 199, 240, .045);
+  color: #93a8b7;
+}
+
+/* Status and semantic badges remain dark, with state conveyed by restrained accent. */
+
+.badge-active,
+.badge-success {
+  border-color: rgba(72, 199, 142, .3);
+  background: rgba(72, 199, 142, .09);
+  color: #8fdbb6;
+}
+
+.badge-running {
+  border-color: rgba(83, 199, 240, .28);
+  background: rgba(83, 199, 240, .08);
+  color: #8ddcf6;
+}
+
+.badge-neutral,
+.badge-archived {
+  border-color: #314451;
+  background: #14222d;
+  color: #a0b0bc;
+}
+
+.badge-failed {
+  border-color: rgba(239, 106, 103, .3);
+  background: rgba(239, 106, 103, .08);
+  color: #f0a29f;
+}
+
+.badge-cancelled {
+  border-color: rgba(227, 179, 65, .3);
+  background: rgba(227, 179, 65, .08);
+  color: #e8ca7c;
+}
+
+.run-alert-warning {
+  border-color: rgba(227, 179, 65, .25);
+  background: rgba(227, 179, 65, .065);
+  color: #dbc47e;
+}
+
+.run-alert-danger,
+.form-error {
+  border-color: rgba(239, 106, 103, .28);
+  background: rgba(239, 106, 103, .07);
+  color: #efaaa8;
+}
+
+/* Button defaults also obey the dark surface system outside Office. */
+
+.btn-secondary {
+  border-color: #2c414f;
+  background: #101d28;
+  color: #aebfca;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  border-color: #3b5869;
+  background: #172a37;
+  color: #e0eaf0;
+}
+
+.btn-secondary:disabled {
+  border-color: #20323f;
+  background: #0c1720;
+  color: #526a7a;
+}
+
+/* No native control should leak a light browser canvas into a dark page. */
+
+.page-view select,
+.page-view input,
+.page-view textarea,
+.modal-dialog select,
+.modal-dialog input,
+.modal-dialog textarea {
+  color-scheme: dark;
+}
+
+.page-view option,
+.modal-dialog option {
+  background: #101d28;
+  color: var(--ao-text);
+}

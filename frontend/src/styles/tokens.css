@@ -21,4 +21,17 @@
   --ao-radius-sm: 4px;
   --ao-radius-md: 7px;
   --ao-shadow-panel: 0 18px 45px rgba(0, 0, 0, .24);
+
+  /* Legacy visual-foundation aliases.
+     App.css still references these names; Phase 9A dark tokens own the values. */
+  --ao-bg: var(--ao-canvas);
+  --ao-sidebar: #09121b;
+  --ao-sidebar-border: #1c2b37;
+  --ao-muted: var(--ao-text-muted);
+  --ao-faint: var(--ao-text-faint);
+  --ao-line: var(--ao-border);
+  --ao-line-soft: #182a36;
+  --ao-accent: var(--ao-live);
+  --ao-warning: var(--ao-waiting);
+  --ao-danger: var(--ao-error);
 }
