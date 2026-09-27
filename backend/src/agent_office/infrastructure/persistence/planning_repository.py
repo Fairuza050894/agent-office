@@ -653,10 +653,10 @@ def _optional_intent(value: ComposerIntent | None) -> str | None:
     return None if value is None else value.value
 
 
-def _parse_optional_id[_IdT: DomainId](
+def _parse_optional_id[IdT: DomainId](
     value: str | None,
-    identifier_type: type[_IdT],
-) -> _IdT | None:
+    identifier_type: type[IdT],
+) -> IdT | None:
     return None if value is None else identifier_type.parse(value)
 
 
