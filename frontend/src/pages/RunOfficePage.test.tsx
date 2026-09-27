@@ -219,8 +219,11 @@ describe('Phase 9A Office Workspace', () => {
     vi.stubGlobal('fetch', officeFetch())
     render(<App initialPath={`/runs/${RUN.id}/office`} />)
 
+    const dock = await screen.findByRole('region', {
+      name: 'Bottom Operations Dock',
+    })
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Office View' }),
+      screen.getByRole('heading', { level: 1, name: 'Office View' }),
     ).toBeInTheDocument()
 
     const projection = screen.getByRole('region', {
@@ -231,7 +234,6 @@ describe('Phase 9A Office Workspace', () => {
       screen.queryByRole('complementary', { name: 'Live office sidebar' }),
     ).not.toBeInTheDocument()
 
-    const dock = screen.getByRole('region', { name: 'Bottom Operations Dock' })
     const team = within(dock).getByRole('region', { name: 'Active team' })
     const agentButton = within(team).getByRole('button', {
       name: /Backend Developer.*Running/i,
