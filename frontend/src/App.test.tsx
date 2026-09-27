@@ -218,6 +218,12 @@ describe('Agent Office operational shell', () => {
           reason: 'Implementation waits for approved scope.',
           order_hint: 3,
         },
+        {
+          role_key: 'qa-engineer',
+          disposition: 'EXCLUDED',
+          reason: 'No explicit acceptance or test scope was identified.',
+          order_hint: 4,
+        },
       ],
     }
 
@@ -322,6 +328,8 @@ describe('Agent Office operational shell', () => {
     expect(within(planningTeam).getByText('Product Manager')).toBeInTheDocument()
     expect(within(planningTeam).getByText('Backend Engineer')).toBeInTheDocument()
     expect(within(planningTeam).getByText('DEFERRED')).toBeInTheDocument()
+    expect(within(planningTeam).getByText('qa-engineer')).toBeInTheDocument()
+    expect(within(planningTeam).getByText('EXCLUDED')).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: 'Deferred' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Start Run' })).toBeDisabled()
     expect(screen.getByLabelText('Composer planning history')).toHaveValue(thread.id)
