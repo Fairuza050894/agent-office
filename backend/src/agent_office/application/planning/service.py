@@ -40,6 +40,7 @@ from agent_office.domain import (
     ComposerThread,
     ComposerThreadId,
     ComposerThreadStatus,
+    DomainInvariantError,
     ExecutorId,
     PlanningArtifact,
     PlanningArtifactId,
@@ -485,7 +486,7 @@ class RequirementService:
         current = self.get(requirement_id)
         try:
             decided = current.decide(status, self._clock())
-        except Exception as exc:
+        except DomainInvariantError as exc:
             raise PlanningTransitionError(str(exc)) from exc
 
         self._repository.save(decided)
