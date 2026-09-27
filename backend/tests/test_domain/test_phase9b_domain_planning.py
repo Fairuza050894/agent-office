@@ -23,6 +23,11 @@ def test_planning_content_rejects_secret_bearing_keys() -> None:
         build_planning_content((("api_token", "secret"),))
 
 
+def test_planning_content_rejects_non_scalar_values() -> None:
+    with pytest.raises(DomainInvariantError, match="scalar"):
+        build_planning_content((("nested", ["not", "allowed"]),))  # type: ignore[list-item]
+
+
 def test_requirement_decision_is_one_way() -> None:
     now = utc_now()
     requirement = RequirementCandidate(
