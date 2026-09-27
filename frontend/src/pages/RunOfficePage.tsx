@@ -9,7 +9,6 @@ import {
   type Project,
   type Run,
   type RunStage,
-  type Task,
   type Workspace,
 } from '../api'
 import { EmptyState } from '../components/EmptyState'
@@ -38,7 +37,6 @@ type LiveState = 'connected' | 'disconnected' | 'unsupported'
 export function RunOfficePage({ runId }: RunOfficePageProps) {
   const [run, setRun] = useState<Run | null>(null)
   const [project, setProject] = useState<Project | null>(null)
-  const [task, setTask] = useState<Task | null>(null)
   const [stages, setStages] = useState<RunStage[]>([])
   const [agents, setAgents] = useState<AgentRun[]>([])
   const [workspaces, setWorkspaces] = useState<Workspace[]>([])
@@ -90,7 +88,6 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
       const loadedRun = await api.getRun(runId)
       const [
         loadedProject,
-        loadedTask,
         loadedStages,
         loadedAgents,
         loadedWorkspaces,
@@ -99,7 +96,6 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
         loadedProfiles,
       ] = await Promise.all([
         api.getProject(loadedRun.project_id),
-        api.getTask(loadedRun.task_id),
         api.getRunStages(runId),
         api.getRunAgents(runId),
         api.getRunWorkspaces(runId),
@@ -110,7 +106,6 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
 
       setRun(loadedRun)
       setProject(loadedProject)
-      setTask(loadedTask)
       setStages(loadedStages)
       setAgents(loadedAgents)
       setWorkspaces(loadedWorkspaces)
