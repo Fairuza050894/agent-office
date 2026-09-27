@@ -83,7 +83,10 @@ def test_auto_project_reentry_stops_at_plan_with_small_planning_cell(
     assert members["principal-engineer"]["disposition"] == "INCLUDED"
     assert members["backend-engineer"]["disposition"] == "DEFERRED"
     assert members["frontend-engineer"]["disposition"] == "DEFERRED"
-    assert "qa-engineer" not in members
+    assert members["qa-engineer"]["disposition"] == "EXCLUDED"
+    assert members["product-designer"]["disposition"] == "EXCLUDED"
+    assert members["security-reviewer"]["disposition"] == "EXCLUDED"
+    assert members["technical-writer"]["disposition"] == "EXCLUDED"
 
     artifacts = prepared["artifacts"]
     assert [artifact["artifact_type"] for artifact in artifacts] == ["BRIEF", "ACTION"]
@@ -190,8 +193,9 @@ def test_auto_read_only_question_resolves_to_ask(
     members = _member_map(prepared)
     assert members["system-analyst"]["disposition"] == "INCLUDED"
     assert members["principal-engineer"]["disposition"] == "INCLUDED"
-    assert "backend-engineer" not in members
-    assert "frontend-engineer" not in members
+    assert members["backend-engineer"]["disposition"] == "EXCLUDED"
+    assert members["frontend-engineer"]["disposition"] == "EXCLUDED"
+    assert members["product-manager"]["disposition"] == "EXCLUDED"
 
 
 def test_team_formation_is_deterministic_for_same_facts(
