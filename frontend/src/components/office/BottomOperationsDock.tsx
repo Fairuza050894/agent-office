@@ -74,7 +74,7 @@ const TAB_LABELS: Record<DockTab, string> = {
 }
 
 const DOCK_HEIGHT_STORAGE_KEY = 'agent-office.office-dock-height'
-const DOCK_NORMAL_HEIGHT = 236
+const DOCK_NORMAL_HEIGHT = 210
 const DOCK_MIN_HEIGHT = 180
 const DOCK_KEYBOARD_STEP = 40
 
@@ -96,7 +96,7 @@ function boundedDockHeight(height: number): number {
   const viewportLimit =
     typeof window === 'undefined'
       ? 640
-      : Math.min(720, Math.round(window.innerHeight * 0.72))
+      : Math.min(500, Math.round(window.innerHeight * 0.48))
   return Math.min(
     Math.max(Math.round(height), DOCK_MIN_HEIGHT),
     Math.max(DOCK_MIN_HEIGHT, viewportLimit),
