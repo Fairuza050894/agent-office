@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import sqlite3
 from datetime import datetime
-from typing import TypeVar, cast
+from typing import cast
 
 from agent_office.application.planning import (
     ComposerMessageRepository,
@@ -19,7 +19,6 @@ from agent_office.application.planning import (
 )
 from agent_office.domain import (
     ComposerActorType,
-    DomainId,
     ComposerIntent,
     ComposerMessage,
     ComposerMessageId,
@@ -27,6 +26,7 @@ from agent_office.domain import (
     ComposerThread,
     ComposerThreadId,
     ComposerThreadStatus,
+    DomainId,
     ExecutorId,
     PlanningArtifact,
     PlanningArtifactId,
@@ -308,7 +308,9 @@ class SQLitePlanningArtifactRepository(PlanningArtifactRepository):
                     ),
                 )
         except sqlite3.IntegrityError as exc:
-            raise PlanningPersistenceError("Planning artifact persistence invariant failed") from exc
+            raise PlanningPersistenceError(
+                "Planning artifact persistence invariant failed"
+            ) from exc
 
     def list_by_thread(self, thread_id: ComposerThreadId) -> tuple[PlanningArtifact, ...]:
         with self._database.connection() as connection:
@@ -654,10 +656,7 @@ def _optional_enum(value: object | None) -> str | None:
     return str(value) if enum_value is None else str(enum_value)
 
 
-_IdT = TypeVar("_IdT", bound=DomainId)
-
-
-def _parse_optional_id(
+def _parse_optional_id[_IdT: DomainId](
     value: str | None,
     identifier_type: type[_IdT],
 ) -> _IdT | None:
