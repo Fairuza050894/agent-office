@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 from pathlib import Path
 
-from conftest import HarnessFactory
+from conftest import Harness, HarnessFactory
 
 from agent_office.application.planning import ReferencePlanningRuntime
 from agent_office.domain import (
@@ -16,9 +16,8 @@ from agent_office.domain import (
 )
 
 
-def _create_thread(harness: object, project_id: str) -> dict[str, object]:
-    client = getattr(harness, "client")
-    response = client.post(
+def _create_thread(harness: Harness, project_id: str) -> dict[str, object]:
+    response = harness.client.post(
         "/api/composer/threads",
         json={
             "project_id": project_id,
