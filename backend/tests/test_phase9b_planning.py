@@ -80,9 +80,7 @@ def test_planning_history_is_separate_from_run_event_truth(
     database = harness.app.state.project_database
     with database.connection() as connection:
         operational_count = connection.execute("SELECT COUNT(*) FROM events").fetchone()[0]
-        planning_count = connection.execute(
-            "SELECT COUNT(*) FROM planning_events"
-        ).fetchone()[0]
+        planning_count = connection.execute("SELECT COUNT(*) FROM planning_events").fetchone()[0]
         run_count = connection.execute("SELECT COUNT(*) FROM runs").fetchone()[0]
         agent_count = connection.execute("SELECT COUNT(*) FROM agent_runs").fetchone()[0]
 
@@ -175,9 +173,7 @@ def test_team_and_artifact_services_round_trip_through_http_reads(
         author_role_key="system-analyst",
     )
 
-    proposals = harness.client.get(
-        f"/api/composer/threads/{thread['id']}/team-proposals"
-    )
+    proposals = harness.client.get(f"/api/composer/threads/{thread['id']}/team-proposals")
     artifacts = harness.client.get(f"/api/composer/threads/{thread['id']}/artifacts")
 
     assert proposals.status_code == 200
@@ -210,13 +206,9 @@ def test_planning_event_sse_replays_durable_history(
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("text/event-stream")
     ids = [
-        line.removeprefix("id: ")
-        for line in response.text.splitlines()
-        if line.startswith("id: ")
+        line.removeprefix("id: ") for line in response.text.splitlines() if line.startswith("id: ")
     ]
-    events = harness.client.get(
-        f"/api/composer/threads/{thread['id']}/events"
-    ).json()["events"]
+    events = harness.client.get(f"/api/composer/threads/{thread['id']}/events").json()["events"]
     assert ids == [event["id"] for event in events]
 
 
