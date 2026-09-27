@@ -1,4 +1,10 @@
-import { useMemo, useState } from 'react'
+import {
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+} from 'react'
 
 import type {
   AgentEvent,
@@ -65,6 +71,63 @@ const TAB_LABELS: Record<DockTab, string> = {
   questions: 'Questions',
   risks: 'Risks',
   deferred: 'Deferred',
+}
+
+const DOCK_HEIGHT_STORAGE_KEY = 'agent-office.office-dock-height'
+const DOCK_NORMAL_HEIGHT = 236
+const DOCK_MIN_HEIGHT = 180
+const DOCK_KEYBOARD_STEP = 40
+
+const PLANNING_VALUE_LABELS: Record<string, string> = {
+  NOT_INSPECTED_IN_PHASE_9C: 'Not inspected yet · Phase 9D read-only context',
+  NO_PRIOR_PLANNING_THREAD: 'No prior planning thread',
+  NONE_IDENTIFIED: 'None identified yet',
+  NONE_IDENTIFIED_BY_DETERMINISTIC_PHASE_9C: 'None identified by Phase 9C planning',
+  NONE_PROPOSED_UNTIL_READ_ONLY_PROJECT_CONTEXT_IS_AVAILABLE:
+    'None proposed until read-only project context is available',
+  NOT_PROPOSED_UNTIL_REQUIREMENTS_ARE_GROUNDED_AND_APPROVED:
+    'Not proposed until requirements are grounded and approved',
+  TO_BE_ASSESSED_AFTER_READ_ONLY_PROJECT_CONTEXT:
+    'To be assessed after read-only project context',
+  NOT_STARTED: 'Not started',
+}
+
+function boundedDockHeight(height: number): number {
+  const viewportLimit =
+    typeof window === 'undefined'
+      ? 640
+      : Math.min(720, Math.round(window.innerHeight * 0.72))
+  return Math.min(
+    Math.max(Math.round(height), DOCK_MIN_HEIGHT),
+    Math.max(DOCK_MIN_HEIGHT, viewportLimit),
+  )
+}
+
+function readStoredDockHeight(): number | null {
+  if (typeof window === 'undefined') return null
+
+  try {
+    const raw = window.localStorage.getItem(DOCK_HEIGHT_STORAGE_KEY)
+    if (raw === null) return null
+    const parsed = Number(raw)
+    return Number.isFinite(parsed) ? boundedDockHeight(parsed) : null
+  } catch {
+    return null
+  }
+}
+
+function storeDockHeight(height: number): void {
+  try {
+    window.localStorage.setItem(DOCK_HEIGHT_STORAGE_KEY, String(height))
+  } catch {
+    // Resizing remains available even when storage is blocked.
+  }
+}
+
+function planningValueLabel(value: unknown): string {
+  if (value === null) return '—'
+  if (typeof value !== 'string') return String(value)
+  return PLANNING_VALUE_LABELS[value] ?? value
 }
 
 function eventLabel(event: AgentEvent): string {
@@ -154,7 +217,9 @@ function PlanningArtifactList({ artifacts }: { artifacts: PlanningArtifact[] }) 
             {Object.entries(artifact.content).map(([key, value]) => (
               <div key={key}>
                 <dt>{key.replaceAll('_', ' ')}</dt>
-                <dd>{value === null ? '—' : String(value)}</dd>
+                <dd title={typeof value === 'string' ? value : undefined}>
+                  {planningValueLabel(value)}
+                </dd>
               </div>
             ))}
           </dl>
@@ -362,6 +427,13 @@ export function BottomOperationsDock({
   const [activeTab, setActiveTab] = useState<DockTab>(
     planningThread ? 'notes' : 'activity',
   )
+  const [manualHeight, setManualHeight] = useState<number | null>(readStoredDockHeight)
+  const dockRef = useRef<HTMLElement | null>(null)
+  const resizeRef = useRef<{
+    pointerId: number
+    startY: number
+    startHeight: number
+  } | null>(null)
   const renderedState: DockState = forceCollapsed ? 'collapsed' : dockState
   const profileByKey = useMemo(
     () => new Map(profiles.map((profile) => [profile.key, profile])),
@@ -383,10 +455,66 @@ export function BottomOperationsDock({
 
   const visiblePlanningArtifacts = planningArtifactsForTab(activeTab, artifactList)
 
+  const currentDockHeight = () => {
+    const measured = dockRef.current?.getBoundingClientRect().height ?? 0
+    if (measured > 0) return measured
+    return manualHeight ?? DOCK_NORMAL_HEIGHT
+  }
+
+  const applyManualHeight = (height: number) => {
+    const next = boundedDockHeight(height)
+    setManualHeight(next)
+    setDockState('normal')
+    return next
+  }
+
+  const handleResizePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (forceCollapsed) return
+    resizeRef.current = {
+      pointerId: event.pointerId,
+      startY: event.clientY,
+      startHeight: currentDockHeight(),
+    }
+    event.currentTarget.setPointerCapture(event.pointerId)
+  }
+
+  const handleResizePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = resizeRef.current
+    if (!drag || drag.pointerId !== event.pointerId) return
+    applyManualHeight(drag.startHeight + (drag.startY - event.clientY))
+  }
+
+  const finishResize = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = resizeRef.current
+    if (!drag || drag.pointerId !== event.pointerId) return
+    resizeRef.current = null
+    const height = boundedDockHeight(currentDockHeight())
+    setManualHeight(height)
+    storeDockHeight(height)
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+  }
+
+  const handleResizeKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return
+    event.preventDefault()
+    const delta = event.key === 'ArrowUp' ? DOCK_KEYBOARD_STEP : -DOCK_KEYBOARD_STEP
+    const height = applyManualHeight(currentDockHeight() + delta)
+    storeDockHeight(height)
+  }
+
+  const manualStyle =
+    !forceCollapsed && renderedState === 'normal' && manualHeight !== null
+      ? { height: `${boundedDockHeight(manualHeight)}px` }
+      : undefined
+
   return (
     <section
+      ref={dockRef}
       className={`office-operations-dock dock-${renderedState}`}
       aria-label="Bottom Operations Dock"
+      style={manualStyle}
     >
       <div className="office-dock-header">
         <div className="office-dock-title">
@@ -400,6 +528,23 @@ export function BottomOperationsDock({
         </div>
         {!forceCollapsed && (
           <div className="office-dock-actions">
+            {renderedState !== 'collapsed' && (
+              <div
+                className="office-dock-resize-handle"
+                role="separator"
+                aria-label="Resize Operations Dock"
+                aria-orientation="horizontal"
+                tabIndex={0}
+                title="Drag up or down to resize the Operations Dock"
+                onPointerDown={handleResizePointerDown}
+                onPointerMove={handleResizePointerMove}
+                onPointerUp={finishResize}
+                onPointerCancel={finishResize}
+                onKeyDown={handleResizeKeyDown}
+              >
+                <span aria-hidden="true">↕</span>
+              </div>
+            )}
             <button
               type="button"
               className="office-dock-action"
@@ -451,7 +596,7 @@ export function BottomOperationsDock({
               </span>
             )}
           </div>
-          <div className="office-dock-scroll">
+          <div className="office-dock-scroll" key={activeTab}>
             {activeTab === 'activity' ? (
               planningThread ? (
                 <PlanningActivity events={planningEvents} />
