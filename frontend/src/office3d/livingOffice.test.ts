@@ -130,6 +130,31 @@ describe('living office model', () => {
     expect(members.every((member) => member.status === 'COFFEE_BREAK')).toBe(true)
   })
 
+  it('accepts provider-supplied scheduled ambience without hard-coded prayer times', () => {
+    const now = new Date('2026-09-27T15:15:00+07:00')
+    const scheduled = [
+      {
+        id: 'prayer-asr',
+        label: 'Asr prayer window',
+        startsAt: '2026-09-27T15:05:00+07:00',
+        endsAt: '2026-09-27T15:35:00+07:00',
+        floor: 'commons' as const,
+        zone: 'quiet-room' as const,
+        presence: 'PRAYER_BREAK' as const,
+        priority: 80,
+      },
+    ]
+
+    const window = officeAmbientWindow(now, scheduled)
+    const members = ambientOfficeMembers(profiles, now, scheduled)
+
+    expect(window.key).toBe('scheduled')
+    expect(window.presence).toBe('PRAYER_BREAK')
+    expect(window.zone).toBe('quiet-room')
+    expect(members.every((member) => member.status === 'PRAYER_BREAK')).toBe(true)
+    expect(members.every((member) => member.zone === 'quiet-room')).toBe(true)
+  })
+
   it('reduces ambient occupancy after hours instead of fabricating work', () => {
     const members = ambientOfficeMembers(
       profiles,
