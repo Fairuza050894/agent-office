@@ -2,6 +2,7 @@
 
 from agent_office.application.planning.errors import (
     ComposerThreadNotFoundError,
+    PlanningArtifactNotFoundError,
     PlanningError,
     PlanningPersistenceError,
     PlanningTransitionError,
@@ -57,6 +58,7 @@ __all__ = [
     "DEFAULT_PLANNING_EVENT_PAGE_SIZE",
     "MAX_PLANNING_EVENT_PAGE_SIZE",
     "PlanningArtifactDraft",
+    "PlanningArtifactNotFoundError",
     "PlanningArtifactRepository",
     "PlanningArtifactService",
     "PlanningContribution",
