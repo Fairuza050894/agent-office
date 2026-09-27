@@ -100,13 +100,9 @@ def create_thread(
             requested_intent=request.requested_intent,
             timezone=request.timezone,
             title=request.title,
-            executor_id=(
-                None if request.executor_id is None else ExecutorId(request.executor_id)
-            ),
+            executor_id=(None if request.executor_id is None else ExecutorId(request.executor_id)),
             workflow_id=(
-                None
-                if request.workflow_id is None
-                else WorkflowDefinitionId(request.workflow_id)
+                None if request.workflow_id is None else WorkflowDefinitionId(request.workflow_id)
             ),
         )
     except ProjectNotFoundError as exc:
@@ -129,9 +125,7 @@ def get_thread(
     service: ComposerServiceDependency,
 ) -> ComposerThreadResponse:
     try:
-        return ComposerThreadResponse.from_domain(
-            service.get_thread(ComposerThreadId(thread_id))
-        )
+        return ComposerThreadResponse.from_domain(service.get_thread(ComposerThreadId(thread_id)))
     except ComposerThreadNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
@@ -188,10 +182,7 @@ def list_team_proposals(
         proposals = service.list_for_thread(ComposerThreadId(thread_id))
     except ComposerThreadNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    return [
-        TeamProposalResponse.from_domain(proposal, members)
-        for proposal, members in proposals
-    ]
+    return [TeamProposalResponse.from_domain(proposal, members) for proposal, members in proposals]
 
 
 @router.post(
@@ -205,9 +196,7 @@ def accept_team_proposal(
     try:
         proposal = service.accept(TeamProposalId(proposal_id))
         pairs = service.list_for_thread(proposal.thread_id)
-        members = next(
-            members for candidate, members in pairs if candidate.id == proposal.id
-        )
+        members = next(members for candidate, members in pairs if candidate.id == proposal.id)
     except TeamProposalNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except PlanningTransitionError as exc:
@@ -226,9 +215,7 @@ def reject_team_proposal(
     try:
         proposal = service.reject(TeamProposalId(proposal_id))
         pairs = service.list_for_thread(proposal.thread_id)
-        members = next(
-            members for candidate, members in pairs if candidate.id == proposal.id
-        )
+        members = next(members for candidate, members in pairs if candidate.id == proposal.id)
     except TeamProposalNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except PlanningTransitionError as exc:
@@ -263,10 +250,7 @@ def list_requirements(
         requirements = service.list_for_thread(ComposerThreadId(thread_id))
     except ComposerThreadNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    return [
-        RequirementCandidateResponse.from_domain(requirement)
-        for requirement in requirements
-    ]
+    return [RequirementCandidateResponse.from_domain(requirement) for requirement in requirements]
 
 
 def _decide_requirement(
@@ -377,9 +361,7 @@ async def stream_planning_events(
     except ComposerThreadNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
-    raw_cursor = request.headers.get("last-event-id") or request.query_params.get(
-        "last_event_id"
-    )
+    raw_cursor = request.headers.get("last-event-id") or request.query_params.get("last_event_id")
     after: PlanningEventCursor | None = None
     if raw_cursor:
         after = _resolve_resume_cursor(
