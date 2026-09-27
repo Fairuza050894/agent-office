@@ -141,8 +141,7 @@ class IntentResolver:
             return IntentResolution(
                 resolved_intent=ComposerIntent.ASK,
                 reason_summary=(
-                    "AUTO detected a read-only question with no "
-                    "repository-changing request."
+                    "AUTO detected a read-only question with no repository-changing request."
                 ),
                 requires_user_action=False,
             )
