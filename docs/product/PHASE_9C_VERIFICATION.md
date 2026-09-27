@@ -3,8 +3,8 @@
 Status: ACCEPTED FOR INTERACTION REVIEW
 Date: 2026-09-27
 Branch: `phase-9c-work`
-Implementation checkpoint: `b277332`
-Reference-integration checkpoint: pending this documentation commit
+Implementation checkpoint: `607d90c`
+Reference-integration checkpoint: `c880444`
 Pull request: #10
 Merge policy: manual only
 
@@ -16,11 +16,16 @@ planning domain while preserving the planning / execution boundary.
 Delivered behavior:
 
 - Composer Send creates durable planning truth
+- persisted Project planning history is restored after Office reload/re-entry
+- Composer planning-history selector can reopen prior durable threads
+- unprepared OPEN threads may be reused only as a recovery path
 - deterministic intent resolution for AUTO / ASK / PLAN / BRAINSTORM / RUN
 - AUTO never silently starts execution
 - deterministic Dynamic Team Formation
+- every vNext role is explained as INCLUDED / DEFERRED / EXCLUDED
 - vNext role catalog without destructive legacy-role renames
 - Project Re-entry BRIEF
+- truth-complete re-entry sections use explicit NOT_INSPECTED markers when repository facts are unavailable
 - explicit deferred ACTION artifacts
 - durable QUESTION / Decision Queue
 - user-selectable QUESTION options and recommendation
@@ -131,9 +136,9 @@ Decision resolution never creates operational execution truth.
 
 ## Verification
 
-Implementation checkpoint `b277332`.
+Implementation checkpoint `607d90c`.
 
-GitHub Actions run `36309052874`: **GREEN**
+GitHub Actions run `36314791584`: **GREEN**
 
 ```text
 repository whitespace  passed
@@ -144,7 +149,7 @@ ruff format            203 files already formatted
 mypy                   no issues in 136 source files
 
 frontend vitest        15 files passed
-frontend tests         71 passed
+frontend tests         72 passed
 frontend typecheck     passed
 frontend lint          0 errors, 2 existing startLoop warnings
 frontend build         passed
@@ -152,6 +157,18 @@ frontend build         passed
 
 The current documentation checkpoint `43ed757` also completed GitHub Actions
 successfully.
+
+## Phase 9C hardening notes
+
+Post-reference hardening also closes two UI/domain gaps discovered during final
+audit:
+
+- Project-scoped planning history now survives reload and can be reopened.
+- Dynamic Team Formation no longer omits unused roles silently; excluded roles
+  are explicit and carry deterministic reasons.
+
+The Project Re-entry BRIEF now exposes all roadmap-required sections while
+refusing to invent repository facts before Phase 9D read-only context exists.
 
 ## Future contracts strengthened by the reference
 
