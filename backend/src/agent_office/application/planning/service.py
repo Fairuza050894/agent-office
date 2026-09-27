@@ -202,6 +202,12 @@ class ComposerThreadService:
             raise PlanningTransitionError("Archived Composer thread is read-only")
         if resolved_intent is ComposerIntent.AUTO:
             raise PlanningTransitionError("Resolved Composer intent must not be AUTO")
+        if thread.resolved_intent is not None:
+            if thread.resolved_intent is resolved_intent:
+                return thread
+            raise PlanningTransitionError(
+                "Composer intent resolution is immutable once recorded"
+            )
 
         now = utc_now(self._clock)
         resolved = replace(

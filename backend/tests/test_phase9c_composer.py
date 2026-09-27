@@ -4,7 +4,13 @@ from __future__ import annotations
 
 from conftest import Harness, HarnessFactory
 
-from agent_office.domain import BUILT_IN_AGENT_PROFILES
+from agent_office.domain import (
+    BUILT_IN_AGENT_PROFILES,
+    ComposerIntent,
+    ComposerThreadId,
+    TeamMemberDisposition,
+    TeamPhase,
+)
 
 
 def _new_thread(
@@ -273,6 +279,89 @@ def test_prepare_is_idempotent_after_first_team_proposal(
                 (str(thread["id"]),),
             ).fetchone()[0]
             == 1
+        )
+        assert (
+            connection.execute(
+                "SELECT COUNT(*) FROM planning_artifacts WHERE thread_id = ?",
+                (str(thread["id"]),),
+            ).fetchone()[0]
+            == 2
+        )
+        assert (
+            connection.execute(
+                """
+                SELECT COUNT(*)
+                FROM planning_events
+                WHERE thread_id = ? AND event_type = 'intent.resolved'
+                """,
+                (str(thread["id"]),),
+            ).fetchone()[0]
+            == 1
+        )
+
+
+def test_prepare_recovers_missing_artifacts_after_partial_planning_write(
+    harness_factory: HarnessFactory,
+) -> None:
+    harness = harness_factory()
+    project = harness.register_project("Recovery Planning")
+    thread = _new_thread(harness, project["id"])
+    thread_id = ComposerThreadId.parse(str(thread["id"]))
+
+    message = harness.client.post(
+        f"/api/composer/threads/{thread['id']}/messages",
+        json={"content": "Plan backend API work before implementation."},
+    )
+    assert message.status_code == 201
+
+    harness.app.state.composer_thread_service.resolve_intent(
+        thread_id,
+        resolved_intent=ComposerIntent.PLAN,
+        reason_summary="Simulated partial preparation.",
+        requires_user_action=False,
+    )
+    harness.app.state.team_proposal_service.propose(
+        thread_id,
+        phase=TeamPhase.PLANNING,
+        rationale_summary="Simulated persisted team before artifact creation.",
+        members=(
+            (
+                "product-manager",
+                TeamMemberDisposition.INCLUDED,
+                "Own planning scope.",
+            ),
+            (
+                "backend-engineer",
+                TeamMemberDisposition.DEFERRED,
+                "Wait for approved requirements.",
+            ),
+        ),
+    )
+
+    response = harness.client.post(f"/api/composer/threads/{thread['id']}/prepare")
+    assert response.status_code == 200, response.text
+    artifacts = response.json()["artifacts"]
+
+    assert {artifact["title"] for artifact in artifacts} == {
+        "Project re-entry brief",
+        "Deferred implementation",
+    }
+
+    database = harness.app.state.project_database
+    with database.connection() as connection:
+        assert (
+            connection.execute(
+                "SELECT COUNT(*) FROM team_proposals WHERE thread_id = ?",
+                (str(thread["id"]),),
+            ).fetchone()[0]
+            == 1
+        )
+        assert (
+            connection.execute(
+                "SELECT COUNT(*) FROM planning_artifacts WHERE thread_id = ?",
+                (str(thread["id"]),),
+            ).fetchone()[0]
+            == 2
         )
 
 

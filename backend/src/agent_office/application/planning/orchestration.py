@@ -73,18 +73,13 @@ class UniversalComposerPlanningService:
             project_selected=thread.project_id is not None,
         )
 
-        existing_teams = self._teams.list_for_thread(thread.id)
-        existing_artifacts = self._artifacts.list_for_thread(thread.id)
-
-        if thread.resolved_intent is not None and existing_teams:
-            proposal, members = existing_teams[-1]
-            return ComposerPreparation(
-                thread=thread,
-                resolution=resolution,
-                team_proposal=proposal,
-                team_members=members,
-                artifacts=existing_artifacts,
-                requirements=self._requirements.list_for_thread(thread.id),
+        if (
+            thread.resolved_intent is not None
+            and thread.resolved_intent is not resolution.resolved_intent
+        ):
+            raise ValueError(
+                "Latest user message conflicts with the immutable resolved intent "
+                f"{thread.resolved_intent.value}"
             )
 
         thread = self._composer.resolve_intent(
@@ -94,87 +89,98 @@ class UniversalComposerPlanningService:
             requires_user_action=resolution.requires_user_action,
         )
 
-        formation = self._team_formation.form(
-            resolution=resolution,
-            instruction=latest_user.content,
-            project_selected=thread.project_id is not None,
-        )
-        proposal, members = self._teams.propose(
-            thread.id,
-            phase=formation.phase,
-            rationale_summary=formation.rationale_summary,
-            members=tuple(
-                (member.role_key, member.disposition, member.reason)
-                for member in formation.members
-            ),
-        )
+        existing_teams = self._teams.list_for_thread(thread.id)
+        if existing_teams:
+            proposal, members = existing_teams[-1]
+        else:
+            formation = self._team_formation.form(
+                resolution=resolution,
+                instruction=latest_user.content,
+                project_selected=thread.project_id is not None,
+            )
+            proposal, members = self._teams.propose(
+                thread.id,
+                phase=formation.phase,
+                rationale_summary=formation.rationale_summary,
+                members=tuple(
+                    (member.role_key, member.disposition, member.reason)
+                    for member in formation.members
+                ),
+            )
 
-        created: list[PlanningArtifact] = []
-        created.append(
+        existing_artifacts = self._artifacts.list_for_thread(thread.id)
+        if not _has_artifact(
+            existing_artifacts,
+            PlanningArtifactType.BRIEF,
+            "Project re-entry brief",
+        ):
             self._create_reentry_brief(
                 thread=thread,
                 instruction=latest_user.content,
                 resolution=resolution,
                 members=members,
             )
-        )
 
         deferred_roles = tuple(
             member.role_key
             for member in members
             if member.disposition is TeamMemberDisposition.DEFERRED
         )
-        if deferred_roles:
-            created.append(
-                self._artifacts.create(
-                    thread.id,
-                    artifact_type=PlanningArtifactType.ACTION,
-                    title="Deferred implementation",
-                    status=PlanningArtifactStatus.OPEN,
-                    author_role_key="product-manager",
-                    content=(
-                        ("state", "DEFERRED"),
-                        ("roles", ", ".join(deferred_roles)),
-                        (
-                            "reason",
-                            "Implementation roles remain inactive until requirements are approved.",
-                        ),
-                        (
-                            "resume_when",
-                            "A later execution proposal is explicitly approved by the user.",
-                        ),
+        if deferred_roles and not _has_artifact(
+            existing_artifacts,
+            PlanningArtifactType.ACTION,
+            "Deferred implementation",
+        ):
+            self._artifacts.create(
+                thread.id,
+                artifact_type=PlanningArtifactType.ACTION,
+                title="Deferred implementation",
+                status=PlanningArtifactStatus.OPEN,
+                author_role_key="product-manager",
+                content=(
+                    ("state", "DEFERRED"),
+                    ("roles", ", ".join(deferred_roles)),
+                    (
+                        "reason",
+                        "Implementation roles remain inactive until requirements are approved.",
                     ),
-                )
+                    (
+                        "resume_when",
+                        "A later execution proposal is explicitly approved by the user.",
+                    ),
+                ),
             )
 
-        if resolution.requires_user_action:
-            created.append(
-                self._artifacts.create(
-                    thread.id,
-                    artifact_type=PlanningArtifactType.QUESTION,
-                    title="Decision required",
-                    status=PlanningArtifactStatus.OPEN,
-                    author_role_key="product-manager",
-                    content=(
+        if resolution.requires_user_action and not _has_artifact(
+            existing_artifacts,
+            PlanningArtifactType.QUESTION,
+            "Decision required",
+        ):
+            self._artifacts.create(
+                thread.id,
+                artifact_type=PlanningArtifactType.QUESTION,
+                title="Decision required",
+                status=PlanningArtifactStatus.OPEN,
+                author_role_key="product-manager",
+                content=(
+                    (
+                        "question",
                         (
-                            "question",
-                            (
-                                "Confirm the Project and approved planning scope before "
-                                "repository-changing execution."
-                            ),
-                        ),
-                        ("option_a", "Continue in read-only planning mode."),
-                        (
-                            "option_b",
-                            "Select/confirm the Project, then review and approve requirements.",
-                        ),
-                        ("option_c", "Defer this work."),
-                        (
-                            "recommendation",
-                            "Continue planning first; do not start repository-changing work yet.",
+                            "Confirm the Project and approved planning scope before "
+                            "repository-changing execution."
                         ),
                     ),
-                )
+                    ("option_a", "Continue in read-only planning mode."),
+                    (
+                        "option_b",
+                        "Select/confirm the Project, then review and approve requirements.",
+                    ),
+                    ("option_c", "Defer this work."),
+                    (
+                        "recommendation",
+                        "Continue planning first; do not start repository-changing work yet.",
+                    ),
+                ),
             )
 
         return ComposerPreparation(
@@ -182,7 +188,7 @@ class UniversalComposerPlanningService:
             resolution=resolution,
             team_proposal=proposal,
             team_members=members,
-            artifacts=tuple(created),
+            artifacts=self._artifacts.list_for_thread(thread.id),
             requirements=self._requirements.list_for_thread(thread.id),
         )
 
@@ -269,3 +275,15 @@ def _latest_user_message(messages: tuple[ComposerMessage, ...]) -> ComposerMessa
         if message.actor_type is ComposerActorType.USER:
             return message
     raise ValueError("Composer thread has no user message to prepare")
+
+
+
+def _has_artifact(
+    artifacts: tuple[PlanningArtifact, ...],
+    artifact_type: PlanningArtifactType,
+    title: str,
+) -> bool:
+    return any(
+        artifact.artifact_type is artifact_type and artifact.title == title
+        for artifact in artifacts
+    )
