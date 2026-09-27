@@ -342,9 +342,7 @@ class SQLitePlanningArtifactRepository(PlanningArtifactRepository):
                     ),
                 )
                 if cursor.rowcount != 1:
-                    raise PlanningPersistenceError(
-                        "Planning question resolution was rejected"
-                    )
+                    raise PlanningPersistenceError("Planning question resolution was rejected")
                 connection.execute(
                     """
                     INSERT INTO planning_artifacts (
@@ -366,9 +364,7 @@ class SQLitePlanningArtifactRepository(PlanningArtifactRepository):
                     ),
                 )
         except sqlite3.IntegrityError as exc:
-            raise PlanningPersistenceError(
-                "Planning question resolution invariant failed"
-            ) from exc
+            raise PlanningPersistenceError("Planning question resolution invariant failed") from exc
 
     def list_by_thread(self, thread_id: ComposerThreadId) -> tuple[PlanningArtifact, ...]:
         with self._database.connection() as connection:
