@@ -128,6 +128,79 @@ const ROLE_STATIONS: Record<string, string> = {
   'ux-reviewer': 'desk-b4',
 }
 
+const ZONE_PLACEMENTS: Record<OfficeZoneKey, StationPlacement[]> = {
+  entrance: [
+    { position: point(-0.8, -5.75), yaw: 0 },
+    { position: point(0, -5.75), yaw: 0 },
+    { position: point(0.8, -5.75), yaw: 0 },
+  ],
+  'coffee-bar': [
+    { position: point(6.25, -3.05), yaw: Math.PI * 0.5 },
+    { position: point(7.0, -2.85), yaw: Math.PI * 0.5 },
+  ],
+  pantry: [
+    { position: point(6.25, -2.45), yaw: Math.PI },
+    { position: point(7.15, -2.35), yaw: Math.PI },
+  ],
+  lounge: [
+    { position: point(-7.6, 4.75), yaw: Math.PI * 0.35 },
+    { position: point(-6.4, 4.65), yaw: -Math.PI * 0.35 },
+  ],
+  'game-corner': [
+    { position: point(6.45, 4.85), yaw: Math.PI * 0.5 },
+    { position: point(7.65, 4.8), yaw: -Math.PI * 0.5 },
+  ],
+  'quiet-room': [
+    { position: point(-7.35, -3.65), yaw: 0 },
+    { position: point(-6.55, -3.65), yaw: 0 },
+  ],
+  'engineering-pod': WORKSTATIONS.map((workstation) => ({
+    position: workstation.station.clone(),
+    yaw: workstation.yaw,
+  })),
+  'qa-bench': [
+    { position: point(-3.0, 3.64), yaw: Math.PI },
+    { position: point(-1.0, 3.64), yaw: Math.PI },
+  ],
+  'review-wall': [
+    { position: point(5.1, 0.25), yaw: Math.PI * 0.5 },
+    { position: point(5.1, 1.35), yaw: Math.PI * 0.5 },
+  ],
+  'docs-desk': [
+    { position: point(3.0, 3.64), yaw: Math.PI },
+    { position: point(1.0, 3.64), yaw: Math.PI },
+  ],
+  'planning-table': [
+    { position: point(-8.0, -4.65), yaw: 0 },
+    { position: point(-7.2, -4.65), yaw: 0 },
+    { position: point(-6.4, -4.65), yaw: 0 },
+    { position: point(-8.0, -2.65), yaw: Math.PI },
+    { position: point(-7.2, -2.65), yaw: Math.PI },
+    { position: point(-6.4, -2.65), yaw: Math.PI },
+  ],
+  'architecture-wall': [
+    { position: point(5.2, 0.3), yaw: Math.PI * 0.5 },
+    { position: point(5.2, 1.3), yaw: Math.PI * 0.5 },
+    { position: point(5.2, 2.3), yaw: Math.PI * 0.5 },
+  ],
+  'decision-room': [
+    { position: point(-7.55, 4.5), yaw: Math.PI * 0.25 },
+    { position: point(-6.45, 4.45), yaw: -Math.PI * 0.25 },
+  ],
+}
+
+export function officeZonePlacement(
+  zone: OfficeZoneKey,
+  index: number,
+): StationPlacement {
+  const placements = ZONE_PLACEMENTS[zone]
+  const placement = placements[index % placements.length]
+  return {
+    position: placement.position.clone(),
+    yaw: placement.yaw,
+  }
+}
+
 const WAITING_BAYS = [
   point(-5.1, 0.35),
   point(-5.1, 1.15),
