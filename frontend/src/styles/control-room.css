@@ -438,7 +438,7 @@ body {
 }
 
 .office-operations-dock.dock-expanded {
-  height: min(40vh, 390px);
+  height: min(62vh, 620px);
 }
 
 .office-dock-header {
@@ -470,7 +470,35 @@ body {
 
 .office-dock-actions {
   display: flex;
+  align-items: center;
   gap: 4px;
+}
+
+.office-dock-resize-handle {
+  display: grid;
+  width: 25px;
+  height: 25px;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: #60798b;
+  cursor: ns-resize;
+  touch-action: none;
+  user-select: none;
+}
+
+.office-dock-resize-handle:hover,
+.office-dock-resize-handle:focus-visible {
+  border-color: #2c4454;
+  background: #10202b;
+  color: #bdd0dc;
+  outline: none;
+}
+
+.office-dock-resize-handle span {
+  font-family: var(--ao-mono);
+  font-size: .72rem;
+  line-height: 1;
 }
 
 .office-dock-action {
@@ -522,6 +550,8 @@ body {
 .office-dock-scroll {
   height: calc(100% - 31px);
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
   scrollbar-width: thin;
   scrollbar-color: #314654 #0d1822;
 }
@@ -810,6 +840,49 @@ body {
 @media (min-width: 769px) {
   .office-shell-focus .app-sidebar {
     width: 188px;
+    transition: width .16s ease;
+  }
+
+  .office-shell-focus .sidebar-collapse-btn {
+    display: grid;
+    width: 26px;
+    height: 26px;
+    flex: 0 0 26px;
+    place-items: center;
+    border: 1px solid #283b49;
+    border-radius: 4px;
+    background: #0e1c27;
+    color: #7f95a5;
+    cursor: pointer;
+  }
+
+  .office-shell-focus .sidebar-collapse-btn:hover,
+  .office-shell-focus .sidebar-collapse-btn:focus-visible {
+    border-color: #3a5668;
+    color: #d7e4ec;
+    outline: none;
+  }
+
+  .office-shell-focus .app-sidebar.sidebar-collapsed {
+    width: 52px;
+  }
+
+  .office-shell-focus .app-sidebar.sidebar-collapsed .sidebar-brand {
+    min-height: 96px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 9px;
+    padding: 10px 6px;
+  }
+
+  .office-shell-focus .app-sidebar.sidebar-collapsed .brand-header,
+  .office-shell-focus .app-sidebar.sidebar-collapsed .sidebar-nav,
+  .office-shell-focus .app-sidebar.sidebar-collapsed .sidebar-footer {
+    display: none;
+  }
+
+  .office-shell-focus .app-sidebar.sidebar-collapsed .brand-mark {
+    margin: 0;
   }
 
   .office-shell-focus .brand-subtitle {
