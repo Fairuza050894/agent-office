@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import type {
   ComposerIntent,
@@ -20,6 +20,10 @@ export interface UniversalComposerShellProps {
   selectedProjectId: string
   onProjectChange?: (projectId: string) => void
   projectLocked?: boolean
+  threads?: ComposerThread[]
+  selectedThreadId?: string
+  onThreadChange?: (threadId: string) => void
+  isThreadLoading?: boolean
   executors: Executor[]
   selectedExecutorId?: string | null
   contextLabel?: string
@@ -36,6 +40,10 @@ export function UniversalComposerShell({
   selectedProjectId,
   onProjectChange,
   projectLocked = false,
+  threads = [],
+  selectedThreadId = '',
+  onThreadChange,
+  isThreadLoading = false,
   executors,
   selectedExecutorId,
   contextLabel,
@@ -50,9 +58,21 @@ export function UniversalComposerShell({
   const [instruction, setInstruction] = useState('')
   const [executorId, setExecutorId] = useState(selectedExecutorId ?? '')
 
+  useEffect(() => {
+    if (activeThread) {
+      setIntent(activeThread.requested_intent)
+      setExecutorId(activeThread.executor_id ?? selectedExecutorId ?? '')
+      return
+    }
+
+    setIntent('AUTO')
+    setExecutorId(selectedExecutorId ?? '')
+  }, [activeThread, selectedExecutorId])
+
   const canSend =
     Boolean(onSubmit) &&
     !isSubmitting &&
+    !isThreadLoading &&
     Boolean(selectedProjectId) &&
     Boolean(instruction.trim())
 
@@ -99,7 +119,9 @@ export function UniversalComposerShell({
           className="office-composer-select"
           aria-label="Composer project"
           value={selectedProjectId}
-          disabled={projectLocked || projects.length === 0 || isSubmitting}
+          disabled={
+            projectLocked || projects.length === 0 || isSubmitting || isThreadLoading
+          }
           onChange={(event) => onProjectChange?.(event.target.value)}
         >
           {projects.length === 0 ? (
@@ -115,9 +137,29 @@ export function UniversalComposerShell({
 
         <select
           className="office-composer-select"
+          aria-label="Composer planning history"
+          value={selectedThreadId}
+          disabled={
+            !selectedProjectId ||
+            threads.length === 0 ||
+            isSubmitting ||
+            isThreadLoading
+          }
+          onChange={(event) => onThreadChange?.(event.target.value)}
+        >
+          <option value="">New planning thread</option>
+          {threads.map((thread) => (
+            <option key={thread.id} value={thread.id}>
+              {thread.title ?? `Thread ${thread.id.slice(0, 8)}`} · {thread.status}
+            </option>
+          ))}
+        </select>
+
+        <select
+          className="office-composer-select"
           aria-label="Composer intent"
           value={intent}
-          disabled={isSubmitting}
+          disabled={isSubmitting || isThreadLoading}
           onChange={(event) => setIntent(event.target.value as ComposerIntent)}
         >
           <option value="AUTO">AUTO</option>
@@ -162,7 +204,7 @@ export function UniversalComposerShell({
           id="office-universal-composer"
           className="office-composer-input"
           value={instruction}
-          disabled={isSubmitting}
+          disabled={isSubmitting || isThreadLoading}
           onChange={(event) => setInstruction(event.target.value)}
           onKeyDown={(event) => {
             if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
@@ -179,7 +221,7 @@ export function UniversalComposerShell({
             disabled={!canSend}
             onClick={() => void submit()}
           >
-            {isSubmitting ? 'Preparing…' : 'Send'}
+            {isThreadLoading ? 'Restoring…' : isSubmitting ? 'Preparing…' : 'Send'}
           </button>
           <button
             type="button"
@@ -198,7 +240,7 @@ export function UniversalComposerShell({
         </span>
       ) : (
         <span className="office-composer-note">
-          Send creates durable planning truth only. AUTO never starts repository-changing execution.
+          Stored planning threads can be reopened for decisions and history. New prompts start a fresh deterministic planning turn unless an unprepared OPEN thread is being recovered.
         </span>
       )}
     </section>
