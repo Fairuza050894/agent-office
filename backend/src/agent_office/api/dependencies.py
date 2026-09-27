@@ -181,7 +181,6 @@ def get_verification_service(request: Request) -> VerificationService:
     return cast(VerificationService, request.app.state.verification_service)
 
 
-
 def get_composer_thread_service(request: Request) -> ComposerThreadService:
     """Return the durable Composer thread service."""
 
