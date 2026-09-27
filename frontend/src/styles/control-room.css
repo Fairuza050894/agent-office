@@ -2159,3 +2159,107 @@ body {
     gap: 1px;
   }
 }
+
+
+/* Phase 9C actionable planning decisions */
+
+.office-planning-question {
+  display: grid;
+  gap: 7px;
+  padding: 9px;
+  border-bottom: 1px solid #152732;
+  background: rgba(167, 139, 250, .025);
+}
+
+.office-planning-question > p {
+  margin: 0;
+  color: #9cafbc;
+  font-size: .54rem;
+  line-height: 1.45;
+}
+
+.office-planning-recommendation {
+  display: grid;
+  gap: 2px;
+  padding: 6px 7px;
+  border-left: 2px solid rgba(167, 139, 250, .55);
+  background: rgba(167, 139, 250, .055);
+}
+
+.office-planning-recommendation span {
+  color: #756b9a;
+  font-family: var(--ao-mono);
+  font-size: .42rem;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.office-planning-recommendation strong {
+  color: #b8acd9;
+  font-size: .5rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.office-planning-options {
+  display: grid;
+  gap: 4px;
+}
+
+.office-planning-option {
+  display: grid;
+  width: 100%;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 6px;
+  align-items: start;
+  padding: 5px 6px;
+  border: 1px solid #293e4b;
+  border-radius: 3px;
+  background: #0d1b25;
+  color: #8da2b0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.office-planning-option:hover:not(:disabled),
+.office-planning-option:focus-visible:not(:disabled) {
+  border-color: #476273;
+  background: #132631;
+  color: #d4e0e7;
+}
+
+.office-planning-option > span {
+  display: grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  border: 1px solid #344b59;
+  border-radius: 3px;
+  color: #8cb5c9;
+  font-family: var(--ao-mono);
+  font-size: .43rem;
+}
+
+.office-planning-option strong {
+  color: inherit;
+  font-size: .49rem;
+  font-weight: 550;
+  line-height: 1.4;
+}
+
+.office-planning-option:disabled {
+  opacity: .5;
+  cursor: default;
+}
+
+.office-requirement-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.office-team-decision.danger {
+  border-color: rgba(239, 106, 103, .26);
+  background: rgba(239, 106, 103, .055);
+  color: #d9908e;
+}
