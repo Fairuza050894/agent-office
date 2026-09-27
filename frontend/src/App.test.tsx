@@ -459,8 +459,12 @@ describe('Agent Office operational shell', () => {
       )
     })
 
-    expect(within(composer).getByText('Continue the existing project after a break.')).toBeInTheDocument()
-    expect(within(composer).getByText(/ACTIVE/)).toBeInTheDocument()
+    expect(
+      within(composer).getByText('Continue the existing project after a break.'),
+    ).toBeInTheDocument()
+    expect(
+      within(composer).getByText(`Thread ${thread.id.slice(0, 8)} · ACTIVE`),
+    ).toBeInTheDocument()
     expect(
       await screen.findByRole('region', { name: 'Planning team proposal' }),
     ).toHaveTextContent('ACCEPTED')
