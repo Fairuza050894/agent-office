@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 
-import type { AgentRun, RunStage } from '../api'
+import type { RunStage } from '../api'
 import type { StationPlacement } from './character'
 import type { OfficeFloorKey, OfficeZoneKey } from './livingOffice'
 
@@ -727,6 +727,18 @@ function createLoungeAndFocus(parent: THREE.Group): void {
   parent.add(createPlant(point(x + 1.65, z + 1.35), 1.15))
 }
 
+function createQuietRoom(parent: THREE.Group): void {
+  const x = -3.6
+  const z = -2.15
+
+  addBox(parent, [4.2, 0.04, 3.3], [x, 0.045, z], 0x40505a)
+  addGlassPanel(parent, [4.2, 2.35, 0.06], [x, 1.18, z - 1.62])
+  addGlassPanel(parent, [0.06, 2.35, 3.3], [x - 2.08, 1.18, z])
+  addBox(parent, [2.65, 0.025, 1.75], [x, 0.075, z + 0.2], 0x416b5c)
+  addBox(parent, [2.5, 1.05, 0.08], [x, 1.45, z - 1.52], 0x5f6f78)
+  parent.add(createPlant(point(x + 1.45, z + 1.05), 0.72))
+}
+
 function createReviewWall(parent: THREE.Group): void {
   addBox(parent, [0.14, 2.45, 2.5], [6.05, 1.22, 0.75], 0x46545f)
   const panel = addBox(parent, [0.05, 1.28, 1.75], [5.96, 1.55, 0.75], 0x27445d)
@@ -881,39 +893,68 @@ export function stageCenter(index: number): THREE.Vector3 {
   return WORKSTATIONS[index % WORKSTATIONS.length].station.clone()
 }
 
-export function createOfficeEnvironment(
-  environment: THREE.Group,
-  _stages: RunStage[],
-  agents: AgentRun[],
-): Map<string, StationPlacement> {
-  clearGroup(environment)
-
+function createOfficeShell(environment: THREE.Group): void {
   addBox(environment, [20.5, 0.34, 14.5], [0, -0.22, 0], 0x111821)
   createWoodFloor(environment)
-
   addBox(environment, [20, 3.2, 0.16], [0, 1.56, -6.98], 0x4b5a67)
   addBox(environment, [0.16, 3.2, 14], [-9.92, 1.56, 0], 0x46545f)
   addBox(environment, [0.16, 3.2, 14], [9.92, 1.56, 0], 0x46545f)
-
   createWindowWall(environment)
   environment.add(createDoor(new THREE.Vector3(0, 0, -6.9)))
-  createMeetingRoom(environment)
+  createCeilingLights(environment)
+}
+
+function createCommonsFloor(environment: THREE.Group): void {
   createPantry(environment)
   createGameRoom(environment)
   createLoungeAndFocus(environment)
-  createReviewWall(environment)
-  createWorkArea(environment)
-  createCeilingLights(environment)
+  createQuietRoom(environment)
 
-  const meetingLight = new THREE.PointLight(0xffe0b0, 0.72, 7.5)
-  meetingLight.position.set(-7.1, 2.8, -3.6)
   const pantryLight = new THREE.PointLight(0xffd6a0, 0.82, 7)
   pantryLight.position.set(7.1, 2.65, -4.0)
   const gameLight = new THREE.PointLight(0x8abbd4, 0.58, 6.5)
   gameLight.position.set(7.0, 2.5, 4.2)
   const loungeLight = new THREE.PointLight(0xffcf9a, 0.46, 6)
   loungeLight.position.set(-7.0, 2.4, 4.2)
-  environment.add(meetingLight, pantryLight, gameLight, loungeLight)
+  environment.add(pantryLight, gameLight, loungeLight)
+}
+
+function createBuildFloor(environment: THREE.Group): void {
+  createWorkArea(environment)
+  createReviewWall(environment)
+  createPantry(environment)
+
+  const reviewLight = new THREE.PointLight(0xa8d2e8, 0.52, 6.5)
+  reviewLight.position.set(5.6, 2.45, 0.9)
+  const deskLight = new THREE.PointLight(0xffe0b0, 0.48, 8)
+  deskLight.position.set(0, 3.0, 1.5)
+  environment.add(reviewLight, deskLight)
+}
+
+function createStrategyFloor(environment: THREE.Group): void {
+  createMeetingRoom(environment)
+  createReviewWall(environment)
+  createLoungeAndFocus(environment)
+
+  const meetingLight = new THREE.PointLight(0xffe0b0, 0.72, 7.5)
+  meetingLight.position.set(-7.1, 2.8, -3.6)
+  const reviewLight = new THREE.PointLight(0x8abbd4, 0.5, 6.5)
+  reviewLight.position.set(5.7, 2.5, 0.8)
+  environment.add(meetingLight, reviewLight)
+}
+
+export function createOfficeEnvironment(
+  environment: THREE.Group,
+  _stages: RunStage[],
+  members: OfficeEnvironmentMember[],
+  floor: OfficeFloorKey = 'build',
+): Map<string, StationPlacement> {
+  clearGroup(environment)
+  createOfficeShell(environment)
+
+  if (floor === 'commons') createCommonsFloor(environment)
+  else if (floor === 'strategy') createStrategyFloor(environment)
+  else createBuildFloor(environment)
 
   environment.add(createPlant(point(-4.65, -1.7), 0.9))
   environment.add(createPlant(point(4.65, -1.7), 0.9))
@@ -922,15 +963,33 @@ export function createOfficeEnvironment(
 
   const stations = new Map<string, StationPlacement>()
   const used = new Set<string>()
+  const zoneUse = new Map<OfficeZoneKey, number>()
 
-  agents.forEach((agent) => {
-    const workstation = roleWorkstation(agent.agent_profile_key, used)
-    used.add(workstation.id)
-    stations.set(agent.id, {
-      position: workstation.station.clone(),
-      yaw: workstation.yaw,
-    })
+  members.forEach((member) => {
+    if (member.zone) {
+      const index = zoneUse.get(member.zone) ?? 0
+      stations.set(member.id, officeZonePlacement(member.zone, index))
+      zoneUse.set(member.zone, index + 1)
+      return
+    }
+
+    if (floor === 'build') {
+      const workstation = roleWorkstation(member.agent_profile_key, used)
+      used.add(workstation.id)
+      stations.set(member.id, {
+        position: workstation.station.clone(),
+        yaw: workstation.yaw,
+      })
+      return
+    }
+
+    const fallbackZone: OfficeZoneKey =
+      floor === 'strategy' ? 'planning-table' : 'lounge'
+    const index = zoneUse.get(fallbackZone) ?? 0
+    stations.set(member.id, officeZonePlacement(fallbackZone, index))
+    zoneUse.set(fallbackZone, index + 1)
   })
 
   return stations
 }
+
