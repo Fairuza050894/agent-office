@@ -134,6 +134,54 @@ BUILT_IN_AGENT_PROFILES: tuple[AgentProfile, ...] = (
         "Updates engineering documentation for the delivered work.",
         AgentAccessMode.BOUNDED_WRITE,
     ),
+    _profile(
+        "product-manager",
+        "Product Manager",
+        "Frames product scope, priorities, decisions, and planning handoffs.",
+        AgentAccessMode.READ_ONLY,
+    ),
+    _profile(
+        "system-analyst",
+        "System Analyst",
+        "Separates factual system behavior, requirements, constraints, and assumptions.",
+        AgentAccessMode.READ_ONLY,
+    ),
+    _profile(
+        "principal-engineer",
+        "Principal Engineer",
+        "Defines technical boundaries, architecture impact, and implementation strategy.",
+        AgentAccessMode.READ_ONLY,
+    ),
+    _profile(
+        "product-designer",
+        "Product Designer",
+        "Defines and reviews user-facing interaction and visual requirements.",
+        AgentAccessMode.READ_ONLY,
+    ),
+    _profile(
+        "backend-engineer",
+        "Backend Engineer",
+        "Implements approved backend scope in an isolated workspace.",
+        AgentAccessMode.WRITE,
+    ),
+    _profile(
+        "frontend-engineer",
+        "Frontend Engineer",
+        "Implements approved frontend scope in an isolated workspace.",
+        AgentAccessMode.WRITE,
+    ),
+    _profile(
+        "qa-engineer",
+        "QA Engineer",
+        "Defines acceptance coverage and independently verifies delivered behavior.",
+        AgentAccessMode.READ_ONLY,
+    ),
+    _profile(
+        "technical-writer",
+        "Technical Writer",
+        "Maintains user and engineering knowledge for approved delivered scope.",
+        AgentAccessMode.BOUNDED_WRITE,
+    ),
 )
 
 _BUILT_IN_BY_KEY: dict[str, AgentProfile] = {

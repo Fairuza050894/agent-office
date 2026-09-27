@@ -1,0 +1,302 @@
+"""Phase 9C acceptance tests for Universal Composer and Dynamic Team Formation."""
+
+from __future__ import annotations
+
+from conftest import Harness, HarnessFactory
+
+from agent_office.domain import BUILT_IN_AGENT_PROFILES
+
+
+def _new_thread(
+    harness: Harness,
+    project_id: str,
+    *,
+    intent: str = "AUTO",
+    title: str = "Phase 9C planning",
+) -> dict[str, object]:
+    response = harness.client.post(
+        "/api/composer/threads",
+        json={
+            "project_id": project_id,
+            "requested_intent": intent,
+            "timezone": "Asia/Jakarta",
+            "title": title,
+        },
+    )
+    assert response.status_code == 201, response.text
+    return response.json()
+
+
+def _prepare(
+    harness: Harness,
+    thread_id: str,
+    instruction: str,
+) -> dict[str, object]:
+    message = harness.client.post(
+        f"/api/composer/threads/{thread_id}/messages",
+        json={"content": instruction},
+    )
+    assert message.status_code == 201, message.text
+
+    response = harness.client.post(f"/api/composer/threads/{thread_id}/prepare")
+    assert response.status_code == 200, response.text
+    return response.json()
+
+
+def _member_map(preparation: dict[str, object]) -> dict[str, dict[str, object]]:
+    proposal = preparation["team_proposal"]
+    assert isinstance(proposal, dict)
+    members = proposal["members"]
+    assert isinstance(members, list)
+    return {
+        str(member["role_key"]): member
+        for member in members
+        if isinstance(member, dict)
+    }
+
+
+def test_auto_project_reentry_stops_at_plan_with_small_planning_cell(
+    harness_factory: HarnessFactory,
+) -> None:
+    harness = harness_factory()
+    project = harness.register_project("TDP")
+    thread = _new_thread(harness, project["id"])
+
+    prepared = _prepare(
+        harness,
+        str(thread["id"]),
+        (
+            "Lanjutkan project TDP yang sudah lama tidak kita handle. "
+            "Rumuskan requirement baru sebelum coding."
+        ),
+    )
+
+    assert prepared["resolution"]["resolved_intent"] == "PLAN"
+    assert prepared["resolution"]["requires_user_action"] is False
+    assert prepared["thread"]["status"] == "ACTIVE"
+
+    members = _member_map(prepared)
+    assert members["product-manager"]["disposition"] == "INCLUDED"
+    assert members["system-analyst"]["disposition"] == "INCLUDED"
+    assert members["principal-engineer"]["disposition"] == "INCLUDED"
+    assert members["backend-engineer"]["disposition"] == "DEFERRED"
+    assert members["frontend-engineer"]["disposition"] == "DEFERRED"
+    assert "qa-engineer" not in members
+
+    artifacts = prepared["artifacts"]
+    assert [artifact["artifact_type"] for artifact in artifacts] == ["BRIEF", "ACTION"]
+    brief = artifacts[0]
+    assert brief["title"] == "Project re-entry brief"
+    assert brief["content"]["project"] == "TDP"
+    assert brief["content"]["repository_state"] == "NOT_INSPECTED_IN_PHASE_9C"
+    assert brief["content"]["execution_state"] == "NOT_STARTED"
+    assert brief["content"]["prior_planning_threads"] == 0
+
+    database = harness.app.state.project_database
+    with database.connection() as connection:
+        assert connection.execute("SELECT COUNT(*) FROM runs").fetchone()[0] == 0
+        assert connection.execute("SELECT COUNT(*) FROM agent_runs").fetchone()[0] == 0
+        assert connection.execute("SELECT COUNT(*) FROM events").fetchone()[0] == 0
+
+
+def test_brainstorm_adds_only_relevant_conditional_review_roles(
+    harness_factory: HarnessFactory,
+) -> None:
+    harness = harness_factory()
+    project = harness.register_project("UI Security")
+    thread = _new_thread(harness, project["id"], intent="BRAINSTORM")
+
+    prepared = _prepare(
+        harness,
+        str(thread["id"]),
+        (
+            "Brainstorm redesign login dashboard UI dan auth permission. "
+            "Kita juga perlu acceptance test yang jelas."
+        ),
+    )
+
+    assert prepared["resolution"]["resolved_intent"] == "BRAINSTORM"
+    members = _member_map(prepared)
+    for role in (
+        "product-manager",
+        "system-analyst",
+        "principal-engineer",
+        "product-designer",
+        "qa-engineer",
+        "security-reviewer",
+    ):
+        assert members[role]["disposition"] == "INCLUDED"
+
+    assert members["frontend-engineer"]["disposition"] == "DEFERRED"
+
+
+def test_explicit_run_is_recorded_but_execution_stays_blocked(
+    harness_factory: HarnessFactory,
+) -> None:
+    harness = harness_factory()
+    project = harness.register_project("Execution Boundary")
+    thread = _new_thread(harness, project["id"], intent="RUN")
+
+    prepared = _prepare(
+        harness,
+        str(thread["id"]),
+        "Implement the approved feature now.",
+    )
+
+    assert prepared["resolution"]["resolved_intent"] == "RUN"
+    assert prepared["resolution"]["requires_user_action"] is True
+    assert prepared["thread"]["status"] == "AWAITING_USER"
+
+    questions = [
+        artifact
+        for artifact in prepared["artifacts"]
+        if artifact["artifact_type"] == "QUESTION"
+    ]
+    assert len(questions) == 1
+    assert questions[0]["content"]["option_a"] == "Continue in read-only planning mode."
+    assert "recommendation" in questions[0]["content"]
+
+    database = harness.app.state.project_database
+    with database.connection() as connection:
+        assert connection.execute("SELECT COUNT(*) FROM tasks").fetchone()[0] == 0
+        assert connection.execute("SELECT COUNT(*) FROM runs").fetchone()[0] == 0
+        assert connection.execute("SELECT COUNT(*) FROM workspaces").fetchone()[0] == 0
+
+
+def test_auto_read_only_question_resolves_to_ask(
+    harness_factory: HarnessFactory,
+) -> None:
+    harness = harness_factory()
+    project = harness.register_project("Architecture Question")
+    thread = _new_thread(harness, project["id"])
+
+    prepared = _prepare(
+        harness,
+        str(thread["id"]),
+        "Bagaimana arsitektur dan dependency service project ini?",
+    )
+
+    assert prepared["resolution"]["resolved_intent"] == "ASK"
+    members = _member_map(prepared)
+    assert members["system-analyst"]["disposition"] == "INCLUDED"
+    assert members["principal-engineer"]["disposition"] == "INCLUDED"
+    assert "backend-engineer" not in members
+    assert "frontend-engineer" not in members
+
+
+def test_team_formation_is_deterministic_for_same_facts(
+    harness_factory: HarnessFactory,
+) -> None:
+    harness = harness_factory()
+    project = harness.register_project("Deterministic Team")
+    instruction = "Plan backend API schema change and regression testing."
+
+    first = _prepare(
+        harness,
+        str(_new_thread(harness, project["id"])["id"]),
+        instruction,
+    )
+    second = _prepare(
+        harness,
+        str(_new_thread(harness, project["id"])["id"]),
+        instruction,
+    )
+
+    def normalized(preparation: dict[str, object]) -> list[tuple[str, str, str, int]]:
+        proposal = preparation["team_proposal"]
+        assert isinstance(proposal, dict)
+        members = proposal["members"]
+        assert isinstance(members, list)
+        return [
+            (
+                str(member["role_key"]),
+                str(member["disposition"]),
+                str(member["reason"]),
+                int(member["order_hint"]),
+            )
+            for member in members
+            if isinstance(member, dict)
+        ]
+
+    assert normalized(first) == normalized(second)
+
+
+def test_project_reentry_brief_references_prior_planning_history(
+    harness_factory: HarnessFactory,
+) -> None:
+    harness = harness_factory()
+    project = harness.register_project("Persistent Planning")
+
+    first = _new_thread(harness, project["id"], title="Initial planning")
+    _prepare(harness, str(first["id"]), "Plan the first bounded change.")
+
+    second = _new_thread(harness, project["id"], title="Return to project")
+    prepared = _prepare(
+        harness,
+        str(second["id"]),
+        "Continue the existing project after a break.",
+    )
+
+    brief = next(
+        artifact
+        for artifact in prepared["artifacts"]
+        if artifact["artifact_type"] == "BRIEF"
+    )
+    assert brief["content"]["prior_planning_threads"] == 1
+    assert brief["content"]["latest_prior_thread"] == "Initial planning"
+    assert brief["content"]["latest_prior_status"] == "ACTIVE"
+
+    history = harness.client.get(f"/api/projects/{project['id']}/composer/threads")
+    assert history.status_code == 200
+    assert [thread["title"] for thread in history.json()] == [
+        "Return to project",
+        "Initial planning",
+    ]
+
+
+def test_prepare_is_idempotent_after_first_team_proposal(
+    harness_factory: HarnessFactory,
+) -> None:
+    harness = harness_factory()
+    project = harness.register_project("Idempotent Planning")
+    thread = _new_thread(harness, project["id"])
+    _prepare(harness, str(thread["id"]), "Plan a UI improvement.")
+
+    second = harness.client.post(f"/api/composer/threads/{thread['id']}/prepare")
+    assert second.status_code == 200
+
+    database = harness.app.state.project_database
+    with database.connection() as connection:
+        assert (
+            connection.execute(
+                "SELECT COUNT(*) FROM team_proposals WHERE thread_id = ?",
+                (str(thread["id"]),),
+            ).fetchone()[0]
+            == 1
+        )
+
+
+def test_phase9c_adds_vnext_roles_without_removing_legacy_profiles() -> None:
+    keys = {profile.key for profile in BUILT_IN_AGENT_PROFILES}
+
+    assert {
+        "architect",
+        "explorer",
+        "backend-developer",
+        "frontend-developer",
+        "qa-reviewer",
+        "security-reviewer",
+        "verifier",
+        "documentation-writer",
+    } <= keys
+
+    assert {
+        "product-manager",
+        "system-analyst",
+        "principal-engineer",
+        "product-designer",
+        "backend-engineer",
+        "frontend-engineer",
+        "qa-engineer",
+        "technical-writer",
+    } <= keys

@@ -26,6 +26,7 @@ from agent_office.application.planning import (
     PlanningEventService,
     RequirementService,
     TeamProposalService,
+    UniversalComposerPlanningService,
 )
 from agent_office.application.projects import ProjectService
 from agent_office.application.recovery import RecoveryService
@@ -145,6 +146,13 @@ def create_app(
         planning_event_service,
         audit_service,
     )
+    universal_composer_planning_service = UniversalComposerPlanningService(
+        composer_thread_service,
+        team_proposal_service,
+        planning_artifact_service,
+        requirement_service,
+        project_service,
+    )
 
     worktree_manager = GitWorktreeManager(resolved_settings.managed_workspace_root)
     workspace_service = WorkspaceService(
@@ -221,6 +229,7 @@ def create_app(
     app.state.team_proposal_service = team_proposal_service
     app.state.planning_artifact_service = planning_artifact_service
     app.state.requirement_service = requirement_service
+    app.state.universal_composer_planning_service = universal_composer_planning_service
     app.state.recovery_service = RecoveryService(run_service, agent_run_service)
     app.state.workspace_service = workspace_service
     app.state.finding_service = finding_service

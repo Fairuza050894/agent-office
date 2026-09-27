@@ -3,14 +3,33 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   api,
   type AgentProfile,
+  type ComposerMessage,
+  type ComposerPreparation,
+  type ComposerThread,
   type Executor,
+  type IntentResolution,
+  type PlanningArtifact,
   type Project,
+  type RequirementCandidate,
+  type TeamProposal,
 } from '../api'
 import { BottomOperationsDock } from '../components/office/BottomOperationsDock'
 import { OfficeCommandRail } from '../components/office/OfficeCommandRail'
-import { UniversalComposerShell } from '../components/office/UniversalComposerShell'
+import {
+  UniversalComposerShell,
+  type ComposerSubmitPayload,
+} from '../components/office/UniversalComposerShell'
 import { OfficeRendererBoundary } from '../components/OfficeRendererBoundary'
 import { OfficeScene } from '../components/OfficeScene'
+
+function localTimezone(): string {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+}
+
+function composerTitle(instruction: string): string {
+  const compact = instruction.replace(/\s+/g, ' ').trim()
+  return compact.length <= 96 ? compact : `${compact.slice(0, 93)}…`
+}
 
 export function OfficeWorkspacePage() {
   const [projects, setProjects] = useState<Project[]>([])
@@ -19,7 +38,19 @@ export function OfficeWorkspacePage() {
   const [selectedProjectId, setSelectedProjectId] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isMaximized, setIsMaximized] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [registryError, setRegistryError] = useState<string | null>(null)
+
+  const [activeThread, setActiveThread] = useState<ComposerThread | null>(null)
+  const [resolution, setResolution] = useState<IntentResolution | null>(null)
+  const [messages, setMessages] = useState<ComposerMessage[]>([])
+  const [planningTeam, setPlanningTeam] = useState<TeamProposal | null>(null)
+  const [planningArtifacts, setPlanningArtifacts] = useState<PlanningArtifact[]>([])
+  const [planningRequirements, setPlanningRequirements] = useState<
+    RequirementCandidate[]
+  >([])
+  const [isPreparing, setIsPreparing] = useState(false)
+  const [planningDecisionBusy, setPlanningDecisionBusy] = useState(false)
+  const [composerError, setComposerError] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
@@ -38,15 +69,17 @@ export function OfficeWorkspacePage() {
           if (current && loadedProjects.some((project) => project.id === current)) {
             return current
           }
-          return loadedProjects.find((project) => project.status === 'ACTIVE')?.id ??
+          return (
+            loadedProjects.find((project) => project.status === 'ACTIVE')?.id ??
             loadedProjects[0]?.id ??
             ''
+          )
         })
-        setError(null)
+        setRegistryError(null)
       })
       .catch((reason) => {
         if (!active) return
-        setError(
+        setRegistryError(
           reason instanceof Error
             ? reason.message
             : 'Office workspace registries are unavailable.',
@@ -85,6 +118,79 @@ export function OfficeWorkspacePage() {
     executors[0]?.id ??
     null
 
+  const resetPlanningView = (projectId: string) => {
+    setSelectedProjectId(projectId)
+    setActiveThread(null)
+    setResolution(null)
+    setMessages([])
+    setPlanningTeam(null)
+    setPlanningArtifacts([])
+    setPlanningRequirements([])
+    setComposerError(null)
+  }
+
+  const preparePlanning = async (payload: ComposerSubmitPayload) => {
+    if (!selectedProjectId) {
+      setComposerError('Select a registered Project before starting project planning.')
+      return
+    }
+
+    setIsPreparing(true)
+    setComposerError(null)
+
+    try {
+      const thread = await api.createComposerThread({
+        project_id: selectedProjectId,
+        requested_intent: payload.intent,
+        timezone: localTimezone(),
+        title: composerTitle(payload.instruction),
+        executor_id: payload.executorId,
+      })
+      const message = await api.postComposerMessage(thread.id, payload.instruction)
+      const prepared: ComposerPreparation = await api.prepareComposerThread(thread.id)
+
+      setActiveThread(prepared.thread)
+      setResolution(prepared.resolution)
+      setMessages([message])
+      setPlanningTeam(prepared.team_proposal)
+      setPlanningArtifacts(prepared.artifacts)
+      setPlanningRequirements(prepared.requirements)
+    } catch (reason) {
+      setComposerError(
+        reason instanceof Error
+          ? reason.message
+          : 'Unable to prepare the planning thread.',
+      )
+    } finally {
+      setIsPreparing(false)
+    }
+  }
+
+  const decideTeam = async (decision: 'accept' | 'reject') => {
+    if (!planningTeam) return
+
+    setPlanningDecisionBusy(true)
+    setComposerError(null)
+    try {
+      const updated =
+        decision === 'accept'
+          ? await api.acceptTeamProposal(planningTeam.id)
+          : await api.rejectTeamProposal(planningTeam.id)
+      setPlanningTeam(updated)
+    } catch (reason) {
+      setComposerError(
+        reason instanceof Error
+          ? reason.message
+          : 'Unable to record the planning-team decision.',
+      )
+    } finally {
+      setPlanningDecisionBusy(false)
+    }
+  }
+
+  const planningMode =
+    resolution?.resolved_intent ?? activeThread?.resolved_intent ?? null
+
   return (
     <div
       className={`page-view office-workspace ${isMaximized ? 'office-maximized' : ''}`}
@@ -92,10 +198,16 @@ export function OfficeWorkspacePage() {
       <OfficeCommandRail
         title="Office"
         projectName={selectedProject?.name ?? 'No Project selected'}
-        modeLabel="Workspace"
-        statusLabel={isLoading ? 'Loading registries' : 'No active Run selected'}
+        modeLabel={planningMode ?? 'Workspace'}
+        statusLabel={
+          isLoading
+            ? 'Loading registries'
+            : activeThread
+              ? `${activeThread.status} planning thread`
+              : 'No active Run selected'
+        }
         meta={
-          error
+          registryError
             ? 'Registry degraded'
             : `${projects.length} Project${projects.length === 1 ? '' : 's'}`
         }
@@ -130,35 +242,54 @@ export function OfficeWorkspacePage() {
       </div>
 
       <UniversalComposerShell
+        key={selectedProjectId || 'unscoped'}
         projects={projects}
         selectedProjectId={selectedProjectId}
-        onProjectChange={setSelectedProjectId}
+        onProjectChange={resetPlanningView}
         executors={executors}
         selectedExecutorId={selectedExecutorId}
         contextLabel={
-          error
-            ? 'Registry data is degraded; composer actions remain unavailable.'
+          registryError
+            ? 'Registry data is degraded; planning may be unavailable.'
             : selectedProject
               ? `${selectedProject.repository.name} · ${selectedProject.default_branch}`
               : 'Register a Project before repository-scoped work.'
         }
+        onSubmit={preparePlanning}
+        isSubmitting={isPreparing}
+        activeThread={activeThread}
+        resolution={resolution}
+        messages={messages}
+        error={composerError}
       />
 
       <BottomOperationsDock
+        key={activeThread?.id ?? 'idle-workspace'}
         events={[]}
         agents={[]}
         profiles={profiles}
         selectedAgentId={null}
         onSelectAgent={() => undefined}
-        modeLabel="Workspace"
-        defaultState="collapsed"
+        modeLabel={
+          activeThread && planningMode
+            ? `${planningMode} · ${activeThread.status}`
+            : 'Workspace'
+        }
+        defaultState={activeThread ? 'normal' : 'collapsed'}
         forceCollapsed={isMaximized}
+        planningThread={activeThread}
+        planningTeam={planningTeam}
+        planningArtifacts={planningArtifacts}
+        planningRequirements={planningRequirements}
+        onAcceptPlanningTeam={() => decideTeam('accept')}
+        onRejectPlanningTeam={() => decideTeam('reject')}
+        planningDecisionBusy={planningDecisionBusy}
       />
 
       <p className="office-workspace-note">
-        Phase 9A establishes the Office-first interaction shell only. No Ambient
-        persona, planning record, or repository-changing action is created
-        without later Phase 9 domain support.
+        Composer planning is durable and separate from operational Run truth.
+        Implementation roles remain inactive until approved requirements pass the
+        later execution-promotion gate.
       </p>
     </div>
   )

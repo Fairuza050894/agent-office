@@ -19,6 +19,11 @@ from agent_office.application.planning.ports import (
     RequirementCandidateRepository,
     TeamProposalRepository,
 )
+from agent_office.application.planning.intent import IntentResolution, IntentResolver
+from agent_office.application.planning.orchestration import (
+    ComposerPreparation,
+    UniversalComposerPlanningService,
+)
 from agent_office.application.planning.runtime import (
     PlanningArtifactDraft,
     PlanningContribution,
@@ -34,12 +39,21 @@ from agent_office.application.planning.service import (
     RequirementService,
     TeamProposalService,
 )
+from agent_office.application.planning.team_formation import (
+    DynamicTeamFormationService,
+    TeamFormationDecision,
+    TeamFormationMember,
+)
 
 __all__ = [
     "ComposerMessageRepository",
     "ComposerThreadNotFoundError",
     "ComposerThreadRepository",
     "ComposerThreadService",
+    "ComposerPreparation",
+    "DynamicTeamFormationService",
+    "IntentResolution",
+    "IntentResolver",
     "DEFAULT_PLANNING_EVENT_PAGE_SIZE",
     "MAX_PLANNING_EVENT_PAGE_SIZE",
     "PlanningArtifactDraft",
@@ -59,7 +73,10 @@ __all__ = [
     "RequirementCandidateRepository",
     "RequirementDraft",
     "RequirementService",
+    "TeamFormationDecision",
+    "TeamFormationMember",
     "TeamProposalNotFoundError",
     "TeamProposalRepository",
     "TeamProposalService",
+    "UniversalComposerPlanningService",
 ]

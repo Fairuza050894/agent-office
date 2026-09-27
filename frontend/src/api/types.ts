@@ -367,3 +367,121 @@ export interface ApiErrorDetail {
   message: string
   detail?: string
 }
+
+
+export type ComposerIntent = 'AUTO' | 'ASK' | 'PLAN' | 'BRAINSTORM' | 'RUN'
+export type ComposerThreadStatus =
+  | 'OPEN'
+  | 'ACTIVE'
+  | 'AWAITING_USER'
+  | 'COMPLETED'
+  | 'ARCHIVED'
+
+export interface CreateComposerThreadRequest {
+  project_id?: string | null
+  requested_intent?: ComposerIntent
+  timezone?: string
+  title?: string | null
+  executor_id?: string | null
+  workflow_id?: string | null
+}
+
+export interface ComposerThread {
+  id: string
+  project_id: string | null
+  requested_intent: ComposerIntent
+  resolved_intent: Exclude<ComposerIntent, 'AUTO'> | null
+  status: ComposerThreadStatus
+  title: string | null
+  timezone: string
+  executor_id: string | null
+  workflow_id: string | null
+  created_at: string
+  updated_at: string
+  completed_at: string | null
+}
+
+export interface ComposerMessage {
+  id: string
+  thread_id: string
+  actor_type: 'USER' | 'ROLE' | 'SYSTEM'
+  role_key: string | null
+  message_kind: 'USER_PROMPT' | 'ROLE_CONTRIBUTION' | 'SYSTEM_SUMMARY'
+  content: string
+  created_at: string
+}
+
+export type TeamProposalStatus =
+  | 'PROPOSED'
+  | 'ACCEPTED'
+  | 'REJECTED'
+  | 'SUPERSEDED'
+
+export interface TeamProposalMember {
+  role_key: string
+  disposition: 'INCLUDED' | 'DEFERRED' | 'EXCLUDED'
+  reason: string
+  order_hint: number
+}
+
+export interface TeamProposal {
+  id: string
+  thread_id: string
+  phase: 'PLANNING' | 'IMPLEMENTATION' | 'REVIEW' | 'DOCUMENTATION'
+  status: TeamProposalStatus
+  rationale_summary: string
+  created_at: string
+  decided_at: string | null
+  members: TeamProposalMember[]
+}
+
+export type PlanningArtifactType =
+  | 'BRIEF'
+  | 'NOTE'
+  | 'DECISION'
+  | 'QUESTION'
+  | 'RISK'
+  | 'ACTION'
+
+export interface PlanningArtifact {
+  id: string
+  thread_id: string
+  artifact_type: PlanningArtifactType
+  title: string
+  content: Record<string, string | number | boolean | null>
+  author_role_key: string | null
+  status: 'DRAFT' | 'OPEN' | 'RESOLVED' | 'ARCHIVED'
+  created_at: string
+  updated_at: string
+}
+
+export interface RequirementCandidate {
+  id: string
+  thread_id: string
+  project_id: string | null
+  title: string
+  problem: string
+  requirement: string
+  rationale: string
+  acceptance_hint: string | null
+  source_roles: string[]
+  status: 'PROPOSED' | 'APPROVED' | 'REJECTED' | 'DEFERRED'
+  created_at: string
+  updated_at: string
+  approved_at: string | null
+  decided_at: string | null
+}
+
+export interface IntentResolution {
+  resolved_intent: Exclude<ComposerIntent, 'AUTO'>
+  reason_summary: string
+  requires_user_action: boolean
+}
+
+export interface ComposerPreparation {
+  thread: ComposerThread
+  resolution: IntentResolution
+  team_proposal: TeamProposal
+  artifacts: PlanningArtifact[]
+  requirements: RequirementCandidate[]
+}

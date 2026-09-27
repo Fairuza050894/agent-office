@@ -189,6 +189,43 @@ class ComposerThreadService:
         self._projects.get_project(project_id)
         return self._threads.list_by_project(project_id)
 
+    def resolve_intent(
+        self,
+        thread_id: ComposerThreadId,
+        *,
+        resolved_intent: ComposerIntent,
+        reason_summary: str,
+        requires_user_action: bool,
+    ) -> ComposerThread:
+        thread = self.get_thread(thread_id)
+        if thread.status is ComposerThreadStatus.ARCHIVED:
+            raise PlanningTransitionError("Archived Composer thread is read-only")
+        if resolved_intent is ComposerIntent.AUTO:
+            raise PlanningTransitionError("Resolved Composer intent must not be AUTO")
+
+        now = utc_now(self._clock)
+        resolved = replace(
+            thread,
+            resolved_intent=resolved_intent,
+            status=(
+                ComposerThreadStatus.AWAITING_USER
+                if requires_user_action
+                else ComposerThreadStatus.ACTIVE
+            ),
+            updated_at=now,
+        )
+        self._threads.save(resolved)
+        self._events.emit(
+            resolved,
+            PlanningEventType.INTENT_RESOLVED,
+            payload=(
+                ("resolved_intent", resolved_intent.value),
+                ("reason_summary", reason_summary),
+                ("requires_user_action", requires_user_action),
+            ),
+        )
+        return resolved
+
     def append_user_message(
         self,
         thread_id: ComposerThreadId,

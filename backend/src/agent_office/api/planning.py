@@ -21,9 +21,11 @@ from agent_office.api.dependencies import (
     get_planning_event_service,
     get_requirement_service,
     get_team_proposal_service,
+    get_universal_composer_planning_service,
 )
 from agent_office.api.planning_models import (
     ComposerMessageResponse,
+    ComposerPreparationResponse,
     ComposerThreadResponse,
     CreateComposerMessageRequest,
     CreateComposerThreadRequest,
@@ -45,6 +47,7 @@ from agent_office.application.planning import (
     RequirementService,
     TeamProposalNotFoundError,
     TeamProposalService,
+    UniversalComposerPlanningService,
 )
 from agent_office.application.projects import ProjectNotFoundError
 from agent_office.domain import (
@@ -80,6 +83,10 @@ RequirementServiceDependency = Annotated[
 PlanningEventServiceDependency = Annotated[
     PlanningEventService,
     Depends(get_planning_event_service),
+]
+UniversalComposerPlanningServiceDependency = Annotated[
+    UniversalComposerPlanningService,
+    Depends(get_universal_composer_planning_service),
 ]
 
 STREAM_POLL_SECONDS = 0.25
@@ -130,6 +137,21 @@ def get_thread(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
 
+@router.get(
+    "/api/projects/{project_id}/composer/threads",
+    response_model=list[ComposerThreadResponse],
+)
+def list_project_threads(
+    project_id: UUID,
+    service: ComposerServiceDependency,
+) -> list[ComposerThreadResponse]:
+    try:
+        threads = service.list_for_project(ProjectId(project_id))
+    except ProjectNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    return [ComposerThreadResponse.from_domain(thread) for thread in threads]
+
+
 @router.post(
     "/api/composer/threads/{thread_id}/messages",
     response_model=ComposerMessageResponse,
@@ -153,6 +175,27 @@ def post_message(
             detail=str(exc),
         ) from exc
     return ComposerMessageResponse.from_domain(message)
+
+
+@router.post(
+    "/api/composer/threads/{thread_id}/prepare",
+    response_model=ComposerPreparationResponse,
+)
+def prepare_thread(
+    thread_id: UUID,
+    service: UniversalComposerPlanningServiceDependency,
+) -> ComposerPreparationResponse:
+    try:
+        preparation = service.prepare(ComposerThreadId(thread_id))
+    except ComposerThreadNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except ProjectNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    except (DomainInvariantError, PlanningTransitionError) as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    return ComposerPreparationResponse.from_application(preparation)
 
 
 @router.get(
