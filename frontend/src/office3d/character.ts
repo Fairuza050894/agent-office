@@ -337,6 +337,7 @@ export function shouldShowOfficeNameplate(
     'COFFEE_BREAK',
     'LUNCH_BREAK',
     'SOCIAL_BREAK',
+    'AVAILABLE',
     'BLOCKED',
     'FAILED',
   ].includes(
