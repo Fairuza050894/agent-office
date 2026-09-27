@@ -84,17 +84,17 @@ No planning UI action may fabricate operational execution.
 Implementation checkpoint:
 
 ```text
-b277332 style: finish phase 9c formatter output
+607d90c style: apply phase 9c formatter output
 ```
 
-GitHub Actions run `36309052874` is GREEN:
+GitHub Actions run `36314791584` is GREEN:
 
 ```text
 backend pytest      657 passed
 ruff                passed
 ruff format         203 files already formatted
 mypy                0 issues / 136 source files
-frontend vitest     15 files / 71 tests passed
+frontend vitest     15 files / 72 tests passed
 frontend typecheck  passed
 frontend lint       0 errors / 2 existing warnings
 frontend build      passed
@@ -103,6 +103,14 @@ repository check    passed
 
 The Decision Queue extension is covered by backend truth-separation/audit tests
 and dedicated frontend dock interaction tests.
+
+Phase 9C hardening additionally verifies:
+
+- persisted planning-thread rehydration and history selection
+- OPEN/unprepared thread recovery without rewriting resolved planning turns
+- explicit INCLUDED / DEFERRED / EXCLUDED role explanations
+- truth-complete Project Re-entry BRIEF placeholders for repository facts that
+  Phase 9C has not inspected
 
 Phase 9C remains IN PROGRESS only for the rendered planning interaction gate.
 Keep PR #10 Draft until that visual/interaction review is accepted.
@@ -130,6 +138,9 @@ Reference-derived improvements currently implemented:
 - explicit deferred ACTION artifacts
 - RequirementCandidate decision controls
 - separate planning Activity history
+- persisted planning history rehydration
+- explicit EXCLUDED-role explanations
+- truth-complete Project Re-entry Brief placeholders
 
 Roadmap contracts strengthened for later slices:
 
