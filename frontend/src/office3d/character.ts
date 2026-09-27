@@ -3,7 +3,6 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js'
 
-import type { AgentRun } from '../api'
 import { officeAgentState } from '../officeProjection'
 
 export type CharacterVariantKey = 'suit' | 'casual' | 'hoodie' | 'dress' | 'smart'
@@ -11,6 +10,12 @@ export type CharacterVariantKey = 'suit' | 'casual' | 'hoodie' | 'dress' | 'smar
 interface CharacterVariant {
   url: string
   scale: number
+}
+
+export interface OfficeCharacterSource {
+  id: string
+  agent_profile_key: string
+  status: string
 }
 
 export interface CharacterAppearance {
@@ -321,7 +326,20 @@ export function shouldShowOfficeNameplate(
 ): boolean {
   if (selected) return true
 
-  return ['RUNNING', 'STARTING', 'WAITING', 'BLOCKED', 'FAILED'].includes(
+  return [
+    'RUNNING',
+    'STARTING',
+    'WORKING',
+    'PLANNING',
+    'ARRIVING',
+    'WAITING',
+    'WAITING_USER',
+    'COFFEE_BREAK',
+    'LUNCH_BREAK',
+    'SOCIAL_BREAK',
+    'BLOCKED',
+    'FAILED',
+  ].includes(
     status.toUpperCase(),
   )
 }
@@ -329,10 +347,18 @@ export function shouldShowOfficeNameplate(
 export function statusColor(status: string): number {
   switch (status.toUpperCase()) {
     case 'RUNNING':
+    case 'WORKING':
+    case 'PLANNING':
     case 'COMPLETED':
+    case 'AVAILABLE':
       return 0x2fb176
     case 'STARTING':
+    case 'ARRIVING':
     case 'WAITING':
+    case 'WAITING_USER':
+    case 'COFFEE_BREAK':
+    case 'LUNCH_BREAK':
+    case 'SOCIAL_BREAK':
       return 0xd09a35
     case 'BLOCKED':
     case 'FAILED':
@@ -449,7 +475,9 @@ function playRigged(runtime: RuntimeAgent, force = false): void {
 
   const running =
     !runtime.moving &&
-    ['RUNNING', 'STARTING'].includes(runtime.currentStatus.toUpperCase())
+    ['RUNNING', 'STARTING', 'WORKING', 'PLANNING', 'ARRIVING'].includes(
+      runtime.currentStatus.toUpperCase(),
+    )
   next.setEffectiveTimeScale(
     runtime.moving ? 1 : running ? rigged.idleRate * 1.06 : rigged.idleRate,
   )
@@ -549,7 +577,7 @@ async function attachRiggedPresentation(
 }
 
 export function createCharacterRuntime(
-  agent: AgentRun,
+  agent: OfficeCharacterSource,
   name: string,
   station: StationPlacement,
   onVisualReady?: () => void,
@@ -664,7 +692,9 @@ function animateFallback(
     return true
   }
 
-  const active = runtime.currentStatus.toUpperCase() === 'RUNNING'
+  const active = ['RUNNING', 'WORKING', 'PLANNING'].includes(
+    runtime.currentStatus.toUpperCase(),
+  )
   runtime.fallback.position.y = active
     ? Math.sin(now * 0.0025) * 0.012
     : 0
@@ -690,7 +720,20 @@ export function animateCharacter(
   runtime.rigged.mixer.update(delta)
   return (
     runtime.moving ||
-    ['RUNNING', 'STARTING', 'WAITING', 'BLOCKED', 'FAILED'].includes(
+    [
+      'RUNNING',
+      'STARTING',
+      'WORKING',
+      'PLANNING',
+      'ARRIVING',
+      'WAITING',
+      'WAITING_USER',
+      'COFFEE_BREAK',
+      'LUNCH_BREAK',
+      'SOCIAL_BREAK',
+      'BLOCKED',
+      'FAILED',
+    ].includes(
       runtime.currentStatus.toUpperCase(),
     )
   )
