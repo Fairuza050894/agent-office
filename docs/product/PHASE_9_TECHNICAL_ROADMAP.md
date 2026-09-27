@@ -1202,3 +1202,48 @@ Reason:
 - it is reversible and low-risk
 - it lets the user validate visual direction before persistence/API complexity
 - backend truth remains unchanged while the shell is redesigned
+
+
+## 10. Reference-pattern adoption update
+
+The user-provided `Kantor Tim AI` artifact is an active design reference for
+Phase 9, but Agent Office keeps its own stronger canonical boundaries.
+
+Detailed adoption contract:
+
+```text
+docs/product/PHASE_9_REFERENCE_PATTERN_ADOPTION.md
+```
+
+Phase 9C additionally adopts:
+
+- actionable QUESTION artifacts with explicit options and recommendation
+- immutable user resolution that creates a DECISION artifact
+- USER AuditRecord for the planning decision
+- PlanningEvent history visible separately from operational Event history
+- explicit RequirementCandidate Approve / Defer / Reject controls in Office
+- explicit deferred work as durable ACTION artifacts
+
+Phase 9D additionally owns a structured RoleMemory design. Role memory must be
+project-scoped, role-scoped, source-attributed, bounded, inspectable, and must
+never contain hidden reasoning or raw secrets.
+
+Phase 9F additionally owns a safe Activity Interpreter. It may translate
+canonical state plus redacted executor telemetry into presentation-only poses,
+but raw provider transcripts are not operational truth.
+
+Activity precedence remains:
+
+```text
+canonical Run / AgentRun / Event
+        ↓
+safe executor telemetry attached to canonical work
+        ↓
+real planning session state
+        ↓
+clearly non-canonical Ambient state
+```
+
+Parallel write execution should become conflict-aware before multiple
+write-capable agents are allowed to operate concurrently on overlapping declared
+change areas.

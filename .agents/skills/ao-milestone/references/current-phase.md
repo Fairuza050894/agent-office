@@ -3,118 +3,88 @@
 ## Current checkpoint
 
 ```text
-f005325 style: apply phase 9b formatter output
-21cfbba feat: add phase 9b planning persistence foundation
-7646f96 Merge pull request #8 from Fairuza050894/phase-9a-work
+93a733e fix: wire planning decision audit service correctly
+34fc345 test: cover planning decision dock
+125d185 test: verify durable planning decisions
+2cc9c5c style: satisfy phase 9c backend quality gates
+a685882 Merge pull request #9 from Fairuza050894/phase-9b-work
 ```
 
-Current recorded status:
+Current status:
 
-- Phase 0 CLOSED
-- Phase 1 CLOSED
-- Phase 2 CLOSED
-- Phase 3 CLOSED
-- Phase 4 CLOSED
-- Phase 5 CLOSED
-- Phase 6 CLOSED — first real executor accepted
-- Phase 7 CLOSED — multi-executor / second-project dogfood
-- Phase 8 CLOSED — truthful 3D Office View
+- Phase 0–8 CLOSED
 - Phase 9 IN PROGRESS — Agent Office vNext
-  - concept merged through PR #6
-  - roadmap merged through PR #7
-  - Phase 9A CLOSED — Office-first dark control-room shell merged through PR #8
-  - Phase 9B ACCEPTED FOR PR REVIEW
-  - current branch: `phase-9b-work`
-  - current PR: #9
-  - next slice after manual merge: Phase 9C — Universal Composer + Dynamic Team Formation
+  - Phase 9A CLOSED — Office-first dark control-room shell
+  - Phase 9B CLOSED — planning domain + SQLite v11
+  - Phase 9C IN PROGRESS — Universal Composer + Dynamic Team Formation
+  - current branch: `phase-9c-work`
+  - current PR: #10 (Draft)
+  - Phase 9D must not begin before Phase 9C is merged
 
-## Phase 9 architecture boundary
+## Phase 9C implemented scope
 
-Authoritative Phase 9 product/architecture records:
+Current Phase 9C provides:
 
-```text
-docs/product/AGENT_OFFICE_VNEXT_CONCEPT.md
-docs/product/UNIVERSAL_COMPOSER_AND_TEAM_FORMATION.md
-docs/product/PHASE_9_TECHNICAL_ROADMAP.md
-docs/architecture/ADR-0002-planning-operational-boundary.md
-```
+- functional Universal Composer Send path
+- conservative deterministic intent resolver
+- Dynamic Team Formation
+- vNext role catalog without deleting legacy keys
+- Project Re-entry BRIEF
+- deferred implementation ACTION artifact
+- durable Decision Queue
+- explicit QUESTION options + recommendation
+- immutable QUESTION resolution
+- DECISION artifact creation
+- planning-decision AuditRecord
+- explicit RequirementCandidate Approve / Defer / Reject controls
+- planning Activity based on separate PlanningEvent history
+- planning team Accept / Reject
+- no automatic Task / Run / AgentRun / Workspace creation
+- Start Run remains disabled until the later promotion phase
 
-Phase 9 preserves:
-
-- Project Registry as repository scope authority
-- operational Run state as execution truth
-- PlanningEvent separate from operational Event
-- Ambient Office state as non-canonical presentation state
-- human approval before requirement promotion
-- isolated Workspaces for write-capable execution
-- no auto merge
-- no force push
-- no destructive main-tree Git operation
-- historical WorkflowSnapshot / AgentProfile meaning
-
-## Phase 9A closure
-
-Phase 9A verification:
+Reference-derived design contract:
 
 ```text
-docs/product/PHASE_9A_VERIFICATION.md
+docs/product/PHASE_9_REFERENCE_PATTERN_ADOPTION.md
 ```
 
-PR #8 was manually merged as `7646f96`.
+The reference patterns adopted now are shared planning artifacts, explicit
+questions/decisions, and deferred work. Role memory is reserved for Phase 9D.
+Safe telemetry-to-animation Activity Interpreter is reserved for Phase 9F.
 
-Phase 9A is CLOSED.
+## Truthfulness boundary
 
-## Phase 9B accepted checkpoint
-
-Verification record:
+Planning truth remains:
 
 ```text
-docs/product/PHASE_9B_VERIFICATION.md
+ComposerThread
+ComposerMessage
+TeamProposal
+PlanningArtifact
+RequirementCandidate
+PlanningEvent
 ```
 
-Accepted implementation checkpoint:
+Operational execution truth remains:
 
 ```text
-f005325 style: apply phase 9b formatter output
+Task
+Run
+AgentRun
+Workspace
+Event
+Finding
+Evidence
 ```
 
-Delivered:
+No planning UI action may fabricate operational execution.
 
-- SQLite schema v11
-- ComposerThread / ComposerMessage persistence
-- TeamProposal + member persistence
-- PlanningArtifact persistence
-- RequirementCandidate lifecycle
-- separate PlanningEvent history/SSE
-- explicit requirement decision audit
-- PlanningRuntime port
-- deterministic ReferencePlanningRuntime
-- planning HTTP API foundation
-- no operational Run truth created by planning
+## Current quality gate
 
-Verification run `36300850733`:
+The previous Phase 9C head passed frontend and repository verification but
+exposed a backend constructor-wiring regression after the Decision Queue
+extension. That wiring has been corrected on the current branch.
 
-```text
-backend pytest      646 passed
-ruff                passed
-ruff format         199 files already formatted
-mypy                0 issues / 133 source files
-frontend vitest     14 files / 67 tests passed
-frontend typecheck  passed
-frontend lint       0 errors / 2 existing warnings
-frontend build      passed
-repository check    passed
-```
-
-## Next target
-
-After PR #9 is manually merged:
-
-```text
-Phase 9C — Universal Composer + Dynamic Team Formation
-```
-
-Phase 9C may make the Phase 9A composer functional against the Phase 9B planning
-domain and add deterministic intent resolution / team proposal behavior.
-
-Do not begin Phase 9C from an unmerged Phase 9B branch.
+Do not mark Phase 9C accepted or promote PR #10 until the current head completes
+the full backend/frontend/repository CI gate and rendered planning interaction is
+reviewed.
