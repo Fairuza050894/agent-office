@@ -985,7 +985,12 @@ def _migration_v11(connection: sqlite3.Connection) -> None:
             id TEXT PRIMARY KEY,
             thread_id TEXT NOT NULL REFERENCES composer_threads(id),
             artifact_type TEXT NOT NULL
-                CHECK (artifact_type IN ('BRIEF', 'NOTE', 'DECISION', 'QUESTION', 'RISK', 'ACTION')),
+                CHECK (
+                    artifact_type IN (
+                        'BRIEF', 'NOTE', 'DECISION',
+                        'QUESTION', 'RISK', 'ACTION'
+                    )
+                ),
             title TEXT NOT NULL,
             content_json TEXT NOT NULL,
             author_role_key TEXT,
