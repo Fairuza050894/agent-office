@@ -2399,3 +2399,78 @@ Evidence
 ```
 
 No Phase 9B planning operation may create operational execution truth.
+
+## 37. Phase 9C Planning Interaction Semantics
+
+Phase 9C activates the Universal Composer against the Phase 9B planning
+aggregate without changing the operational truth boundary.
+
+### Durable planning-turn semantics
+
+A ComposerThread represents one durable planning turn.
+
+    Project
+    → ComposerThread
+    → ComposerMessage
+    → IntentResolution
+    → TeamProposal
+    → PlanningArtifact / RequirementCandidate
+    → PlanningEvent
+
+The resolved intent is immutable once recorded. A later prompt that would require
+a different resolved intent starts a new planning turn instead of silently
+rewriting prior planning truth.
+
+The Office UI may reopen persisted planning history. For a selected Project it
+loads the latest ComposerThread plus its messages, TeamProposal, artifacts,
+RequirementCandidates, and PlanningEvents. Older threads remain selectable.
+
+An unprepared OPEN thread with no messages may be reused as a recovery path.
+Prepared/resolved turns are not repurposed for unrelated prompts.
+
+### TeamProposal dispositions
+
+Phase 9C uses all three TeamMemberDisposition values explicitly:
+
+    INCLUDED
+    DEFERRED
+    EXCLUDED
+
+INCLUDED means the role belongs to the current planning cell.
+
+DEFERRED means the role is relevant to later implementation but remains inactive
+until approved scope reaches the execution-promotion boundary.
+
+EXCLUDED means deterministic rules found no current need for the role. The
+proposal retains a concise product-facing reason so the user can inspect why the
+role was not selected.
+
+None of these dispositions creates an AgentRun.
+
+### Project Re-entry Brief truthfulness
+
+The Project Re-entry BRIEF exposes the required planning sections even when
+Phase 9C cannot truthfully populate repository-derived facts.
+
+Unknown repository-derived fields are recorded explicitly, for example:
+
+    repository_state = NOT_INSPECTED_IN_PHASE_9C
+    architecture_dependencies = NOT_INSPECTED_IN_PHASE_9C
+    observed_gaps = NOT_INSPECTED_IN_PHASE_9C
+    relevant_technical_debt = NOT_INSPECTED_IN_PHASE_9C
+    requirement_candidates =
+      NONE_PROPOSED_UNTIL_READ_ONLY_PROJECT_CONTEXT_IS_AVAILABLE
+
+Phase 9C must not fabricate repository findings or executable requirements.
+Bounded read-only Project inspection and real planning output belong to Phase
+9D.
+
+### Decision authority
+
+QUESTION artifacts form the durable Decision Queue. Resolving a QUESTION creates
+a durable DECISION artifact and user AuditRecord. RequirementCandidate
+approve/reject/defer transitions remain explicit user decisions.
+
+These planning decisions still do not create Task, Run, AgentRun, Workspace,
+operational Event, Finding, or Evidence truth.
+
