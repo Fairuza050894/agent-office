@@ -140,7 +140,10 @@ class IntentResolver:
         if looks_like_question and not contains_mutation:
             return IntentResolution(
                 resolved_intent=ComposerIntent.ASK,
-                reason_summary="AUTO detected a read-only question with no repository-changing request.",
+                reason_summary=(
+                    "AUTO detected a read-only question with no "
+                    "repository-changing request."
+                ),
                 requires_user_action=False,
             )
 

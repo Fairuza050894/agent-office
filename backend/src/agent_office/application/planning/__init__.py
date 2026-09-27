@@ -8,6 +8,11 @@ from agent_office.application.planning.errors import (
     RequirementCandidateNotFoundError,
     TeamProposalNotFoundError,
 )
+from agent_office.application.planning.intent import IntentResolution, IntentResolver
+from agent_office.application.planning.orchestration import (
+    ComposerPreparation,
+    UniversalComposerPlanningService,
+)
 from agent_office.application.planning.ports import (
     DEFAULT_PLANNING_EVENT_PAGE_SIZE,
     MAX_PLANNING_EVENT_PAGE_SIZE,
@@ -18,11 +23,6 @@ from agent_office.application.planning.ports import (
     PlanningEventRepository,
     RequirementCandidateRepository,
     TeamProposalRepository,
-)
-from agent_office.application.planning.intent import IntentResolution, IntentResolver
-from agent_office.application.planning.orchestration import (
-    ComposerPreparation,
-    UniversalComposerPlanningService,
 )
 from agent_office.application.planning.runtime import (
     PlanningArtifactDraft,
