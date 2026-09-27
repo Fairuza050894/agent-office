@@ -496,7 +496,7 @@ def _thread_parameters(thread: ComposerThread) -> tuple[object, ...]:
         str(thread.id),
         _optional_id(thread.project_id),
         thread.requested_intent.value,
-        _optional_enum(thread.resolved_intent),
+        _optional_intent(thread.resolved_intent),
         thread.status.value,
         thread.title,
         thread.timezone,
