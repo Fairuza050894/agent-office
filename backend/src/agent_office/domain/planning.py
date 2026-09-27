@@ -87,6 +87,8 @@ def build_planning_content(
             raise DomainInvariantError("Planning content keys must be unique")
         if any(fragment in lowered for fragment in _SECRET_KEY_FRAGMENTS):
             raise DomainInvariantError("Planning content must not contain secret-bearing keys")
+        if value is not None and not isinstance(value, (str, int, bool)):
+            raise DomainInvariantError("Planning content values must be scalar")
         if isinstance(value, str) and len(value) > MAX_PLANNING_VALUE_LENGTH:
             raise DomainInvariantError("Planning content value exceeds the bounded length")
 
