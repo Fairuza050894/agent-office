@@ -48,6 +48,7 @@ from agent_office.domain import (
     PlanningArtifactType,
     PlanningContent,
     PlanningEvent,
+    PlanningValue,
     PlanningEventId,
     PlanningEventType,
     ProjectId,
@@ -497,7 +498,7 @@ class PlanningArtifactService:
             updated_at=now,
         )
 
-        decision_pairs: list[tuple[str, object]] = [
+        decision_pairs: list[tuple[str, PlanningValue]] = [
             ("question_artifact_id", str(question.id)),
             ("selected_option", normalized_option),
             ("selected_value", selected_value),
