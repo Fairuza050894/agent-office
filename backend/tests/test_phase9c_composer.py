@@ -91,7 +91,17 @@ def test_auto_project_reentry_stops_at_plan_with_small_planning_cell(
     assert brief["title"] == "Project re-entry brief"
     assert brief["content"]["project"] == "TDP"
     assert brief["content"]["repository_state"] == "NOT_INSPECTED_IN_PHASE_9C"
+    assert brief["content"]["architecture_dependencies"] == "NOT_INSPECTED_IN_PHASE_9C"
+    assert brief["content"]["observed_gaps"] == "NOT_INSPECTED_IN_PHASE_9C"
+    assert brief["content"]["relevant_technical_debt"] == "NOT_INSPECTED_IN_PHASE_9C"
+    assert brief["content"]["requirement_candidates"] == (
+        "NONE_PROPOSED_UNTIL_READ_ONLY_PROJECT_CONTEXT_IS_AVAILABLE"
+    )
+    assert brief["content"]["proposed_implementation_scope"] == (
+        "NOT_PROPOSED_UNTIL_REQUIREMENTS_ARE_GROUNDED_AND_APPROVED"
+    )
     assert brief["content"]["execution_state"] == "NOT_STARTED"
+    assert "Phase 9D" in brief["content"]["verification_plan"]
     assert brief["content"]["prior_planning_threads"] == 0
 
     database = harness.app.state.project_database
