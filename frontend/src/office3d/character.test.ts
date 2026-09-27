@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   officeCharacterAppearance,
   officeCharacterVariant,
+  shouldShowOfficeNameplate,
 } from './character'
 
 const CORE_ROLES = [
@@ -27,6 +28,17 @@ describe('officeCharacterAppearance', () => {
     expect(officeCharacterAppearance('architect').id).not.toBe(
       officeCharacterAppearance('security-reviewer').id,
     )
+  })
+
+  it('declutters completed nameplates while keeping active and selected roles visible', () => {
+    expect(shouldShowOfficeNameplate('COMPLETED', false)).toBe(false)
+    expect(shouldShowOfficeNameplate('PENDING', false)).toBe(false)
+    expect(shouldShowOfficeNameplate('RUNNING', false)).toBe(true)
+    expect(shouldShowOfficeNameplate('STARTING', false)).toBe(true)
+    expect(shouldShowOfficeNameplate('WAITING', false)).toBe(true)
+    expect(shouldShowOfficeNameplate('BLOCKED', false)).toBe(true)
+    expect(shouldShowOfficeNameplate('FAILED', false)).toBe(true)
+    expect(shouldShowOfficeNameplate('COMPLETED', true)).toBe(true)
   })
 
   it('keeps unknown-role fallback deterministic', () => {

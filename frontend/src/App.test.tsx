@@ -95,7 +95,7 @@ describe('Agent Office operational shell', () => {
     expect(screen.getByRole('region', { name: 'Universal Composer' })).toBeInTheDocument()
     expect(
       screen.getByRole('region', { name: 'Bottom Operations Dock' }),
-    ).toBeInTheDocument()
+    ).toHaveClass('dock-collapsed')
     expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Start Run' })).toBeDisabled()
   })

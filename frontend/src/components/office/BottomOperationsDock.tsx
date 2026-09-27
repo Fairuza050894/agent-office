@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react'
 import type { AgentEvent, AgentProfile, AgentRun } from '../../api'
 import { officeAgentState } from '../../officeProjection'
 
-type DockState = 'collapsed' | 'normal' | 'expanded'
+export type DockState = 'collapsed' | 'normal' | 'expanded'
 
 export interface BottomOperationsDockProps {
   events: AgentEvent[]
@@ -12,6 +12,8 @@ export interface BottomOperationsDockProps {
   selectedAgentId: string | null
   onSelectAgent: (agentId: string) => void
   modeLabel: string
+  defaultState?: DockState
+  forceCollapsed?: boolean
 }
 
 const EVENT_LABELS: Record<string, string> = {
@@ -57,8 +59,11 @@ export function BottomOperationsDock({
   selectedAgentId,
   onSelectAgent,
   modeLabel,
+  defaultState = 'normal',
+  forceCollapsed = false,
 }: BottomOperationsDockProps) {
-  const [dockState, setDockState] = useState<DockState>('normal')
+  const [dockState, setDockState] = useState<DockState>(defaultState)
+  const renderedState: DockState = forceCollapsed ? 'collapsed' : dockState
   const profileByKey = useMemo(
     () => new Map(profiles.map((profile) => [profile.key, profile])),
     [profiles],
@@ -71,11 +76,11 @@ export function BottomOperationsDock({
   const recent = events
     .slice()
     .sort((left, right) => right.occurred_at.localeCompare(left.occurred_at))
-    .slice(0, dockState === 'expanded' ? 40 : 12)
+    .slice(0, renderedState === 'expanded' ? 40 : 12)
 
   return (
     <section
-      className={`office-operations-dock dock-${dockState}`}
+      className={`office-operations-dock dock-${renderedState}`}
       aria-label="Bottom Operations Dock"
     >
       <div className="office-dock-header">
@@ -83,30 +88,32 @@ export function BottomOperationsDock({
           <strong>Operations Dock</strong>
           <span>{modeLabel}</span>
         </div>
-        <div className="office-dock-actions">
-          <button
-            type="button"
-            className="office-dock-action"
-            onClick={() =>
-              setDockState((current) =>
-                current === 'collapsed' ? 'normal' : 'collapsed',
-              )
-            }
-          >
-            {dockState === 'collapsed' ? 'Open' : 'Collapse'}
-          </button>
-          <button
-            type="button"
-            className="office-dock-action"
-            onClick={() =>
-              setDockState((current) =>
-                current === 'expanded' ? 'normal' : 'expanded',
-              )
-            }
-          >
-            {dockState === 'expanded' ? 'Normal' : 'Expand'}
-          </button>
-        </div>
+        {!forceCollapsed && (
+          <div className="office-dock-actions">
+            <button
+              type="button"
+              className="office-dock-action"
+              onClick={() =>
+                setDockState((current) =>
+                  current === 'collapsed' ? 'normal' : 'collapsed',
+                )
+              }
+            >
+              {renderedState === 'collapsed' ? 'Open' : 'Collapse'}
+            </button>
+            <button
+              type="button"
+              className="office-dock-action"
+              onClick={() =>
+                setDockState((current) =>
+                  current === 'expanded' ? 'normal' : 'expanded',
+                )
+              }
+            >
+              {renderedState === 'expanded' ? 'Normal' : 'Expand'}
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="office-dock-content">

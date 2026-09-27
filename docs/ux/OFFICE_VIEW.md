@@ -215,3 +215,27 @@ Office View must not:
 - hide blockers behind visual presentation
 - use Event history as the only source of current state
 - present Historical replay as live execution
+
+
+## Phase 9A visual polish
+
+The Phase 9A visual gate adds the following presentation rules:
+
+- completed AgentRun nameplates are hidden by default to reduce scene clutter
+- active / waiting / blocked / failed AgentRuns retain visible nameplates
+- selecting any AgentRun reveals its nameplate and inspector
+- default Office camera framing is closer than the Phase 8 framing
+- Run Office uses `Operational` / `Historical replay` language instead of
+  conflating SSE connectivity with Run state
+- backend event connectivity is reported separately as an event-stream state
+- `/office` starts with the Operations Dock collapsed because no factual Run is
+  selected
+- maximize mode forces the dock into its compact state so command rail, Office,
+  composer, and dock fit in one viewport
+- Runs registry and Run detail surfaces use the same dark control-room visual
+  hierarchy as Office
+- Office-route navigation is denser than ordinary registry navigation to preserve
+  horizontal scene space
+
+These are presentation changes only. They do not alter canonical Run, AgentRun,
+Event, replay, or Workspace semantics.

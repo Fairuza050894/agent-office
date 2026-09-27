@@ -325,7 +325,7 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
       <OfficeCommandRail
         title="Office View"
         projectName={project?.name ?? run.project_id}
-        modeLabel={officeMode === 'replay' ? 'Historical replay' : 'Live'}
+        modeLabel={officeMode === 'replay' ? 'Historical replay' : 'Operational'}
         statusLabel={run.status}
         meta={`${agents.length} AgentRun${agents.length === 1 ? '' : 's'} · ${stages.length} stage${stages.length === 1 ? '' : 's'}`}
         actions={
@@ -336,10 +336,10 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
                 aria-hidden="true"
               />
               {liveState === 'connected'
-                ? 'Live'
+                ? 'Events connected'
                 : liveState === 'unsupported'
-                  ? 'Manual'
-                  : 'Disconnected'}
+                  ? 'Manual refresh'
+                  : 'Events disconnected'}
             </span>
             <button
               type="button"
@@ -458,7 +458,8 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
         profiles={profiles}
         selectedAgentId={selectedAgentId}
         onSelectAgent={setSelectedAgentId}
-        modeLabel={officeMode === 'replay' ? 'Historical replay' : 'Canonical live state'}
+        modeLabel={officeMode === 'replay' ? 'Historical replay' : 'Canonical state'}
+        forceCollapsed={isMaximized}
       />
 
       <p className="office-workspace-note">

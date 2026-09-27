@@ -111,3 +111,23 @@ Current acceptance target:
 - historical Run Office compatibility
 
 Do not begin Phase 9B until the Phase 9A visual/interaction gate is accepted.
+
+
+## Phase 9A visual-polish checkpoint
+
+Visual review on 2026-09-27 identified the following issues on the initial
+Phase 9A implementation:
+
+- Runs registry retained a light table/filter island
+- Run detail text contrast was too low on the dark shell
+- Office command buttons retained light-theme styling
+- completed AgentRun nameplates crowded the scene
+- default camera framing left excess dead space
+- composer felt like a generic form rather than a command surface
+- maximize mode pushed the Operations Dock below the viewport
+- `/office` should begin with a compact dock when no Run is selected
+
+The active `phase-9a-work` polish patch addresses those findings without adding
+Phase 9B planning persistence or runtime behavior.
+
+Phase 9B remains blocked until the refreshed rendered visual gate is accepted.

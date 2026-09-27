@@ -94,7 +94,11 @@ export function OfficeWorkspacePage() {
         projectName={selectedProject?.name ?? 'No Project selected'}
         modeLabel="Workspace"
         statusLabel={isLoading ? 'Loading registries' : 'No active Run selected'}
-        meta={error ? 'Registry degraded' : `${projects.length} Projects`}
+        meta={
+          error
+            ? 'Registry degraded'
+            : `${projects.length} Project${projects.length === 1 ? '' : 's'}`
+        }
         actions={
           <button
             type="button"
@@ -146,7 +150,9 @@ export function OfficeWorkspacePage() {
         profiles={profiles}
         selectedAgentId={null}
         onSelectAgent={() => undefined}
-        modeLabel="Workspace shell"
+        modeLabel="Workspace"
+        defaultState="collapsed"
+        forceCollapsed={isMaximized}
       />
 
       <p className="office-workspace-note">

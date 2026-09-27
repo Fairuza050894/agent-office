@@ -283,6 +283,9 @@ describe('Phase 9A Office Workspace', () => {
     const maximize = await screen.findByRole('button', { name: 'Maximize' })
     fireEvent.click(maximize)
     expect(screen.getByRole('button', { name: 'Exit maximize' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('region', { name: 'Bottom Operations Dock' }),
+    ).toHaveClass('dock-collapsed')
   })
 
   it('keeps operational navigation available when the local renderer fails', () => {

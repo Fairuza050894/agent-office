@@ -769,3 +769,668 @@ body {
     max-width: none;
   }
 }
+
+
+/* Phase 9A visual polish */
+
+/* Global dark-surface consistency */
+
+.app-header .system-pill {
+  border: 1px solid #223746;
+  background-color: #0b1721;
+  color: #8fa5b6;
+}
+
+.app-header .system-pill.connected {
+  border-color: rgba(72, 199, 142, .2);
+  background-color: rgba(72, 199, 142, .045);
+}
+
+.app-header .status-text {
+  color: #aebfca;
+}
+
+.app-header .status-subtext {
+  color: #607687;
+}
+
+.app-main a,
+.app-main a:visited {
+  color: #74b9df;
+  text-decoration-color: rgba(116, 185, 223, .3);
+}
+
+.app-main a:hover {
+  color: #a4d8f2;
+  text-decoration-color: currentColor;
+}
+
+/* Office routes use a denser navigation shell without changing other pages. */
+
+@media (min-width: 769px) {
+  .office-shell-focus .app-sidebar {
+    width: 188px;
+  }
+
+  .office-shell-focus .brand-subtitle {
+    display: none;
+  }
+
+  .office-shell-focus .sidebar-brand {
+    min-height: 58px;
+    padding: 11px 12px;
+  }
+
+  .office-shell-focus .sidebar-nav {
+    padding: 10px 8px;
+  }
+
+  .office-shell-focus .nav-section {
+    margin-bottom: 13px;
+  }
+
+  .office-shell-focus .nav-link {
+    min-height: 29px;
+    padding: 5px 7px;
+    font-size: .74rem;
+  }
+
+  .office-shell-focus .sidebar-footer {
+    padding: 9px 12px;
+    font-size: .58rem;
+  }
+
+  .office-shell-focus .app-header {
+    height: 44px;
+    padding: 0 18px;
+  }
+
+  .office-shell-focus .app-main {
+    padding: 14px 18px 24px;
+  }
+}
+
+/* Runs registry: no light-theme island inside the control-room shell. */
+
+.runs-view .page-header {
+  margin-bottom: 15px;
+}
+
+.runs-view .registry-toolbar {
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border: 1px solid #1e303d;
+  border-radius: 5px;
+  background-color: #0b151e;
+}
+
+.runs-view .toolbar-label {
+  color: #8ea2b3;
+}
+
+.runs-view .toolbar-select,
+.runs-view .form-input {
+  border-color: #2a3e4d;
+  background-color: #101d28;
+  color: #cbd8e2;
+}
+
+.runs-view .toolbar-meta {
+  color: #6f8495;
+}
+
+.runs-view .table-container {
+  overflow: hidden;
+  border: 1px solid #1f313e;
+  border-radius: 5px;
+  background-color: #0b151e;
+}
+
+.runs-view .operational-table {
+  background-color: #0b151e;
+}
+
+.runs-view .operational-table th {
+  background-color: #0f1b25;
+  border-bottom-color: #243744;
+  color: #8196a8;
+}
+
+.runs-view .operational-table td {
+  background-color: #0b151e;
+  border-bottom-color: #172833;
+  color: #afbfca;
+}
+
+.runs-view .operational-table tbody tr:not(:has(.table-empty-cell)):hover td {
+  background-color: #10202b;
+}
+
+.runs-view .operational-table td:nth-child(2),
+.runs-view .operational-table td:nth-child(3) {
+  color: #c8d5df;
+}
+
+.runs-view .operational-table td:nth-child(7),
+.runs-view .operational-table td:nth-child(8) {
+  color: #7e93a4;
+  font-family: var(--ao-mono);
+  font-size: .67rem;
+}
+
+.runs-view .mono-badge {
+  border: 1px solid #2a4050;
+  background-color: #122330;
+  color: #8bc6e5;
+}
+
+/* Run detail contrast and hierarchy. */
+
+.run-detail-view {
+  color: var(--ao-text);
+}
+
+.run-detail-view .run-header {
+  margin-bottom: 10px;
+  padding: 14px 15px;
+  border: 1px solid #1f313e;
+  border-radius: 5px;
+  background-color: #0b151e;
+}
+
+.run-detail-view .run-title {
+  color: #edf4f8;
+  font-size: 1.12rem;
+  letter-spacing: -.025em;
+}
+
+.run-detail-view .run-task-title {
+  color: #99adbc;
+  font-size: .77rem;
+}
+
+.run-detail-view .run-facts {
+  gap: 10px 18px;
+  margin-top: 13px;
+  padding-top: 12px;
+  border-top: 1px solid #1b2d39;
+}
+
+.run-detail-view .run-facts dt {
+  color: #6f8496;
+  font-family: var(--ao-mono);
+  font-size: .58rem;
+  letter-spacing: .045em;
+}
+
+.run-detail-view .run-facts dd {
+  color: #b8c7d2;
+  font-size: .74rem;
+}
+
+.run-detail-view .run-facts code {
+  color: #89bdd8;
+}
+
+.run-detail-view .run-view-switch {
+  margin: 0 0 5px;
+}
+
+.run-detail-view .run-office-link {
+  color: #7bbfdf;
+  font-size: .67rem;
+  text-decoration: none;
+}
+
+.run-detail-view .run-office-link:hover {
+  color: #afe0f5;
+}
+
+.run-detail-view .run-tabs {
+  gap: 1px;
+  margin-bottom: 12px;
+  border-bottom-color: #263846;
+}
+
+.run-detail-view .run-tab-button {
+  padding: 8px 12px;
+  color: #718697;
+  font-size: .73rem;
+}
+
+.run-detail-view .run-tab-button:hover {
+  color: #c6d5df;
+  background: rgba(83, 199, 240, .025);
+}
+
+.run-detail-view .run-tab-button.active {
+  border-bottom-color: var(--ao-live);
+  color: #dce8ef;
+}
+
+.run-detail-view .run-overview-grid {
+  gap: 9px;
+}
+
+.run-detail-view .run-overview-section,
+.run-detail-view .run-path-panel,
+.run-detail-view .run-fact-strip {
+  border: 1px solid #1c2e3a;
+  border-radius: 4px;
+  background-color: #0b151e;
+}
+
+.run-detail-view .run-overview-section {
+  padding: 12px 13px;
+}
+
+.run-detail-view .run-section-title {
+  color: #c7d5df;
+  font-size: .76rem;
+}
+
+.run-detail-view .run-overview-section p,
+.run-detail-view .run-plain-list,
+.run-detail-view .run-path-list,
+.run-detail-view .run-live-status {
+  color: #9fb1be;
+}
+
+.run-detail-view .run-muted,
+.run-detail-view .run-section-help {
+  color: #738899;
+}
+
+.run-detail-view .run-plain-list strong {
+  color: #c8d5de;
+}
+
+.run-detail-view .run-tab-content .table-container {
+  border-color: #1e303d;
+  background-color: #0b151e;
+}
+
+.run-detail-view .run-tab-content .operational-table th {
+  background-color: #0f1b25;
+  color: #8095a6;
+}
+
+.run-detail-view .run-tab-content .operational-table td {
+  background-color: #0b151e;
+  color: #afbfca;
+}
+
+.run-detail-view .run-tab-content code {
+  color: #8fbfd9;
+}
+
+.run-detail-view .run-alert-warning {
+  border-color: rgba(227, 179, 65, .25);
+  background: rgba(227, 179, 65, .07);
+  color: #dec989;
+}
+
+.run-detail-view .run-alert-danger {
+  border-color: rgba(239, 106, 103, .28);
+  background: rgba(239, 106, 103, .07);
+  color: #efaaa8;
+}
+
+/* Office command rail and controls */
+
+.office-command-rail {
+  min-height: 42px;
+  padding: 6px 9px;
+  border-color: #213542;
+  background: rgba(8, 18, 27, .96);
+}
+
+.office-command-title {
+  color: #dce8ef;
+}
+
+.office-command-project {
+  color: #aebfca;
+}
+
+.office-command-meta {
+  color: #6e8495;
+}
+
+.office-command-actions .btn,
+.office-command-actions .btn-secondary,
+.office-command-actions a.btn {
+  border-color: #2b404f;
+  background-color: #101d28;
+  color: #a8bac7;
+  box-shadow: none;
+}
+
+.office-command-actions .btn:hover:not(:disabled),
+.office-command-actions a.btn:hover {
+  border-color: #3a5869;
+  background-color: #172a37;
+  color: #e1ebf1;
+}
+
+.office-command-actions .btn:disabled {
+  border-color: #20333f;
+  background-color: #0c1720;
+  color: #536a7a;
+}
+
+.office-live-state {
+  color: #7790a2;
+  font-family: var(--ao-mono);
+  font-size: .54rem;
+}
+
+.office-live-state .status-dot.connected {
+  background-color: var(--ao-success);
+  box-shadow: 0 0 8px rgba(72, 199, 142, .28);
+}
+
+/* Scene hierarchy: the room is the product, chrome stays quiet. */
+
+.office-workspace .office-scene-heading {
+  min-height: 28px;
+  margin: 0;
+  padding: 0 9px;
+  border-bottom: 1px solid #1f313e;
+  align-items: center;
+}
+
+.office-workspace .office-scene-heading > div {
+  align-items: center;
+}
+
+.office-workspace .office-scene-heading strong {
+  color: #8ea4b5;
+  font-size: .61rem;
+  font-weight: 650;
+}
+
+.office-workspace .office-scene-heading span,
+.office-workspace .office-render-mode {
+  color: #718899;
+  font-size: .58rem;
+}
+
+.office-workspace .office-three-host {
+  height: clamp(520px, calc(100vh - 365px), 770px);
+  border: 0;
+  border-top: 1px solid #172933;
+  box-shadow: none;
+}
+
+.office-avatar-nameplate {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(1px) scale(.97);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease,
+    visibility 120ms linear;
+}
+
+.office-avatar-nameplate.is-nameplate-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-3px) scale(1);
+}
+
+.office-avatar-nameplate.state-completed.is-nameplate-visible {
+  border-color: rgba(72, 199, 142, .34);
+}
+
+/* Universal Composer behaves like a command surface, not a form. */
+
+.office-composer {
+  gap: 5px;
+  padding: 6px 8px 7px;
+  border-color: #213542;
+  background: #09151f;
+}
+
+.office-composer-context {
+  gap: 5px;
+}
+
+.office-composer-select {
+  height: 27px;
+  max-width: 225px;
+  border-color: #253a48;
+  background-color: #0e1b25;
+  color: #9eb1bf;
+  font-size: .59rem;
+}
+
+.office-composer .btn-sm {
+  min-height: 27px;
+  padding: 3px 8px;
+  font-size: .61rem;
+}
+
+.office-composer .btn-secondary,
+.office-composer .btn-secondary:disabled {
+  border-color: #293e4d;
+  background-color: #11212c;
+  color: #788e9f;
+  opacity: 1;
+}
+
+.office-composer .btn-primary:disabled {
+  border-color: #214657;
+  background-color: #12313e;
+  color: #648b9d;
+  opacity: .72;
+}
+
+.office-composer-body {
+  gap: 6px;
+}
+
+.office-composer-input {
+  min-height: 38px;
+  max-height: 82px;
+  padding: 8px 9px;
+  resize: none;
+  border-color: #263b49;
+  background-color: #0d1a24;
+  color: #c9d6df;
+  font-size: .65rem;
+  transition:
+    min-height 130ms ease,
+    border-color 120ms ease,
+    background-color 120ms ease;
+}
+
+.office-composer-input:focus {
+  min-height: 56px;
+  background-color: #101f2a;
+}
+
+.office-composer-input::placeholder {
+  color: #5f7586;
+}
+
+.office-composer-context .office-composer-note {
+  max-width: 310px;
+  overflow: hidden;
+  color: #586f80;
+  font-family: var(--ao-mono);
+  font-size: .49rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.office-composer > .office-composer-note {
+  display: none;
+}
+
+/* Operations Dock: dense factual console. */
+
+.office-operations-dock {
+  border-color: #20333f;
+  background: #08131c;
+}
+
+.office-operations-dock.dock-collapsed {
+  height: 42px;
+}
+
+.office-operations-dock.dock-normal {
+  height: 210px;
+}
+
+.office-operations-dock.dock-expanded {
+  height: min(36vh, 350px);
+}
+
+.office-dock-header {
+  height: 34px;
+  padding: 0 9px;
+  border-bottom-color: #1b2d38;
+}
+
+.dock-collapsed .office-dock-header {
+  height: 40px;
+  border-bottom: 0;
+}
+
+.office-dock-title strong {
+  color: #aebfca;
+  font-size: .58rem;
+}
+
+.office-dock-title span {
+  color: #566e80;
+  font-size: .49rem;
+}
+
+.office-dock-action {
+  padding: 3px 5px;
+  color: #6c8293;
+  font-family: var(--ao-mono);
+  font-size: .49rem;
+}
+
+.office-dock-panel-heading {
+  height: 27px;
+  padding: 0 9px;
+  border-bottom-color: #182934;
+  color: #657d8e;
+  font-size: .49rem;
+}
+
+.office-dock-scroll {
+  height: calc(100% - 27px);
+}
+
+.office-dock-event {
+  grid-template-columns: 50px 118px minmax(0, 1fr);
+  gap: 7px;
+  padding: 5px 9px;
+  border-bottom-color: #142630;
+}
+
+.office-dock-event time,
+.office-dock-event-detail,
+.office-dock-agent-status {
+  font-family: var(--ao-mono);
+}
+
+.office-dock-event-role {
+  color: #9eafbc;
+  font-size: .54rem;
+}
+
+.office-dock-event-detail {
+  color: #718899;
+  font-size: .51rem;
+}
+
+.office-dock-agent {
+  padding: 6px 9px;
+  border-bottom-color: #142630;
+}
+
+.office-dock-agent-name {
+  color: #aebfca;
+  font-size: .54rem;
+}
+
+.office-dock-agent-status {
+  color: #607687;
+  font-size: .46rem;
+}
+
+/* True one-screen mission-control maximize. */
+
+.office-workspace.office-maximized {
+  height: 100vh;
+  min-height: 0;
+  gap: 7px;
+  padding: 7px;
+  overflow: hidden;
+}
+
+.office-maximized .office-command-rail {
+  flex: 0 0 42px;
+  min-height: 42px;
+}
+
+.office-maximized .office-workspace-scene {
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.office-maximized .office-renderer {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.office-maximized .office-scene-heading {
+  flex: 0 0 28px;
+}
+
+.office-maximized .office-three-host {
+  height: auto;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.office-maximized .office-composer {
+  flex: 0 0 auto;
+}
+
+.office-maximized .office-composer-input,
+.office-maximized .office-composer-input:focus {
+  min-height: 36px;
+  max-height: 36px;
+}
+
+.office-maximized .office-operations-dock.dock-collapsed {
+  flex: 0 0 42px;
+  height: 42px;
+}
+
+.office-maximized .office-workspace-note {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .office-workspace .office-three-host {
+    height: 520px;
+  }
+
+  .office-command-actions {
+    gap: 4px;
+  }
+
+  .run-detail-view .run-overview-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -58,7 +58,7 @@ export function OfficeScene({
       <div className="office-scene-heading">
         <div>
           <strong>
-            {presentation === 'workspace' ? 'Office workspace' : 'Live office'}
+            {presentation === 'workspace' ? 'Office workspace' : 'Operational office'}
           </strong>
           <span>
             {presentation === 'workspace'
@@ -71,7 +71,7 @@ export function OfficeScene({
             ? 'Workspace shell'
             : mode === 'replay'
               ? 'Historical replay · factual timestamps compressed'
-              : 'Live state'}
+              : 'Canonical state'}
         </span>
       </div>
 
