@@ -134,12 +134,12 @@ def create_app(
         SQLiteTeamProposalRepository(database),
         composer_thread_service,
         planning_event_service,
-        audit_service,
     )
     planning_artifact_service = PlanningArtifactService(
         SQLitePlanningArtifactRepository(database),
         composer_thread_service,
         planning_event_service,
+        audit_service,
     )
     requirement_service = RequirementService(
         SQLiteRequirementCandidateRepository(database),
