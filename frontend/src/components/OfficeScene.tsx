@@ -2,6 +2,11 @@ import { useMemo } from 'react'
 
 import type { AgentProfile, AgentRun, RunStage } from '../api'
 import type { OfficeReplayRange } from '../office3d/replay'
+import {
+  OFFICE_FLOORS,
+  type OfficeFloorKey,
+  type OfficePresenceMember,
+} from '../office3d/livingOffice'
 import { officeAgentState } from '../officeProjection'
 import { ThreeOfficeScene } from './ThreeOfficeScene'
 
@@ -18,6 +23,9 @@ export interface OfficeSceneProps {
   replayRange: OfficeReplayRange | null
   showRoster?: boolean
   presentation?: 'operational' | 'workspace'
+  floor?: OfficeFloorKey
+  workspaceMembers?: OfficePresenceMember[]
+  onFloorChange?: (floor: OfficeFloorKey) => void
 }
 
 function profileName(
@@ -40,6 +48,9 @@ export function OfficeScene({
   replayRange,
   showRoster = true,
   presentation = 'operational',
+  floor = 'build',
+  workspaceMembers = [],
+  onFloorChange,
 }: OfficeSceneProps) {
   const profileByKey = useMemo(
     () => new Map(profiles.map((profile) => [profile.key, profile])),
@@ -66,13 +77,32 @@ export function OfficeScene({
               : 'Canonical AgentRun state · drag to orbit · right-drag to pan · wheel to zoom'}
           </span>
         </div>
-        <span className="office-render-mode">
-          {presentation === 'workspace'
-            ? 'Workspace shell'
-            : mode === 'replay'
-              ? 'Historical replay · factual timestamps compressed'
-              : 'Canonical state'}
-        </span>
+        <div className="office-scene-meta">
+          {presentation === 'workspace' && onFloorChange && (
+            <div className="office-floor-switcher" aria-label="Office floor">
+              {OFFICE_FLOORS.map((candidate) => (
+                <button
+                  key={candidate.key}
+                  type="button"
+                  className={candidate.key === floor ? 'active' : ''}
+                  aria-pressed={candidate.key === floor}
+                  title={`${candidate.label} · ${candidate.purpose}`}
+                  onClick={() => onFloorChange(candidate.key)}
+                >
+                  <span>{candidate.shortLabel}</span>
+                  <strong>{candidate.label}</strong>
+                </button>
+              ))}
+            </div>
+          )}
+          <span className="office-render-mode">
+            {presentation === 'workspace'
+              ? `${OFFICE_FLOORS.find((candidate) => candidate.key === floor)?.label ?? 'Office'} floor`
+              : mode === 'replay'
+                ? 'Historical replay · factual timestamps compressed'
+                : 'Canonical state'}
+          </span>
+        </div>
       </div>
 
       <ThreeOfficeScene
@@ -86,6 +116,8 @@ export function OfficeScene({
         replayNonce={replayNonce}
         replayStartedAt={replayStartedAt}
         replayRange={replayRange}
+        floor={floor}
+        workspaceMembers={workspaceMembers}
       />
 
       {showRoster && (
