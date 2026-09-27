@@ -12,6 +12,7 @@ from datetime import datetime
 from agent_office.application.audit import AuditService
 from agent_office.application.planning.errors import (
     ComposerThreadNotFoundError,
+    PlanningArtifactNotFoundError,
     PlanningTransitionError,
     RequirementCandidateNotFoundError,
     TeamProposalNotFoundError,
@@ -48,9 +49,9 @@ from agent_office.domain import (
     PlanningArtifactType,
     PlanningContent,
     PlanningEvent,
-    PlanningValue,
     PlanningEventId,
     PlanningEventType,
+    PlanningValue,
     ProjectId,
     RequirementCandidate,
     RequirementCandidateId,
