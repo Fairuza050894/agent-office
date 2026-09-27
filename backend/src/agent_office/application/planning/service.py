@@ -132,7 +132,6 @@ class ComposerThreadService:
         messages: ComposerMessageRepository,
         projects: ProjectService,
         events: PlanningEventService,
-        audit: AuditService,
         *,
         clock: Clock = utc_now,
         thread_id_factory: Callable[[], ComposerThreadId] = ComposerThreadId.new,
@@ -142,7 +141,6 @@ class ComposerThreadService:
         self._messages = messages
         self._projects = projects
         self._events = events
-        self._audit = audit
         self._clock = clock
         self._thread_id_factory = thread_id_factory
         self._message_id_factory = message_id_factory
@@ -412,6 +410,7 @@ class PlanningArtifactService:
         repository: PlanningArtifactRepository,
         threads: ComposerThreadService,
         events: PlanningEventService,
+        audit: AuditService,
         *,
         clock: Clock = utc_now,
         artifact_id_factory: Callable[[], PlanningArtifactId] = PlanningArtifactId.new,
@@ -419,6 +418,7 @@ class PlanningArtifactService:
         self._repository = repository
         self._threads = threads
         self._events = events
+        self._audit = audit
         self._clock = clock
         self._artifact_id_factory = artifact_id_factory
 
