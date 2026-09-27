@@ -54,11 +54,7 @@ def _member_map(preparation: dict[str, object]) -> dict[str, dict[str, object]]:
     assert isinstance(proposal, dict)
     members = proposal["members"]
     assert isinstance(members, list)
-    return {
-        str(member["role_key"]): member
-        for member in members
-        if isinstance(member, dict)
-    }
+    return {str(member["role_key"]): member for member in members if isinstance(member, dict)}
 
 
 def test_auto_project_reentry_stops_at_plan_with_small_planning_cell(
@@ -154,9 +150,7 @@ def test_explicit_run_is_recorded_but_execution_stays_blocked(
     assert prepared["thread"]["status"] == "AWAITING_USER"
 
     questions = [
-        artifact
-        for artifact in prepared["artifacts"]
-        if artifact["artifact_type"] == "QUESTION"
+        artifact for artifact in prepared["artifacts"] if artifact["artifact_type"] == "QUESTION"
     ]
     assert len(questions) == 1
     assert questions[0]["content"]["option_a"] == "Continue in read-only planning mode."
@@ -244,9 +238,7 @@ def test_project_reentry_brief_references_prior_planning_history(
     )
 
     brief = next(
-        artifact
-        for artifact in prepared["artifacts"]
-        if artifact["artifact_type"] == "BRIEF"
+        artifact for artifact in prepared["artifacts"] if artifact["artifact_type"] == "BRIEF"
     )
     assert brief["content"]["prior_planning_threads"] == 1
     assert brief["content"]["latest_prior_thread"] == "Initial planning"
