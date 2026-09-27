@@ -277,7 +277,6 @@ def _latest_user_message(messages: tuple[ComposerMessage, ...]) -> ComposerMessa
     raise ValueError("Composer thread has no user message to prepare")
 
 
-
 def _has_artifact(
     artifacts: tuple[PlanningArtifact, ...],
     artifact_type: PlanningArtifactType,
