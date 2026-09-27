@@ -131,6 +131,7 @@ class ComposerThreadService:
         messages: ComposerMessageRepository,
         projects: ProjectService,
         events: PlanningEventService,
+        audit: AuditService,
         *,
         clock: Clock = utc_now,
         thread_id_factory: Callable[[], ComposerThreadId] = ComposerThreadId.new,
@@ -140,6 +141,7 @@ class ComposerThreadService:
         self._messages = messages
         self._projects = projects
         self._events = events
+        self._audit = audit
         self._clock = clock
         self._thread_id_factory = thread_id_factory
         self._message_id_factory = message_id_factory
@@ -229,6 +231,19 @@ class ComposerThreadService:
             ),
         )
         return resolved
+
+    def resume_after_user_decision(self, thread_id: ComposerThreadId) -> ComposerThread:
+        thread = self.get_thread(thread_id)
+        if thread.status is not ComposerThreadStatus.AWAITING_USER:
+            return thread
+
+        resumed = replace(
+            thread,
+            status=ComposerThreadStatus.ACTIVE,
+            updated_at=utc_now(self._clock),
+        )
+        self._threads.save(resumed)
+        return resumed
 
     def append_user_message(
         self,
@@ -440,6 +455,111 @@ class PlanningArtifactService:
             ),
         )
         return artifact
+
+    def get(self, artifact_id: PlanningArtifactId) -> PlanningArtifact:
+        artifact = self._repository.get(artifact_id)
+        if artifact is None:
+            raise PlanningArtifactNotFoundError(
+                f"Planning artifact {artifact_id} was not found"
+            )
+        return artifact
+
+    def resolve_question(
+        self,
+        artifact_id: PlanningArtifactId,
+        *,
+        selected_option: str,
+        note: str | None = None,
+    ) -> tuple[PlanningArtifact, PlanningArtifact]:
+        question = self.get(artifact_id)
+        if question.artifact_type is not PlanningArtifactType.QUESTION:
+            raise PlanningTransitionError("Only QUESTION artifacts can be resolved")
+        if question.status is not PlanningArtifactStatus.OPEN:
+            raise PlanningTransitionError(
+                "Planning question decision is immutable once recorded"
+            )
+
+        normalized_option = selected_option.strip()
+        content = dict(question.content)
+        selected_value = content.get(normalized_option)
+        if not normalized_option.startswith("option_") or not isinstance(
+            selected_value, str
+        ):
+            raise PlanningTransitionError(
+                "Selected planning option is not declared by this question"
+            )
+
+        normalized_note = None if note is None else note.strip()
+        now = utc_now(self._clock)
+        resolved = replace(
+            question,
+            status=PlanningArtifactStatus.RESOLVED,
+            updated_at=now,
+        )
+
+        decision_pairs: list[tuple[str, object]] = [
+            ("question_artifact_id", str(question.id)),
+            ("selected_option", normalized_option),
+            ("selected_value", selected_value),
+        ]
+        recommendation = content.get("recommendation")
+        if isinstance(recommendation, str) and recommendation:
+            decision_pairs.append(("recommendation", recommendation))
+        if normalized_note:
+            decision_pairs.append(("note", normalized_note))
+
+        decision = PlanningArtifact(
+            id=self._artifact_id_factory(),
+            thread_id=question.thread_id,
+            artifact_type=PlanningArtifactType.DECISION,
+            title=f"Decision · {question.title}"[:240],
+            content=build_planning_content(tuple(decision_pairs)),
+            author_role_key=None,
+            status=PlanningArtifactStatus.RESOLVED,
+            created_at=now,
+            updated_at=now,
+        )
+
+        self._repository.resolve_question(resolved, decision)
+        thread = self._threads.get_thread(question.thread_id)
+
+        self._events.emit(
+            thread,
+            PlanningEventType.ARTIFACT_RESOLVED,
+            payload=(
+                ("artifact_id", str(question.id)),
+                ("decision_artifact_id", str(decision.id)),
+                ("selected_option", normalized_option),
+            ),
+        )
+        self._events.emit(
+            thread,
+            PlanningEventType.ARTIFACT_CREATED,
+            payload=(
+                ("artifact_id", str(decision.id)),
+                ("artifact_type", decision.artifact_type.value),
+            ),
+        )
+        self._audit.record(
+            project_id=thread.project_id,
+            run_id=None,
+            action=AuditAction.PLANNING_DECISION_RECORDED,
+            actor_type=AuditActorType.USER,
+            target_type=AuditTargetType.PLANNING_ARTIFACT,
+            target_id=str(question.id),
+            safe_metadata=(("selected_option", normalized_option),),
+        )
+
+        open_questions = tuple(
+            artifact
+            for artifact in self._repository.list_by_thread(thread.id)
+            if artifact.artifact_type is PlanningArtifactType.QUESTION
+            and artifact.status is PlanningArtifactStatus.OPEN
+        )
+        if not open_questions:
+            self._threads.resume_after_user_decision(thread.id)
+
+        return resolved, decision
 
     def list_for_thread(self, thread_id: ComposerThreadId) -> tuple[PlanningArtifact, ...]:
         self._threads.get_thread(thread_id)
