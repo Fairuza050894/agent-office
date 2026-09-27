@@ -234,6 +234,28 @@ class UniversalComposerPlanningService:
             for member in members
             if member.disposition is TeamMemberDisposition.DEFERRED
         )
+        review_roles = ", ".join(
+            member.role_key
+            for member in members
+            if member.disposition is TeamMemberDisposition.INCLUDED
+            and member.role_key
+            in {
+                "product-designer",
+                "qa-engineer",
+                "security-reviewer",
+                "technical-writer",
+            }
+        )
+        open_questions = (
+            "User decision is required before planning can continue."
+            if resolution.requires_user_action
+            else "NONE_IDENTIFIED_BY_DETERMINISTIC_PHASE_9C"
+        )
+        documentation_impact = (
+            "Documentation scope is explicitly present in the planning team."
+            if "technical-writer" in included
+            else "TO_BE_ASSESSED_AFTER_READ_ONLY_PROJECT_CONTEXT"
+        )
 
         return self._artifacts.create(
             thread.id,
@@ -248,14 +270,57 @@ class UniversalComposerPlanningService:
                 ("prior_planning_threads", prior_thread_count),
                 ("latest_prior_thread", latest_prior_title),
                 ("latest_prior_status", latest_prior_status),
+                (
+                    "last_meaningful_work",
+                    (
+                        f"{latest_prior_title} · {latest_prior_status}"
+                        if prior_thread_count
+                        else "NO_PRIOR_PLANNING_THREAD"
+                    ),
+                ),
                 ("instruction", instruction),
                 ("requested_intent", thread.requested_intent.value),
                 ("resolved_intent", resolution.resolved_intent.value),
                 ("planning_roles", included),
                 ("deferred_roles", deferred),
+                ("expected_implementation_roles", deferred or "NONE_IDENTIFIED"),
+                ("expected_review_roles", review_roles or "NONE_IDENTIFIED"),
                 (
                     "repository_state",
                     "NOT_INSPECTED_IN_PHASE_9C",
+                ),
+                (
+                    "architecture_dependencies",
+                    "NOT_INSPECTED_IN_PHASE_9C",
+                ),
+                (
+                    "observed_gaps",
+                    "NOT_INSPECTED_IN_PHASE_9C",
+                ),
+                (
+                    "relevant_technical_debt",
+                    "NOT_INSPECTED_IN_PHASE_9C",
+                ),
+                (
+                    "requirement_candidates",
+                    "NONE_PROPOSED_UNTIL_READ_ONLY_PROJECT_CONTEXT_IS_AVAILABLE",
+                ),
+                ("open_questions", open_questions),
+                (
+                    "risks",
+                    "Repository facts are unavailable; implementation must remain inactive.",
+                ),
+                (
+                    "proposed_implementation_scope",
+                    "NOT_PROPOSED_UNTIL_REQUIREMENTS_ARE_GROUNDED_AND_APPROVED",
+                ),
+                ("documentation_impact", documentation_impact),
+                (
+                    "verification_plan",
+                    (
+                        "Phase 9D inspects bounded read-only context; the user reviews "
+                        "RequirementCandidates; Phase 9E may promote only approved scope."
+                    ),
                 ),
                 (
                     "repository_context_gate",
