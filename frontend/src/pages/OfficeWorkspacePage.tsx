@@ -32,6 +32,24 @@ function composerTitle(instruction: string): string {
   return compact.length <= 96 ? compact : `${compact.slice(0, 93)}…`
 }
 
+async function loadPlanningSnapshot(thread: ComposerThread) {
+  const [loadedMessages, teams, artifacts, requirements, eventPage] = await Promise.all([
+    api.listComposerMessages(thread.id),
+    api.listTeamProposals(thread.id),
+    api.listPlanningArtifacts(thread.id),
+    api.listRequirementCandidates(thread.id),
+    api.listPlanningEvents(thread.id),
+  ])
+
+  return {
+    messages: loadedMessages,
+    team: teams.length > 0 ? teams[teams.length - 1] : null,
+    artifacts,
+    requirements,
+    events: eventPage.events,
+  }
+}
+
 export function OfficeWorkspacePage() {
   const [projects, setProjects] = useState<Project[]>([])
   const [executors, setExecutors] = useState<Executor[]>([])
@@ -41,6 +59,7 @@ export function OfficeWorkspacePage() {
   const [isMaximized, setIsMaximized] = useState(false)
   const [registryError, setRegistryError] = useState<string | null>(null)
 
+  const [planningThreads, setPlanningThreads] = useState<ComposerThread[]>([])
   const [activeThread, setActiveThread] = useState<ComposerThread | null>(null)
   const [resolution, setResolution] = useState<IntentResolution | null>(null)
   const [messages, setMessages] = useState<ComposerMessage[]>([])
@@ -51,6 +70,7 @@ export function OfficeWorkspacePage() {
   >([])
   const [planningEvents, setPlanningEvents] = useState<PlanningEvent[]>([])
   const [isPreparing, setIsPreparing] = useState(false)
+  const [isRestoringThread, setIsRestoringThread] = useState(false)
   const [planningDecisionBusy, setPlanningDecisionBusy] = useState(false)
   const [planningActionBusy, setPlanningActionBusy] = useState(false)
   const [composerError, setComposerError] = useState<string | null>(null)
@@ -98,6 +118,72 @@ export function OfficeWorkspacePage() {
   }, [])
 
   useEffect(() => {
+    let active = true
+
+    if (!selectedProjectId) {
+      setPlanningThreads([])
+      setActiveThread(null)
+      setResolution(null)
+      setMessages([])
+      setPlanningTeam(null)
+      setPlanningArtifacts([])
+      setPlanningRequirements([])
+      setPlanningEvents([])
+      return () => {
+        active = false
+      }
+    }
+
+    setIsRestoringThread(true)
+    setComposerError(null)
+
+    api
+      .listProjectComposerThreads(selectedProjectId)
+      .then(async (threads) => {
+        if (!active) return
+        setPlanningThreads(threads)
+
+        const latest = threads[0]
+        if (!latest) {
+          setActiveThread(null)
+          setResolution(null)
+          setMessages([])
+          setPlanningTeam(null)
+          setPlanningArtifacts([])
+          setPlanningRequirements([])
+          setPlanningEvents([])
+          return
+        }
+
+        const snapshot = await loadPlanningSnapshot(latest)
+        if (!active) return
+
+        setActiveThread(latest)
+        setResolution(null)
+        setMessages(snapshot.messages)
+        setPlanningTeam(snapshot.team)
+        setPlanningArtifacts(snapshot.artifacts)
+        setPlanningRequirements(snapshot.requirements)
+        setPlanningEvents(snapshot.events)
+      })
+      .catch((reason) => {
+        if (!active) return
+        setComposerError(
+          reason instanceof Error
+            ? reason.message
+            : 'Unable to restore persisted planning history.',
+        )
+      })
+      .finally(() => {
+        if (active) setIsRestoringThread(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [selectedProjectId])
+
+  useEffect(() => {
     if (!isMaximized) return
 
     const handleEscape = (event: KeyboardEvent) => {
@@ -123,6 +209,7 @@ export function OfficeWorkspacePage() {
 
   const resetPlanningView = (projectId: string) => {
     setSelectedProjectId(projectId)
+    setPlanningThreads([])
     setActiveThread(null)
     setResolution(null)
     setMessages([])
@@ -131,6 +218,46 @@ export function OfficeWorkspacePage() {
     setPlanningRequirements([])
     setPlanningEvents([])
     setComposerError(null)
+  }
+
+  const openPlanningThread = async (threadId: string) => {
+    setComposerError(null)
+    setResolution(null)
+
+    if (!threadId) {
+      setActiveThread(null)
+      setMessages([])
+      setPlanningTeam(null)
+      setPlanningArtifacts([])
+      setPlanningRequirements([])
+      setPlanningEvents([])
+      return
+    }
+
+    const thread = planningThreads.find((candidate) => candidate.id === threadId)
+    if (!thread) {
+      setComposerError('The selected planning thread is no longer available.')
+      return
+    }
+
+    setIsRestoringThread(true)
+    try {
+      const snapshot = await loadPlanningSnapshot(thread)
+      setActiveThread(thread)
+      setMessages(snapshot.messages)
+      setPlanningTeam(snapshot.team)
+      setPlanningArtifacts(snapshot.artifacts)
+      setPlanningRequirements(snapshot.requirements)
+      setPlanningEvents(snapshot.events)
+    } catch (reason) {
+      setComposerError(
+        reason instanceof Error
+          ? reason.message
+          : 'Unable to restore the selected planning thread.',
+      )
+    } finally {
+      setIsRestoringThread(false)
+    }
   }
 
   const preparePlanning = async (payload: ComposerSubmitPayload) => {
@@ -143,16 +270,31 @@ export function OfficeWorkspacePage() {
     setComposerError(null)
 
     try {
-      const thread = await api.createComposerThread({
-        project_id: selectedProjectId,
-        requested_intent: payload.intent,
-        timezone: localTimezone(),
-        title: composerTitle(payload.instruction),
-        executor_id: payload.executorId,
-      })
+      const reusableThread =
+        activeThread &&
+        activeThread.project_id === selectedProjectId &&
+        activeThread.status === 'OPEN' &&
+        activeThread.requested_intent === payload.intent &&
+        messages.length === 0
+          ? activeThread
+          : null
+
+      const thread =
+        reusableThread ??
+        (await api.createComposerThread({
+          project_id: selectedProjectId,
+          requested_intent: payload.intent,
+          timezone: localTimezone(),
+          title: composerTitle(payload.instruction),
+          executor_id: payload.executorId,
+        }))
       const message = await api.postComposerMessage(thread.id, payload.instruction)
       const prepared: ComposerPreparation = await api.prepareComposerThread(thread.id)
 
+      setPlanningThreads((current) => [
+        prepared.thread,
+        ...current.filter((candidate) => candidate.id !== prepared.thread.id),
+      ])
       setActiveThread(prepared.thread)
       setResolution(prepared.resolution)
       setMessages([message])
@@ -335,6 +477,10 @@ export function OfficeWorkspacePage() {
         projects={projects}
         selectedProjectId={selectedProjectId}
         onProjectChange={resetPlanningView}
+        threads={planningThreads}
+        selectedThreadId={activeThread?.id ?? ''}
+        onThreadChange={openPlanningThread}
+        isThreadLoading={isRestoringThread}
         executors={executors}
         selectedExecutorId={selectedExecutorId}
         contextLabel={
