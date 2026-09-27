@@ -3,14 +3,52 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   api,
   type AgentProfile,
+  type ComposerMessage,
+  type ComposerPreparation,
+  type ComposerThread,
   type Executor,
+  type IntentResolution,
+  type PlanningArtifact,
+  type PlanningEvent,
   type Project,
+  type RequirementCandidate,
+  type TeamProposal,
 } from '../api'
 import { BottomOperationsDock } from '../components/office/BottomOperationsDock'
 import { OfficeCommandRail } from '../components/office/OfficeCommandRail'
-import { UniversalComposerShell } from '../components/office/UniversalComposerShell'
+import {
+  UniversalComposerShell,
+  type ComposerSubmitPayload,
+} from '../components/office/UniversalComposerShell'
 import { OfficeRendererBoundary } from '../components/OfficeRendererBoundary'
 import { OfficeScene } from '../components/OfficeScene'
+
+function localTimezone(): string {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+}
+
+function composerTitle(instruction: string): string {
+  const compact = instruction.replace(/\s+/g, ' ').trim()
+  return compact.length <= 96 ? compact : `${compact.slice(0, 93)}…`
+}
+
+async function loadPlanningSnapshot(thread: ComposerThread) {
+  const [loadedMessages, teams, artifacts, requirements, eventPage] = await Promise.all([
+    api.listComposerMessages(thread.id),
+    api.listTeamProposals(thread.id),
+    api.listPlanningArtifacts(thread.id),
+    api.listRequirementCandidates(thread.id),
+    api.listPlanningEvents(thread.id),
+  ])
+
+  return {
+    messages: loadedMessages,
+    team: teams.length > 0 ? teams[teams.length - 1] : null,
+    artifacts,
+    requirements,
+    events: eventPage.events,
+  }
+}
 
 export function OfficeWorkspacePage() {
   const [projects, setProjects] = useState<Project[]>([])
@@ -19,7 +57,23 @@ export function OfficeWorkspacePage() {
   const [selectedProjectId, setSelectedProjectId] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isMaximized, setIsMaximized] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [registryError, setRegistryError] = useState<string | null>(null)
+
+  const [planningThreads, setPlanningThreads] = useState<ComposerThread[]>([])
+  const [activeThread, setActiveThread] = useState<ComposerThread | null>(null)
+  const [resolution, setResolution] = useState<IntentResolution | null>(null)
+  const [messages, setMessages] = useState<ComposerMessage[]>([])
+  const [planningTeam, setPlanningTeam] = useState<TeamProposal | null>(null)
+  const [planningArtifacts, setPlanningArtifacts] = useState<PlanningArtifact[]>([])
+  const [planningRequirements, setPlanningRequirements] = useState<
+    RequirementCandidate[]
+  >([])
+  const [planningEvents, setPlanningEvents] = useState<PlanningEvent[]>([])
+  const [isPreparing, setIsPreparing] = useState(false)
+  const [isRestoringThread, setIsRestoringThread] = useState(false)
+  const [planningDecisionBusy, setPlanningDecisionBusy] = useState(false)
+  const [planningActionBusy, setPlanningActionBusy] = useState(false)
+  const [composerError, setComposerError] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
@@ -31,22 +85,21 @@ export function OfficeWorkspacePage() {
     ])
       .then(([loadedProjects, loadedExecutors, loadedProfiles]) => {
         if (!active) return
+        const initialProjectId =
+          loadedProjects.find((project) => project.status === 'ACTIVE')?.id ??
+          loadedProjects[0]?.id ??
+          ''
+
         setProjects(loadedProjects)
         setExecutors(loadedExecutors)
         setProfiles(loadedProfiles)
-        setSelectedProjectId((current) => {
-          if (current && loadedProjects.some((project) => project.id === current)) {
-            return current
-          }
-          return loadedProjects.find((project) => project.status === 'ACTIVE')?.id ??
-            loadedProjects[0]?.id ??
-            ''
-        })
-        setError(null)
+        setSelectedProjectId(initialProjectId)
+        setIsRestoringThread(Boolean(initialProjectId))
+        setRegistryError(null)
       })
       .catch((reason) => {
         if (!active) return
-        setError(
+        setRegistryError(
           reason instanceof Error
             ? reason.message
             : 'Office workspace registries are unavailable.',
@@ -60,6 +113,61 @@ export function OfficeWorkspacePage() {
       active = false
     }
   }, [])
+
+  useEffect(() => {
+    let active = true
+
+    if (!selectedProjectId) {
+      return () => {
+        active = false
+      }
+    }
+
+    api
+      .listProjectComposerThreads(selectedProjectId)
+      .then(async (threads) => {
+        if (!active) return
+        setPlanningThreads(threads)
+
+        const latest = threads[0]
+        if (!latest) {
+          setActiveThread(null)
+          setResolution(null)
+          setMessages([])
+          setPlanningTeam(null)
+          setPlanningArtifacts([])
+          setPlanningRequirements([])
+          setPlanningEvents([])
+          return
+        }
+
+        const snapshot = await loadPlanningSnapshot(latest)
+        if (!active) return
+
+        setActiveThread(latest)
+        setResolution(null)
+        setMessages(snapshot.messages)
+        setPlanningTeam(snapshot.team)
+        setPlanningArtifacts(snapshot.artifacts)
+        setPlanningRequirements(snapshot.requirements)
+        setPlanningEvents(snapshot.events)
+      })
+      .catch((reason) => {
+        if (!active) return
+        setComposerError(
+          reason instanceof Error
+            ? reason.message
+            : 'Unable to restore persisted planning history.',
+        )
+      })
+      .finally(() => {
+        if (active) setIsRestoringThread(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [selectedProjectId])
 
   useEffect(() => {
     if (!isMaximized) return
@@ -85,6 +193,222 @@ export function OfficeWorkspacePage() {
     executors[0]?.id ??
     null
 
+  const resetPlanningView = (projectId: string) => {
+    setSelectedProjectId(projectId)
+    setIsRestoringThread(Boolean(projectId))
+    setPlanningThreads([])
+    setActiveThread(null)
+    setResolution(null)
+    setMessages([])
+    setPlanningTeam(null)
+    setPlanningArtifacts([])
+    setPlanningRequirements([])
+    setPlanningEvents([])
+    setComposerError(null)
+  }
+
+  const openPlanningThread = async (threadId: string) => {
+    setComposerError(null)
+    setResolution(null)
+
+    if (!threadId) {
+      setActiveThread(null)
+      setMessages([])
+      setPlanningTeam(null)
+      setPlanningArtifacts([])
+      setPlanningRequirements([])
+      setPlanningEvents([])
+      return
+    }
+
+    const thread = planningThreads.find((candidate) => candidate.id === threadId)
+    if (!thread) {
+      setComposerError('The selected planning thread is no longer available.')
+      return
+    }
+
+    setIsRestoringThread(true)
+    try {
+      const snapshot = await loadPlanningSnapshot(thread)
+      setActiveThread(thread)
+      setMessages(snapshot.messages)
+      setPlanningTeam(snapshot.team)
+      setPlanningArtifacts(snapshot.artifacts)
+      setPlanningRequirements(snapshot.requirements)
+      setPlanningEvents(snapshot.events)
+    } catch (reason) {
+      setComposerError(
+        reason instanceof Error
+          ? reason.message
+          : 'Unable to restore the selected planning thread.',
+      )
+    } finally {
+      setIsRestoringThread(false)
+    }
+  }
+
+  const preparePlanning = async (payload: ComposerSubmitPayload) => {
+    if (!selectedProjectId) {
+      setComposerError('Select a registered Project before starting project planning.')
+      return
+    }
+
+    setIsPreparing(true)
+    setComposerError(null)
+
+    try {
+      const reusableThread =
+        activeThread &&
+        activeThread.project_id === selectedProjectId &&
+        activeThread.status === 'OPEN' &&
+        activeThread.requested_intent === payload.intent &&
+        messages.length === 0
+          ? activeThread
+          : null
+
+      const thread =
+        reusableThread ??
+        (await api.createComposerThread({
+          project_id: selectedProjectId,
+          requested_intent: payload.intent,
+          timezone: localTimezone(),
+          title: composerTitle(payload.instruction),
+          executor_id: payload.executorId,
+        }))
+      const message = await api.postComposerMessage(thread.id, payload.instruction)
+      const prepared: ComposerPreparation = await api.prepareComposerThread(thread.id)
+
+      setPlanningThreads((current) => [
+        prepared.thread,
+        ...current.filter((candidate) => candidate.id !== prepared.thread.id),
+      ])
+      setActiveThread(prepared.thread)
+      setResolution(prepared.resolution)
+      setMessages([message])
+      setPlanningTeam(prepared.team_proposal)
+      setPlanningArtifacts(prepared.artifacts)
+      setPlanningRequirements(prepared.requirements)
+
+      try {
+        const eventPage = await api.listPlanningEvents(thread.id)
+        setPlanningEvents(eventPage.events)
+      } catch {
+        setPlanningEvents([])
+        setComposerError(
+          'Planning was prepared, but its activity timeline could not be loaded.',
+        )
+      }
+    } catch (reason) {
+      setComposerError(
+        reason instanceof Error
+          ? reason.message
+          : 'Unable to prepare the planning thread.',
+      )
+    } finally {
+      setIsPreparing(false)
+    }
+  }
+
+  const decideTeam = async (decision: 'accept' | 'reject') => {
+    if (!planningTeam) return
+
+    setPlanningDecisionBusy(true)
+    setComposerError(null)
+    try {
+      const updated =
+        decision === 'accept'
+          ? await api.acceptTeamProposal(planningTeam.id)
+          : await api.rejectTeamProposal(planningTeam.id)
+      setPlanningTeam(updated)
+      if (activeThread) {
+        const eventPage = await api.listPlanningEvents(activeThread.id)
+        setPlanningEvents(eventPage.events)
+      }
+    } catch (reason) {
+      setComposerError(
+        reason instanceof Error
+          ? reason.message
+          : 'Unable to record the planning-team decision.',
+      )
+    } finally {
+      setPlanningDecisionBusy(false)
+    }
+  }
+
+  const resolvePlanningQuestion = async (
+    artifactId: string,
+    selectedOption: string,
+  ) => {
+    if (!activeThread) return
+
+    setPlanningActionBusy(true)
+    setComposerError(null)
+    try {
+      const result = await api.resolvePlanningQuestion(
+        artifactId,
+        selectedOption,
+      )
+      setPlanningArtifacts((current) => [
+        ...current.map((artifact) =>
+          artifact.id === result.question.id ? result.question : artifact,
+        ),
+        result.decision,
+      ])
+
+      const [thread, eventPage] = await Promise.all([
+        api.getComposerThread(activeThread.id),
+        api.listPlanningEvents(activeThread.id),
+      ])
+      setActiveThread(thread)
+      setPlanningEvents(eventPage.events)
+    } catch (reason) {
+      setComposerError(
+        reason instanceof Error
+          ? reason.message
+          : 'Unable to record the planning decision.',
+      )
+    } finally {
+      setPlanningActionBusy(false)
+    }
+  }
+
+  const decideRequirement = async (
+    requirementId: string,
+    decision: 'approve' | 'reject' | 'defer',
+  ) => {
+    if (!activeThread) return
+
+    setPlanningActionBusy(true)
+    setComposerError(null)
+    try {
+      const updated =
+        decision === 'approve'
+          ? await api.approveRequirement(requirementId)
+          : decision === 'reject'
+            ? await api.rejectRequirement(requirementId)
+            : await api.deferRequirement(requirementId)
+
+      setPlanningRequirements((current) =>
+        current.map((requirement) =>
+          requirement.id === updated.id ? updated : requirement,
+        ),
+      )
+      const eventPage = await api.listPlanningEvents(activeThread.id)
+      setPlanningEvents(eventPage.events)
+    } catch (reason) {
+      setComposerError(
+        reason instanceof Error
+          ? reason.message
+          : 'Unable to record the requirement decision.',
+      )
+    } finally {
+      setPlanningActionBusy(false)
+    }
+  }
+
+  const planningMode =
+    resolution?.resolved_intent ?? activeThread?.resolved_intent ?? null
+
   return (
     <div
       className={`page-view office-workspace ${isMaximized ? 'office-maximized' : ''}`}
@@ -92,10 +416,16 @@ export function OfficeWorkspacePage() {
       <OfficeCommandRail
         title="Office"
         projectName={selectedProject?.name ?? 'No Project selected'}
-        modeLabel="Workspace"
-        statusLabel={isLoading ? 'Loading registries' : 'No active Run selected'}
+        modeLabel={planningMode ?? 'Workspace'}
+        statusLabel={
+          isLoading
+            ? 'Loading registries'
+            : activeThread
+              ? `${activeThread.status} planning thread`
+              : 'No active Run selected'
+        }
         meta={
-          error
+          registryError
             ? 'Registry degraded'
             : `${projects.length} Project${projects.length === 1 ? '' : 's'}`
         }
@@ -130,35 +460,70 @@ export function OfficeWorkspacePage() {
       </div>
 
       <UniversalComposerShell
+        key={`${selectedProjectId || 'unscoped'}:${activeThread?.id ?? 'new'}`}
         projects={projects}
         selectedProjectId={selectedProjectId}
-        onProjectChange={setSelectedProjectId}
+        onProjectChange={resetPlanningView}
+        threads={planningThreads}
+        selectedThreadId={activeThread?.id ?? ''}
+        onThreadChange={openPlanningThread}
+        isThreadLoading={isRestoringThread}
         executors={executors}
         selectedExecutorId={selectedExecutorId}
         contextLabel={
-          error
-            ? 'Registry data is degraded; composer actions remain unavailable.'
+          registryError
+            ? 'Registry data is degraded; planning may be unavailable.'
             : selectedProject
               ? `${selectedProject.repository.name} · ${selectedProject.default_branch}`
               : 'Register a Project before repository-scoped work.'
         }
+        onSubmit={preparePlanning}
+        isSubmitting={isPreparing}
+        activeThread={activeThread}
+        resolution={resolution}
+        messages={messages}
+        error={composerError}
       />
 
       <BottomOperationsDock
+        key={activeThread?.id ?? 'idle-workspace'}
         events={[]}
         agents={[]}
         profiles={profiles}
         selectedAgentId={null}
         onSelectAgent={() => undefined}
-        modeLabel="Workspace"
-        defaultState="collapsed"
+        modeLabel={
+          activeThread && planningMode
+            ? `${planningMode} · ${activeThread.status}`
+            : 'Workspace'
+        }
+        defaultState={activeThread ? 'normal' : 'collapsed'}
         forceCollapsed={isMaximized}
+        planningThread={activeThread}
+        planningTeam={planningTeam}
+        planningArtifacts={planningArtifacts}
+        planningRequirements={planningRequirements}
+        planningEvents={planningEvents}
+        onAcceptPlanningTeam={() => decideTeam('accept')}
+        onRejectPlanningTeam={() => decideTeam('reject')}
+        onResolvePlanningQuestion={resolvePlanningQuestion}
+        onApproveRequirement={(requirementId) =>
+          decideRequirement(requirementId, 'approve')
+        }
+        onRejectRequirement={(requirementId) =>
+          decideRequirement(requirementId, 'reject')
+        }
+        onDeferRequirement={(requirementId) =>
+          decideRequirement(requirementId, 'defer')
+        }
+        planningDecisionBusy={planningDecisionBusy}
+        planningActionBusy={planningActionBusy}
       />
 
       <p className="office-workspace-note">
-        Phase 9A establishes the Office-first interaction shell only. No Ambient
-        persona, planning record, or repository-changing action is created
-        without later Phase 9 domain support.
+        Composer planning is durable and separate from operational Run truth.
+        Implementation roles remain inactive until approved requirements pass the
+        later execution-promotion gate.
       </p>
     </div>
   )

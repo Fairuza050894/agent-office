@@ -13,6 +13,7 @@ from agent_office.application.planning import (
     PlanningEventService,
     RequirementService,
     TeamProposalService,
+    UniversalComposerPlanningService,
 )
 from agent_office.application.projects import ProjectService
 from agent_office.application.recovery import RecoveryService
@@ -214,3 +215,15 @@ def get_requirement_service(request: Request) -> RequirementService:
 
     _database(request).initialize()
     return cast(RequirementService, request.app.state.requirement_service)
+
+
+def get_universal_composer_planning_service(
+    request: Request,
+) -> UniversalComposerPlanningService:
+    """Return deterministic Phase 9C Composer preparation service."""
+
+    _database(request).initialize()
+    return cast(
+        UniversalComposerPlanningService,
+        request.app.state.universal_composer_planning_service,
+    )

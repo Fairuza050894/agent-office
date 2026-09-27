@@ -680,6 +680,73 @@ that runtime is unavailable for PLAN/BRAINSTORM.
 
 Do not silently fall back to a writable ExecutorAdapter.
 
+## Schema v12 — role-scoped project memory
+
+Phase 9D adds a dedicated memory store because durable project learning has
+different semantics from chat messages and planning artifacts.
+
+### `role_memory_entries`
+
+```text
+id                  TEXT PRIMARY KEY
+project_id          TEXT NOT NULL REFERENCES projects(id)
+role_key            TEXT NOT NULL
+memory_type         TEXT NOT NULL
+title               TEXT NOT NULL
+summary             TEXT NOT NULL
+source_kind         TEXT NOT NULL
+source_ref          TEXT NOT NULL
+confidence          TEXT NOT NULL
+status              TEXT NOT NULL
+supersedes_id       TEXT NULL REFERENCES role_memory_entries(id)
+created_at          TEXT NOT NULL
+updated_at          TEXT NOT NULL
+archived_at         TEXT NULL
+```
+
+Recommended checks:
+
+```text
+memory_type IN (
+  PROJECT_CONVENTION,
+  DEFECT_PATTERN,
+  ARCHITECTURE_DECISION,
+  WORKFLOW_CAVEAT,
+  PRODUCT_CONSTRAINT
+)
+
+confidence IN (VERIFIED, USER_CONFIRMED)
+
+status IN (ACTIVE, SUPERSEDED, ARCHIVED)
+```
+
+Memory rules:
+
+- Project-scoped and role-scoped
+- source-attributed
+- bounded in size
+- user-inspectable
+- supersedable rather than silently rewritten
+- no hidden chain-of-thought
+- no raw provider transcript
+- no credentials, tokens, authorization headers, or `.env` contents
+- no unverified speculation promoted to VERIFIED memory
+
+Role memory is context input only. It is not canonical execution truth.
+
+### Memory API
+
+Recommended read surface:
+
+```text
+GET /api/projects/{project_id}/role-memory
+GET /api/projects/{project_id}/role-memory?role_key=system-analyst
+POST /api/role-memory/{memory_id}/archive
+```
+
+Initial creation should come from validated planning/runtime outputs or explicit
+user confirmation, not arbitrary free-form background extraction.
+
 ## Context resolver
 
 Recommended context sources:
@@ -772,7 +839,10 @@ This movement represents a real planning session, not an AgentRun.
 Bridge approved planning scope into the existing Task/Run engine without
 weakening Run safety.
 
-## Schema v12
+## Schema v13
+
+Phase 9D uses schema v12 for role-scoped project memory. Requirement promotion
+therefore advances the database to v13.
 
 Recommended promotion table:
 
@@ -803,6 +873,46 @@ created_at
 decided_at
 run_id              nullable
 ```
+
+## Conflict-aware execution planning
+
+The reference pattern usefully avoids concurrent writers touching the same
+project area. Agent Office adopts a stricter explicit version.
+
+Each ExecutionProposal must declare normalized repository-relative change areas.
+
+Recommended structure:
+
+```json
+[
+  {
+    "path": "backend/src/agent_office/application/planning/",
+    "access": "WRITE",
+    "owner_role_key": "backend-engineer"
+  },
+  {
+    "path": "frontend/src/components/office/",
+    "access": "WRITE",
+    "owner_role_key": "frontend-engineer"
+  }
+]
+```
+
+Rules:
+
+- paths are normalized and contained inside the selected Project
+- WRITE overlap is detected before parallel scheduling
+- overlapping WRITE areas fail closed by default
+- READ + WRITE overlap is allowed only when the reader is not presented as an
+  independent reviewer of its own concurrent output
+- workflows may explicitly serialize overlapping owners
+- an override requires an explicit workflow coordination strategy; never a
+  silent scheduler guess
+- changed-area declarations are planning/execution metadata, not evidence that
+  a file was actually modified
+
+Initial Phase 9E may serialize all write-capable AgentRuns if conflict-safe
+parallel scheduling is not yet proven.
 
 ## Promotion API
 
@@ -966,6 +1076,86 @@ When real work begins:
 3. factual planning or AgentRun actors take precedence
 4. no ambient transition is emitted as operational/planning Event
 
+## Safe Activity Interpreter
+
+Phase 9F introduces a presentation adapter that makes Office motion more
+expressive without changing canonical truth.
+
+Normalized presentation vocabulary:
+
+```text
+READING
+WRITING
+COMMAND
+TESTING
+REVIEWING
+DOCUMENTING
+WAITING_USER
+BLOCKED
+COMPLETED
+IDLE
+```
+
+Input precedence:
+
+```text
+1. canonical Run / AgentRun / Event state
+2. safe executor telemetry attached to the owning canonical work
+3. real persisted planning-session state
+4. clearly labeled Ambient state
+```
+
+Safe executor telemetry may include:
+
+```text
+agent_run_id
+operation_category
+tool_name
+repository_relative_path_label
+command_classification
+verification_key
+occurred_at
+```
+
+It must never include:
+
+- raw file contents
+- `.env` contents
+- credentials or tokens
+- authorization headers
+- full command text when it may contain secrets
+- raw provider transcript
+- hidden model reasoning
+
+Example mappings:
+
+```text
+READING       -> monitor/document-reading pose
+WRITING       -> typing pose
+COMMAND       -> terminal pose
+TESTING       -> verification workstation
+REVIEWING     -> review pose
+DOCUMENTING   -> documentation workstation
+WAITING_USER  -> decision-board area
+BLOCKED       -> incident/review wall
+COMPLETED     -> neutral return
+IDLE          -> Ambient scheduler only when factual work does not own the role
+```
+
+The interpreter outputs presentation state only. It may not create or mutate
+Run, AgentRun, Event, PlanningEvent, Finding, or Evidence records.
+
+### Decision-board spatial rule
+
+When a real ComposerThread is `AWAITING_USER` because an unresolved QUESTION
+artifact exists, participating planning roles may move to the decision-board
+area.
+
+That movement represents persisted planning state.
+
+It must stop immediately when the question is resolved, the planning session is
+closed, or factual operational work takes precedence.
+
 ## Power UX
 
 Finish:
@@ -1078,9 +1268,10 @@ Property/invariant tests for:
 
 Migration tests:
 
-- fresh v12 database
+- fresh v13 database
 - v10 -> v11
 - v11 -> v12
+- v12 -> v13
 - restart persistence
 - cross-Project mismatch rejection
 - malformed schema metadata fail-closed behavior
@@ -1202,3 +1393,48 @@ Reason:
 - it is reversible and low-risk
 - it lets the user validate visual direction before persistence/API complexity
 - backend truth remains unchanged while the shell is redesigned
+
+
+## 10. Reference-pattern adoption update
+
+The user-provided `Kantor Tim AI` artifact is an active design reference for
+Phase 9, but Agent Office keeps its own stronger canonical boundaries.
+
+Detailed adoption contract:
+
+```text
+docs/product/PHASE_9_REFERENCE_PATTERN_ADOPTION.md
+```
+
+Phase 9C additionally adopts:
+
+- actionable QUESTION artifacts with explicit options and recommendation
+- immutable user resolution that creates a DECISION artifact
+- USER AuditRecord for the planning decision
+- PlanningEvent history visible separately from operational Event history
+- explicit RequirementCandidate Approve / Defer / Reject controls in Office
+- explicit deferred work as durable ACTION artifacts
+
+Phase 9D additionally owns a structured RoleMemory design. Role memory must be
+project-scoped, role-scoped, source-attributed, bounded, inspectable, and must
+never contain hidden reasoning or raw secrets.
+
+Phase 9F additionally owns a safe Activity Interpreter. It may translate
+canonical state plus redacted executor telemetry into presentation-only poses,
+but raw provider transcripts are not operational truth.
+
+Activity precedence remains:
+
+```text
+canonical Run / AgentRun / Event
+        ↓
+safe executor telemetry attached to canonical work
+        ↓
+real planning session state
+        ↓
+clearly non-canonical Ambient state
+```
+
+Parallel write execution should become conflict-aware before multiple
+write-capable agents are allowed to operate concurrently on overlapping declared
+change areas.

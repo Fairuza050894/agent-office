@@ -17,6 +17,10 @@ class RequirementCandidateNotFoundError(PlanningError):
     """Requested RequirementCandidate does not exist."""
 
 
+class PlanningArtifactNotFoundError(PlanningError):
+    """Requested PlanningArtifact does not exist."""
+
+
 class PlanningPersistenceError(PlanningError):
     """A durable planning invariant was rejected."""
 

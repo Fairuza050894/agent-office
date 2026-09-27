@@ -8,6 +8,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
 
+from agent_office.application.planning import ComposerPreparation, IntentResolution
 from agent_office.domain import (
     ComposerActorType,
     ComposerIntent,
@@ -240,3 +241,69 @@ class PlanningEventResponse(BaseModel):
 class PlanningEventPageResponse(BaseModel):
     events: list[PlanningEventResponse]
     next_cursor: str | None
+
+
+class IntentResolutionResponse(BaseModel):
+    resolved_intent: ComposerIntent
+    reason_summary: str
+    requires_user_action: bool
+
+    @classmethod
+    def from_application(cls, resolution: IntentResolution) -> Self:
+        return cls(
+            resolved_intent=resolution.resolved_intent,
+            reason_summary=resolution.reason_summary,
+            requires_user_action=resolution.requires_user_action,
+        )
+
+
+class ComposerPreparationResponse(BaseModel):
+    thread: ComposerThreadResponse
+    resolution: IntentResolutionResponse
+    team_proposal: TeamProposalResponse
+    artifacts: list[PlanningArtifactResponse]
+    requirements: list[RequirementCandidateResponse]
+
+    @classmethod
+    def from_application(cls, preparation: ComposerPreparation) -> Self:
+        return cls(
+            thread=ComposerThreadResponse.from_domain(preparation.thread),
+            resolution=IntentResolutionResponse.from_application(preparation.resolution),
+            team_proposal=TeamProposalResponse.from_domain(
+                preparation.team_proposal,
+                preparation.team_members,
+            ),
+            artifacts=[
+                PlanningArtifactResponse.from_domain(artifact) for artifact in preparation.artifacts
+            ],
+            requirements=[
+                RequirementCandidateResponse.from_domain(requirement)
+                for requirement in preparation.requirements
+            ],
+        )
+
+
+class ResolvePlanningQuestionRequest(BaseModel):
+    selected_option: str = Field(min_length=1, max_length=64)
+    note: str | None = Field(default=None, max_length=2_000)
+
+    @field_validator("selected_option")
+    @classmethod
+    def normalize_selected_option(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized.startswith("option_"):
+            raise ValueError("selected_option must reference a declared option")
+        return normalized
+
+    @field_validator("note")
+    @classmethod
+    def normalize_note(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        return normalized or None
+
+
+class PlanningQuestionDecisionResponse(BaseModel):
+    question: PlanningArtifactResponse
+    decision: PlanningArtifactResponse

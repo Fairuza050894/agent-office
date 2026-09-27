@@ -21,22 +21,27 @@ from agent_office.api.dependencies import (
     get_planning_event_service,
     get_requirement_service,
     get_team_proposal_service,
+    get_universal_composer_planning_service,
 )
 from agent_office.api.planning_models import (
     ComposerMessageResponse,
+    ComposerPreparationResponse,
     ComposerThreadResponse,
     CreateComposerMessageRequest,
     CreateComposerThreadRequest,
     PlanningArtifactResponse,
     PlanningEventPageResponse,
     PlanningEventResponse,
+    PlanningQuestionDecisionResponse,
     RequirementCandidateResponse,
+    ResolvePlanningQuestionRequest,
     TeamProposalResponse,
 )
 from agent_office.application.planning import (
     MAX_PLANNING_EVENT_PAGE_SIZE,
     ComposerThreadNotFoundError,
     ComposerThreadService,
+    PlanningArtifactNotFoundError,
     PlanningArtifactService,
     PlanningEventCursor,
     PlanningEventService,
@@ -45,12 +50,14 @@ from agent_office.application.planning import (
     RequirementService,
     TeamProposalNotFoundError,
     TeamProposalService,
+    UniversalComposerPlanningService,
 )
 from agent_office.application.projects import ProjectNotFoundError
 from agent_office.domain import (
     ComposerThreadId,
     DomainInvariantError,
     ExecutorId,
+    PlanningArtifactId,
     PlanningEvent,
     PlanningEventId,
     ProjectId,
@@ -80,6 +87,10 @@ RequirementServiceDependency = Annotated[
 PlanningEventServiceDependency = Annotated[
     PlanningEventService,
     Depends(get_planning_event_service),
+]
+UniversalComposerPlanningServiceDependency = Annotated[
+    UniversalComposerPlanningService,
+    Depends(get_universal_composer_planning_service),
 ]
 
 STREAM_POLL_SECONDS = 0.25
@@ -130,6 +141,21 @@ def get_thread(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
 
+@router.get(
+    "/api/projects/{project_id}/composer/threads",
+    response_model=list[ComposerThreadResponse],
+)
+def list_project_threads(
+    project_id: UUID,
+    service: ComposerServiceDependency,
+) -> list[ComposerThreadResponse]:
+    try:
+        threads = service.list_for_project(ProjectId(project_id))
+    except ProjectNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    return [ComposerThreadResponse.from_domain(thread) for thread in threads]
+
+
 @router.post(
     "/api/composer/threads/{thread_id}/messages",
     response_model=ComposerMessageResponse,
@@ -153,6 +179,27 @@ def post_message(
             detail=str(exc),
         ) from exc
     return ComposerMessageResponse.from_domain(message)
+
+
+@router.post(
+    "/api/composer/threads/{thread_id}/prepare",
+    response_model=ComposerPreparationResponse,
+)
+def prepare_thread(
+    thread_id: UUID,
+    service: UniversalComposerPlanningServiceDependency,
+) -> ComposerPreparationResponse:
+    try:
+        preparation = service.prepare(ComposerThreadId(thread_id))
+    except ComposerThreadNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except ProjectNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    except (DomainInvariantError, PlanningTransitionError) as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    return ComposerPreparationResponse.from_application(preparation)
 
 
 @router.get(
@@ -236,6 +283,37 @@ def list_artifacts(
     except ComposerThreadNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     return [PlanningArtifactResponse.from_domain(artifact) for artifact in artifacts]
+
+
+@router.post(
+    "/api/planning-artifacts/{artifact_id}/resolve",
+    response_model=PlanningQuestionDecisionResponse,
+)
+def resolve_planning_question(
+    artifact_id: UUID,
+    request: ResolvePlanningQuestionRequest,
+    service: ArtifactServiceDependency,
+) -> PlanningQuestionDecisionResponse:
+    try:
+        question, decision = service.resolve_question(
+            PlanningArtifactId(artifact_id),
+            selected_option=request.selected_option,
+            note=request.note,
+        )
+    except PlanningArtifactNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except PlanningTransitionError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    except DomainInvariantError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(exc),
+        ) from exc
+
+    return PlanningQuestionDecisionResponse(
+        question=PlanningArtifactResponse.from_domain(question),
+        decision=PlanningArtifactResponse.from_domain(decision),
+    )
 
 
 @router.get(

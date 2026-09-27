@@ -4,6 +4,8 @@ import { Link } from '../router/Link'
 export interface NavigationProps {
   isOpen: boolean
   onClose?: () => void
+  isCollapsed?: boolean
+  onToggleCollapsed?: () => void
 }
 
 const SECTION_LABELS: Record<NavSection, string> = {
@@ -13,7 +15,12 @@ const SECTION_LABELS: Record<NavSection, string> = {
   CONTROL: 'Control',
 }
 
-export function Navigation({ isOpen, onClose }: NavigationProps) {
+export function Navigation({
+  isOpen,
+  onClose,
+  isCollapsed = false,
+  onToggleCollapsed,
+}: NavigationProps) {
   const getItemsBySection = (section: NavSection) =>
     NAV_ITEMS.filter((item) => item.section === section)
 
@@ -27,7 +34,7 @@ export function Navigation({ isOpen, onClose }: NavigationProps) {
         />
       )}
       <aside
-        className={`app-sidebar ${isOpen ? 'open' : ''}`}
+        className={`app-sidebar ${isOpen ? 'open' : ''} ${isCollapsed ? 'sidebar-collapsed' : ''}`}
         aria-label="Sidebar Navigation"
       >
         <div className="sidebar-brand">
@@ -36,6 +43,17 @@ export function Navigation({ isOpen, onClose }: NavigationProps) {
             <span className="brand-title">Agent Office</span>
             <span className="brand-subtitle">Engineering control plane</span>
           </div>
+          {onToggleCollapsed && (
+            <button
+              type="button"
+              className="sidebar-collapse-btn"
+              onClick={onToggleCollapsed}
+              aria-label={isCollapsed ? 'Expand Office navigation' : 'Collapse Office navigation'}
+              title={isCollapsed ? 'Expand navigation' : 'Collapse navigation for a wider Office'}
+            >
+              <span aria-hidden="true">{isCollapsed ? '›' : '‹'}</span>
+            </button>
+          )}
           {onClose && (
             <button
               type="button"

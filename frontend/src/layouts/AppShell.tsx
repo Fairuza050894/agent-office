@@ -19,11 +19,43 @@ import { ProjectDetailPage } from '../pages/ProjectDetailPage'
 import { RunOfficePage } from '../pages/RunOfficePage'
 import { OfficeWorkspacePage } from '../pages/OfficeWorkspacePage'
 
+const OFFICE_SIDEBAR_STORAGE_KEY = 'agent-office.office-sidebar-collapsed'
+
+function readOfficeSidebarCollapsed(): boolean {
+  if (typeof window === 'undefined') return false
+
+  try {
+    return window.localStorage.getItem(OFFICE_SIDEBAR_STORAGE_KEY) === 'true'
+  } catch {
+    return false
+  }
+}
+
+function storeOfficeSidebarCollapsed(collapsed: boolean): void {
+  try {
+    window.localStorage.setItem(OFFICE_SIDEBAR_STORAGE_KEY, String(collapsed))
+  } catch {
+    // Local storage is a convenience only; navigation remains fully usable without it.
+  }
+}
+
 export function AppShell() {
   const { currentPath } = useRouter()
   const [isNavOpen, setIsNavOpen] = useState(false)
+  const [isOfficeSidebarCollapsed, setIsOfficeSidebarCollapsed] = useState(
+    readOfficeSidebarCollapsed,
+  )
   const isOfficeFocus =
     currentPath === '/office' || /^\/runs\/[^/]+\/office$/.test(currentPath)
+  const sidebarCollapsed = isOfficeFocus && isOfficeSidebarCollapsed
+
+  const toggleOfficeSidebar = () => {
+    setIsOfficeSidebarCollapsed((current) => {
+      const next = !current
+      storeOfficeSidebarCollapsed(next)
+      return next
+    })
+  }
 
   // Close drawer on Escape key
   useEffect(() => {
@@ -94,6 +126,8 @@ export function AppShell() {
       <Navigation
         isOpen={isNavOpen}
         onClose={() => setIsNavOpen(false)}
+        isCollapsed={sidebarCollapsed}
+        onToggleCollapsed={isOfficeFocus ? toggleOfficeSidebar : undefined}
       />
 
       <div className="app-layout">

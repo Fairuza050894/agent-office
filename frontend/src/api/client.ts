@@ -2,6 +2,10 @@ import type {
   AgentProfile,
   AgentRun,
   AuditRecord,
+  ComposerMessage,
+  ComposerPreparation,
+  ComposerThread,
+  CreateComposerThreadRequest,
   CompletionGateResponse,
   CreateRunRequest,
   CreateTaskRequest,
@@ -9,14 +13,19 @@ import type {
   Executor,
   Evidence,
   HealthResponse,
+  PlanningArtifact,
+  PlanningEventPageResponse,
+  PlanningQuestionDecision,
   Project,
   RegisterProjectRequest,
+  RequirementCandidate,
   ResumeRunRequest,
   Run,
   RunFindingsResponse,
   RunStage,
   StartRunRequest,
   Task,
+  TeamProposal,
   VerificationStatus,
   VersionResponse,
   WorkflowDefinition,
@@ -201,4 +210,65 @@ export const api = {
   listAgentProfiles: (): Promise<AgentProfile[]> => request('/api/agent-profiles'),
   listExecutors: (): Promise<Executor[]> => request('/api/executors'),
   listWorkflows: (): Promise<WorkflowDefinition[]> => request('/api/workflows'),
+
+  createComposerThread: (data: CreateComposerThreadRequest): Promise<ComposerThread> =>
+    request('/api/composer/threads', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  getComposerThread: (threadId: string): Promise<ComposerThread> =>
+    request(`/api/composer/threads/${encodeURIComponent(threadId)}`),
+  listProjectComposerThreads: (projectId: string): Promise<ComposerThread[]> =>
+    request(`/api/projects/${encodeURIComponent(projectId)}/composer/threads`),
+  postComposerMessage: (threadId: string, content: string): Promise<ComposerMessage> =>
+    request(`/api/composer/threads/${encodeURIComponent(threadId)}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    }),
+  listComposerMessages: (threadId: string): Promise<ComposerMessage[]> =>
+    request(`/api/composer/threads/${encodeURIComponent(threadId)}/messages`),
+  prepareComposerThread: (threadId: string): Promise<ComposerPreparation> =>
+    request(`/api/composer/threads/${encodeURIComponent(threadId)}/prepare`, {
+      method: 'POST',
+    }),
+  listTeamProposals: (threadId: string): Promise<TeamProposal[]> =>
+    request(`/api/composer/threads/${encodeURIComponent(threadId)}/team-proposals`),
+  acceptTeamProposal: (proposalId: string): Promise<TeamProposal> =>
+    request(`/api/team-proposals/${encodeURIComponent(proposalId)}/accept`, {
+      method: 'POST',
+    }),
+  rejectTeamProposal: (proposalId: string): Promise<TeamProposal> =>
+    request(`/api/team-proposals/${encodeURIComponent(proposalId)}/reject`, {
+      method: 'POST',
+    }),
+  listPlanningArtifacts: (threadId: string): Promise<PlanningArtifact[]> =>
+    request(`/api/composer/threads/${encodeURIComponent(threadId)}/artifacts`),
+  resolvePlanningQuestion: (
+    artifactId: string,
+    selectedOption: string,
+    note?: string,
+  ): Promise<PlanningQuestionDecision> =>
+    request(`/api/planning-artifacts/${encodeURIComponent(artifactId)}/resolve`, {
+      method: 'POST',
+      body: JSON.stringify({
+        selected_option: selectedOption,
+        note: note || null,
+      }),
+    }),
+  listRequirementCandidates: (threadId: string): Promise<RequirementCandidate[]> =>
+    request(`/api/composer/threads/${encodeURIComponent(threadId)}/requirements`),
+  approveRequirement: (requirementId: string): Promise<RequirementCandidate> =>
+    request(`/api/requirements/${encodeURIComponent(requirementId)}/approve`, {
+      method: 'POST',
+    }),
+  rejectRequirement: (requirementId: string): Promise<RequirementCandidate> =>
+    request(`/api/requirements/${encodeURIComponent(requirementId)}/reject`, {
+      method: 'POST',
+    }),
+  deferRequirement: (requirementId: string): Promise<RequirementCandidate> =>
+    request(`/api/requirements/${encodeURIComponent(requirementId)}/defer`, {
+      method: 'POST',
+    }),
+  listPlanningEvents: (threadId: string): Promise<PlanningEventPageResponse> =>
+    request(`/api/composer/threads/${encodeURIComponent(threadId)}/events`),
 }

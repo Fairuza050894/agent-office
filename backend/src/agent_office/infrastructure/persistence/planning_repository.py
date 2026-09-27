@@ -310,6 +310,62 @@ class SQLitePlanningArtifactRepository(PlanningArtifactRepository):
                 "Planning artifact persistence invariant failed"
             ) from exc
 
+    def get(self, artifact_id: PlanningArtifactId) -> PlanningArtifact | None:
+        with self._database.connection() as connection:
+            row = connection.execute(
+                "SELECT * FROM planning_artifacts WHERE id = ?",
+                (str(artifact_id),),
+            ).fetchone()
+        return None if row is None else _hydrate_artifact(row)
+
+    def resolve_question(
+        self,
+        question: PlanningArtifact,
+        decision: PlanningArtifact,
+    ) -> None:
+        if question.thread_id != decision.thread_id:
+            raise PlanningPersistenceError(
+                "Planning decision must belong to the same thread as its question"
+            )
+        try:
+            with self._database.transaction() as connection:
+                cursor = connection.execute(
+                    """
+                    UPDATE planning_artifacts
+                    SET status = ?, updated_at = ?
+                    WHERE id = ? AND artifact_type = 'QUESTION' AND status = 'OPEN'
+                    """,
+                    (
+                        question.status.value,
+                        _serialize_datetime(question.updated_at),
+                        str(question.id),
+                    ),
+                )
+                if cursor.rowcount != 1:
+                    raise PlanningPersistenceError("Planning question resolution was rejected")
+                connection.execute(
+                    """
+                    INSERT INTO planning_artifacts (
+                        id, thread_id, artifact_type, title, content_json,
+                        author_role_key, status, created_at, updated_at
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        str(decision.id),
+                        str(decision.thread_id),
+                        decision.artifact_type.value,
+                        decision.title,
+                        json.dumps(dict(decision.content), sort_keys=True),
+                        decision.author_role_key,
+                        decision.status.value,
+                        _serialize_datetime(decision.created_at),
+                        _serialize_datetime(decision.updated_at),
+                    ),
+                )
+        except sqlite3.IntegrityError as exc:
+            raise PlanningPersistenceError("Planning question resolution invariant failed") from exc
+
     def list_by_thread(self, thread_id: ComposerThreadId) -> tuple[PlanningArtifact, ...]:
         with self._database.connection() as connection:
             rows = connection.execute(
