@@ -54,7 +54,7 @@ class AuditService:
     def record(
         self,
         *,
-        project_id: ProjectId,
+        project_id: ProjectId | None,
         run_id: RunId | None,
         action: AuditAction,
         actor_type: AuditActorType,

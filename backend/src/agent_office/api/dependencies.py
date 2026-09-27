@@ -7,6 +7,13 @@ from fastapi import Request
 from agent_office.application.audit import AuditService
 from agent_office.application.events import EventService
 from agent_office.application.orchestration import RunOrchestrator
+from agent_office.application.planning import (
+    ComposerThreadService,
+    PlanningArtifactService,
+    PlanningEventService,
+    RequirementService,
+    TeamProposalService,
+)
 from agent_office.application.projects import ProjectService
 from agent_office.application.recovery import RecoveryService
 from agent_office.application.review import FindingService
@@ -172,3 +179,39 @@ def get_verification_service(request: Request) -> VerificationService:
     _database(request).initialize()
 
     return cast(VerificationService, request.app.state.verification_service)
+
+
+
+def get_composer_thread_service(request: Request) -> ComposerThreadService:
+    """Return the durable Composer thread service."""
+
+    _database(request).initialize()
+    return cast(ComposerThreadService, request.app.state.composer_thread_service)
+
+
+def get_planning_event_service(request: Request) -> PlanningEventService:
+    """Return the separate planning-event service."""
+
+    _database(request).initialize()
+    return cast(PlanningEventService, request.app.state.planning_event_service)
+
+
+def get_team_proposal_service(request: Request) -> TeamProposalService:
+    """Return the durable TeamProposal service."""
+
+    _database(request).initialize()
+    return cast(TeamProposalService, request.app.state.team_proposal_service)
+
+
+def get_planning_artifact_service(request: Request) -> PlanningArtifactService:
+    """Return the structured planning-artifact service."""
+
+    _database(request).initialize()
+    return cast(PlanningArtifactService, request.app.state.planning_artifact_service)
+
+
+def get_requirement_service(request: Request) -> RequirementService:
+    """Return RequirementCandidate lifecycle service."""
+
+    _database(request).initialize()
+    return cast(RequirementService, request.app.state.requirement_service)

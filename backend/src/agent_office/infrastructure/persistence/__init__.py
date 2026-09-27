@@ -11,6 +11,14 @@ from agent_office.infrastructure.persistence.evidence_repository import (
     SQLiteEvidenceRepository,
 )
 from agent_office.infrastructure.persistence.finding_repository import SQLiteFindingRepository
+from agent_office.infrastructure.persistence.planning_repository import (
+    SQLiteComposerMessageRepository,
+    SQLiteComposerThreadRepository,
+    SQLitePlanningArtifactRepository,
+    SQLitePlanningEventRepository,
+    SQLiteRequirementCandidateRepository,
+    SQLiteTeamProposalRepository,
+)
 from agent_office.infrastructure.persistence.project_repository import (
     SQLiteProjectRepository,
 )
@@ -33,7 +41,13 @@ __all__ = [
     "SQLiteEvidenceRepository",
     "SQLiteEventRepository",
     "SQLiteFindingRepository",
+    "SQLiteComposerMessageRepository",
+    "SQLiteComposerThreadRepository",
+    "SQLitePlanningArtifactRepository",
+    "SQLitePlanningEventRepository",
     "SQLiteProjectRepository",
+    "SQLiteRequirementCandidateRepository",
+    "SQLiteTeamProposalRepository",
     "SQLiteRunRepository",
     "SQLiteRunStageRepository",
     "SQLiteTaskRepository",

@@ -27,6 +27,15 @@ from agent_office.domain.audit import (
     AuditRecord,
     AuditTargetType,
 )
+from agent_office.domain.composer import (
+    MAX_COMPOSER_MESSAGE_LENGTH,
+    ComposerActorType,
+    ComposerIntent,
+    ComposerMessage,
+    ComposerMessageKind,
+    ComposerThread,
+    ComposerThreadStatus,
+)
 from agent_office.domain.errors import DomainInvariantError
 from agent_office.domain.event import (
     EVENT_SCHEMA_VERSION,
@@ -115,23 +124,45 @@ from agent_office.domain.identifiers import (
     AgentRunId,
     ArtifactId,
     AuditRecordId,
+    ComposerMessageId,
+    ComposerThreadId,
     DomainId,
     EventId,
     EvidenceId,
     ExecutorId,
     FindingId,
+    PlanningArtifactId,
+    PlanningEventId,
     ProjectId,
+    RequirementCandidateId,
     RunId,
+    TeamProposalId,
     TaskId,
     WorkflowDefinitionId,
     WorkflowSnapshotId,
     WorkspaceId,
+)
+from agent_office.domain.planning import (
+    MAX_PLANNING_CONTENT_BYTES,
+    MAX_PLANNING_CONTENT_ENTRIES,
+    PlanningArtifact,
+    PlanningArtifactStatus,
+    PlanningArtifactType,
+    PlanningContent,
+    PlanningEvent,
+    PlanningEventType,
+    PlanningValue,
+    build_planning_content,
 )
 from agent_office.domain.project import (
     Project,
     ProjectStatus,
     RepositoryIdentity,
     ensure_project_allows_new_run,
+)
+from agent_office.domain.requirement import (
+    RequirementCandidate,
+    RequirementStatus,
 )
 from agent_office.domain.review import (
     REVIEW_VERDICT_METADATA_KEY,
@@ -158,6 +189,13 @@ from agent_office.domain.stage import (
     run_stage_transition_allowed,
 )
 from agent_office.domain.task import Task
+from agent_office.domain.team import (
+    TeamMemberDisposition,
+    TeamPhase,
+    TeamProposal,
+    TeamProposalMember,
+    TeamProposalStatus,
+)
 from agent_office.domain.timestamps import to_utc, utc_now
 from agent_office.domain.verification import (
     ALLOWED_EXECUTABLES,
@@ -427,4 +465,34 @@ __all__ = [
     "to_utc",
     "utc_now",
     "validate_workflow_graph",
+    "ComposerActorType",
+    "ComposerIntent",
+    "ComposerMessage",
+    "ComposerMessageId",
+    "ComposerMessageKind",
+    "ComposerThread",
+    "ComposerThreadId",
+    "ComposerThreadStatus",
+    "MAX_COMPOSER_MESSAGE_LENGTH",
+    "PlanningArtifact",
+    "PlanningArtifactId",
+    "PlanningArtifactStatus",
+    "PlanningArtifactType",
+    "PlanningContent",
+    "PlanningEvent",
+    "PlanningEventId",
+    "PlanningEventType",
+    "PlanningValue",
+    "RequirementCandidate",
+    "RequirementCandidateId",
+    "RequirementStatus",
+    "TeamMemberDisposition",
+    "TeamPhase",
+    "TeamProposal",
+    "TeamProposalId",
+    "TeamProposalMember",
+    "TeamProposalStatus",
+    "MAX_PLANNING_CONTENT_BYTES",
+    "MAX_PLANNING_CONTENT_ENTRIES",
+    "build_planning_content",
 ]
