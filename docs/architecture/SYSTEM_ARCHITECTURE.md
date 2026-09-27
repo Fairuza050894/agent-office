@@ -903,3 +903,53 @@ ComposerThread
 ```
 
 That bridge belongs to a later Phase 9 slice.
+
+### Phase 9C interaction lifecycle
+
+Phase 9C wires the Office Universal Composer to the durable planning boundary:
+
+    Project Registry
+          │
+          ▼
+    Universal Composer
+          │  create/recover ComposerThread
+          │  append ComposerMessage
+          ▼
+    Deterministic IntentResolver
+          │
+          ▼
+    DynamicTeamFormationService
+          │
+          ├── INCLUDED roles
+          ├── DEFERRED roles
+          └── EXCLUDED roles + concise reason
+          │
+          ▼
+    Planning artifacts / Decision Queue
+          │
+          ▼
+    Bottom Operations Dock
+
+On Project entry or browser reload, the frontend reconstructs its planning view
+from persisted truth rather than React-only state:
+
+    GET Project ComposerThreads
+    → select latest persisted thread
+    → load messages
+    → load TeamProposals
+    → load PlanningArtifacts
+    → load RequirementCandidates
+    → load PlanningEvents
+
+A user may reopen another persisted thread through the Composer planning-history
+selector. Selecting "New planning thread" clears the active planning snapshot
+without deleting history.
+
+This rehydration is read-only. It does not create or infer Run, AgentRun,
+Workspace, operational Event, Finding, or Evidence records.
+
+The deterministic Phase 9C Project Re-entry Brief records unavailable
+repository-derived facts as NOT_INSPECTED_IN_PHASE_9C. Phase 9D owns bounded
+read-only repository context resolution; Phase 9E owns approved-requirement
+promotion into execution.
+
