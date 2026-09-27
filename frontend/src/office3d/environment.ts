@@ -547,12 +547,12 @@ function createMeetingRoom(parent: THREE.Group): void {
   addBox(parent, [0.08, 0.7, 0.08], [x + 1.05, 0.38, z + 0.38], 0x303943)
 
   for (const [dx, dz, yaw] of [
-    [-1.15, -0.95, 0],
-    [0, -0.95, 0],
-    [1.15, -0.95, 0],
-    [-1.15, 0.95, Math.PI],
-    [0, 0.95, Math.PI],
-    [1.15, 0.95, Math.PI],
+    [-1.15, -0.95, Math.PI],
+    [0, -0.95, Math.PI],
+    [1.15, -0.95, Math.PI],
+    [-1.15, 0.95, 0],
+    [0, 0.95, 0],
+    [1.15, 0.95, 0],
   ] as Array<[number, number, number]>) {
     parent.add(createDeskChair(point(x + dx, z + dz), yaw))
   }
