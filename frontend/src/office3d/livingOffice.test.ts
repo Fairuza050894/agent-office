@@ -161,6 +161,18 @@ describe('living office model', () => {
     expect(members.some((member) => member.status !== 'PRAYER_BREAK')).toBe(true)
   })
 
+  it('keeps the commons visibly occupied during wrap-up without claiming work', () => {
+    const members = ambientOfficeMembers(
+      profiles,
+      new Date(2026, 8, 28, 16, 15),
+    )
+
+    const commons = members.filter((member) => member.floor === 'commons')
+    expect(commons.length).toBeGreaterThan(0)
+    expect(commons.every((member) => member.truth === 'AMBIENT')).toBe(true)
+    expect(commons.every((member) => member.status === 'AVAILABLE')).toBe(true)
+  })
+
   it('reduces ambient occupancy after hours instead of fabricating work', () => {
     const members = ambientOfficeMembers(
       profiles,
