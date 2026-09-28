@@ -439,6 +439,37 @@ describe('living office model', () => {
     ).toHaveLength(2)
   })
 
+  it('enforces the wrap-up ambient occupancy cap', () => {
+    const members = ambientOfficeMembers(
+      extendedProfiles,
+      new Date(2026, 8, 28, 16, 30),
+    )
+
+    expect(members).toHaveLength(7)
+  })
+
+  it('keeps scheduled plus baseline presence within the open-office cap', () => {
+    const now = new Date(2026, 8, 28, 16, 30)
+    const members = ambientOfficeMembers(extendedProfiles, now, [
+      {
+        id: 'wrap-up-sync',
+        label: 'Wrap-up sync',
+        startsAt: new Date(2026, 8, 28, 16, 0).toISOString(),
+        endsAt: new Date(2026, 8, 28, 17, 0).toISOString(),
+        floor: 'commons',
+        zone: 'lounge',
+        presence: 'SOCIAL_BREAK',
+        priority: 80,
+        maxParticipants: 2,
+      },
+    ])
+
+    expect(members).toHaveLength(7)
+    expect(
+      members.filter((member) => member.status === 'SOCIAL_BREAK'),
+    ).toHaveLength(2)
+  })
+
   it('applies the same explicit timezone to occupancy decisions', () => {
     const instant = new Date('2026-09-28T17:44:00Z')
 
