@@ -797,6 +797,19 @@ function createStrategyHub(parent: THREE.Group): void {
     }
   }
 
+  for (const [x, z, yaw] of [
+    [-1.75, -1.05, 0],
+    [0, -1.18, 0],
+    [1.75, -1.05, 0],
+    [-1.75, 1.9, Math.PI],
+    [0, 2.02, Math.PI],
+    [1.75, 1.9, Math.PI],
+  ] as Array<[number, number, number]>) {
+    const chair = createDeskChair(point(x, z), yaw)
+    chair.scale.setScalar(0.72)
+    parent.add(chair)
+  }
+
   addBox(parent, [3.4, 1.45, 0.1], [4.15, 1.72, -5.98], 0x334c5d)
   const board = addBox(parent, [2.95, 1.08, 0.035], [4.15, 1.72, -5.9], 0x1d3c50)
   ;(board.material as THREE.MeshStandardMaterial).emissive.setHex(0x102c3d)
