@@ -74,6 +74,10 @@ or mutate operational execution truth.
   - architecture/review area
   - breakout area
 - specialist zone anchors aligned to the richer environment
+- world occupancy cap enforced across baseline modes
+- scheduled events reserve capacity before baseline ambience
+- all zone capacities locked to actual 3D placement slots
+- threadless/new-thread workspace resets to the correct ambient floor
 
 ## Time / truth boundary
 
@@ -96,7 +100,7 @@ Ambient occupancy:
 
 ```text
 00:00–07:00  0
-07:00–09:00  up to 4
+07:00–09:00  up to 9
 09:00–12:00  up to 9
 12:00–13:00  up to 9
 13:00–15:00  up to 9
