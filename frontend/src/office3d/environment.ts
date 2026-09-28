@@ -160,16 +160,16 @@ const ZONE_PLACEMENTS: Record<OfficeZoneKey, StationPlacement[]> = {
     yaw: workstation.yaw,
   })),
   'qa-bench': [
-    { position: point(-3.0, 3.64), yaw: Math.PI },
-    { position: point(-1.0, 3.64), yaw: Math.PI },
+    { position: point(-7.55, -2.8), yaw: Math.PI },
+    { position: point(-5.95, -2.8), yaw: Math.PI },
   ],
   'review-wall': [
     { position: point(5.1, 0.25), yaw: Math.PI * 0.5 },
     { position: point(5.1, 1.35), yaw: Math.PI * 0.5 },
   ],
   'docs-desk': [
-    { position: point(3.0, 3.64), yaw: Math.PI },
-    { position: point(1.0, 3.64), yaw: Math.PI },
+    { position: point(6.25, -3.05), yaw: Math.PI },
+    { position: point(7.45, -3.05), yaw: Math.PI },
   ],
   'planning-table': [
     { position: point(-1.75, -1.05), yaw: 0 },
@@ -180,13 +180,13 @@ const ZONE_PLACEMENTS: Record<OfficeZoneKey, StationPlacement[]> = {
     { position: point(1.75, 1.9), yaw: Math.PI },
   ],
   'architecture-wall': [
-    { position: point(4.55, -1.0), yaw: Math.PI * 0.5 },
-    { position: point(4.75, 0.85), yaw: Math.PI * 0.5 },
-    { position: point(4.55, 2.65), yaw: Math.PI * 0.5 },
+    { position: point(3.15, -4.65), yaw: 0 },
+    { position: point(4.25, -4.65), yaw: 0 },
+    { position: point(5.35, -4.65), yaw: 0 },
   ],
   'decision-room': [
-    { position: point(-7.65, 4.65), yaw: Math.PI * 0.25 },
-    { position: point(-6.15, 4.55), yaw: -Math.PI * 0.25 },
+    { position: point(5.65, 4.45), yaw: Math.PI },
+    { position: point(7.45, 4.45), yaw: Math.PI },
   ],
 }
 
@@ -880,6 +880,33 @@ function createPairingIsland(parent: THREE.Group): void {
   addBox(parent, [0.88, 0.45, 0.018], [x, 1.23, z - 0.03], 0x476f87)
 }
 
+function createDocsNook(parent: THREE.Group): void {
+  const x = 6.85
+  const z = -4.25
+
+  addBox(parent, [3.45, 0.035, 2.45], [x, 0.04, z], 0x504b46)
+  addBox(parent, [2.45, 0.1, 0.76], [x, 0.82, z], 0x8b6548)
+  for (const dx of [-0.82, 0.82]) {
+    addBox(parent, [0.07, 0.76, 0.07], [x + dx, 0.4, z - 0.25], 0x303943)
+    addBox(parent, [0.07, 0.76, 0.07], [x + dx, 0.4, z + 0.25], 0x303943)
+  }
+
+  addBox(parent, [0.8, 0.48, 0.05], [x - 0.45, 1.17, z], 0x18222c)
+  const screen = addBox(
+    parent,
+    [0.68, 0.37, 0.018],
+    [x - 0.45, 1.17, z - 0.03],
+    0x476f87,
+  )
+  ;(screen.material as THREE.MeshStandardMaterial).emissive.setHex(0x17354a)
+  ;(screen.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.38
+
+  addBox(parent, [1.1, 1.55, 0.36], [x + 1.25, 0.78, z - 0.65], 0x4b5963)
+  for (const y of [0.42, 0.77, 1.12]) {
+    addBox(parent, [0.86, 0.05, 0.3], [x + 1.25, y, z - 0.84], 0x7a604c)
+  }
+}
+
 function createOpsRack(parent: THREE.Group): void {
   const x = 7.55
   const z = 3.7
@@ -1108,6 +1135,7 @@ function createBuildFloor(environment: THREE.Group): void {
   createReviewWall(environment)
   createQaLab(environment)
   createPairingIsland(environment)
+  createDocsNook(environment)
   createOpsRack(environment)
 
   const reviewLight = new THREE.PointLight(0xa8d2e8, 0.52, 6.5)
