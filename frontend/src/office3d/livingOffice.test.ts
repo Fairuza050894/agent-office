@@ -180,11 +180,11 @@ describe('living office model', () => {
   })
 
   it('uses deterministic daytime ambient windows without claiming execution', () => {
-    expect(officeAmbientWindow(new Date(2026, 8, 27, 15, 15)).key).toBe('coffee')
+    expect(officeAmbientWindow(new Date(2026, 8, 28, 15, 15)).key).toBe('coffee')
 
     const members = ambientOfficeMembers(
       profiles,
-      new Date(2026, 8, 27, 15, 15),
+      new Date(2026, 8, 28, 15, 15),
     )
 
     expect(members.length).toBeGreaterThan(0)
@@ -193,13 +193,13 @@ describe('living office model', () => {
   })
 
   it('accepts provider-supplied scheduled ambience without hard-coded prayer times', () => {
-    const now = new Date('2026-09-27T15:15:00+07:00')
+    const now = new Date('2026-09-28T15:15:00+07:00')
     const scheduled = [
       {
         id: 'prayer-asr',
         label: 'Asr prayer window',
-        startsAt: '2026-09-27T15:05:00+07:00',
-        endsAt: '2026-09-27T15:35:00+07:00',
+        startsAt: '2026-09-28T15:05:00+07:00',
+        endsAt: '2026-09-28T15:35:00+07:00',
         floor: 'commons' as const,
         zone: 'quiet-room' as const,
         presence: 'PRAYER_BREAK' as const,
