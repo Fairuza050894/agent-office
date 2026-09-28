@@ -100,16 +100,32 @@ export function OfficeScene({
               : 'Canonical AgentRun state · drag to orbit · right-drag to pan · wheel to zoom'}
           </span>
           {presentation === 'workspace' && worldContext && (
-            <div className="office-world-hud" aria-label="Office world status">
-              <span className="office-world-clock">{worldContext.clockLabel}</span>
-              <span className="office-world-day">{worldContext.dayLabel}</span>
-              <strong>{worldContext.modeLabel}</strong>
-              <span>
-                {totalPresence} present
-                {' · '}
-                next {worldContext.nextEventLabel.toLowerCase()} at{' '}
-                {worldContext.nextEventTimeLabel}
-              </span>
+            <div
+              className={`office-world-hud mode-${worldContext.mode.toLowerCase()}`}
+              aria-label="Office world status"
+            >
+              <div className="office-world-clock-card">
+                <span>{worldContext.timeZoneLabel}</span>
+                <strong>{worldContext.clockLabel}</strong>
+                <small>{worldContext.dayLabel}</small>
+              </div>
+              <div className="office-world-stat">
+                <span>Office mode</span>
+                <strong>{worldContext.modeLabel}</strong>
+                <small>
+                  {worldContext.isOfficeOpen ? 'Office open' : 'Office quiet'}
+                </small>
+              </div>
+              <div className="office-world-stat">
+                <span>Presence</span>
+                <strong>{totalPresence}</strong>
+                <small>across all floors</small>
+              </div>
+              <div className="office-world-stat office-world-next">
+                <span>Next event</span>
+                <strong>{worldContext.nextEventTimeLabel}</strong>
+                <small>{worldContext.nextEventLabel}</small>
+              </div>
             </div>
           )}
         </div>
