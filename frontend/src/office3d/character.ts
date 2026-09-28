@@ -267,7 +267,6 @@ export interface RuntimeAgent {
 
 const assetPromises = new Map<CharacterVariantKey, Promise<CharacterAssets>>()
 
-let behaviorAssetsPromise: Promise<Map<string, THREE.AnimationClip>> | null = null
 
 function stableHash(value: string): number {
   let hash = 2166136261
@@ -345,30 +344,6 @@ function loadCharacterAssets(
     assetPromises.delete(variantKey)
   })
   return pending
-}
-
-function loadBehaviorAnimationAssets(): Promise<
-  Map<string, THREE.AnimationClip>
-> {
-  if (behaviorAssetsPromise) return behaviorAssetsPromise
-
-  const loader = new GLTFLoader()
-  behaviorAssetsPromise = loader
-    .loadAsync('/assets/office/AnimationLibrary_Godot_Standard.gltf')
-    .then(
-      (library) =>
-        new Map(library.animations.map((clip) => [clip.name, clip])),
-    )
-    .catch((error) => {
-      behaviorAssetsPromise = null
-      console.warn(
-        'Living Office behavior animations unavailable; using character-local clips.',
-        error,
-      )
-      return new Map<string, THREE.AnimationClip>()
-    })
-
-  return behaviorAssetsPromise
 }
 
 export function shouldShowOfficeNameplate(
@@ -586,10 +561,7 @@ async function attachRiggedPresentation(
   const variantKey = appearance.variant
 
   try {
-    const [assets, behaviorClips] = await Promise.all([
-      loadCharacterAssets(variantKey),
-      loadBehaviorAnimationAssets(),
-    ])
+    const assets = await loadCharacterAssets(variantKey)
     if (runtime.disposed) return
 
     const variant = CHARACTER_VARIANTS[variantKey]
@@ -631,12 +603,7 @@ async function attachRiggedPresentation(
 
     const mixer = new THREE.AnimationMixer(model)
     const actions = new Map<string, THREE.AnimationAction>()
-    const allClips = new Map(assets.clips)
-    behaviorClips.forEach((clip, name) => {
-      if (!allClips.has(name)) allClips.set(name, clip)
-    })
-
-    allClips.forEach((clip, name) => {
+    assets.clips.forEach((clip, name) => {
       const action = mixer.clipAction(clip)
       action.setLoop(THREE.LoopRepeat, Infinity)
       if (
