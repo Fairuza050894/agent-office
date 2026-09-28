@@ -197,6 +197,16 @@ const ROLE_AMBIENT_ZONES: Record<
   },
 }
 
+export const OFFICE_AMBIENT_ZONE_CAPACITY: Partial<
+  Record<OfficeZoneKey, number>
+> = {
+  'coffee-bar': 2,
+  pantry: 2,
+  lounge: 2,
+  'game-corner': 2,
+  'quiet-room': 2,
+}
+
 const OFFICE_BEHAVIOR_LABELS: Record<OfficeBehaviorKey, string> = {
   ARRIVAL: 'Arriving',
   AVAILABLE: 'Available',
@@ -234,8 +244,37 @@ function pickAmbientZone(
   return candidates[index]
 }
 
+function pickAmbientZoneWithCapacity(
+  roleKey: (typeof LIVING_OFFICE_CORE_ROLES)[number],
+  candidates: OfficeZoneKey[],
+  now: Date,
+  occupied: Map<OfficeZoneKey, number>,
+): OfficeZoneKey | null {
+  const preferredOffset =
+    (stableRoleHash(roleKey) + ambientBeat(now)) % candidates.length
+
+  for (let offset = 0; offset < candidates.length; offset += 1) {
+    const zone = candidates[(preferredOffset + offset) % candidates.length]
+    const capacity = OFFICE_AMBIENT_ZONE_CAPACITY[zone]
+    const used = occupied.get(zone) ?? 0
+    if (capacity !== undefined && used >= capacity) continue
+    occupied.set(zone, used + 1)
+    return zone
+  }
+
+  return null
+}
+
 function ambientPlacementIndex(roleKey: string, now: Date): number {
   return (stableRoleHash(roleKey) + ambientBeat(now)) % 8
+}
+
+function localCalendarDayBucket(now: Date): number {
+  return (
+    now.getFullYear() * 10_000 +
+    (now.getMonth() + 1) * 100 +
+    now.getDate()
+  )
 }
 
 function selectDailyRoles(
@@ -455,7 +494,7 @@ export function ambientOfficeMembers(
     (roleKey) =>
       known.get(roleKey)?.status === 'ACTIVE' && !excludedRoleKeys.has(roleKey),
   )
-  const dayBucket = Math.floor(now.getTime() / (24 * 60 * 60 * 1000))
+  const dayBucket = localCalendarDayBucket(now)
   const afterHoursRoles = selectDailyRoles(
     activeRoles,
     2,
@@ -464,14 +503,22 @@ export function ambientOfficeMembers(
   )
   const coffeeRoles = selectDailyRoles(activeRoles, 4, dayBucket, 'coffee')
   const lunchRoles = selectDailyRoles(activeRoles, 6, dayBucket, 'lunch')
+  const occupiedAmbientZones = new Map<OfficeZoneKey, number>()
 
   const scheduledCandidates = activeRoles.filter(
     (roleKey) =>
       scheduled !== null &&
       (scheduled.roleKeys === undefined || scheduled.roleKeys.includes(roleKey)),
   )
+  const scheduledCapacity = scheduled
+    ? OFFICE_AMBIENT_ZONE_CAPACITY[scheduled.zone]
+    : undefined
+  const scheduledLimit = Math.min(
+    scheduled?.maxParticipants ?? 2,
+    scheduledCapacity ?? Number.POSITIVE_INFINITY,
+  )
   const scheduledRoles = new Set(
-    scheduledCandidates.slice(0, scheduled?.maxParticipants ?? 2),
+    scheduledCandidates.slice(0, scheduledLimit),
   )
 
   return activeRoles.flatMap((roleKey) => {
@@ -481,6 +528,10 @@ export function ambientOfficeMembers(
     if (scheduled && scheduledRoles.has(roleKey)) {
       const status = scheduled.presence
       const zone = scheduled.zone
+      occupiedAmbientZones.set(
+        zone,
+        (occupiedAmbientZones.get(zone) ?? 0) + 1,
+      )
       return [
         {
           id: `ambient:${roleKey}`,
@@ -498,11 +549,14 @@ export function ambientOfficeMembers(
 
     if (baseline.key === 'after-hours') {
       if (!afterHoursRoles.has(roleKey)) return []
-      const zone = pickAmbientZone(
-        roleKey,
-        ROLE_AMBIENT_ZONES[roleKey].afterHours,
-        now,
-      )
+      const zone =
+        pickAmbientZoneWithCapacity(
+          roleKey,
+          ROLE_AMBIENT_ZONES[roleKey].afterHours,
+          now,
+          occupiedAmbientZones,
+        ) ??
+        pickAmbientZone(roleKey, ROLE_AMBIENT_ZONES[roleKey].afterHours, now)
       return [
         {
           id: `ambient:${roleKey}`,
@@ -522,11 +576,13 @@ export function ambientOfficeMembers(
       if (!coffeeRoles.has(roleKey)) {
         return [availableAtHome(roleKey, profile, now)]
       }
-      const zone = pickAmbientZone(
+      const zone = pickAmbientZoneWithCapacity(
         roleKey,
         ROLE_AMBIENT_ZONES[roleKey].coffee,
         now,
+        occupiedAmbientZones,
       )
+      if (!zone) return [availableAtHome(roleKey, profile, now)]
       return [
         {
           id: `ambient:${roleKey}`,
@@ -546,11 +602,13 @@ export function ambientOfficeMembers(
       if (!lunchRoles.has(roleKey)) {
         return [availableAtHome(roleKey, profile, now)]
       }
-      const zone = pickAmbientZone(
+      const zone = pickAmbientZoneWithCapacity(
         roleKey,
         ROLE_AMBIENT_ZONES[roleKey].lunch,
         now,
+        occupiedAmbientZones,
       )
+      if (!zone) return [availableAtHome(roleKey, profile, now)]
       return [
         {
           id: `ambient:${roleKey}`,
