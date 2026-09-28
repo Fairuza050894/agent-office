@@ -13,6 +13,7 @@ Current work:
 
 ```text
 branch: phase-10c-time-context
+checkpoint: d8f3f53
 phase: Phase 10C — Office World Time Context & Realistic Occupancy
 ```
 
@@ -44,6 +45,7 @@ or mutate operational execution truth.
 - weekday/weekend schedule evaluation in Office timezone
 - Office mode status
 - next Office event + countdown
+- truthful L1/L2/L3 occupancy badges
 - realistic time-based ambient occupancy caps
 - zero ambient occupancy after 22:00
 - zero default weekend ambience
@@ -126,6 +128,7 @@ runner_id: 0
 runner_name: ""
 steps: []
 frontend/backend/repository jobs terminate within seconds
+latest confirmed: run 36464809996 on d8f3f53
 ```
 
 This is an infrastructure/runner availability failure, not a test assertion.
