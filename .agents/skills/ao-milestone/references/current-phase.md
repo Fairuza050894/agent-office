@@ -13,7 +13,7 @@ Current work:
 
 ```text
 branch: phase-10-living-office
-checkpoint: 55bf7dd
+checkpoint: bda96f4
 phase: Phase 10A — Living 3D Agent Office Foundation
 ```
 
@@ -107,17 +107,17 @@ Presentation rules:
 Implementation checkpoint:
 
 ```text
-55bf7dd test: keep scheduled ambience assertion timezone-independent
+bda96f4 fix: keep strategy board clear of office entrance
 ```
 
-GitHub Actions run `36332181958` is GREEN:
+GitHub Actions run `36402274051` is GREEN:
 
 ```text
 backend pytest      657 passed
 ruff                passed
 ruff format         203 files already formatted
 mypy                0 issues / 136 source files
-frontend vitest     16 files / 80 tests passed
+frontend vitest     16 files / 82 tests passed
 frontend typecheck  passed
 frontend lint       0 errors / 2 existing warnings
 frontend build      passed
@@ -126,7 +126,14 @@ repository check    passed
 
 ## Phase 10A rendered gate
 
-Pending local visual review of:
+First rendered review completed on 2026-09-28 and triggered a visual-hardening
+pass. Multi-floor switching and planning presence worked, while Commons density,
+Strategy layout, planning-role spacing, floating light fixtures, nameplate noise,
+and camera recovery needed refinement.
+
+Hardening at `bda96f4` addresses those findings.
+
+Pending follow-up local visual review of:
 
 - L1/L2/L3 visual distinction
 - floor switching
