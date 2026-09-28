@@ -569,7 +569,7 @@ export function OfficeWorkspacePage() {
             workspaceMembers={workspaceMembers}
             onFloorChange={changeOfficeFloor}
             presenceLabel={officePresenceLabel}
-            officeHour={officeNow.getHours()}
+            officeHour={Math.floor(officeWorld.localMinuteOfDay / 60)}
             worldContext={officeWorld}
             totalPresence={workspaceMembers.length}
           />
