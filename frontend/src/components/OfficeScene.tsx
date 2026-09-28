@@ -4,6 +4,7 @@ import type { AgentProfile, AgentRun, RunStage } from '../api'
 import type { OfficeReplayRange } from '../office3d/replay'
 import {
   OFFICE_FLOORS,
+  officeBehaviorLabel,
   type OfficeFloorKey,
   type OfficePresenceMember,
 } from '../office3d/livingOffice'
@@ -27,6 +28,7 @@ export interface OfficeSceneProps {
   workspaceMembers?: OfficePresenceMember[]
   onFloorChange?: (floor: OfficeFloorKey) => void
   presenceLabel?: string | null
+  officeHour?: number
 }
 
 function profileName(
@@ -53,12 +55,17 @@ export function OfficeScene({
   workspaceMembers = [],
   onFloorChange,
   presenceLabel = null,
+  officeHour,
 }: OfficeSceneProps) {
   const profileByKey = useMemo(
     () => new Map(profiles.map((profile) => [profile.key, profile])),
     [profiles],
   )
   const [cameraResetNonce, setCameraResetNonce] = useState(0)
+  const selectedWorkspaceMember =
+    presentation === 'workspace' && selectedAgentId
+      ? workspaceMembers.find((member) => member.id === selectedAgentId) ?? null
+      : null
 
   const changeFloor = (nextFloor: OfficeFloorKey) => {
     onFloorChange?.(nextFloor)
@@ -141,7 +148,53 @@ export function OfficeScene({
         floor={floor}
         workspaceMembers={workspaceMembers}
         cameraResetNonce={cameraResetNonce}
+        officeHour={officeHour}
       />
+
+      {selectedWorkspaceMember && (
+        <aside
+          className="office-member-inspector"
+          aria-label="Office member inspector"
+        >
+          <div className="office-member-inspector-head">
+            <div>
+              <strong>{selectedWorkspaceMember.name}</strong>
+              <span>{officeBehaviorLabel(selectedWorkspaceMember.behavior)}</span>
+            </div>
+            <button
+              type="button"
+              aria-label="Close office member inspector"
+              onClick={() => onSelectAgent(selectedWorkspaceMember.id)}
+            >
+              ×
+            </button>
+          </div>
+          <dl>
+            <div>
+              <dt>Role</dt>
+              <dd>{selectedWorkspaceMember.agent_profile_key}</dd>
+            </div>
+            <div>
+              <dt>Location</dt>
+              <dd>
+                {OFFICE_FLOORS.find(
+                  (candidate) => candidate.key === selectedWorkspaceMember.floor,
+                )?.label ?? selectedWorkspaceMember.floor}
+                {' · '}
+                {selectedWorkspaceMember.zone.replaceAll('-', ' ')}
+              </dd>
+            </div>
+            <div>
+              <dt>Truth</dt>
+              <dd>
+                {selectedWorkspaceMember.truth === 'PLANNING'
+                  ? 'Planning truth'
+                  : 'Ambient presentation'}
+              </dd>
+            </div>
+          </dl>
+        </aside>
+      )}
 
       {showRoster && (
         <div className="office-agent-roster" aria-label="AgentRun roster">
