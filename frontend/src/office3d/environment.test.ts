@@ -67,6 +67,15 @@ describe('office navigation clearance', () => {
     expect(officeZonePlacement('coffee-bar', 0).position.x).toBeGreaterThan(0)
   })
 
+  it('keeps strategy planning anchors spatially separated', () => {
+    const planning = [0, 1, 2].map((index) =>
+      officeZonePlacement('planning-table', index).position,
+    )
+
+    expect(planning[0].distanceTo(planning[1])).toBeGreaterThan(1.5)
+    expect(planning[1].distanceTo(planning[2])).toBeGreaterThan(1.5)
+  })
+
   it('keeps all eight core roles on unique deterministic workstation anchors', () => {
     const positions = CORE_ROLES.map((role) => {
       const station = officeRoleStation(role)
