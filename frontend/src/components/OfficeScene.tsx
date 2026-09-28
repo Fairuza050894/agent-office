@@ -93,6 +93,23 @@ export function OfficeScene({
             member.id === selectedAgentId && member.floor === floor,
         ) ?? null
       : null
+  const floorPresenceCount = useMemo(
+    () =>
+      OFFICE_FLOORS.reduce(
+        (counts, candidate) => {
+          counts[candidate.key] = workspaceMembers.filter(
+            (member) => member.floor === candidate.key,
+          ).length
+          return counts
+        },
+        {
+          commons: 0,
+          build: 0,
+          strategy: 0,
+        } as Record<OfficeFloorKey, number>,
+      ),
+    [workspaceMembers],
+  )
 
   const changeFloor = (nextFloor: OfficeFloorKey) => {
     onFloorChange?.(nextFloor)
@@ -166,6 +183,9 @@ export function OfficeScene({
                 >
                   <span>{candidate.shortLabel}</span>
                   <strong>{candidate.label}</strong>
+                  <em aria-label={`${floorPresenceCount[candidate.key]} present`}>
+                    {floorPresenceCount[candidate.key]}
+                  </em>
                 </button>
               ))}
             </div>
