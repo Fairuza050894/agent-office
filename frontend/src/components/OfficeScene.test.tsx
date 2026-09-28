@@ -1,0 +1,104 @@
+import { fireEvent, render, screen } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
+
+import type { OfficePresenceMember } from '../office3d/livingOffice'
+import { OfficeScene } from './OfficeScene'
+
+vi.mock('./ThreeOfficeScene', () => ({
+  ThreeOfficeScene: ({
+    onSelectAgent,
+  }: {
+    onSelectAgent: (agentId: string) => void
+  }) => (
+    <button
+      type="button"
+      aria-label="Mock 3D member"
+      onClick={() => onSelectAgent('ambient:backend-engineer')}
+    >
+      member
+    </button>
+  ),
+}))
+
+const member: OfficePresenceMember = {
+  id: 'ambient:backend-engineer',
+  agent_profile_key: 'backend-engineer',
+  name: 'Backend Engineer',
+  status: 'SOCIAL_BREAK',
+  behavior: 'GAME_BREAK',
+  floor: 'commons',
+  zone: 'game-corner',
+  placementIndex: 1,
+  truth: 'AMBIENT',
+}
+
+describe('OfficeScene workspace presence', () => {
+  it('renders a truthful selected-member inspector', () => {
+    const onSelectAgent = vi.fn()
+
+    render(
+      <OfficeScene
+        stages={[]}
+        agents={[]}
+        profiles={[]}
+        selectedAgentId={member.id}
+        onSelectAgent={onSelectAgent}
+        motionPaused={false}
+        mode="live"
+        replayNonce={0}
+        replayStartedAt={null}
+        replayRange={null}
+        showRoster={false}
+        presentation="workspace"
+        floor="commons"
+        workspaceMembers={[member]}
+        onFloorChange={vi.fn()}
+        presenceLabel="After hours · ambient"
+        officeHour={23}
+      />,
+    )
+
+    const inspector = screen.getByRole('complementary', {
+      name: 'Office member inspector',
+    })
+
+    expect(inspector).toHaveTextContent('Backend Engineer')
+    expect(inspector).toHaveTextContent('Game break')
+    expect(inspector).toHaveTextContent('Commons · game corner')
+    expect(inspector).toHaveTextContent('Ambient presentation')
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Close office member inspector' }),
+    )
+    expect(onSelectAgent).toHaveBeenCalledWith(member.id)
+  })
+
+  it('keeps floor switching presentation-only', () => {
+    const onFloorChange = vi.fn()
+
+    render(
+      <OfficeScene
+        stages={[]}
+        agents={[]}
+        profiles={[]}
+        selectedAgentId={null}
+        onSelectAgent={vi.fn()}
+        motionPaused={false}
+        mode="live"
+        replayNonce={0}
+        replayStartedAt={null}
+        replayRange={null}
+        showRoster={false}
+        presentation="workspace"
+        floor="commons"
+        workspaceMembers={[member]}
+        onFloorChange={onFloorChange}
+        presenceLabel="After hours · ambient"
+        officeHour={23}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /L2.*Build/i }))
+    expect(onFloorChange).toHaveBeenCalledWith('build')
+  })
+})
