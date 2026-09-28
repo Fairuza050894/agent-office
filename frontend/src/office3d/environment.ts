@@ -773,8 +773,8 @@ function createStrategyHub(parent: THREE.Group): void {
     }
   }
 
-  addBox(parent, [3.4, 1.45, 0.1], [0, 1.72, -5.98], 0x334c5d)
-  const board = addBox(parent, [2.95, 1.08, 0.035], [0, 1.72, -5.9], 0x1d3c50)
+  addBox(parent, [3.4, 1.45, 0.1], [4.15, 1.72, -5.98], 0x334c5d)
+  const board = addBox(parent, [2.95, 1.08, 0.035], [4.15, 1.72, -5.9], 0x1d3c50)
   ;(board.material as THREE.MeshStandardMaterial).emissive.setHex(0x102c3d)
   ;(board.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.42
 
