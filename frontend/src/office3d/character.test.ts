@@ -33,6 +33,7 @@ describe('officeCharacterAppearance', () => {
   it('declutters completed nameplates while keeping active and selected roles visible', () => {
     expect(shouldShowOfficeNameplate('COMPLETED', false)).toBe(false)
     expect(shouldShowOfficeNameplate('PENDING', false)).toBe(false)
+    expect(shouldShowOfficeNameplate('AVAILABLE', false)).toBe(false)
     expect(shouldShowOfficeNameplate('RUNNING', false)).toBe(true)
     expect(shouldShowOfficeNameplate('STARTING', false)).toBe(true)
     expect(shouldShowOfficeNameplate('WAITING', false)).toBe(true)
