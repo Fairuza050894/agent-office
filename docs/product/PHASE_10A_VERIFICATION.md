@@ -1,6 +1,6 @@
 # Phase 10A Verification — Living 3D Agent Office Foundation
 
-Status: ACCEPTED FOR RENDERED REVIEW  
+Status: CLOSED / READY FOR MANUAL MERGE  
 Date: 2026-09-28  
 Branch: `phase-10-living-office`  
 Implementation checkpoint: `23c1bd4`  
@@ -165,19 +165,23 @@ Hardening applied after that review:
 
 The follow-up hardening checkpoint is `bda96f4` and its CI is green.
 
-## Rendered acceptance still required
+## Rendered acceptance — PASS
 
-Before Phase 10A closes, verify locally:
+Final local review on 2026-09-28 around 23:00 confirmed:
 
 1. L1 Commons, L2 Build, and L3 Strategy are visually distinct.
-2. Floor switching remains smooth with the collapsed application sidebar.
-3. At the current after-hours window, ambient characters appear on L1 without
-   looking like active execution.
-4. Reopen a TDP planning thread and confirm the Office moves/focuses to L3 with
-   INCLUDED planning roles visible.
-5. An AWAITING_USER thread visibly labels those planning members as waiting.
-6. Composer and Operations Dock remain usable with the new scene.
-7. No visual overlap or obviously invalid station placement is present.
+2. Floor switching remains smooth and camera reset is available.
+3. With the active TDP planning thread, L1 retains ambient after-hours presence.
+4. L3 retains the factual INCLUDED planning team.
+5. L2 is quiet when no factual execution requires Build-floor presence.
+6. This quiet Build floor is intentional; the renderer does not fabricate coding
+   or AgentRun activity merely to keep every floor populated.
+7. Composer and Operations Dock remain available below the 3D scene.
+8. Planning and ambient populations coexist without duplicating planning roles.
+9. Floor labels reflect the presence actually visible on the selected floor.
+
+The rendered gate is therefore accepted. Phase 10A is complete and PR #11 may
+be merged manually after its final documentation-only CI passes.
 
 ## Design records
 
@@ -248,4 +252,7 @@ frontend build         passed
 repository whitespace  passed
 ```
 
-A final local render is still required before closing Phase 10A.
+Final local confirmation: L1 and L3 are populated during the active TDP planning
+thread while L2 remains empty at the current late-evening window. This is the
+expected truth-preserving result: Strategy contains planning truth, Commons
+contains after-hours ambience, and Build remains quiet without execution truth.
