@@ -439,6 +439,28 @@ describe('living office model', () => {
     ).toHaveLength(2)
   })
 
+  it('applies the same explicit timezone to occupancy decisions', () => {
+    const instant = new Date('2026-09-28T17:44:00Z')
+
+    const jakarta = ambientOfficeMembers(
+      extendedProfiles,
+      instant,
+      [],
+      new Set(),
+      'Asia/Jakarta',
+    )
+    const losAngeles = ambientOfficeMembers(
+      extendedProfiles,
+      instant,
+      [],
+      new Set(),
+      'America/Los_Angeles',
+    )
+
+    expect(jakarta).toEqual([])
+    expect(losAngeles).toHaveLength(extendedProfiles.length)
+  })
+
   it('empties ambient occupancy during night quiet instead of fabricating overtime', () => {
     const members = ambientOfficeMembers(
       profiles,
