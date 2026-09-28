@@ -171,21 +171,21 @@ const ZONE_PLACEMENTS: Record<OfficeZoneKey, StationPlacement[]> = {
     { position: point(1.0, 3.64), yaw: Math.PI },
   ],
   'planning-table': [
-    { position: point(-8.0, -4.65), yaw: 0 },
-    { position: point(-7.2, -4.65), yaw: 0 },
-    { position: point(-6.4, -4.65), yaw: 0 },
-    { position: point(-8.0, -2.65), yaw: Math.PI },
-    { position: point(-7.2, -2.65), yaw: Math.PI },
-    { position: point(-6.4, -2.65), yaw: Math.PI },
+    { position: point(-1.75, -1.05), yaw: 0 },
+    { position: point(0, -1.18), yaw: 0 },
+    { position: point(1.75, -1.05), yaw: 0 },
+    { position: point(-1.75, 1.9), yaw: Math.PI },
+    { position: point(0, 2.02), yaw: Math.PI },
+    { position: point(1.75, 1.9), yaw: Math.PI },
   ],
   'architecture-wall': [
-    { position: point(5.2, 0.3), yaw: Math.PI * 0.5 },
-    { position: point(5.2, 1.3), yaw: Math.PI * 0.5 },
-    { position: point(5.2, 2.3), yaw: Math.PI * 0.5 },
+    { position: point(4.55, -1.0), yaw: Math.PI * 0.5 },
+    { position: point(4.75, 0.85), yaw: Math.PI * 0.5 },
+    { position: point(4.55, 2.65), yaw: Math.PI * 0.5 },
   ],
   'decision-room': [
-    { position: point(-7.55, 4.5), yaw: Math.PI * 0.25 },
-    { position: point(-6.45, 4.45), yaw: -Math.PI * 0.25 },
+    { position: point(-7.65, 4.65), yaw: Math.PI * 0.25 },
+    { position: point(-6.15, 4.55), yaw: -Math.PI * 0.25 },
   ],
 }
 
@@ -739,6 +739,52 @@ function createQuietRoom(parent: THREE.Group): void {
   parent.add(createPlant(point(x + 1.45, z + 1.05), 0.72))
 }
 
+function createCommonsHub(parent: THREE.Group): void {
+  const rug = addBox(parent, [6.6, 0.025, 4.3], [0, 0.055, 1.2], 0x4e5754)
+  rug.receiveShadow = true
+
+  addBox(parent, [2.15, 0.42, 0.72], [-1.9, 0.32, 1.95], 0x405f72)
+  addBox(parent, [2.15, 0.72, 0.18], [-1.9, 0.64, 2.23], 0x405f72)
+  addBox(parent, [2.15, 0.42, 0.72], [1.9, 0.32, 0.55], 0x5c526c)
+  addBox(parent, [2.15, 0.72, 0.18], [1.9, 0.64, 0.27], 0x5c526c)
+
+  addBox(parent, [1.3, 0.1, 0.72], [0, 0.34, 1.25], 0x946d4e)
+  addCylinder(parent, 0.055, 0.5, [-0.45, 0.16, 1.25], 0x303943)
+  addCylinder(parent, 0.055, 0.5, [0.45, 0.16, 1.25], 0x303943)
+
+  for (const [x, z] of [
+    [-0.85, 0.15],
+    [0.9, 2.35],
+  ] as Array<[number, number]>) {
+    const table = addCylinder(parent, 0.46, 0.08, [x, 0.63, z], 0x876247)
+    table.rotation.y = Math.PI * 0.25
+    addCylinder(parent, 0.055, 0.58, [x, 0.31, z], 0x303943)
+  }
+}
+
+function createStrategyHub(parent: THREE.Group): void {
+  const rug = addBox(parent, [7.4, 0.025, 4.7], [0, 0.055, 0.45], 0x4d5558)
+  rug.receiveShadow = true
+
+  addBox(parent, [4.6, 0.13, 1.35], [0, 0.78, 0.4], 0x825d43)
+  for (const x of [-1.75, 1.75]) {
+    for (const z of [0.0, 0.8]) {
+      addBox(parent, [0.08, 0.72, 0.08], [x, 0.39, z], 0x303943)
+    }
+  }
+
+  addBox(parent, [3.4, 1.45, 0.1], [0, 1.72, -5.98], 0x334c5d)
+  const board = addBox(parent, [2.95, 1.08, 0.035], [0, 1.72, -5.9], 0x1d3c50)
+  ;(board.material as THREE.MeshStandardMaterial).emissive.setHex(0x102c3d)
+  ;(board.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.42
+
+  addBox(parent, [1.45, 0.9, 0.12], [3.75, 1.18, 3.95], 0x53616b)
+  addBox(parent, [1.05, 0.62, 0.035], [3.68, 1.28, 3.95], 0x29475a)
+
+  parent.add(createPlant(point(-3.2, 2.65), 0.72))
+  parent.add(createPlant(point(3.15, -1.9), 0.66))
+}
+
 function createReviewWall(parent: THREE.Group): void {
   addBox(parent, [0.14, 2.45, 2.5], [6.05, 1.22, 0.75], 0x46545f)
   const panel = addBox(parent, [0.05, 1.28, 1.75], [5.96, 1.55, 0.75], 0x27445d)
@@ -781,23 +827,24 @@ function createDoor(position: THREE.Vector3): THREE.Group {
 
 function createCeilingLights(parent: THREE.Group): void {
   const material = new THREE.MeshStandardMaterial({
-    color: 0xf4dfb4,
+    color: 0xe2c993,
     emissive: 0xffd991,
-    emissiveIntensity: 2.15,
-    roughness: 0.38,
+    emissiveIntensity: 1.35,
+    roughness: 0.42,
   })
 
   for (const [x, z] of [
-    [-2.6, 0.7],
-    [2.6, 0.7],
-    [-2.6, 3.0],
-    [2.6, 3.0],
+    [-3.4, 0.8],
+    [0, 0.8],
+    [3.4, 0.8],
+    [-1.7, 3.7],
+    [1.7, 3.7],
   ] as Array<[number, number]>) {
     const fixture = new THREE.Mesh(
-      new THREE.BoxGeometry(2.7, 0.12, 0.32),
+      new THREE.CylinderGeometry(0.15, 0.15, 0.08, 16),
       material.clone(),
     )
-    fixture.position.set(x, 3.55, z)
+    fixture.position.set(x, 3.45, z)
     parent.add(fixture)
   }
 }
@@ -909,6 +956,7 @@ function createCommonsFloor(environment: THREE.Group): void {
   createGameRoom(environment)
   createLoungeAndFocus(environment)
   createQuietRoom(environment)
+  createCommonsHub(environment)
 
   const pantryLight = new THREE.PointLight(0xffd6a0, 0.82, 7)
   pantryLight.position.set(7.1, 2.65, -4.0)
@@ -935,6 +983,7 @@ function createStrategyFloor(environment: THREE.Group): void {
   createMeetingRoom(environment)
   createReviewWall(environment)
   createLoungeAndFocus(environment)
+  createStrategyHub(environment)
 
   const meetingLight = new THREE.PointLight(0xffe0b0, 0.72, 7.5)
   meetingLight.position.set(-7.1, 2.8, -3.6)
