@@ -25,6 +25,7 @@ import { OfficeScene } from '../components/OfficeScene'
 import {
   livingOfficeMembers,
   officeAmbientWindow,
+  officeBehaviorLabel,
   type OfficeFloorKey,
 } from '../office3d/livingOffice'
 
@@ -431,7 +432,6 @@ export function OfficeWorkspacePage() {
 
   const planningMode =
     resolution?.resolved_intent ?? activeThread?.resolved_intent ?? null
-  const ambientWindow = useMemo(() => officeAmbientWindow(officeNow), [officeNow])
   const workspaceMembers = useMemo(
     () => livingOfficeMembers(activeThread, planningTeam, profiles, officeNow),
     [activeThread, officeNow, planningTeam, profiles],
@@ -445,12 +445,23 @@ export function OfficeWorkspacePage() {
   const selectedFloorHasAmbient = selectedFloorMembers.some(
     (member) => member.truth === 'AMBIENT',
   )
+  const ambientBehaviorLabels = [
+    ...new Set(
+      selectedFloorMembers
+        .filter((member) => member.truth === 'AMBIENT')
+        .map((member) => officeBehaviorLabel(member.behavior)),
+    ),
+  ]
+  const ambientPresenceLabel =
+    ambientBehaviorLabels.length > 0
+      ? `${ambientBehaviorLabels.slice(0, 2).join(' + ')} · ambient`
+      : 'Ambient'
   const officePresenceLabel = selectedFloorHasPlanning
     ? selectedFloorHasAmbient
       ? `${activeThread?.status === 'AWAITING_USER' ? 'Waiting for you' : 'Planning'} + ambient`
       : `${activeThread?.status === 'AWAITING_USER' ? 'Waiting for you' : 'Planning'} presence`
     : selectedFloorHasAmbient
-      ? `${ambientWindow.label} · ambient`
+      ? ambientPresenceLabel
       : 'Quiet floor · no presence'
 
   const changeOfficeFloor = (floor: OfficeFloorKey) => {
