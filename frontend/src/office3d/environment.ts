@@ -172,10 +172,10 @@ const ZONE_PLACEMENTS: Record<OfficeZoneKey, StationPlacement[]> = {
   ],
   'planning-table': [
     { position: point(-1.75, -1.05), yaw: 0 },
-    { position: point(0, -1.18), yaw: 0 },
+    { position: point(0, 2.02), yaw: Math.PI },
     { position: point(1.75, -1.05), yaw: 0 },
     { position: point(-1.75, 1.9), yaw: Math.PI },
-    { position: point(0, 2.02), yaw: Math.PI },
+    { position: point(0, -1.18), yaw: 0 },
     { position: point(1.75, 1.9), yaw: Math.PI },
   ],
   'architecture-wall': [
@@ -826,26 +826,16 @@ function createDoor(position: THREE.Vector3): THREE.Group {
 }
 
 function createCeilingLights(parent: THREE.Group): void {
-  const material = new THREE.MeshStandardMaterial({
-    color: 0xe2c993,
-    emissive: 0xffd991,
-    emissiveIntensity: 1.35,
-    roughness: 0.42,
-  })
-
-  for (const [x, z] of [
-    [-3.4, 0.8],
-    [0, 0.8],
-    [3.4, 0.8],
-    [-1.7, 3.7],
-    [1.7, 3.7],
-  ] as Array<[number, number]>) {
-    const fixture = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.15, 0.15, 0.08, 16),
-      material.clone(),
-    )
-    fixture.position.set(x, 3.45, z)
-    parent.add(fixture)
+  for (const [x, z, intensity] of [
+    [-3.4, 0.8, 0.24],
+    [0, 0.8, 0.28],
+    [3.4, 0.8, 0.24],
+    [-1.7, 3.7, 0.2],
+    [1.7, 3.7, 0.2],
+  ] as Array<[number, number, number]>) {
+    const light = new THREE.PointLight(0xffdfad, intensity, 6.5)
+    light.position.set(x, 3.25, z)
+    parent.add(light)
   }
 }
 
