@@ -2440,6 +2440,46 @@ body {
   font-weight: 650;
 }
 
+.office-camera-reset {
+  height: 25px;
+  padding: 0 7px;
+  border: 1px solid #263947;
+  border-radius: 4px;
+  background: #0d1922;
+  color: #738a9a;
+  font-family: var(--ao-mono);
+  font-size: .49rem;
+  cursor: pointer;
+}
+
+.office-camera-reset:hover,
+.office-camera-reset:focus-visible {
+  border-color: #3b596b;
+  color: #d6e3eb;
+  outline: none;
+}
+
+.office-workspace .office-avatar-nameplate {
+  min-width: 62px;
+  max-width: 96px;
+  gap: 0;
+  padding: 2px 5px 3px;
+  border-color: rgba(255, 255, 255, .14);
+  border-radius: 4px;
+  background: rgba(10, 17, 24, .78);
+  box-shadow: 0 2px 7px rgba(0, 0, 0, .2);
+  backdrop-filter: blur(3px);
+}
+
+.office-workspace .office-avatar-nameplate strong {
+  max-width: 86px;
+  font-size: 8px;
+}
+
+.office-workspace .office-avatar-nameplate span {
+  font-size: 6.5px;
+}
+
 @media (max-width: 760px) {
   .office-scene-meta {
     width: 100%;
