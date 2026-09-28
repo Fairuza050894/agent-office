@@ -190,6 +190,18 @@ function part(
   return parts.find((candidate) => candidate.type === type)?.value ?? ''
 }
 
+function timeZoneLabel(now: Date, timeZone: string): string {
+  try {
+    const parts = new Intl.DateTimeFormat('id-ID', {
+      timeZone,
+      timeZoneName: 'short',
+    }).formatToParts(now)
+    return part(parts, 'timeZoneName') || timeZone
+  } catch {
+    return timeZone
+  }
+}
+
 function localTime(now: Date, timeZone: string): OfficeLocalTime {
   const normalized = normalizeOfficeTimeZone(timeZone)
   try {
@@ -215,7 +227,7 @@ function localTime(now: Date, timeZone: string): OfficeLocalTime {
       minute: Number(part(parts, 'minute')),
       second: Number(part(parts, 'second')),
       weekdayIndex: WEEKDAY_INDEX[weekday] ?? now.getDay(),
-      timeZoneLabel: part(parts, 'timeZoneName') || normalized,
+      timeZoneLabel: timeZoneLabel(now, normalized),
     }
   } catch {
     return {
@@ -226,7 +238,7 @@ function localTime(now: Date, timeZone: string): OfficeLocalTime {
       minute: now.getMinutes(),
       second: now.getSeconds(),
       weekdayIndex: now.getDay(),
-      timeZoneLabel: normalized,
+      timeZoneLabel: timeZoneLabel(now, normalized),
     }
   }
 }
