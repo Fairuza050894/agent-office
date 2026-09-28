@@ -5,16 +5,16 @@
 Current base:
 
 ```text
-main@bcdd43e
-Phase 9C PR #10 merged
+main@21afb8e
+Phase 10A PR #11 merged
 ```
 
 Current work:
 
 ```text
-branch: phase-10-living-office
-checkpoint: 23c1bd4
-phase: Phase 10A — Living 3D Agent Office Foundation
+branch: phase-10b-presence-behavior
+code checkpoint: 9402c4f
+phase: Phase 10B — Living Office Presence Behavior
 ```
 
 ## Status
@@ -28,37 +28,44 @@ phase: Phase 10A — Living 3D Agent Office Foundation
   - Phase 9E not started
   - Phase 9F operational Activity Interpreter remains future work
 - Phase 10 Living 3D Agent Office
-  - Phase 10A CLOSED — rendered gate passed; PR #11 awaiting manual merge
+  - Phase 10A CLOSED / MERGED
+  - Phase 10B IN PROGRESS — code green; rendered review pending
 
-Phase 10A is intentionally presentation-only and does not depend on unimplemented
-Phase 9D/9E execution behavior.
+Phase 10B remains a presentation slice. It may project durable planning truth and
+ambient schedule state, but it may not fabricate operational execution.
 
-It may project existing durable Phase 9C planning truth and presentation-only
-ambient schedule state, but it may not fabricate future execution truth.
+## Phase 10B implemented scope
 
-## Phase 10A implemented scope
+Current Phase 10B provides:
 
-Current Phase 10A provides:
-
-- Living Office floor catalog
-  - L1 Commons
-  - L2 Build
-  - L3 Strategy
-- floor selector inside `/office`
-- distinct procedural floor environments
-- typed Office zone catalog and deterministic zone anchors
-- planning TeamProposal -> 3D planning presence
-- INCLUDED-only planning-role visibility
-- AWAITING_USER -> Waiting for you presence
-- ambient office rhythm when no planning team is active
-- arrival / focus / lunch / coffee / wrap-up / after-hours windows
-- reduced after-hours occupancy
-- provider-ready scheduled ambience
-- PRAYER_BREAK state without hard-coded prayer times
-- bounded/selective scheduled-event participation
-- generic Office character runtime shared by operational and presentation presence
-- Office presence/floor truth label
-- backwards-compatible operational Run Office default behavior
+- explicit Office behavior vocabulary
+  - ARRIVAL
+  - AVAILABLE
+  - DESK_FOCUS
+  - PLANNING_MEETING
+  - WAITING_DECISION
+  - COFFEE_CHAT
+  - LUNCH
+  - SOCIAL_CHAT
+  - GAME_BREAK
+  - PRAYER_QUIET
+  - OFFLINE
+- deterministic role-specific ambient preferences
+- staggered arrival by role
+- bounded daily coffee participation
+- bounded daily lunch participation
+- bounded after-hours occupancy
+- planning roles excluded from ambient duplication
+- deterministic ten-minute ambience beats
+- per-member placement indices
+- collision-conscious zone slot reservation
+- movement through the existing shared Three.js path loop
+- compact selected-member inspector
+- explicit Planning truth vs Ambient presentation label
+- selected-floor behavior summary
+- morning / day / evening / night lighting profiles
+- behavior-aware character runtime with safe local-clip fallback
+- existing Run Office compatibility
 
 ## Truthfulness boundary
 
@@ -85,61 +92,91 @@ Finding
 Evidence
 ```
 
-Living Office presentation truth:
+Living Office presentation state includes:
 
 ```text
 OfficeFloor
 OfficeZone
 OfficePresenceMember
+OfficeBehaviorKey
 OfficeScheduledEvent
+placementIndex
+lighting profile
 ```
 
-Presentation rules:
+Rules:
 
 - animation is never evidence
 - presence is not execution
-- ambient presence may not claim repository mutation
-- planning presence may not be presented as AgentRun
-- DEFERRED / EXCLUDED roles may not appear as active planning workers
+- ambient behavior may not claim repository-changing work
+- planning presence is not AgentRun
+- AVAILABLE is not rendered as active execution
+- DEFERRED / EXCLUDED planning roles are not active planning workers
+- missing animation capability must fall back safely rather than be simulated
+
+## Character-animation compatibility finding
+
+Phase 10B audited the CC0 Quaternius Universal Animation Library:
+
+```text
+J-Ponzo/gltf-universal-animation-library
+commit e24c23cf2a1323488a3faa226ea7ea21f644b73e
+```
+
+Useful free clips exist, including sitting and talking loops.
+
+A strict build-time compatibility check rejected the library against the five
+current Agent Office character variants because the animation library targets a
+newer `DEF-*` skeleton while the current character assets use a different rig.
+
+The attempted integration was fully rolled back.
+
+Current policy:
+
+- ship only the already verified character assets
+- guarantee Idle / Walk / Run only
+- behavior-specific clip lookup falls back to Idle
+- no runtime retargeting hack
+- no seated props at active character anchors until compatible animation exists
 
 ## Current quality gate
 
 Implementation checkpoint:
 
 ```text
-23c1bd4 fix: clarify mixed and quiet floor presence
+9402c4f test: verify staggered office schedule participation
 ```
 
-GitHub Actions run `36448116375` is GREEN:
+GitHub Actions run `36453933400` is GREEN:
 
 ```text
 backend pytest      657 passed
 ruff                passed
 ruff format         203 files already formatted
 mypy                0 issues / 136 source files
-frontend vitest     16 files / 83 tests passed
+frontend vitest     18 files / 94 tests passed
 frontend typecheck  passed
 frontend lint       0 errors / 2 existing warnings
 frontend build      passed
 repository check    passed
 ```
 
-## Phase 10A rendered gate
+The two frontend warnings are the pre-existing `ThreeOfficeScene`
+`startLoop` exhaustive-deps warnings.
 
-PASS on 2026-09-28.
+## Phase 10B rendered gate
 
-The final late-evening TDP review confirmed:
+Pending local visual review of:
 
-- L1 Commons contains truthful after-hours ambient presence.
-- L3 Strategy contains the INCLUDED TDP planning team.
-- L2 Build remains quiet because no factual execution currently requires it.
-- planning and ambient presence coexist without duplication.
-- floor labels reflect the selected floor's actual presence.
-- floor switching, camera reset, Composer, and Operations Dock remain usable.
-- the system does not populate Build merely to simulate work.
-
-Phase 10A is complete. PR #11 remains unmerged and must be merged manually
-before starting the next implementation slice.
+- night lighting readability
+- after-hours role-specific placement on L1
+- selected-member inspector
+- ambient movement across a ten-minute boundary
+- TDP planning behavior on L3
+- AWAITING_USER / Waiting for you state
+- furniture/path clipping during movement
+- quiet L2 behavior without execution truth
+- Composer / Operations Dock compatibility
 
 ## Design and verification records
 
@@ -147,19 +184,21 @@ before starting the next implementation slice.
 docs/product/LIVING_3D_AGENT_OFFICE_PRD.md
 docs/architecture/LIVING_OFFICE_TECHNICAL_DESIGN.md
 docs/product/PHASE_10A_VERIFICATION.md
+docs/product/PHASE_10B_VERIFICATION.md
 ```
 
 ## Deferred intentionally
 
-Not implemented in Phase 10A:
+Not implemented in Phase 10B:
 
-- persistent office settings/timezone
-- real prayer-time provider
-- rich seated/typing/meeting/coffee/game animation vocabulary
+- compatible real seated / typing / talking animation pipeline
+- runtime skeleton retargeting
+- persistent Office timezone / working-hour settings
+- production prayer-time provider
 - factual operational Activity Interpreter
-- ambient/planning character inspector
 - rooftop floor
-- full time-of-day lighting
-- role-scoped memory / Phase 9D runtime work
+- user-configurable ambience density
+- role-scoped persistent memory / Phase 9D runtime work
 
-Rendered Living Office acceptance has passed. PR #11 may be marked Ready for Review after final CI. Merge remains manual only.
+Keep the Phase 10B pull request Draft until rendered Living Office behavior
+review passes. Merge remains manual only.
