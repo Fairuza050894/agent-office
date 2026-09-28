@@ -142,7 +142,6 @@ const ROLE_HOME_ZONE: Record<
   'technical-writer': { floor: 'build', zone: 'docs-desk' },
 }
 
-
 const ROLE_AMBIENT_ZONES: Record<
   (typeof LIVING_OFFICE_CORE_ROLES)[number],
   {
@@ -411,12 +410,14 @@ export function ambientOfficeMembers(
   profiles: AgentProfile[],
   now = new Date(),
   scheduledEvents: OfficeScheduledEvent[] = [],
+  excludedRoleKeys: ReadonlySet<string> = new Set(),
 ): OfficePresenceMember[] {
   const baseline = ambientWindowForHour(now.getHours())
   const scheduled = activeScheduledEvent(now, scheduledEvents)
   const known = profileByKey(profiles)
   const activeRoles = LIVING_OFFICE_CORE_ROLES.filter(
-    (roleKey) => known.get(roleKey)?.status === 'ACTIVE',
+    (roleKey) =>
+      known.get(roleKey)?.status === 'ACTIVE' && !excludedRoleKeys.has(roleKey),
   )
   const dayBucket = Math.floor(now.getTime() / (24 * 60 * 60 * 1000))
   const afterHoursRoles = new Set(
