@@ -205,13 +205,18 @@ const CLIPS = {
 const BEHAVIOR_CLIP_CANDIDATES: Record<OfficeBehaviorKey, string[]> = {
   ARRIVAL: ['Walk', 'Idle'],
   AVAILABLE: ['Idle'],
-  DESK_FOCUS: ['Typing', 'Type', 'Working', 'Idle'],
-  PLANNING_MEETING: ['Meeting', 'Talking', 'Talk', 'Idle'],
-  WAITING_DECISION: ['Idle'],
-  COFFEE_CHAT: ['Drink', 'Drinking', 'Talking', 'Talk', 'Idle'],
-  LUNCH: ['Eating', 'Eat', 'Idle'],
-  SOCIAL_CHAT: ['Talking', 'Talk', 'Idle'],
-  GAME_BREAK: ['Gaming', 'Game', 'Idle'],
+  DESK_FOCUS: ['Sitting_Idle_Loop', 'Interact', 'Idle'],
+  PLANNING_MEETING: [
+    'Sitting_Talking_Loop',
+    'Idle_Talking_Loop',
+    'Sitting_Idle_Loop',
+    'Idle',
+  ],
+  WAITING_DECISION: ['Sitting_Idle_Loop', 'Idle'],
+  COFFEE_CHAT: ['Idle_Talking_Loop', 'Idle'],
+  LUNCH: ['Sitting_Idle_Loop', 'Idle'],
+  SOCIAL_CHAT: ['Idle_Talking_Loop', 'Sitting_Talking_Loop', 'Idle'],
+  GAME_BREAK: ['Sitting_Idle_Loop', 'Idle'],
   PRAYER_QUIET: ['Idle'],
   OFFLINE: ['Idle'],
 }
@@ -261,6 +266,8 @@ export interface RuntimeAgent {
 }
 
 const assetPromises = new Map<CharacterVariantKey, Promise<CharacterAssets>>()
+
+let behaviorAssetsPromise: Promise<Map<string, THREE.AnimationClip>> | null = null
 
 function stableHash(value: string): number {
   let hash = 2166136261
@@ -338,6 +345,30 @@ function loadCharacterAssets(
     assetPromises.delete(variantKey)
   })
   return pending
+}
+
+function loadBehaviorAnimationAssets(): Promise<
+  Map<string, THREE.AnimationClip>
+> {
+  if (behaviorAssetsPromise) return behaviorAssetsPromise
+
+  const loader = new GLTFLoader()
+  behaviorAssetsPromise = loader
+    .loadAsync('/assets/office/AnimationLibrary_Godot_Standard.gltf')
+    .then(
+      (library) =>
+        new Map(library.animations.map((clip) => [clip.name, clip])),
+    )
+    .catch((error) => {
+      behaviorAssetsPromise = null
+      console.warn(
+        'Living Office behavior animations unavailable; using character-local clips.',
+        error,
+      )
+      return new Map<string, THREE.AnimationClip>()
+    })
+
+  return behaviorAssetsPromise
 }
 
 export function shouldShowOfficeNameplate(
@@ -555,7 +586,10 @@ async function attachRiggedPresentation(
   const variantKey = appearance.variant
 
   try {
-    const assets = await loadCharacterAssets(variantKey)
+    const [assets, behaviorClips] = await Promise.all([
+      loadCharacterAssets(variantKey),
+      loadBehaviorAnimationAssets(),
+    ])
     if (runtime.disposed) return
 
     const variant = CHARACTER_VARIANTS[variantKey]
@@ -597,10 +631,18 @@ async function attachRiggedPresentation(
 
     const mixer = new THREE.AnimationMixer(model)
     const actions = new Map<string, THREE.AnimationAction>()
-    assets.clips.forEach((clip, name) => {
+    const allClips = new Map(assets.clips)
+    behaviorClips.forEach((clip, name) => {
+      if (!allClips.has(name)) allClips.set(name, clip)
+    })
+
+    allClips.forEach((clip, name) => {
       const action = mixer.clipAction(clip)
       action.setLoop(THREE.LoopRepeat, Infinity)
-      if (name === CLIPS.idle && clip.duration > 0) {
+      if (
+        (name === CLIPS.idle || name.endsWith('_Idle_Loop')) &&
+        clip.duration > 0
+      ) {
         action.time = clip.duration * appearance.idlePhase
       }
       actions.set(name, action)
