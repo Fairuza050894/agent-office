@@ -45,6 +45,64 @@ const profiles: AgentProfile[] = [
   },
 ]
 
+const extendedProfiles: AgentProfile[] = [
+  ...profiles,
+  {
+    id: 'pe',
+    key: 'principal-engineer',
+    name: 'Principal Engineer',
+    description: 'Architecture',
+    default_access_mode: 'READ_ONLY',
+    version: 1,
+    status: 'ACTIVE',
+  },
+  {
+    id: 'pd',
+    key: 'product-designer',
+    name: 'Product Designer',
+    description: 'Design',
+    default_access_mode: 'READ_ONLY',
+    version: 1,
+    status: 'ACTIVE',
+  },
+  {
+    id: 'fe',
+    key: 'frontend-engineer',
+    name: 'Frontend Engineer',
+    description: 'Frontend',
+    default_access_mode: 'WRITE',
+    version: 1,
+    status: 'ACTIVE',
+  },
+  {
+    id: 'qa',
+    key: 'qa-engineer',
+    name: 'QA Engineer',
+    description: 'Quality',
+    default_access_mode: 'READ_ONLY',
+    version: 1,
+    status: 'ACTIVE',
+  },
+  {
+    id: 'sr',
+    key: 'security-reviewer',
+    name: 'Security Reviewer',
+    description: 'Security',
+    default_access_mode: 'READ_ONLY',
+    version: 1,
+    status: 'ACTIVE',
+  },
+  {
+    id: 'tw',
+    key: 'technical-writer',
+    name: 'Technical Writer',
+    description: 'Documentation',
+    default_access_mode: 'READ_ONLY',
+    version: 1,
+    status: 'ACTIVE',
+  },
+]
+
 const thread: ComposerThread = {
   id: 'thread-1',
   project_id: 'project-1',
@@ -253,6 +311,41 @@ describe('living office model', () => {
             )?.zone,
       ),
     ).toBe(true)
+  })
+
+  it('staggered arrival completes before the focus window without crowding the entrance', () => {
+    const members = ambientOfficeMembers(
+      extendedProfiles,
+      new Date(2026, 8, 28, 8, 50),
+    )
+
+    expect(members).toHaveLength(extendedProfiles.length)
+    expect(members.every((member) => member.status === 'AVAILABLE')).toBe(true)
+    expect(members.some((member) => member.zone === 'entrance')).toBe(false)
+  })
+
+  it('limits coffee and lunch participation instead of moving the whole office at once', () => {
+    const coffee = ambientOfficeMembers(
+      extendedProfiles,
+      new Date(2026, 8, 28, 15, 15),
+    )
+    const lunch = ambientOfficeMembers(
+      extendedProfiles,
+      new Date(2026, 8, 28, 12, 15),
+    )
+
+    expect(
+      coffee.filter((member) => member.status === 'COFFEE_BREAK'),
+    ).toHaveLength(4)
+    expect(
+      coffee.filter((member) => member.status === 'AVAILABLE'),
+    ).toHaveLength(5)
+    expect(
+      lunch.filter((member) => member.status === 'LUNCH_BREAK'),
+    ).toHaveLength(6)
+    expect(
+      lunch.filter((member) => member.status === 'AVAILABLE'),
+    ).toHaveLength(3)
   })
 
   it('reduces ambient occupancy after hours instead of fabricating work', () => {
