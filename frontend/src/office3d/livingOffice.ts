@@ -298,7 +298,7 @@ export function ambientOfficeMembers(
 
     const wrapUpCommons =
       baseline.key === 'wrap-up' &&
-      (roleKey === 'product-designer' || roleKey === 'technical-writer')
+      (roleKey === 'product-manager' || roleKey === 'technical-writer')
 
     if (wrapUpCommons) {
       return [
@@ -308,7 +308,7 @@ export function ambientOfficeMembers(
           name: profile.name,
           status: 'AVAILABLE',
           floor: 'commons',
-          zone: roleKey === 'product-designer' ? 'lounge' : 'coffee-bar',
+          zone: roleKey === 'product-manager' ? 'lounge' : 'coffee-bar',
           truth: 'AMBIENT' as const,
         },
       ]
