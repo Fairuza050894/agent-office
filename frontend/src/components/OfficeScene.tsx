@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 
 import type { AgentProfile, AgentRun, RunStage } from '../api'
 import type { OfficeReplayRange } from '../office3d/replay'
@@ -58,6 +58,12 @@ export function OfficeScene({
     () => new Map(profiles.map((profile) => [profile.key, profile])),
     [profiles],
   )
+  const [cameraResetNonce, setCameraResetNonce] = useState(0)
+
+  const changeFloor = (nextFloor: OfficeFloorKey) => {
+    onFloorChange?.(nextFloor)
+    setCameraResetNonce((current) => current + 1)
+  }
 
   return (
     <section
@@ -89,7 +95,7 @@ export function OfficeScene({
                   className={candidate.key === floor ? 'active' : ''}
                   aria-pressed={candidate.key === floor}
                   title={`${candidate.label} · ${candidate.purpose}`}
-                  onClick={() => onFloorChange(candidate.key)}
+                  onClick={() => changeFloor(candidate.key)}
                 >
                   <span>{candidate.shortLabel}</span>
                   <strong>{candidate.label}</strong>
@@ -109,6 +115,15 @@ export function OfficeScene({
                 ? 'Historical replay · factual timestamps compressed'
                 : 'Canonical state'}
           </span>
+          {presentation === 'workspace' && (
+            <button
+              type="button"
+              className="office-camera-reset"
+              onClick={() => setCameraResetNonce((current) => current + 1)}
+            >
+              Reset view
+            </button>
+          )}
         </div>
       </div>
 
@@ -125,6 +140,7 @@ export function OfficeScene({
         replayRange={replayRange}
         floor={floor}
         workspaceMembers={workspaceMembers}
+        cameraResetNonce={cameraResetNonce}
       />
 
       {showRoster && (
