@@ -2440,6 +2440,28 @@ body {
   font-weight: 650;
 }
 
+.office-floor-switcher button em {
+  display: inline-grid;
+  min-width: 15px;
+  height: 15px;
+  place-items: center;
+  padding: 0 3px;
+  border: 1px solid rgba(120, 151, 170, .2);
+  border-radius: 999px;
+  background: rgba(120, 151, 170, .07);
+  color: #718899;
+  font-family: var(--ao-mono);
+  font-size: .43rem;
+  font-style: normal;
+  font-weight: 750;
+}
+
+.office-floor-switcher button.active em {
+  border-color: rgba(83, 199, 240, .28);
+  background: rgba(83, 199, 240, .1);
+  color: #9ee5f8;
+}
+
 .office-camera-reset {
   height: 25px;
   padding: 0 7px;
