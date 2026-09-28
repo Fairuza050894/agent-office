@@ -28,6 +28,7 @@ import {
   officeBehaviorLabel,
   type OfficeFloorKey,
 } from '../office3d/livingOffice'
+import { officeWorldContext } from '../office3d/officeWorld'
 
 function localTimezone(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
@@ -432,6 +433,10 @@ export function OfficeWorkspacePage() {
 
   const planningMode =
     resolution?.resolved_intent ?? activeThread?.resolved_intent ?? null
+  const officeWorld = useMemo(
+    () => officeWorldContext(officeNow),
+    [officeNow],
+  )
   const workspaceMembers = useMemo(
     () => livingOfficeMembers(activeThread, planningTeam, profiles, officeNow),
     [activeThread, officeNow, planningTeam, profiles],
@@ -526,6 +531,8 @@ export function OfficeWorkspacePage() {
             onFloorChange={changeOfficeFloor}
             presenceLabel={officePresenceLabel}
             officeHour={officeNow.getHours()}
+            worldContext={officeWorld}
+            totalPresence={workspaceMembers.length}
           />
         </OfficeRendererBoundary>
       </div>
