@@ -97,6 +97,22 @@ describe('office navigation clearance', () => {
     expect(planning[1].distanceTo(planning[2])).toBeGreaterThan(1.5)
   })
 
+  it('aligns specialist zones with their distinct floor spaces', () => {
+    const qa = officeZonePlacement('qa-bench', 0).position
+    const docs = officeZonePlacement('docs-desk', 0).position
+    const architecture = officeZonePlacement('architecture-wall', 0).position
+    const decision = officeZonePlacement('decision-room', 0).position
+
+    expect(qa.x).toBeLessThan(-5)
+    expect(qa.z).toBeLessThan(0)
+    expect(docs.x).toBeGreaterThan(5)
+    expect(docs.z).toBeLessThan(0)
+    expect(architecture.x).toBeGreaterThan(2)
+    expect(architecture.z).toBeLessThan(-4)
+    expect(decision.x).toBeGreaterThan(5)
+    expect(decision.z).toBeGreaterThan(4)
+  })
+
   it('keeps all eight core roles on unique deterministic workstation anchors', () => {
     const positions = CORE_ROLES.map((role) => {
       const station = officeRoleStation(role)
