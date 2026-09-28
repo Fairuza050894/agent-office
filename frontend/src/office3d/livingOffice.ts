@@ -520,6 +520,9 @@ export function ambientOfficeMembers(
   const scheduledRoles = new Set(
     scheduledCandidates.slice(0, scheduledLimit),
   )
+  if (scheduled && scheduledRoles.size > 0) {
+    occupiedAmbientZones.set(scheduled.zone, scheduledRoles.size)
+  }
 
   return activeRoles.flatMap((roleKey) => {
     const profile = known.get(roleKey)
@@ -528,10 +531,6 @@ export function ambientOfficeMembers(
     if (scheduled && scheduledRoles.has(roleKey)) {
       const status = scheduled.presence
       const zone = scheduled.zone
-      occupiedAmbientZones.set(
-        zone,
-        (occupiedAmbientZones.get(zone) ?? 0) + 1,
-      )
       return [
         {
           id: `ambient:${roleKey}`,
