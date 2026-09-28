@@ -238,6 +238,42 @@ function ambientPlacementIndex(roleKey: string, now: Date): number {
   return (stableRoleHash(roleKey) + ambientBeat(now)) % 8
 }
 
+function selectDailyRoles(
+  roles: readonly (typeof LIVING_OFFICE_CORE_ROLES)[number][],
+  count: number,
+  dayBucket: number,
+  salt: string,
+): Set<(typeof LIVING_OFFICE_CORE_ROLES)[number]> {
+  return new Set(
+    [...roles]
+      .sort(
+        (left, right) =>
+          ((stableRoleHash(`${salt}:${left}`) + dayBucket) % 997) -
+          ((stableRoleHash(`${salt}:${right}`) + dayBucket) % 997),
+      )
+      .slice(0, Math.min(count, roles.length)),
+  )
+}
+
+function availableAtHome(
+  roleKey: (typeof LIVING_OFFICE_CORE_ROLES)[number],
+  profile: AgentProfile,
+  now: Date,
+): OfficePresenceMember {
+  const home = ROLE_HOME_ZONE[roleKey]
+  return {
+    id: `ambient:${roleKey}`,
+    agent_profile_key: roleKey,
+    name: profile.name,
+    status: 'AVAILABLE',
+    behavior: 'AVAILABLE',
+    floor: home.floor,
+    zone: home.zone,
+    placementIndex: ambientPlacementIndex(roleKey, now),
+    truth: 'AMBIENT',
+  }
+}
+
 export function officeBehaviorFor(
   status: OfficePresenceState,
   zone: OfficeZoneKey,
@@ -420,15 +456,14 @@ export function ambientOfficeMembers(
       known.get(roleKey)?.status === 'ACTIVE' && !excludedRoleKeys.has(roleKey),
   )
   const dayBucket = Math.floor(now.getTime() / (24 * 60 * 60 * 1000))
-  const afterHoursRoles = new Set(
-    [...activeRoles]
-      .sort(
-        (left, right) =>
-          ((stableRoleHash(left) + dayBucket) % 97) -
-          ((stableRoleHash(right) + dayBucket) % 97),
-      )
-      .slice(0, 2),
+  const afterHoursRoles = selectDailyRoles(
+    activeRoles,
+    2,
+    dayBucket,
+    'after-hours',
   )
+  const coffeeRoles = selectDailyRoles(activeRoles, 4, dayBucket, 'coffee')
+  const lunchRoles = selectDailyRoles(activeRoles, 6, dayBucket, 'lunch')
 
   const scheduledCandidates = activeRoles.filter(
     (roleKey) =>
@@ -461,8 +496,6 @@ export function ambientOfficeMembers(
       ]
     }
 
-    const home = ROLE_HOME_ZONE[roleKey]
-
     if (baseline.key === 'after-hours') {
       if (!afterHoursRoles.has(roleKey)) return []
       const zone = pickAmbientZone(
@@ -486,6 +519,9 @@ export function ambientOfficeMembers(
     }
 
     if (baseline.key === 'coffee') {
+      if (!coffeeRoles.has(roleKey)) {
+        return [availableAtHome(roleKey, profile, now)]
+      }
       const zone = pickAmbientZone(
         roleKey,
         ROLE_AMBIENT_ZONES[roleKey].coffee,
@@ -507,6 +543,9 @@ export function ambientOfficeMembers(
     }
 
     if (baseline.key === 'lunch') {
+      if (!lunchRoles.has(roleKey)) {
+        return [availableAtHome(roleKey, profile, now)]
+      }
       const zone = pickAmbientZone(
         roleKey,
         ROLE_AMBIENT_ZONES[roleKey].lunch,
@@ -528,6 +567,14 @@ export function ambientOfficeMembers(
     }
 
     if (baseline.key === 'arrival') {
+      const minuteOfDay = now.getHours() * 60 + now.getMinutes()
+      const arrivalMinute = 7 * 60 + (stableRoleHash(roleKey) % 100)
+
+      if (minuteOfDay < arrivalMinute) return []
+      if (minuteOfDay >= arrivalMinute + 10) {
+        return [availableAtHome(roleKey, profile, now)]
+      }
+
       const zone: OfficeZoneKey = 'entrance'
       return [
         {
@@ -566,19 +613,7 @@ export function ambientOfficeMembers(
       ]
     }
 
-    return [
-      {
-        id: `ambient:${roleKey}`,
-        agent_profile_key: roleKey,
-        name: profile.name,
-        status: 'AVAILABLE',
-        behavior: 'AVAILABLE',
-        floor: home.floor,
-        zone: home.zone,
-        placementIndex: ambientPlacementIndex(roleKey, now),
-        truth: 'AMBIENT' as const,
-      },
-    ]
+    return [availableAtHome(roleKey, profile, now)]
   })
 }
 
