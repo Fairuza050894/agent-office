@@ -273,14 +273,6 @@ function ambientPlacementIndex(roleKey: string, now: Date): number {
   return (stableRoleHash(roleKey) + ambientBeat(now)) % 8
 }
 
-function localCalendarDayBucket(now: Date): number {
-  return (
-    now.getFullYear() * 10_000 +
-    (now.getMonth() + 1) * 100 +
-    now.getDate()
-  )
-}
-
 function selectDailyRoles(
   roles: readonly (typeof LIVING_OFFICE_CORE_ROLES)[number][],
   count: number,
@@ -352,8 +344,11 @@ export function officeBehaviorLabel(behavior: OfficeBehaviorKey): string {
   return OFFICE_BEHAVIOR_LABELS[behavior]
 }
 
-function ambientWindowForWorld(now: Date): OfficeAmbientWindow {
-  const world = officeWorldContext(now)
+function ambientWindowForWorld(
+  now: Date,
+  timeZone?: string | null,
+): OfficeAmbientWindow {
+  const world = officeWorldContext(now, timeZone)
 
   switch (world.mode) {
     case 'ARRIVAL':
@@ -439,6 +434,7 @@ function activeScheduledEvent(
 export function officeAmbientWindow(
   now = new Date(),
   scheduledEvents: OfficeScheduledEvent[] = [],
+  timeZone?: string | null,
 ): OfficeAmbientWindow {
   const activeScheduled = activeScheduledEvent(now, scheduledEvents)
 
@@ -452,7 +448,7 @@ export function officeAmbientWindow(
     }
   }
 
-  return ambientWindowForWorld(now)
+  return ambientWindowForWorld(now, timeZone)
 }
 
 function profileByKey(profiles: AgentProfile[]): Map<string, AgentProfile> {
@@ -464,9 +460,16 @@ export function planningPresenceMembers(
   proposal: TeamProposal | null,
   profiles: AgentProfile[],
   now?: Date,
+  timeZone?: string | null,
 ): OfficePresenceMember[] {
   if (!thread || !proposal) return []
-  if (now && !isPlanningPresenceFresh(thread.updated_at, now)) return []
+  const effectiveTimeZone = timeZone ?? thread.timezone
+  if (
+    now &&
+    !isPlanningPresenceFresh(thread.updated_at, now, effectiveTimeZone)
+  ) {
+    return []
+  }
 
   const names = profileByKey(profiles)
   const waitingForUser = thread.status === 'AWAITING_USER'
@@ -491,16 +494,17 @@ export function ambientOfficeMembers(
   now = new Date(),
   scheduledEvents: OfficeScheduledEvent[] = [],
   excludedRoleKeys: ReadonlySet<string> = new Set(),
+  timeZone?: string | null,
 ): OfficePresenceMember[] {
-  const world = officeWorldContext(now)
-  const baseline = ambientWindowForWorld(now)
+  const world = officeWorldContext(now, timeZone)
+  const baseline = ambientWindowForWorld(now, timeZone)
   const scheduled = activeScheduledEvent(now, scheduledEvents)
   const known = profileByKey(profiles)
   const activeRoles = LIVING_OFFICE_CORE_ROLES.filter(
     (roleKey) =>
       known.get(roleKey)?.status === 'ACTIVE' && !excludedRoleKeys.has(roleKey),
   )
-  const dayBucket = localCalendarDayBucket(now)
+  const dayBucket = world.localDateKey
   const afterHoursRoles = selectDailyRoles(
     activeRoles,
     world.ambientOccupancyCap,
@@ -630,11 +634,10 @@ export function ambientOfficeMembers(
     }
 
     if (baseline.key === 'arrival') {
-      const minuteOfDay = now.getHours() * 60 + now.getMinutes()
       const arrivalMinute = 7 * 60 + (stableRoleHash(roleKey) % 100)
 
-      if (minuteOfDay < arrivalMinute) return []
-      if (minuteOfDay >= arrivalMinute + 10) {
+      if (world.localMinuteOfDay < arrivalMinute) return []
+      if (world.localMinuteOfDay >= arrivalMinute + 10) {
         return [availableAtHome(roleKey, profile, now)]
       }
 
@@ -686,8 +689,16 @@ export function livingOfficeMembers(
   profiles: AgentProfile[],
   now = new Date(),
   scheduledEvents: OfficeScheduledEvent[] = [],
+  timeZone?: string | null,
 ): OfficePresenceMember[] {
-  const planning = planningPresenceMembers(thread, proposal, profiles, now)
+  const effectiveTimeZone = timeZone ?? thread?.timezone
+  const planning = planningPresenceMembers(
+    thread,
+    proposal,
+    profiles,
+    now,
+    effectiveTimeZone,
+  )
   const planningRoleKeys = new Set(
     planning.map((member) => member.agent_profile_key),
   )
@@ -696,6 +707,7 @@ export function livingOfficeMembers(
     now,
     scheduledEvents,
     planningRoleKeys,
+    effectiveTimeZone,
   )
 
   return [...planning, ...ambient]
