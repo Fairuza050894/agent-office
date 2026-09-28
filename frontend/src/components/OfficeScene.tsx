@@ -41,6 +41,25 @@ function profileName(
   return profiles.get(agent.agent_profile_key)?.name ?? agent.agent_profile_key
 }
 
+function nextEventCountdown(minutes: number): string {
+  const safeMinutes = Math.max(0, Math.round(minutes))
+  if (safeMinutes < 60) return `in ${safeMinutes}m`
+
+  const hours = Math.floor(safeMinutes / 60)
+  const remainingMinutes = safeMinutes % 60
+  if (hours < 24) {
+    return remainingMinutes > 0
+      ? `in ${hours}h ${remainingMinutes}m`
+      : `in ${hours}h`
+  }
+
+  const days = Math.floor(hours / 24)
+  const remainingHours = hours % 24
+  return remainingHours > 0
+    ? `in ${days}d ${remainingHours}h`
+    : `in ${days}d`
+}
+
 export function OfficeScene({
   stages,
   agents,
@@ -105,7 +124,7 @@ export function OfficeScene({
               aria-label="Office world status"
             >
               <div className="office-world-clock-card">
-                <span>{worldContext.timeZoneLabel}</span>
+                <span title={worldContext.timeZone}>{worldContext.timeZoneLabel}</span>
                 <strong>{worldContext.clockLabel}</strong>
                 <small>{worldContext.dayLabel}</small>
               </div>
@@ -124,7 +143,11 @@ export function OfficeScene({
               <div className="office-world-stat office-world-next">
                 <span>Next event</span>
                 <strong>{worldContext.nextEventTimeLabel}</strong>
-                <small>{worldContext.nextEventLabel}</small>
+                <small>
+                  {worldContext.nextEventLabel}
+                  {' · '}
+                  {nextEventCountdown(worldContext.minutesUntilNextEvent)}
+                </small>
               </div>
             </div>
           )}
