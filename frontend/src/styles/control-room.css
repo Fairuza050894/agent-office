@@ -2602,3 +2602,151 @@ body {
     width: auto;
   }
 }
+
+
+/* Phase 10C — Office world time context */
+
+.office-workspace .office-scene-heading {
+  align-items: flex-start;
+}
+
+.office-workspace .office-scene-heading > div:first-child {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.office-world-hud {
+  display: flex;
+  min-width: 0;
+  align-items: stretch;
+  gap: 5px;
+  margin-top: 7px;
+  flex-wrap: wrap;
+}
+
+.office-world-clock-card,
+.office-world-stat {
+  display: grid;
+  min-height: 40px;
+  align-content: center;
+  gap: 1px;
+  padding: 5px 8px;
+  border: 1px solid #263b49;
+  border-radius: 5px;
+  background: rgba(11, 24, 33, .9);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .12);
+}
+
+.office-world-clock-card {
+  min-width: 118px;
+  grid-template-columns: auto 1fr;
+  column-gap: 6px;
+}
+
+.office-world-clock-card > span {
+  grid-row: 1 / span 2;
+  align-self: center;
+  padding: 2px 4px;
+  border: 1px solid rgba(83, 199, 240, .26);
+  border-radius: 3px;
+  color: #83d8f2 !important;
+  font-family: var(--ao-mono);
+  font-size: .46rem;
+  font-weight: 760;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.office-world-clock-card > strong {
+  color: #e1edf4 !important;
+  font-family: var(--ao-mono);
+  font-size: .74rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .025em;
+  line-height: 1.1;
+}
+
+.office-world-clock-card > small {
+  color: #6f8494;
+  font-size: .47rem;
+  line-height: 1.1;
+}
+
+.office-world-stat {
+  min-width: 94px;
+}
+
+.office-world-stat > span {
+  color: #5f7686 !important;
+  font-family: var(--ao-mono);
+  font-size: .43rem;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.office-world-stat > strong {
+  overflow: hidden;
+  color: #c4d3dd !important;
+  font-size: .58rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.office-world-stat > small {
+  overflow: hidden;
+  max-width: 150px;
+  color: #6c8292;
+  font-size: .45rem;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.office-world-next {
+  min-width: 112px;
+}
+
+.office-world-hud.mode-night_quiet .office-world-clock-card,
+.office-world-hud.mode-weekend_quiet .office-world-clock-card {
+  border-color: #273544;
+  background: rgba(8, 15, 23, .94);
+}
+
+.office-world-hud.mode-arrival .office-world-clock-card {
+  border-color: rgba(209, 161, 91, .34);
+}
+
+.office-world-hud.mode-coffee_break .office-world-clock-card,
+.office-world-hud.mode-lunch .office-world-clock-card {
+  border-color: rgba(125, 177, 134, .34);
+}
+
+@media (max-width: 1180px) {
+  .office-world-stat > small {
+    max-width: 110px;
+  }
+
+  .office-world-hud {
+    max-width: 620px;
+  }
+}
+
+@media (max-width: 760px) {
+  .office-world-hud {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .office-world-clock-card,
+  .office-world-stat {
+    min-width: 0;
+  }
+
+  .office-world-stat > small {
+    max-width: none;
+  }
+}
