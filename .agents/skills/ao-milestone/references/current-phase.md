@@ -5,16 +5,15 @@
 Current base:
 
 ```text
-main@21afb8e
-Phase 10A PR #11 merged
+main@60fd03c
+Phase 10B PR #12 merged
 ```
 
 Current work:
 
 ```text
-branch: phase-10b-presence-behavior
-code checkpoint: 3755fe3
-phase: Phase 10B — Living Office Presence Behavior
+branch: phase-10c-time-context
+phase: Phase 10C — Office World Time Context & Realistic Occupancy
 ```
 
 ## Status
@@ -29,194 +28,158 @@ phase: Phase 10B — Living Office Presence Behavior
   - Phase 9F operational Activity Interpreter remains future work
 - Phase 10 Living 3D Agent Office
   - Phase 10A CLOSED / MERGED
-  - Phase 10B IN PROGRESS — code green; rendered review pending
+  - Phase 10B CLOSED / MERGED
+  - Phase 10C IMPLEMENTED — automated runner hold; rendered review pending
 
-Phase 10B remains a presentation slice. It may project durable planning truth and
-ambient schedule state, but it may not fabricate operational execution.
+Phase 10C remains presentation-only. It may affect clock, lighting, occupancy,
+ambient presence, floor selection, and visual environment, but it may not create
+or mutate operational execution truth.
 
-## Phase 10B implemented scope
+## Phase 10C implemented scope
 
-Current Phase 10B provides:
+- explicit Office-world clock
+- project/thread timezone -> browser timezone -> UTC fallback
+- localized timezone badge
+- live HH:MM:SS clock
+- weekday/weekend schedule evaluation in Office timezone
+- Office mode status
+- next Office event + countdown
+- realistic time-based ambient occupancy caps
+- zero ambient occupancy after 22:00
+- zero default weekend ambience
+- planning-presence freshness windows
+- stale durable planning records no longer keep virtual people physically present
+- 1-second HUD clock with minute-level presence recalculation
+- lighting synchronized to Office timezone
+- richer Commons floor:
+  - reception
+  - community wall
+  - collaboration hub
+  - pantry / coffee
+  - lounge
+  - quiet room
+  - game corner
+- richer Build floor:
+  - engineering pod
+  - dedicated QA lab
+  - pairing island
+  - documentation nook
+  - ops/server rack
+  - review wall
+- richer Strategy floor:
+  - planning table
+  - meeting room
+  - roadmap wall
+  - decision pods
+  - architecture/review area
+  - breakout area
+- specialist zone anchors aligned to the richer environment
 
-- explicit Office behavior vocabulary
-  - ARRIVAL
-  - AVAILABLE
-  - DESK_FOCUS
-  - PLANNING_MEETING
-  - WAITING_DECISION
-  - COFFEE_CHAT
-  - LUNCH
-  - SOCIAL_CHAT
-  - GAME_BREAK
-  - PRAYER_QUIET
-  - OFFLINE
-- deterministic role-specific ambient preferences
-- staggered arrival by role
-- bounded daily coffee participation
-- bounded daily lunch participation
-- bounded after-hours occupancy
-- planning roles excluded from ambient duplication
-- deterministic ten-minute ambience beats
-- per-member placement indices
-- collision-conscious zone slot reservation
-- movement through the existing shared Three.js path loop
-- compact selected-member inspector
-- explicit Planning truth vs Ambient presentation label
-- selected-floor behavior summary
-- morning / day / evening / night lighting profiles
-- behavior-aware character runtime with safe local-clip fallback
-- ambient-zone capacity enforcement
-- priority scheduled-event capacity reservation
-- scheduled participant clamping to physical zone capacity
-- semantic capacity parity tests against actual 3D zone slots
-- cross-floor stale inspector protection
-- local-calendar daily role rotation
-- existing Run Office compatibility
+## Time / truth boundary
 
-## Truthfulness boundary
+Office mode is schedule context, not execution.
 
-Canonical planning truth remains:
-
-```text
-ComposerThread
-ComposerMessage
-TeamProposal
-PlanningArtifact
-RequirementCandidate
-PlanningEvent
-```
-
-Canonical operational truth remains:
+Examples:
 
 ```text
-Task
-Run
-AgentRun
-Workspace
-Event
-Finding
-Evidence
+Night quiet != nobody can plan
+Recent planning truth may still appear.
+
+Late office != factual overtime
+No Run/AgentRun means no execution claim.
+
+Weekend quiet != planning history deleted
+Durable planning remains available in Composer/Dock.
 ```
 
-Living Office presentation state includes:
+Ambient occupancy:
 
 ```text
-OfficeFloor
-OfficeZone
-OfficePresenceMember
-OfficeBehaviorKey
-OfficeScheduledEvent
-placementIndex
-lighting profile
+00:00–07:00  0
+07:00–09:00  up to 4
+09:00–12:00  up to 9
+12:00–13:00  up to 9
+13:00–15:00  up to 9
+15:00–16:00  up to 9
+16:00–18:00  up to 7
+18:00–20:00  up to 2
+20:00–22:00  up to 1
+22:00–24:00  0
+weekend       0 by default
 ```
 
-Rules:
+Scheduled-event providers remain the explicit exception path and are still
+capacity-bounded.
 
-- animation is never evidence
-- presence is not execution
-- ambient behavior may not claim repository-changing work
-- planning presence is not AgentRun
-- AVAILABLE is not rendered as active execution
-- DEFERRED / EXCLUDED planning roles are not active planning workers
-- missing animation capability must fall back safely rather than be simulated
+## Automated verification state
 
-## Character-animation compatibility finding
+GitHub Actions currently cannot assign a runner to this branch.
 
-Phase 10B audited the CC0 Quaternius Universal Animation Library:
+Observed repeatedly:
 
 ```text
-J-Ponzo/gltf-universal-animation-library
-commit e24c23cf2a1323488a3faa226ea7ea21f644b73e
+runner_id: 0
+runner_name: ""
+steps: []
+frontend/backend/repository jobs terminate within seconds
 ```
 
-Useful free clips exist, including sitting and talking loops.
+This is an infrastructure/runner availability failure, not a test assertion.
 
-A strict build-time compatibility check rejected the library against the five
-current Agent Office character variants because the animation library targets a
-newer `DEF-*` skeleton while the current character assets use a different rig.
+Do not claim automated green until a run receives an actual runner and executes
+the verification steps.
 
-The attempted integration was fully rolled back.
+The code adds regression tests for:
 
-Current policy:
+- explicit timezone clock/mode
+- same instant across different timezones
+- evening -> late -> night occupancy reduction
+- weekend quiet
+- planning freshness by Office time
+- invalid timezone fallback
+- explicit timezone occupancy
+- Office-world HUD
+- richer specialist-zone placement
 
-- ship only the already verified character assets
-- guarantee Idle / Walk / Run only
-- behavior-specific clip lookup falls back to Idle
-- no runtime retargeting hack
-- no seated props at active character anchors until compatible animation exists
-
-## Current quality gate
-
-Implementation checkpoint:
-
-```text
-3755fe3 test: reserve priority event zone capacity
-```
-
-GitHub Actions run `36455559684` is GREEN:
-
-```text
-backend pytest      657 passed
-ruff                passed
-ruff format         203 files already formatted
-mypy                0 issues / 136 source files
-frontend vitest     18 files / 99 tests passed
-frontend typecheck  passed
-frontend lint       0 errors / 2 existing warnings
-frontend build      passed
-repository check    passed
-```
-
-The two frontend warnings are the pre-existing `ThreeOfficeScene`
-`startLoop` exhaustive-deps warnings.
-
-## Phase 10B hardening audit
-
-The final code audit closed five non-visual edge cases before rendered review:
-
-- lunch/coffee zone over-subscription
-- scheduled-event capacity races with baseline ambience
-- scheduled participant counts larger than target-zone capacity
-- selected inspector persisting after a member leaves the visible floor
-- UTC-based daily role rotation
-
-These are covered by the `3755fe3` checkpoint and the 99-test frontend suite.
-
-## Phase 10B rendered gate
+## Phase 10C rendered gate
 
 Pending local visual review of:
 
-- night lighting readability
-- after-hours role-specific placement on L1
-- selected-member inspector
-- ambient movement across a ten-minute boundary
-- TDP planning behavior on L3
-- AWAITING_USER / Waiting for you state
-- furniture/path clipping during movement
-- quiet L2 behavior without execution truth
-- Composer / Operations Dock compatibility
+- clock / timezone correctness
+- Office mode correctness
+- next-event correctness
+- midnight/night occupancy
+- stale vs recent planning presence
+- timezone-synchronized lighting
+- L1/L2/L3 visual differentiation
+- QA / docs / roadmap / decision areas
+- Composer and Operations Dock compatibility
+- furniture/path clipping
 
 ## Design and verification records
 
 ```text
 docs/product/LIVING_3D_AGENT_OFFICE_PRD.md
 docs/architecture/LIVING_OFFICE_TECHNICAL_DESIGN.md
+docs/architecture/OFFICE_WORLD_SIMULATION.md
 docs/product/PHASE_10A_VERIFICATION.md
 docs/product/PHASE_10B_VERIFICATION.md
+docs/product/PHASE_10C_VERIFICATION.md
 ```
 
 ## Deferred intentionally
 
-Not implemented in Phase 10B:
+Not implemented in Phase 10C:
 
-- compatible real seated / typing / talking animation pipeline
-- runtime skeleton retargeting
-- persistent Office timezone / working-hour settings
+- persistent Office settings in backend/database
 - production prayer-time provider
+- calendar integration
+- compatible real seated / typing / talking animation pipeline
 - factual operational Activity Interpreter
 - rooftop floor
+- weather-aware ambience
 - user-configurable ambience density
 - role-scoped persistent memory / Phase 9D runtime work
 
-Keep the Phase 10B pull request Draft until rendered Living Office behavior
-review passes. Merge remains manual only.
+Keep the Phase 10C pull request Draft while automated verification is blocked
+and rendered review is pending. Merge remains manual only.
