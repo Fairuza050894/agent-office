@@ -28,7 +28,7 @@ phase: Phase 10A — Living 3D Agent Office Foundation
   - Phase 9E not started
   - Phase 9F operational Activity Interpreter remains future work
 - Phase 10 Living 3D Agent Office
-  - Phase 10A IN PROGRESS — foundation implemented; rendered review pending
+  - Phase 10A CLOSED — rendered gate passed; PR #11 awaiting manual merge
 
 Phase 10A is intentionally presentation-only and does not depend on unimplemented
 Phase 9D/9E execution behavior.
@@ -126,22 +126,20 @@ repository check    passed
 
 ## Phase 10A rendered gate
 
-First rendered review completed on 2026-09-28 and triggered a visual-hardening
-pass. Multi-floor switching and planning presence worked, while Commons density,
-Strategy layout, planning-role spacing, floating light fixtures, nameplate noise,
-and camera recovery needed refinement.
+PASS on 2026-09-28.
 
-Hardening at `bda96f4` addressed the first findings. A second evening review then exposed that active planning replaced all ambient presence. Checkpoint `23c1bd4` now keeps planning and ambient presence concurrent without duplicating planning roles, makes floor labels reflect actual visible presence, alternates planning members around the strategy table, and removes visible open-top ceiling-light fixtures.
+The final late-evening TDP review confirmed:
 
-Pending follow-up local visual review of:
+- L1 Commons contains truthful after-hours ambient presence.
+- L3 Strategy contains the INCLUDED TDP planning team.
+- L2 Build remains quiet because no factual execution currently requires it.
+- planning and ambient presence coexist without duplication.
+- floor labels reflect the selected floor's actual presence.
+- floor switching, camera reset, Composer, and Operations Dock remain usable.
+- the system does not populate Build merely to simulate work.
 
-- L1/L2/L3 visual distinction
-- floor switching
-- after-hours ambient presence
-- TDP planning-team presence on L3
-- AWAITING_USER presentation
-- compatibility with Composer and Operations Dock
-- collision/placement quality
+Phase 10A is complete. PR #11 remains unmerged and must be merged manually
+before starting the next implementation slice.
 
 ## Design and verification records
 
@@ -164,5 +162,4 @@ Not implemented in Phase 10A:
 - full time-of-day lighting
 - role-scoped memory / Phase 9D runtime work
 
-Keep the Phase 10 pull request Draft until the rendered Living Office interaction
-gate is accepted. Merge remains manual only.
+Rendered Living Office acceptance has passed. PR #11 may be marked Ready for Review after final CI. Merge remains manual only.
