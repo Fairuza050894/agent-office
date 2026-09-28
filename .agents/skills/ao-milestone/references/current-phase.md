@@ -13,7 +13,7 @@ Current work:
 
 ```text
 branch: phase-10b-presence-behavior
-code checkpoint: 9402c4f
+code checkpoint: 3755fe3
 phase: Phase 10B — Living Office Presence Behavior
 ```
 
@@ -65,6 +65,12 @@ Current Phase 10B provides:
 - selected-floor behavior summary
 - morning / day / evening / night lighting profiles
 - behavior-aware character runtime with safe local-clip fallback
+- ambient-zone capacity enforcement
+- priority scheduled-event capacity reservation
+- scheduled participant clamping to physical zone capacity
+- semantic capacity parity tests against actual 3D zone slots
+- cross-floor stale inspector protection
+- local-calendar daily role rotation
 - existing Run Office compatibility
 
 ## Truthfulness boundary
@@ -144,17 +150,17 @@ Current policy:
 Implementation checkpoint:
 
 ```text
-9402c4f test: verify staggered office schedule participation
+3755fe3 test: reserve priority event zone capacity
 ```
 
-GitHub Actions run `36453933400` is GREEN:
+GitHub Actions run `36455559684` is GREEN:
 
 ```text
 backend pytest      657 passed
 ruff                passed
 ruff format         203 files already formatted
 mypy                0 issues / 136 source files
-frontend vitest     18 files / 94 tests passed
+frontend vitest     18 files / 99 tests passed
 frontend typecheck  passed
 frontend lint       0 errors / 2 existing warnings
 frontend build      passed
@@ -163,6 +169,18 @@ repository check    passed
 
 The two frontend warnings are the pre-existing `ThreeOfficeScene`
 `startLoop` exhaustive-deps warnings.
+
+## Phase 10B hardening audit
+
+The final code audit closed five non-visual edge cases before rendered review:
+
+- lunch/coffee zone over-subscription
+- scheduled-event capacity races with baseline ambience
+- scheduled participant counts larger than target-zone capacity
+- selected inspector persisting after a member leaves the visible floor
+- UTC-based daily role rotation
+
+These are covered by the `3755fe3` checkpoint and the 99-test frontend suite.
 
 ## Phase 10B rendered gate
 
