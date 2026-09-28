@@ -430,10 +430,20 @@ export function OfficeWorkspacePage() {
     () => livingOfficeMembers(activeThread, planningTeam, profiles, officeNow),
     [activeThread, officeNow, planningTeam, profiles],
   )
-  const officePresenceLabel =
-    activeThread && planningTeam
-      ? `${activeThread.status === 'AWAITING_USER' ? 'Waiting for you' : 'Planning'} presence`
-      : `${ambientWindow.label} · ambient`
+  const selectedFloorMembers = workspaceMembers.filter(
+    (member) => member.floor === selectedFloor,
+  )
+  const selectedFloorHasPlanning = selectedFloorMembers.some(
+    (member) => member.truth === 'PLANNING',
+  )
+  const selectedFloorHasAmbient = selectedFloorMembers.some(
+    (member) => member.truth === 'AMBIENT',
+  )
+  const officePresenceLabel = selectedFloorHasPlanning
+    ? `${activeThread?.status === 'AWAITING_USER' ? 'Waiting for you' : 'Planning'} presence`
+    : selectedFloorHasAmbient
+      ? `${ambientWindow.label} · ambient`
+      : 'No active presence'
 
   return (
     <div
