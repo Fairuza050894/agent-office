@@ -505,14 +505,6 @@ export function ambientOfficeMembers(
       known.get(roleKey)?.status === 'ACTIVE' && !excludedRoleKeys.has(roleKey),
   )
   const dayBucket = world.localDateKey
-  const afterHoursRoles = selectDailyRoles(
-    activeRoles,
-    world.ambientOccupancyCap,
-    dayBucket,
-    'after-hours',
-  )
-  const coffeeRoles = selectDailyRoles(activeRoles, 4, dayBucket, 'coffee')
-  const lunchRoles = selectDailyRoles(activeRoles, 6, dayBucket, 'lunch')
   const occupiedAmbientZones = new Map<OfficeZoneKey, number>()
 
   const scheduledCandidates = activeRoles.filter(
@@ -533,6 +525,32 @@ export function ambientOfficeMembers(
   if (scheduled && scheduledRoles.size > 0) {
     occupiedAmbientZones.set(scheduled.zone, scheduledRoles.size)
   }
+
+  const baselineCandidates = activeRoles.filter(
+    (roleKey) => !scheduledRoles.has(roleKey),
+  )
+  const baselineLimit = Math.max(
+    0,
+    world.ambientOccupancyCap - scheduledRoles.size,
+  )
+  const baselineRoles = selectDailyRoles(
+    baselineCandidates,
+    baselineLimit,
+    dayBucket,
+    `world:${world.mode}`,
+  )
+  const coffeeRoles = selectDailyRoles(
+    [...baselineRoles],
+    4,
+    dayBucket,
+    'coffee',
+  )
+  const lunchRoles = selectDailyRoles(
+    [...baselineRoles],
+    6,
+    dayBucket,
+    'lunch',
+  )
 
   return activeRoles.flatMap((roleKey) => {
     const profile = known.get(roleKey)
@@ -556,8 +574,9 @@ export function ambientOfficeMembers(
       ]
     }
 
+    if (!baselineRoles.has(roleKey)) return []
+
     if (baseline.key === 'after-hours') {
-      if (!afterHoursRoles.has(roleKey)) return []
       const zone =
         pickAmbientZoneWithCapacity(
           roleKey,
