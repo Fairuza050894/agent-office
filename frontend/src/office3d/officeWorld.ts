@@ -12,12 +12,6 @@ export type OfficeModeKey =
   | 'LATE_EVENING'
   | 'WEEKEND_QUIET'
 
-export interface OfficeWorldEvent {
-  key: OfficeModeKey
-  label: string
-  minuteOfDay: number
-}
-
 export interface OfficeWorldContext {
   mode: OfficeModeKey
   modeLabel: string
@@ -26,7 +20,12 @@ export interface OfficeWorldContext {
   ambientOccupancyCap: number
   planningFreshMinutes: number
   clockLabel: string
+  timeZone: string
+  timeZoneLabel: string
   dayLabel: string
+  localMinuteOfDay: number
+  localDateKey: number
+  weekdayIndex: number
   nextEventLabel: string
   nextEventTimeLabel: string
   minutesUntilNextEvent: number
@@ -39,6 +38,17 @@ interface OfficeModeDefinition {
   ambientOccupancyCap: number
   planningFreshMinutes: number
   isOfficeOpen: boolean
+}
+
+interface OfficeLocalTime {
+  year: number
+  month: number
+  day: number
+  hour: number
+  minute: number
+  second: number
+  weekdayIndex: number
+  timeZoneLabel: string
 }
 
 const WEEKDAY_MODES: OfficeModeDefinition[] = [
@@ -94,7 +104,7 @@ const WEEKDAY_MODES: OfficeModeDefinition[] = [
     key: 'WRAP_UP',
     label: 'Wrap-up',
     startMinute: 16 * 60,
-    ambientOccupancyCap: 8,
+    ambientOccupancyCap: 7,
     planningFreshMinutes: 75,
     isOfficeOpen: true,
   },
@@ -102,7 +112,7 @@ const WEEKDAY_MODES: OfficeModeDefinition[] = [
     key: 'EVENING',
     label: 'Evening overtime',
     startMinute: 18 * 60,
-    ambientOccupancyCap: 3,
+    ambientOccupancyCap: 2,
     planningFreshMinutes: 45,
     isOfficeOpen: true,
   },
@@ -145,17 +155,92 @@ const NEXT_EVENT_LABELS: Partial<Record<OfficeModeKey, string>> = {
   NIGHT_QUIET: 'Night quiet',
 }
 
-function minuteOfDay(now: Date): number {
-  return now.getHours() * 60 + now.getMinutes()
+const WEEKDAY_INDEX: Record<string, number> = {
+  Sun: 0,
+  Mon: 1,
+  Tue: 2,
+  Wed: 3,
+  Thu: 4,
+  Fri: 5,
+  Sat: 6,
 }
 
-function isWeekend(now: Date): boolean {
-  const day = now.getDay()
-  return day === 0 || day === 6
+function resolvedTimeZone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+  } catch {
+    return 'UTC'
+  }
 }
 
-function modeForWeekday(now: Date): OfficeModeDefinition {
-  const minute = minuteOfDay(now)
+export function normalizeOfficeTimeZone(timeZone?: string | null): string {
+  const candidate = timeZone?.trim() || resolvedTimeZone()
+  try {
+    new Intl.DateTimeFormat('en', { timeZone: candidate }).format(new Date())
+    return candidate
+  } catch {
+    return resolvedTimeZone()
+  }
+}
+
+function part(
+  parts: Intl.DateTimeFormatPart[],
+  type: Intl.DateTimeFormatPartTypes,
+): string {
+  return parts.find((candidate) => candidate.type === type)?.value ?? ''
+}
+
+function localTime(now: Date, timeZone: string): OfficeLocalTime {
+  const normalized = normalizeOfficeTimeZone(timeZone)
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: normalized,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      weekday: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23',
+      timeZoneName: 'short',
+    }).formatToParts(now)
+
+    const weekday = part(parts, 'weekday')
+    return {
+      year: Number(part(parts, 'year')),
+      month: Number(part(parts, 'month')),
+      day: Number(part(parts, 'day')),
+      hour: Number(part(parts, 'hour')),
+      minute: Number(part(parts, 'minute')),
+      second: Number(part(parts, 'second')),
+      weekdayIndex: WEEKDAY_INDEX[weekday] ?? now.getDay(),
+      timeZoneLabel: part(parts, 'timeZoneName') || normalized,
+    }
+  } catch {
+    return {
+      year: now.getFullYear(),
+      month: now.getMonth() + 1,
+      day: now.getDate(),
+      hour: now.getHours(),
+      minute: now.getMinutes(),
+      second: now.getSeconds(),
+      weekdayIndex: now.getDay(),
+      timeZoneLabel: normalized,
+    }
+  }
+}
+
+function minuteOfDay(local: OfficeLocalTime): number {
+  return local.hour * 60 + local.minute
+}
+
+function isWeekend(local: OfficeLocalTime): boolean {
+  return local.weekdayIndex === 0 || local.weekdayIndex === 6
+}
+
+function modeForWeekday(local: OfficeLocalTime): OfficeModeDefinition {
+  const minute = minuteOfDay(local)
   let selected = WEEKDAY_MODES[0]
 
   for (const candidate of WEEKDAY_MODES) {
@@ -165,28 +250,18 @@ function modeForWeekday(now: Date): OfficeModeDefinition {
   return selected
 }
 
-function formatClock(now: Date): string {
-  try {
-    return new Intl.DateTimeFormat('id-ID', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-      timeZoneName: 'short',
-    })
-      .format(now)
-      .replace('.', ':')
-  } catch {
-    return now.toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    })
-  }
+function formatClock(local: OfficeLocalTime): string {
+  return [
+    String(local.hour).padStart(2, '0'),
+    String(local.minute).padStart(2, '0'),
+    String(local.second).padStart(2, '0'),
+  ].join(':')
 }
 
-function formatDay(now: Date): string {
+function formatDay(now: Date, timeZone: string): string {
   try {
     return new Intl.DateTimeFormat('en', {
+      timeZone,
       weekday: 'short',
       day: '2-digit',
       month: 'short',
@@ -203,19 +278,20 @@ function formatMinute(minute: number): string {
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
 }
 
-function nextWeekdayArrival(now: Date): { minutes: number; label: string } {
-  const current = minuteOfDay(now)
+function nextWeekdayArrival(local: OfficeLocalTime): {
+  minutes: number
+  label: string
+} {
+  const current = minuteOfDay(local)
   let daysAhead = 1
 
   while (daysAhead <= 7) {
-    const candidate = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate() + daysAhead,
-    )
-    if (!isWeekend(candidate)) {
-      const minutes = daysAhead * 24 * 60 - current + 7 * 60
-      return { minutes, label: formatMinute(7 * 60) }
+    const weekday = (local.weekdayIndex + daysAhead) % 7
+    if (weekday !== 0 && weekday !== 6) {
+      return {
+        minutes: daysAhead * 24 * 60 - current + 7 * 60,
+        label: formatMinute(7 * 60),
+      }
     }
     daysAhead += 1
   }
@@ -223,13 +299,13 @@ function nextWeekdayArrival(now: Date): { minutes: number; label: string } {
   return { minutes: 7 * 24 * 60, label: formatMinute(7 * 60) }
 }
 
-function nextWeekdayEvent(now: Date): {
+function nextWeekdayEvent(local: OfficeLocalTime): {
   label: string
   timeLabel: string
   minutes: number
 } {
-  if (isWeekend(now)) {
-    const next = nextWeekdayArrival(now)
+  if (isWeekend(local)) {
+    const next = nextWeekdayArrival(local)
     return {
       label: 'Next weekday arrival',
       timeLabel: next.label,
@@ -237,15 +313,12 @@ function nextWeekdayEvent(now: Date): {
     }
   }
 
-  const current = minuteOfDay(now)
+  const current = minuteOfDay(local)
   const future = WEEKDAY_MODES.find(
     (candidate, index) =>
       index > 0 &&
       candidate.startMinute > current &&
-      !(
-        candidate.key === 'NIGHT_QUIET' &&
-        candidate.startMinute === 0
-      ),
+      !(candidate.key === 'NIGHT_QUIET' && candidate.startMinute === 0),
   )
 
   if (future) {
@@ -256,7 +329,7 @@ function nextWeekdayEvent(now: Date): {
     }
   }
 
-  const next = nextWeekdayArrival(now)
+  const next = nextWeekdayArrival(local)
   return {
     label: 'Morning arrival',
     timeLabel: next.label,
@@ -264,10 +337,15 @@ function nextWeekdayEvent(now: Date): {
   }
 }
 
-export function officeWorldContext(now = new Date()): OfficeWorldContext {
-  const dayKind: OfficeDayKind = isWeekend(now) ? 'WEEKEND' : 'WEEKDAY'
-  const mode = dayKind === 'WEEKEND' ? WEEKEND_MODE : modeForWeekday(now)
-  const next = nextWeekdayEvent(now)
+export function officeWorldContext(
+  now = new Date(),
+  requestedTimeZone?: string | null,
+): OfficeWorldContext {
+  const timeZone = normalizeOfficeTimeZone(requestedTimeZone)
+  const local = localTime(now, timeZone)
+  const dayKind: OfficeDayKind = isWeekend(local) ? 'WEEKEND' : 'WEEKDAY'
+  const mode = dayKind === 'WEEKEND' ? WEEKEND_MODE : modeForWeekday(local)
+  const next = nextWeekdayEvent(local)
 
   return {
     mode: mode.key,
@@ -276,8 +354,13 @@ export function officeWorldContext(now = new Date()): OfficeWorldContext {
     isOfficeOpen: mode.isOfficeOpen,
     ambientOccupancyCap: mode.ambientOccupancyCap,
     planningFreshMinutes: mode.planningFreshMinutes,
-    clockLabel: formatClock(now),
-    dayLabel: formatDay(now),
+    clockLabel: formatClock(local),
+    timeZone,
+    timeZoneLabel: local.timeZoneLabel,
+    dayLabel: formatDay(now, timeZone),
+    localMinuteOfDay: minuteOfDay(local),
+    localDateKey: local.year * 10_000 + local.month * 100 + local.day,
+    weekdayIndex: local.weekdayIndex,
     nextEventLabel: next.label,
     nextEventTimeLabel: next.timeLabel,
     minutesUntilNextEvent: next.minutes,
@@ -287,10 +370,11 @@ export function officeWorldContext(now = new Date()): OfficeWorldContext {
 export function isPlanningPresenceFresh(
   updatedAt: string,
   now = new Date(),
+  timeZone?: string | null,
 ): boolean {
   const updated = new Date(updatedAt).getTime()
   if (!Number.isFinite(updated)) return false
 
   const ageMinutes = Math.max(0, (now.getTime() - updated) / 60_000)
-  return ageMinutes <= officeWorldContext(now).planningFreshMinutes
+  return ageMinutes <= officeWorldContext(now, timeZone).planningFreshMinutes
 }
