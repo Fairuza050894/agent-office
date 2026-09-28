@@ -235,12 +235,17 @@ describe('living office model', () => {
     expect(commons.every((member) => member.status === 'AVAILABLE')).toBe(true)
   })
 
-  it('keeps non-planning roles as ambient presence during an active planning thread', () => {
+  it('keeps non-planning roles as ambient presence during a fresh evening planning session', () => {
+    const now = new Date(2026, 8, 28, 19, 0)
+    const freshThread = {
+      ...thread,
+      updated_at: new Date(2026, 8, 28, 18, 50).toISOString(),
+    }
     const members = livingOfficeMembers(
-      thread,
+      freshThread,
       proposal,
       profiles,
-      new Date(2026, 8, 28, 23, 0),
+      now,
     )
 
     const planning = members.filter((member) => member.truth === 'PLANNING')
@@ -272,13 +277,13 @@ describe('living office model', () => {
     expect(officeBehaviorLabel('GAME_BREAK')).toBe('Game break')
   })
 
-  it('assigns deterministic role-personality behavior during after-hours ambience', () => {
-    const now = new Date(2026, 8, 28, 23, 0)
+  it('assigns deterministic role-personality behavior during late-evening ambience', () => {
+    const now = new Date(2026, 8, 28, 20, 30)
     const first = ambientOfficeMembers(profiles, now)
     const second = ambientOfficeMembers(profiles, now)
 
     expect(second).toEqual(first)
-    expect(first).toHaveLength(2)
+    expect(first).toHaveLength(1)
     expect(
       first.every((member) =>
         ['SOCIAL_CHAT', 'GAME_BREAK'].includes(member.behavior),
@@ -434,13 +439,72 @@ describe('living office model', () => {
     ).toHaveLength(2)
   })
 
-  it('reduces ambient occupancy after hours instead of fabricating work', () => {
+  it('empties ambient occupancy during night quiet instead of fabricating overtime', () => {
     const members = ambientOfficeMembers(
       profiles,
-      new Date(2026, 8, 27, 22, 30),
+      new Date(2026, 8, 28, 22, 30),
     )
 
-    expect(members).toHaveLength(2)
-    expect(members.every((member) => member.status === 'SOCIAL_BREAK')).toBe(true)
+    expect(members).toEqual([])
+  })
+
+  it('keeps weekend ambience quiet unless an explicit scheduled event exists', () => {
+    const now = new Date(2026, 9, 3, 11, 0)
+
+    expect(ambientOfficeMembers(extendedProfiles, now)).toEqual([])
+
+    const scheduled = ambientOfficeMembers(extendedProfiles, now, [
+      {
+        id: 'weekend-event',
+        label: 'Scheduled maintenance sync',
+        startsAt: new Date(2026, 9, 3, 10, 30).toISOString(),
+        endsAt: new Date(2026, 9, 3, 11, 30).toISOString(),
+        floor: 'commons',
+        zone: 'coffee-bar',
+        presence: 'SOCIAL_BREAK',
+        priority: 100,
+        maxParticipants: 1,
+      },
+    ])
+
+    expect(scheduled).toHaveLength(1)
+    expect(scheduled[0].truth).toBe('AMBIENT')
+  })
+
+  it('does not keep a stale durable planning thread physically in the office overnight', () => {
+    const now = new Date('2026-09-29T00:44:00+07:00')
+    const staleThread = {
+      ...thread,
+      updated_at: '2026-09-28T21:00:00+07:00',
+    }
+
+    expect(
+      planningPresenceMembers(staleThread, proposal, profiles, now),
+    ).toEqual([])
+    expect(
+      livingOfficeMembers(staleThread, proposal, profiles, now),
+    ).toEqual([])
+  })
+
+  it('still renders a genuinely recent late-night planning session', () => {
+    const now = new Date('2026-09-29T00:44:00+07:00')
+    const recentThread = {
+      ...thread,
+      updated_at: '2026-09-29T00:35:00+07:00',
+    }
+
+    const members = livingOfficeMembers(
+      recentThread,
+      proposal,
+      profiles,
+      now,
+    )
+
+    expect(
+      members.filter((member) => member.truth === 'PLANNING'),
+    ).toHaveLength(2)
+    expect(
+      members.filter((member) => member.truth === 'AMBIENT'),
+    ).toHaveLength(0)
   })
 })
