@@ -201,14 +201,23 @@ const ROLE_AMBIENT_ZONES: Record<
   },
 }
 
-export const OFFICE_AMBIENT_ZONE_CAPACITY: Partial<
-  Record<OfficeZoneKey, number>
+export const OFFICE_AMBIENT_ZONE_CAPACITY: Record<
+  OfficeZoneKey,
+  number
 > = {
+  entrance: 3,
   'coffee-bar': 2,
   pantry: 2,
   lounge: 2,
   'game-corner': 2,
   'quiet-room': 2,
+  'engineering-pod': 8,
+  'qa-bench': 2,
+  'review-wall': 2,
+  'docs-desk': 2,
+  'planning-table': 6,
+  'architecture-wall': 3,
+  'decision-room': 2,
 }
 
 const OFFICE_BEHAVIOR_LABELS: Record<OfficeBehaviorKey, string> = {
