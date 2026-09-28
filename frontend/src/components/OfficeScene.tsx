@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 
 import type { AgentProfile, AgentRun, RunStage } from '../api'
 import type { OfficeReplayRange } from '../office3d/replay'
+import type { OfficeWorldContext } from '../office3d/officeWorld'
 import {
   OFFICE_FLOORS,
   officeBehaviorLabel,
@@ -29,6 +30,8 @@ export interface OfficeSceneProps {
   onFloorChange?: (floor: OfficeFloorKey) => void
   presenceLabel?: string | null
   officeHour?: number
+  worldContext?: OfficeWorldContext | null
+  totalPresence?: number
 }
 
 function profileName(
@@ -56,6 +59,8 @@ export function OfficeScene({
   onFloorChange,
   presenceLabel = null,
   officeHour,
+  worldContext = null,
+  totalPresence = 0,
 }: OfficeSceneProps) {
   const profileByKey = useMemo(
     () => new Map(profiles.map((profile) => [profile.key, profile])),
@@ -94,6 +99,19 @@ export function OfficeScene({
               ? 'No factual Run selected · drag to orbit · right-drag to pan · wheel to zoom'
               : 'Canonical AgentRun state · drag to orbit · right-drag to pan · wheel to zoom'}
           </span>
+          {presentation === 'workspace' && worldContext && (
+            <div className="office-world-hud" aria-label="Office world status">
+              <span className="office-world-clock">{worldContext.clockLabel}</span>
+              <span className="office-world-day">{worldContext.dayLabel}</span>
+              <strong>{worldContext.modeLabel}</strong>
+              <span>
+                {totalPresence} present
+                {' · '}
+                next {worldContext.nextEventLabel.toLowerCase()} at{' '}
+                {worldContext.nextEventTimeLabel}
+              </span>
+            </div>
+          )}
         </div>
         <div className="office-scene-meta">
           {presentation === 'workspace' && onFloorChange && (
