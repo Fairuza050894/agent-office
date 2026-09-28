@@ -1,9 +1,9 @@
 # Phase 10A Verification — Living 3D Agent Office Foundation
 
 Status: ACCEPTED FOR RENDERED REVIEW  
-Date: 2026-09-27  
+Date: 2026-09-28  
 Branch: `phase-10-living-office`  
-Implementation checkpoint: `55bf7dd`  
+Implementation checkpoint: `bda96f4`  
 Base: merged `main@bcdd43e`  
 Merge policy: manual only
 
@@ -96,7 +96,7 @@ members while remaining members continue to follow the baseline office rhythm.
 
 ## Verification
 
-GitHub Actions run `36332181958`: **GREEN**
+GitHub Actions run `36402274051`: **GREEN**
 
 ```text
 repository whitespace  passed
@@ -107,7 +107,7 @@ ruff format            203 files already formatted
 mypy                   no issues in 136 source files
 
 frontend vitest        16 files passed
-frontend tests         80 passed
+frontend tests         82 passed
 frontend typecheck     passed
 frontend lint          0 errors / 2 existing ThreeOfficeScene warnings
 frontend build         passed
@@ -132,6 +132,38 @@ PASS:
 - selective scheduled-event participation
 - no backend regression
 - no Run Office regression in the existing suite
+- wrap-up Commons occupancy remains presentation-only
+- planning-table anchors enforce role separation
+- AVAILABLE ambient members do not force visible nameplates
+
+## First rendered review — 2026-09-28
+
+The first L1/L2/L3 and TDP planning screenshots proved the multi-floor and
+planning-presence foundation, but the rendered gate remained open.
+
+Observed issues:
+
+- L1 Commons was structurally distinct but too empty during the wrap-up window.
+- L2 Build had useful team presence but idle nameplates added unnecessary visual noise.
+- L3 Strategy left too much unused central floor area.
+- the TDP planning cell placed three planning roles too tightly, causing label overlap.
+- the long emissive ceiling fixtures read as floating white beams.
+- the camera needed a deterministic per-floor reset path after manual orbit/zoom.
+
+Hardening applied after that review:
+
+- added a central Commons collaboration hub
+- added a central Strategy planning table / strategy hub
+- moved planning anchors around the central Strategy table
+- separated architecture-wall anchors
+- replaced long floating ceiling bars with compact ceiling fixtures
+- moved a bounded wrap-up subset into Commons so the floor stays alive
+- hid AVAILABLE ambient nameplates unless selected
+- reduced workspace nameplate size
+- added per-floor camera presets and a Reset view control
+- prevented the Strategy board from covering the central office entrance
+
+The follow-up hardening checkpoint is `bda96f4` and its CI is green.
 
 ## Rendered acceptance still required
 
