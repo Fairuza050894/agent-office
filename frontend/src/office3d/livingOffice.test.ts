@@ -9,6 +9,8 @@ import {
   OFFICE_FLOORS,
   ambientOfficeMembers,
   officeAmbientWindow,
+  officeBehaviorFor,
+  officeBehaviorLabel,
   planningPresenceMembers,
   livingOfficeMembers,
 } from './livingOffice'
@@ -193,6 +195,64 @@ describe('living office model', () => {
       'backend-engineer',
     )
     expect(ambient.every((member) => member.status === 'SOCIAL_BREAK')).toBe(true)
+  })
+
+  it('derives behavior from truth, status, and zone without upgrading ambient truth', () => {
+    expect(
+      officeBehaviorFor('PLANNING', 'planning-table', 'PLANNING'),
+    ).toBe('PLANNING_MEETING')
+    expect(
+      officeBehaviorFor('WAITING_USER', 'planning-table', 'PLANNING'),
+    ).toBe('WAITING_DECISION')
+    expect(
+      officeBehaviorFor('SOCIAL_BREAK', 'game-corner', 'AMBIENT'),
+    ).toBe('GAME_BREAK')
+    expect(
+      officeBehaviorFor('PRAYER_BREAK', 'quiet-room', 'AMBIENT'),
+    ).toBe('PRAYER_QUIET')
+    expect(officeBehaviorLabel('GAME_BREAK')).toBe('Game break')
+  })
+
+  it('assigns deterministic role-personality behavior during after-hours ambience', () => {
+    const now = new Date(2026, 8, 28, 23, 0)
+    const first = ambientOfficeMembers(profiles, now)
+    const second = ambientOfficeMembers(profiles, now)
+
+    expect(second).toEqual(first)
+    expect(first).toHaveLength(2)
+    expect(
+      first.every((member) =>
+        ['SOCIAL_CHAT', 'GAME_BREAK'].includes(member.behavior),
+      ),
+    ).toBe(true)
+    expect(first.every((member) => member.floor === 'commons')).toBe(true)
+  })
+
+  it('changes ambient placement deterministically across ten-minute beats', () => {
+    const before = ambientOfficeMembers(
+      profiles,
+      new Date(2026, 8, 28, 15, 1),
+    )
+    const after = ambientOfficeMembers(
+      profiles,
+      new Date(2026, 8, 28, 15, 11),
+    )
+
+    expect(
+      after.some(
+        (member) =>
+          member.placementIndex !==
+            before.find(
+              (candidate) =>
+                candidate.agent_profile_key === member.agent_profile_key,
+            )?.placementIndex ||
+          member.zone !==
+            before.find(
+              (candidate) =>
+                candidate.agent_profile_key === member.agent_profile_key,
+            )?.zone,
+      ),
+    ).toBe(true)
   })
 
   it('reduces ambient occupancy after hours instead of fabricating work', () => {
