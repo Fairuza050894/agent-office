@@ -13,7 +13,7 @@ Current work:
 
 ```text
 branch: phase-10-living-office
-checkpoint: bda96f4
+checkpoint: 23c1bd4
 phase: Phase 10A — Living 3D Agent Office Foundation
 ```
 
@@ -107,17 +107,17 @@ Presentation rules:
 Implementation checkpoint:
 
 ```text
-bda96f4 fix: keep strategy board clear of office entrance
+23c1bd4 fix: clarify mixed and quiet floor presence
 ```
 
-GitHub Actions run `36402274051` is GREEN:
+GitHub Actions run `36448116375` is GREEN:
 
 ```text
 backend pytest      657 passed
 ruff                passed
 ruff format         203 files already formatted
 mypy                0 issues / 136 source files
-frontend vitest     16 files / 82 tests passed
+frontend vitest     16 files / 83 tests passed
 frontend typecheck  passed
 frontend lint       0 errors / 2 existing warnings
 frontend build      passed
@@ -131,7 +131,7 @@ pass. Multi-floor switching and planning presence worked, while Commons density,
 Strategy layout, planning-role spacing, floating light fixtures, nameplate noise,
 and camera recovery needed refinement.
 
-Hardening at `bda96f4` addresses those findings.
+Hardening at `bda96f4` addressed the first findings. A second evening review then exposed that active planning replaced all ambient presence. Checkpoint `23c1bd4` now keeps planning and ambient presence concurrent without duplicating planning roles, makes floor labels reflect actual visible presence, alternates planning members around the strategy table, and removes visible open-top ceiling-light fixtures.
 
 Pending follow-up local visual review of:
 
