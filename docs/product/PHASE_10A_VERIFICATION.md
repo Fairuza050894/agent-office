@@ -3,7 +3,7 @@
 Status: ACCEPTED FOR RENDERED REVIEW  
 Date: 2026-09-28  
 Branch: `phase-10-living-office`  
-Implementation checkpoint: `bda96f4`  
+Implementation checkpoint: `23c1bd4`  
 Base: merged `main@bcdd43e`  
 Merge policy: manual only
 
@@ -96,7 +96,7 @@ members while remaining members continue to follow the baseline office rhythm.
 
 ## Verification
 
-GitHub Actions run `36402274051`: **GREEN**
+GitHub Actions run `36448116375`: **GREEN**
 
 ```text
 repository whitespace  passed
@@ -107,7 +107,7 @@ ruff format            203 files already formatted
 mypy                   no issues in 136 source files
 
 frontend vitest        16 files passed
-frontend tests         82 passed
+frontend tests         83 passed
 frontend typecheck     passed
 frontend lint          0 errors / 2 existing ThreeOfficeScene warnings
 frontend build         passed
@@ -201,3 +201,51 @@ Not part of 10A:
 
 Those must be implemented in reviewable slices rather than simulated with
 unverified state.
+
+
+## Second rendered review — 2026-09-28
+
+Late-evening screenshots at approximately 22:58 showed:
+
+- L3 Strategy planning presence was materially improved and the TDP planning
+  cell was readable.
+- L1 Commons and L2 Build were empty while the active TDP planning thread was
+  selected.
+- the header incorrectly reported Planning presence on floors that contained
+  no planning members.
+- open-top ceiling fixtures still read as floating objects.
+- the first three planning members were still positioned along the same side
+  of the central table.
+
+Root cause: the Living Office resolver treated planning presence as a full
+replacement for ambient presence.
+
+Follow-up hardening:
+
+- planning and ambient presence now coexist
+- roles already present in planning are excluded from ambient duplication
+- after-hours occupancy selects up to two eligible non-planning members
+- floor labels are derived from members actually visible on the selected floor
+- empty floors report Quiet floor · no presence
+- mixed floors report Planning + ambient
+- planning-table anchors alternate around the central table
+- open-top ceiling-light meshes were replaced with invisible point lights
+
+Checkpoint `23c1bd4` passed GitHub Actions run `36448116375`:
+
+```text
+backend pytest         657 passed
+ruff                   passed
+ruff format            203 files already formatted
+mypy                   no issues in 136 source files
+
+frontend vitest        16 files passed
+frontend tests         83 passed
+frontend typecheck     passed
+frontend lint          0 errors / 2 existing warnings
+frontend build         passed
+
+repository whitespace  passed
+```
+
+A final local render is still required before closing Phase 10A.
