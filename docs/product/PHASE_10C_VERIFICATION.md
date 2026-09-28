@@ -4,7 +4,8 @@ Status: IMPLEMENTED / AUTOMATED RUNNER HOLD
 Date: 2026-09-29  
 Branch: `phase-10c-time-context`  
 Base: `main@60fd03c`  
-Merge policy: manual only
+Merge policy: manual only  
+Implementation checkpoint: `d8f3f53`
 
 ## Delivered scope
 
@@ -16,6 +17,7 @@ Merge policy: manual only
 - weekday/weekend detection in office timezone
 - next office event
 - next-event countdown
+- truthful per-floor occupancy badges in the L1/L2/L3 selector
 - office open/quiet state
 - realistic occupancy caps enforced across all baseline Office modes
 - all Office zones have semantic capacities locked to physical 3D slots
@@ -53,7 +55,7 @@ configured timezone. Tests cover this explicitly.
 GitHub Actions runs created for this branch currently fail before a runner is
 assigned.
 
-Observed on runs including `36463084207`, `36463500650`, and `36464155755`:
+Observed on runs including `36463084207`, `36463500650`, `36464155755`, and latest run `36464809996`:
 
 ```text
 runner_id: 0
@@ -105,6 +107,21 @@ Therefore Phase 10C must **not** be labelled automated-green yet.
 - documentation desk resides in documentation quadrant
 - architecture anchors align with roadmap area
 - decision anchors align with decision pods
+
+## Static hardening audit
+
+Before the rendered gate, additional source review closed these issues:
+
+- world mode occupancy caps are now enforced across every baseline mode;
+- staggered arrival uses a full-attendance cap rather than contradicting its own 08:50 behavior;
+- scheduled participants reserve capacity before baseline ambience;
+- every Office zone has a semantic capacity equal to its physical 3D placement slots;
+- legacy weekday tests no longer use a Sunday date;
+- new/threadless Projects reset to the correct ambient floor rather than inheriting Strategy;
+- decision-room anchors are placed in front of decision tables instead of inside them;
+- L1/L2/L3 floor buttons expose truthful live presence counts.
+
+The code checkpoint for this audit is `d8f3f53`.
 
 ## Rendered acceptance required
 
