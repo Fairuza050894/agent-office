@@ -110,7 +110,7 @@ const WEEKDAY_MODES: OfficeModeDefinition[] = [
   },
   {
     key: 'EVENING',
-    label: 'Evening overtime',
+    label: 'Evening wind-down',
     startMinute: 18 * 60,
     ambientOccupancyCap: 2,
     planningFreshMinutes: 45,
@@ -118,7 +118,7 @@ const WEEKDAY_MODES: OfficeModeDefinition[] = [
   },
   {
     key: 'LATE_EVENING',
-    label: 'Late overtime',
+    label: 'Late office',
     startMinute: 20 * 60,
     ambientOccupancyCap: 1,
     planningFreshMinutes: 30,
@@ -150,8 +150,8 @@ const NEXT_EVENT_LABELS: Partial<Record<OfficeModeKey, string>> = {
   AFTERNOON_FOCUS: 'Afternoon focus',
   COFFEE_BREAK: 'Coffee break',
   WRAP_UP: 'Wrap-up',
-  EVENING: 'Evening overtime',
-  LATE_EVENING: 'Late overtime',
+  EVENING: 'Evening wind-down',
+  LATE_EVENING: 'Late office',
   NIGHT_QUIET: 'Night quiet',
 }
 
