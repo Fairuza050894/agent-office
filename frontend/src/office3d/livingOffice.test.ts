@@ -6,6 +6,7 @@ import type {
   TeamProposal,
 } from '../api'
 import {
+  OFFICE_AMBIENT_ZONE_CAPACITY,
   OFFICE_FLOORS,
   ambientOfficeMembers,
   officeAmbientWindow,
@@ -346,6 +347,59 @@ describe('living office model', () => {
     expect(
       lunch.filter((member) => member.status === 'AVAILABLE'),
     ).toHaveLength(3)
+  })
+
+  it('never assigns more ambient participants than a social zone can hold', () => {
+    const lunch = ambientOfficeMembers(
+      extendedProfiles,
+      new Date(2026, 8, 28, 12, 15),
+    )
+
+    const counts = lunch.reduce(
+      (accumulator, member) => {
+        if (member.status !== 'LUNCH_BREAK') return accumulator
+        accumulator.set(
+          member.zone,
+          (accumulator.get(member.zone) ?? 0) + 1,
+        )
+        return accumulator
+      },
+      new Map<string, number>(),
+    )
+
+    counts.forEach((count, zone) => {
+      const capacity =
+        OFFICE_AMBIENT_ZONE_CAPACITY[
+          zone as keyof typeof OFFICE_AMBIENT_ZONE_CAPACITY
+        ]
+      expect(capacity).toBeDefined()
+      expect(count).toBeLessThanOrEqual(capacity ?? 0)
+    })
+  })
+
+  it('clamps scheduled ambience to the configured zone capacity', () => {
+    const now = new Date(2026, 8, 28, 15, 15)
+    const members = ambientOfficeMembers(extendedProfiles, now, [
+      {
+        id: 'scheduled-coffee',
+        label: 'Team coffee',
+        startsAt: new Date(2026, 8, 28, 15, 0).toISOString(),
+        endsAt: new Date(2026, 8, 28, 15, 30).toISOString(),
+        floor: 'commons',
+        zone: 'coffee-bar',
+        presence: 'COFFEE_BREAK',
+        priority: 50,
+        maxParticipants: 9,
+      },
+    ])
+
+    expect(
+      members.filter(
+        (member) =>
+          member.status === 'COFFEE_BREAK' &&
+          member.zone === 'coffee-bar',
+      ),
+    ).toHaveLength(2)
   })
 
   it('reduces ambient occupancy after hours instead of fabricating work', () => {
