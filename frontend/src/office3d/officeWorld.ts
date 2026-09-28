@@ -185,7 +185,7 @@ export function normalizeOfficeTimeZone(timeZone?: string | null): string {
 
 function part(
   parts: Intl.DateTimeFormatPart[],
-  type: Intl.DateTimeFormatPartTypes,
+  type: Intl.DateTimeFormatPart['type'],
 ): string {
   return parts.find((candidate) => candidate.type === type)?.value ?? ''
 }
