@@ -296,6 +296,24 @@ export function ambientOfficeMembers(
     const afterHours = baseline.key === 'after-hours'
     if (afterHours && index > 1) return []
 
+    const wrapUpCommons =
+      baseline.key === 'wrap-up' &&
+      (roleKey === 'product-designer' || roleKey === 'technical-writer')
+
+    if (wrapUpCommons) {
+      return [
+        {
+          id: `ambient:${roleKey}`,
+          agent_profile_key: roleKey,
+          name: profile.name,
+          status: 'AVAILABLE',
+          floor: 'commons',
+          zone: roleKey === 'product-designer' ? 'lounge' : 'coffee-bar',
+          truth: 'AMBIENT' as const,
+        },
+      ]
+    }
+
     const useAmbientZone =
       baseline.key === 'arrival' ||
       baseline.key === 'lunch' ||
