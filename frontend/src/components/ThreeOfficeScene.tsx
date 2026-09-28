@@ -47,6 +47,7 @@ export interface ThreeOfficeSceneProps {
   replayRange: OfficeReplayRange | null
   floor?: OfficeFloorKey
   workspaceMembers?: OfficePresenceMember[]
+  cameraResetNonce?: number
 }
 
 interface SceneMember extends OfficeCharacterSource {
@@ -123,6 +124,30 @@ function renderEngine(engine: Engine): void {
   engine.labels.render(engine.scene, engine.camera)
 }
 
+function floorCameraPreset(floor: OfficeFloorKey): {
+  position: THREE.Vector3
+  target: THREE.Vector3
+} {
+  switch (floor) {
+    case 'commons':
+      return {
+        position: new THREE.Vector3(14.4, 10.8, 16.2),
+        target: new THREE.Vector3(0, 0.72, 0.65),
+      }
+    case 'strategy':
+      return {
+        position: new THREE.Vector3(14.0, 10.9, 16.0),
+        target: new THREE.Vector3(0, 0.76, 0.55),
+      }
+    default:
+      return {
+        position: new THREE.Vector3(13.65, 10.75, 15.2),
+        target: new THREE.Vector3(0, 0.68, 0.3),
+      }
+  }
+}
+
+
 export function ThreeOfficeScene({
   stages,
   agents,
@@ -136,6 +161,7 @@ export function ThreeOfficeScene({
   replayRange,
   floor = 'build',
   workspaceMembers = [],
+  cameraResetNonce = 0,
 }: ThreeOfficeSceneProps) {
   const hostRef = useRef<HTMLDivElement>(null)
   const engineRef = useRef<Engine | null>(null)
@@ -486,6 +512,19 @@ export function ThreeOfficeScene({
       }
     }
   }, [rendererError])
+
+  useEffect(() => {
+    const engine = engineRef.current
+    if (!engine) return
+
+    const preset = floorCameraPreset(floor)
+    engine.camera.position.copy(preset.position)
+    engine.controls.target.copy(preset.target)
+    engine.focusTarget = null
+    engine.focusUntil = null
+    engine.controls.update()
+    renderEngine(engine)
+  }, [cameraResetNonce, floor])
 
   useEffect(() => {
     const engine = engineRef.current
