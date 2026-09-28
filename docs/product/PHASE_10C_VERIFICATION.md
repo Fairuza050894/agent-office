@@ -17,7 +17,8 @@ Merge policy: manual only
 - next office event
 - next-event countdown
 - office open/quiet state
-- realistic occupancy caps
+- realistic occupancy caps enforced across all baseline Office modes
+- all Office zones have semantic capacities locked to physical 3D slots
 - zero ambient presence after 22:00
 - zero default weekend ambient presence
 - planning freshness windows
@@ -52,7 +53,7 @@ configured timezone. Tests cover this explicitly.
 GitHub Actions runs created for this branch currently fail before a runner is
 assigned.
 
-Observed on run `36463084207` and neighboring runs:
+Observed on runs including `36463084207`, `36463500650`, and `36464155755`:
 
 ```text
 runner_id: 0
@@ -85,6 +86,10 @@ Therefore Phase 10C must **not** be labelled automated-green yet.
 - night quiet returns zero ambient members
 - scheduled events remain allowed through the explicit event path
 - existing zone capacity and planning/ambient truth tests remain applicable
+- wrap-up baseline occupancy is capped at seven
+- scheduled + baseline occupancy respects the open-office cap
+- every scheduled-event target zone is clamped to actual physical slot capacity
+- weekday ambience fixtures use actual weekdays after weekend-awareness was introduced
 
 ### UI
 
