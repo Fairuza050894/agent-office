@@ -185,8 +185,8 @@ const ZONE_PLACEMENTS: Record<OfficeZoneKey, StationPlacement[]> = {
     { position: point(5.35, -4.65), yaw: 0 },
   ],
   'decision-room': [
-    { position: point(5.65, 4.45), yaw: Math.PI },
-    { position: point(7.45, 4.45), yaw: Math.PI },
+    { position: point(5.6, 3.55), yaw: 0 },
+    { position: point(7.5, 3.55), yaw: 0 },
   ],
 }
 
