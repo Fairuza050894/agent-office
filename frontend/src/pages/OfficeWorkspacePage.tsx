@@ -440,10 +440,12 @@ export function OfficeWorkspacePage() {
     (member) => member.truth === 'AMBIENT',
   )
   const officePresenceLabel = selectedFloorHasPlanning
-    ? `${activeThread?.status === 'AWAITING_USER' ? 'Waiting for you' : 'Planning'} presence`
+    ? selectedFloorHasAmbient
+      ? `${activeThread?.status === 'AWAITING_USER' ? 'Waiting for you' : 'Planning'} + ambient`
+      : `${activeThread?.status === 'AWAITING_USER' ? 'Waiting for you' : 'Planning'} presence`
     : selectedFloorHasAmbient
       ? `${ambientWindow.label} · ambient`
-      : 'No active presence'
+      : 'Quiet floor · no presence'
 
   return (
     <div
