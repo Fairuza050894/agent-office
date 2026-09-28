@@ -140,6 +140,53 @@ describe('OfficeScene workspace presence', () => {
     expect(hud).toHaveTextContent('07:00')
   })
 
+  it('shows truthful per-floor presence counts', () => {
+    render(
+      <OfficeScene
+        stages={[]}
+        agents={[]}
+        profiles={[]}
+        selectedAgentId={null}
+        onSelectAgent={vi.fn()}
+        motionPaused={false}
+        mode="live"
+        replayNonce={0}
+        replayStartedAt={null}
+        replayRange={null}
+        showRoster={false}
+        presentation="workspace"
+        floor="commons"
+        workspaceMembers={[
+          member,
+          {
+            ...member,
+            id: 'planning:thread:product-manager',
+            agent_profile_key: 'product-manager',
+            name: 'Product Manager',
+            floor: 'strategy',
+            zone: 'planning-table',
+            status: 'PLANNING',
+            behavior: 'PLANNING_MEETING',
+            truth: 'PLANNING',
+          },
+        ]}
+        onFloorChange={vi.fn()}
+        presenceLabel="Social break · ambient"
+        officeHour={20}
+      />,
+    )
+
+    expect(
+      screen.getByRole('button', { name: /L1.*Commons/i }),
+    ).toHaveTextContent('1')
+    expect(
+      screen.getByRole('button', { name: /L2.*Build/i }),
+    ).toHaveTextContent('0')
+    expect(
+      screen.getByRole('button', { name: /L3.*Strategy/i }),
+    ).toHaveTextContent('1')
+  })
+
   it('keeps floor switching presentation-only', () => {
     const onFloorChange = vi.fn()
 
