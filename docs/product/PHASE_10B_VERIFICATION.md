@@ -4,7 +4,7 @@ Status: ACCEPTED FOR RENDERED REVIEW
 Date: 2026-09-28  
 Branch: `phase-10b-presence-behavior`  
 Base: merged `main@21afb8e`  
-Implementation checkpoint: `9402c4f`  
+Implementation checkpoint: `3755fe3`  
 Merge policy: manual only
 
 ## Goal
@@ -192,7 +192,7 @@ validated retargeted character/animation asset pipeline.
 
 ## Verification
 
-GitHub Actions run `36453933400`: **GREEN**
+GitHub Actions run `36455559684`: **GREEN**
 
 ```text
 repository whitespace  passed
@@ -203,7 +203,7 @@ ruff format            203 files already formatted
 mypy                   no issues in 136 source files
 
 frontend vitest        18 files passed
-frontend tests         94 passed
+frontend tests         99 passed
 frontend typecheck     passed
 frontend lint          0 errors / 2 existing ThreeOfficeScene warnings
 frontend build         passed
@@ -232,6 +232,40 @@ PASS:
 - night lighting is dimmer than day
 - existing Run Office tests remain green
 - backend suite remains unchanged and green
+- ambient social-zone occupancy never exceeds actual 3D slot capacity
+- scheduled events reserve zone capacity before lower-priority ambience
+- scheduled participant count is clamped to zone capacity
+- semantic ambient capacity is test-locked to actual environment slot capacity
+- member inspector disappears when the selected member is no longer on the active floor
+- daily ambient-role rotation uses the local calendar day instead of a UTC day bucket
+
+## Final audit hardening
+
+A final code audit after the first green Phase 10B checkpoint found several edge
+cases that were not visible in the initial rendered design review:
+
+1. lunch/coffee role preferences could over-subscribe a small social zone,
+   forcing the environment to reuse an occupied 3D slot;
+2. a high-priority scheduled event could lose capacity to a lower-priority
+   ambient assignment processed earlier in role order;
+3. scheduled `maxParticipants` could exceed the physical capacity of its target
+   zone;
+4. a selected-member inspector could remain visible after that member moved to
+   another floor on a later ambience beat;
+5. daily role rotation used an epoch/UTC day bucket instead of the browser-local
+   office calendar day.
+
+Hardening at `3755fe3` closes those gaps:
+
+- ambient zone assignment is capacity-aware
+- scheduled-event slots are reserved before baseline ambience allocation
+- scheduled participation is clamped to semantic/physical zone capacity
+- environment tests lock semantic capacity to actual zone slots
+- cross-floor stale inspector state is suppressed
+- daily rotation uses a local calendar date bucket
+
+The final automated run for this code checkpoint is `36455559684` and is
+green.
 
 ## Rendered gate still required
 
