@@ -64,7 +64,10 @@ export function OfficeScene({
   const [cameraResetNonce, setCameraResetNonce] = useState(0)
   const selectedWorkspaceMember =
     presentation === 'workspace' && selectedAgentId
-      ? workspaceMembers.find((member) => member.id === selectedAgentId) ?? null
+      ? workspaceMembers.find(
+          (member) =>
+            member.id === selectedAgentId && member.floor === floor,
+        ) ?? null
       : null
 
   const changeFloor = (nextFloor: OfficeFloorKey) => {
