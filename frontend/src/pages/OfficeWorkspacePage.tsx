@@ -66,6 +66,9 @@ export function OfficeWorkspacePage() {
     () => officeAmbientWindow().floor,
   )
   const [officeNow, setOfficeNow] = useState(() => new Date())
+  const [selectedOfficeMemberId, setSelectedOfficeMemberId] = useState<
+    string | null
+  >(null)
   const [registryError, setRegistryError] = useState<string | null>(null)
 
   const [planningThreads, setPlanningThreads] = useState<ComposerThread[]>([])
@@ -219,12 +222,14 @@ export function OfficeWorkspacePage() {
     setPlanningArtifacts([])
     setPlanningRequirements([])
     setPlanningEvents([])
+    setSelectedOfficeMemberId(null)
     setComposerError(null)
   }
 
   const openPlanningThread = async (threadId: string) => {
     setComposerError(null)
     setResolution(null)
+    setSelectedOfficeMemberId(null)
 
     if (!threadId) {
       setActiveThread(null)
@@ -304,6 +309,7 @@ export function OfficeWorkspacePage() {
       setPlanningTeam(prepared.team_proposal)
       setPlanningArtifacts(prepared.artifacts)
       setPlanningRequirements(prepared.requirements)
+      setSelectedOfficeMemberId(null)
       setSelectedFloor('strategy')
 
       try {
@@ -447,6 +453,17 @@ export function OfficeWorkspacePage() {
       ? `${ambientWindow.label} · ambient`
       : 'Quiet floor · no presence'
 
+  const changeOfficeFloor = (floor: OfficeFloorKey) => {
+    setSelectedFloor(floor)
+    setSelectedOfficeMemberId(null)
+  }
+
+  const selectOfficeMember = (memberId: string) => {
+    setSelectedOfficeMemberId((current) =>
+      current === memberId ? null : memberId,
+    )
+  }
+
   return (
     <div
       className={`page-view office-workspace ${isMaximized ? 'office-maximized' : ''}`}
@@ -484,8 +501,8 @@ export function OfficeWorkspacePage() {
             stages={[]}
             agents={[]}
             profiles={profiles}
-            selectedAgentId={null}
-            onSelectAgent={() => undefined}
+            selectedAgentId={selectedOfficeMemberId}
+            onSelectAgent={selectOfficeMember}
             motionPaused={false}
             mode="live"
             replayNonce={0}
@@ -495,8 +512,9 @@ export function OfficeWorkspacePage() {
             presentation="workspace"
             floor={selectedFloor}
             workspaceMembers={workspaceMembers}
-            onFloorChange={setSelectedFloor}
+            onFloorChange={changeOfficeFloor}
             presenceLabel={officePresenceLabel}
+            officeHour={officeNow.getHours()}
           />
         </OfficeRendererBoundary>
       </div>
