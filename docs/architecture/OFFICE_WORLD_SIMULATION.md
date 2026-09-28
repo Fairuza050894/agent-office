@@ -48,7 +48,7 @@ Weekday baseline:
 
 ```text
 00:00–07:00  NIGHT_QUIET       ambient cap 0
-07:00–09:00  ARRIVAL           ambient cap 4
+07:00–09:00  ARRIVAL           ambient cap 9
 09:00–12:00  CORE_WORK         ambient cap 9
 12:00–13:00  LUNCH             ambient cap 9
 13:00–15:00  AFTERNOON_FOCUS   ambient cap 9
@@ -203,5 +203,7 @@ back to generic central desks.
 - "available" must not be rendered as factual active work
 - night/weekend ambience must not invent overtime
 - stale planning truth stays in planning history but may leave the physical scene
+- all Office zones have an explicit semantic capacity equal to their physical 3D slot count
 - scheduled ambience cannot exceed physical zone capacity
+- scheduled + baseline ambience stays within the current Office-mode population cap, except during a closed-office explicit event where the scheduled event is the only allowed presence
 - changing floor/timezone must never create Task, Run, AgentRun, or repository mutation
