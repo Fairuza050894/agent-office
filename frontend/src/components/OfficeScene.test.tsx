@@ -73,6 +73,36 @@ describe('OfficeScene workspace presence', () => {
     expect(onSelectAgent).toHaveBeenCalledWith(member.id)
   })
 
+  it('does not show a stale inspector for a member on another floor', () => {
+    render(
+      <OfficeScene
+        stages={[]}
+        agents={[]}
+        profiles={[]}
+        selectedAgentId={member.id}
+        onSelectAgent={vi.fn()}
+        motionPaused={false}
+        mode="live"
+        replayNonce={0}
+        replayStartedAt={null}
+        replayRange={null}
+        showRoster={false}
+        presentation="workspace"
+        floor="build"
+        workspaceMembers={[member]}
+        onFloorChange={vi.fn()}
+        presenceLabel="Quiet floor · no presence"
+        officeHour={23}
+      />,
+    )
+
+    expect(
+      screen.queryByRole('complementary', {
+        name: 'Office member inspector',
+      }),
+    ).not.toBeInTheDocument()
+  })
+
   it('keeps floor switching presentation-only', () => {
     const onFloorChange = vi.fn()
 
