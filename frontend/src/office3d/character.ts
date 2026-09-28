@@ -532,9 +532,7 @@ function playRigged(runtime: RuntimeAgent, force = false): void {
   next.setEffectiveTimeScale(
     runtime.moving
       ? 1
-      : running
-        ? rigged.idleRate * behaviorRate
-        : rigged.idleRate * behaviorRate,
+      : rigged.idleRate * (running ? behaviorRate : Math.min(1, behaviorRate)),
   )
 
   if (!force && rigged.activeClip === desired) return
@@ -648,7 +646,9 @@ export function createCharacterRuntime(
 
   const { object: label, element: labelElement } = createNameplate(
     name,
-    agent.behavior ? officeBehaviorLabel(agent.behavior) : agent.status,
+    agent.behavior
+      ? officeBehaviorLabel(agent.behavior)
+      : officeAgentState(agent.status).label,
     agent.agent_profile_key,
   )
   root.add(label)
