@@ -10,6 +10,7 @@ import {
   ambientOfficeMembers,
   officeAmbientWindow,
   planningPresenceMembers,
+  livingOfficeMembers,
 } from './livingOffice'
 
 const profiles: AgentProfile[] = [
@@ -171,6 +172,27 @@ describe('living office model', () => {
     expect(commons.length).toBeGreaterThan(0)
     expect(commons.every((member) => member.truth === 'AMBIENT')).toBe(true)
     expect(commons.every((member) => member.status === 'AVAILABLE')).toBe(true)
+  })
+
+  it('keeps non-planning roles as ambient presence during an active planning thread', () => {
+    const members = livingOfficeMembers(
+      thread,
+      proposal,
+      profiles,
+      new Date(2026, 8, 28, 23, 0),
+    )
+
+    const planning = members.filter((member) => member.truth === 'PLANNING')
+    const ambient = members.filter((member) => member.truth === 'AMBIENT')
+
+    expect(planning.map((member) => member.agent_profile_key)).toEqual([
+      'product-manager',
+      'system-analyst',
+    ])
+    expect(ambient.map((member) => member.agent_profile_key)).toContain(
+      'backend-engineer',
+    )
+    expect(ambient.every((member) => member.status === 'SOCIAL_BREAK')).toBe(true)
   })
 
   it('reduces ambient occupancy after hours instead of fabricating work', () => {
