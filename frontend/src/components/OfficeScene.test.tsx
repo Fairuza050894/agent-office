@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { OfficePresenceMember } from '../office3d/livingOffice'
+import { officeWorldContext } from '../office3d/officeWorld'
 import { OfficeScene } from './OfficeScene'
 
 vi.mock('./ThreeOfficeScene', () => ({
@@ -101,6 +102,42 @@ describe('OfficeScene workspace presence', () => {
         name: 'Office member inspector',
       }),
     ).not.toBeInTheDocument()
+  })
+
+  it('renders explicit office time, mode, presence, and next event', () => {
+    render(
+      <OfficeScene
+        stages={[]}
+        agents={[]}
+        profiles={[]}
+        selectedAgentId={null}
+        onSelectAgent={vi.fn()}
+        motionPaused={false}
+        mode="live"
+        replayNonce={0}
+        replayStartedAt={null}
+        replayRange={null}
+        showRoster={false}
+        presentation="workspace"
+        floor="commons"
+        workspaceMembers={[]}
+        onFloorChange={vi.fn()}
+        presenceLabel="Quiet floor · no presence"
+        officeHour={0}
+        worldContext={officeWorldContext(
+          new Date('2026-09-28T17:44:00Z'),
+          'Asia/Jakarta',
+        )}
+        totalPresence={0}
+      />,
+    )
+
+    const hud = screen.getByLabelText('Office world status')
+    expect(hud).toHaveTextContent('00:44:00')
+    expect(hud).toHaveTextContent('Night quiet')
+    expect(hud).toHaveTextContent('0')
+    expect(hud).toHaveTextContent('Morning arrival')
+    expect(hud).toHaveTextContent('07:00')
   })
 
   it('keeps floor switching presentation-only', () => {
