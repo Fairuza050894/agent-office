@@ -25,6 +25,7 @@ export interface OfficeEnvironmentMember {
   id: string
   agent_profile_key: string
   zone?: OfficeZoneKey
+  placementIndex?: number
 }
 
 interface Obstacle {
@@ -199,6 +200,29 @@ export function officeZonePlacement(
     position: placement.position.clone(),
     yaw: placement.yaw,
   }
+}
+
+export function officeZoneCapacity(zone: OfficeZoneKey): number {
+  return ZONE_PLACEMENTS[zone].length
+}
+
+function reserveZonePlacement(
+  zone: OfficeZoneKey,
+  preferredIndex: number,
+  occupied: Map<OfficeZoneKey, Set<number>>,
+): number {
+  const capacity = officeZoneCapacity(zone)
+  const slots = occupied.get(zone) ?? new Set<number>()
+  occupied.set(zone, slots)
+
+  for (let offset = 0; offset < capacity; offset += 1) {
+    const candidate = (preferredIndex + offset) % capacity
+    if (slots.has(candidate)) continue
+    slots.add(candidate)
+    return candidate
+  }
+
+  return preferredIndex % capacity
 }
 
 const WAITING_BAYS = [
@@ -1002,13 +1026,16 @@ export function createOfficeEnvironment(
 
   const stations = new Map<string, StationPlacement>()
   const used = new Set<string>()
-  const zoneUse = new Map<OfficeZoneKey, number>()
+  const occupiedZoneSlots = new Map<OfficeZoneKey, Set<number>>()
 
   members.forEach((member) => {
     if (member.zone) {
-      const index = zoneUse.get(member.zone) ?? 0
+      const index = reserveZonePlacement(
+        member.zone,
+        member.placementIndex ?? 0,
+        occupiedZoneSlots,
+      )
       stations.set(member.id, officeZonePlacement(member.zone, index))
-      zoneUse.set(member.zone, index + 1)
       return
     }
 
@@ -1024,9 +1051,12 @@ export function createOfficeEnvironment(
 
     const fallbackZone: OfficeZoneKey =
       floor === 'strategy' ? 'planning-table' : 'lounge'
-    const index = zoneUse.get(fallbackZone) ?? 0
+    const index = reserveZonePlacement(
+      fallbackZone,
+      member.placementIndex ?? 0,
+      occupiedZoneSlots,
+    )
     stations.set(member.id, officeZonePlacement(fallbackZone, index))
-    zoneUse.set(fallbackZone, index + 1)
   })
 
   return stations

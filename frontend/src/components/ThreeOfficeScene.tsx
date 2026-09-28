@@ -8,6 +8,7 @@ import {
   animateCharacter,
   createCharacterRuntime,
   disposeCharacter,
+  setCharacterBehavior,
   setCharacterSelected,
   setCharacterStatus,
   type OfficeCharacterSource,
@@ -28,6 +29,7 @@ import type {
   OfficePresenceMember,
   OfficeZoneKey,
 } from '../office3d/livingOffice'
+import { officeLightingForHour } from '../office3d/lighting'
 import {
   officeReplayPlan,
   type OfficeReplayEvent,
@@ -48,11 +50,13 @@ export interface ThreeOfficeSceneProps {
   floor?: OfficeFloorKey
   workspaceMembers?: OfficePresenceMember[]
   cameraResetNonce?: number
+  officeHour?: number
 }
 
 interface SceneMember extends OfficeCharacterSource {
   name: string
   zone?: OfficeZoneKey
+  placementIndex?: number
   stageKey?: string
 }
 
@@ -64,6 +68,9 @@ interface Engine {
   controls: OrbitControls
   environment: THREE.Group
   agents: THREE.Group
+  hemisphere: THREE.HemisphereLight
+  keyLight: THREE.DirectionalLight
+  fillLight: THREE.DirectionalLight
   runtimes: Map<string, RuntimeAgent>
   clickable: THREE.Object3D[]
   frame: number | null
@@ -124,6 +131,24 @@ function renderEngine(engine: Engine): void {
   engine.labels.render(engine.scene, engine.camera)
 }
 
+function applyOfficeLighting(engine: Engine, hour: number): void {
+  const profile = officeLightingForHour(hour)
+
+  engine.scene.background = new THREE.Color(profile.background)
+  engine.renderer.setClearColor(profile.background, 1)
+  engine.renderer.toneMappingExposure = profile.exposure
+
+  engine.hemisphere.color.setHex(profile.hemisphereSky)
+  engine.hemisphere.groundColor.setHex(profile.hemisphereGround)
+  engine.hemisphere.intensity = profile.hemisphereIntensity
+
+  engine.keyLight.color.setHex(profile.keyColor)
+  engine.keyLight.intensity = profile.keyIntensity
+
+  engine.fillLight.color.setHex(profile.fillColor)
+  engine.fillLight.intensity = profile.fillIntensity
+}
+
 function floorCameraPreset(floor: OfficeFloorKey): {
   position: THREE.Vector3
   target: THREE.Vector3
@@ -162,6 +187,7 @@ export function ThreeOfficeScene({
   floor = 'build',
   workspaceMembers = [],
   cameraResetNonce = 0,
+  officeHour = new Date().getHours(),
 }: ThreeOfficeSceneProps) {
   const hostRef = useRef<HTMLDivElement>(null)
   const engineRef = useRef<Engine | null>(null)
@@ -394,7 +420,8 @@ export function ThreeOfficeScene({
       controls.minPolarAngle = Math.PI * 0.16
       controls.maxPolarAngle = Math.PI * 0.48
 
-      scene.add(new THREE.HemisphereLight(0xdce9f4, 0x1a232d, 2.0))
+      const hemisphere = new THREE.HemisphereLight(0xdce9f4, 0x1a232d, 2.0)
+      scene.add(hemisphere)
 
       const keyLight = new THREE.DirectionalLight(0xfff0d2, 2.8)
       keyLight.position.set(-7, 15, 10)
@@ -422,6 +449,9 @@ export function ThreeOfficeScene({
         controls,
         environment,
         agents: agentLayer,
+        hemisphere,
+        keyLight,
+        fillLight,
         runtimes: new Map(),
         clickable: [],
         frame: null,
@@ -517,6 +547,14 @@ export function ThreeOfficeScene({
     const engine = engineRef.current
     if (!engine) return
 
+    applyOfficeLighting(engine, officeHour)
+    renderEngine(engine)
+  }, [officeHour])
+
+  useEffect(() => {
+    const engine = engineRef.current
+    if (!engine) return
+
     const preset = floorCameraPreset(floor)
     engine.camera.position.copy(preset.position)
     engine.controls.target.copy(preset.target)
@@ -551,7 +589,9 @@ export function ThreeOfficeScene({
         agent_profile_key: member.agent_profile_key,
         name: member.name,
         status: member.status,
+        behavior: member.behavior,
         zone: member.zone,
+        placementIndex: member.placementIndex,
       })),
     ]
     const stations = createOfficeEnvironment(
@@ -600,6 +640,9 @@ export function ThreeOfficeScene({
         runtime.finalStatus = member.status
       }
 
+      if (runtime.behavior !== (member.behavior ?? null)) {
+        setCharacterBehavior(runtime, member.behavior ?? null)
+      }
       setCharacterSelected(runtime, selectedAgentId === member.id)
 
       if (mode === 'live') {
@@ -616,6 +659,7 @@ export function ThreeOfficeScene({
           runtime.pendingStatus = null
           runtime.pendingStatusAt = null
           setCharacterStatus(runtime, member.status)
+          setCharacterBehavior(runtime, member.behavior ?? null)
         } else if (
           runtime.currentStatus !== member.status ||
           runtime.target.distanceTo(target.position) > 0.1

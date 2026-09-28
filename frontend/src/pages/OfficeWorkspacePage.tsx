@@ -25,6 +25,7 @@ import { OfficeScene } from '../components/OfficeScene'
 import {
   livingOfficeMembers,
   officeAmbientWindow,
+  officeBehaviorLabel,
   type OfficeFloorKey,
 } from '../office3d/livingOffice'
 
@@ -66,6 +67,9 @@ export function OfficeWorkspacePage() {
     () => officeAmbientWindow().floor,
   )
   const [officeNow, setOfficeNow] = useState(() => new Date())
+  const [selectedOfficeMemberId, setSelectedOfficeMemberId] = useState<
+    string | null
+  >(null)
   const [registryError, setRegistryError] = useState<string | null>(null)
 
   const [planningThreads, setPlanningThreads] = useState<ComposerThread[]>([])
@@ -219,12 +223,14 @@ export function OfficeWorkspacePage() {
     setPlanningArtifacts([])
     setPlanningRequirements([])
     setPlanningEvents([])
+    setSelectedOfficeMemberId(null)
     setComposerError(null)
   }
 
   const openPlanningThread = async (threadId: string) => {
     setComposerError(null)
     setResolution(null)
+    setSelectedOfficeMemberId(null)
 
     if (!threadId) {
       setActiveThread(null)
@@ -304,6 +310,7 @@ export function OfficeWorkspacePage() {
       setPlanningTeam(prepared.team_proposal)
       setPlanningArtifacts(prepared.artifacts)
       setPlanningRequirements(prepared.requirements)
+      setSelectedOfficeMemberId(null)
       setSelectedFloor('strategy')
 
       try {
@@ -425,7 +432,6 @@ export function OfficeWorkspacePage() {
 
   const planningMode =
     resolution?.resolved_intent ?? activeThread?.resolved_intent ?? null
-  const ambientWindow = useMemo(() => officeAmbientWindow(officeNow), [officeNow])
   const workspaceMembers = useMemo(
     () => livingOfficeMembers(activeThread, planningTeam, profiles, officeNow),
     [activeThread, officeNow, planningTeam, profiles],
@@ -439,13 +445,35 @@ export function OfficeWorkspacePage() {
   const selectedFloorHasAmbient = selectedFloorMembers.some(
     (member) => member.truth === 'AMBIENT',
   )
+  const ambientBehaviorLabels = [
+    ...new Set(
+      selectedFloorMembers
+        .filter((member) => member.truth === 'AMBIENT')
+        .map((member) => officeBehaviorLabel(member.behavior)),
+    ),
+  ]
+  const ambientPresenceLabel =
+    ambientBehaviorLabels.length > 0
+      ? `${ambientBehaviorLabels.slice(0, 2).join(' + ')} · ambient`
+      : 'Ambient'
   const officePresenceLabel = selectedFloorHasPlanning
     ? selectedFloorHasAmbient
       ? `${activeThread?.status === 'AWAITING_USER' ? 'Waiting for you' : 'Planning'} + ambient`
       : `${activeThread?.status === 'AWAITING_USER' ? 'Waiting for you' : 'Planning'} presence`
     : selectedFloorHasAmbient
-      ? `${ambientWindow.label} · ambient`
+      ? ambientPresenceLabel
       : 'Quiet floor · no presence'
+
+  const changeOfficeFloor = (floor: OfficeFloorKey) => {
+    setSelectedFloor(floor)
+    setSelectedOfficeMemberId(null)
+  }
+
+  const selectOfficeMember = (memberId: string) => {
+    setSelectedOfficeMemberId((current) =>
+      current === memberId ? null : memberId,
+    )
+  }
 
   return (
     <div
@@ -484,8 +512,8 @@ export function OfficeWorkspacePage() {
             stages={[]}
             agents={[]}
             profiles={profiles}
-            selectedAgentId={null}
-            onSelectAgent={() => undefined}
+            selectedAgentId={selectedOfficeMemberId}
+            onSelectAgent={selectOfficeMember}
             motionPaused={false}
             mode="live"
             replayNonce={0}
@@ -495,8 +523,9 @@ export function OfficeWorkspacePage() {
             presentation="workspace"
             floor={selectedFloor}
             workspaceMembers={workspaceMembers}
-            onFloorChange={setSelectedFloor}
+            onFloorChange={changeOfficeFloor}
             presenceLabel={officePresenceLabel}
+            officeHour={officeNow.getHours()}
           />
         </OfficeRendererBoundary>
       </div>

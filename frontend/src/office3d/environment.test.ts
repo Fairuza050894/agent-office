@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
+import { OFFICE_AMBIENT_ZONE_CAPACITY } from './livingOffice'
 import {
   ENTRANCE,
   buildOfficePath,
   incidentPosition,
   officePathHasFurnitureClearance,
   officeRoleStation,
+  officeZoneCapacity,
   officeZonePlacement,
   waitingPosition,
 } from './environment'
@@ -65,6 +67,25 @@ describe('office navigation clearance', () => {
 
     expect(new Set(positions).size).toBe(4)
     expect(officeZonePlacement('coffee-bar', 0).position.x).toBeGreaterThan(0)
+  })
+
+  it('exposes enough capacity for social and planning movement without forced overlap', () => {
+    expect(officeZoneCapacity('planning-table')).toBeGreaterThanOrEqual(6)
+    expect(officeZoneCapacity('lounge')).toBeGreaterThanOrEqual(2)
+    expect(officeZoneCapacity('game-corner')).toBeGreaterThanOrEqual(2)
+    expect(officeZoneCapacity('coffee-bar')).toBeGreaterThanOrEqual(2)
+  })
+
+  it('keeps semantic ambient capacity aligned with actual zone slots', () => {
+    Object.entries(OFFICE_AMBIENT_ZONE_CAPACITY).forEach(
+      ([zone, capacity]) => {
+        expect(
+          officeZoneCapacity(
+            zone as keyof typeof OFFICE_AMBIENT_ZONE_CAPACITY,
+          ),
+        ).toBe(capacity)
+      },
+    )
   })
 
   it('keeps strategy planning anchors spatially separated', () => {
