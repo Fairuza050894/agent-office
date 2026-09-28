@@ -262,15 +262,23 @@ export function ambientOfficeMembers(
   profiles: AgentProfile[],
   now = new Date(),
   scheduledEvents: OfficeScheduledEvent[] = [],
+  excludedRoleKeys: ReadonlySet<string> = new Set(),
 ): OfficePresenceMember[] {
   const baseline = ambientWindowForHour(now.getHours())
   const scheduled = activeScheduledEvent(now, scheduledEvents)
   const known = profileByKey(profiles)
   let scheduledParticipants = 0
+  let afterHoursParticipants = 0
 
   return LIVING_OFFICE_CORE_ROLES.flatMap((roleKey, index) => {
     const profile = known.get(roleKey)
-    if (!profile || profile.status !== 'ACTIVE') return []
+    if (
+      !profile ||
+      profile.status !== 'ACTIVE' ||
+      excludedRoleKeys.has(roleKey)
+    ) {
+      return []
+    }
 
     const targeted =
       scheduled !== null &&
@@ -294,7 +302,10 @@ export function ambientOfficeMembers(
 
     const home = ROLE_HOME_ZONE[roleKey]
     const afterHours = baseline.key === 'after-hours'
-    if (afterHours && index > 1) return []
+    if (afterHours) {
+      if (afterHoursParticipants >= 2) return []
+      afterHoursParticipants += 1
+    }
 
     const wrapUpCommons =
       baseline.key === 'wrap-up' &&
@@ -348,7 +359,15 @@ export function livingOfficeMembers(
   scheduledEvents: OfficeScheduledEvent[] = [],
 ): OfficePresenceMember[] {
   const planning = planningPresenceMembers(thread, proposal, profiles)
-  return planning.length > 0
-    ? planning
-    : ambientOfficeMembers(profiles, now, scheduledEvents)
+  const planningRoleKeys = new Set(
+    planning.map((member) => member.agent_profile_key),
+  )
+  const ambient = ambientOfficeMembers(
+    profiles,
+    now,
+    scheduledEvents,
+    planningRoleKeys,
+  )
+
+  return [...planning, ...ambient]
 }
