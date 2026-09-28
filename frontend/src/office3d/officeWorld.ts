@@ -64,7 +64,7 @@ const WEEKDAY_MODES: OfficeModeDefinition[] = [
     key: 'ARRIVAL',
     label: 'Morning arrival',
     startMinute: 7 * 60,
-    ambientOccupancyCap: 4,
+    ambientOccupancyCap: 9,
     planningFreshMinutes: 45,
     isOfficeOpen: true,
   },
