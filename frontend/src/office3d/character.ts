@@ -4,6 +4,10 @@ import { CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js'
 
 import { officeAgentState } from '../officeProjection'
+import {
+  officeBehaviorLabel,
+  type OfficeBehaviorKey,
+} from './livingOffice'
 
 export type CharacterVariantKey = 'suit' | 'casual' | 'hoodie' | 'dress' | 'smart'
 
@@ -16,6 +20,7 @@ export interface OfficeCharacterSource {
   id: string
   agent_profile_key: string
   status: string
+  behavior?: OfficeBehaviorKey
 }
 
 export interface CharacterAppearance {
@@ -197,6 +202,20 @@ const CLIPS = {
   run: 'Run',
 } as const
 
+const BEHAVIOR_CLIP_CANDIDATES: Record<OfficeBehaviorKey, string[]> = {
+  ARRIVAL: ['Walk', 'Idle'],
+  AVAILABLE: ['Idle'],
+  DESK_FOCUS: ['Typing', 'Type', 'Working', 'Idle'],
+  PLANNING_MEETING: ['Meeting', 'Talking', 'Talk', 'Idle'],
+  WAITING_DECISION: ['Idle'],
+  COFFEE_CHAT: ['Drink', 'Drinking', 'Talking', 'Talk', 'Idle'],
+  LUNCH: ['Eating', 'Eat', 'Idle'],
+  SOCIAL_CHAT: ['Talking', 'Talk', 'Idle'],
+  GAME_BREAK: ['Gaming', 'Game', 'Idle'],
+  PRAYER_QUIET: ['Idle'],
+  OFFLINE: ['Idle'],
+}
+
 interface CharacterAssets {
   source: THREE.Group
   clips: Map<string, THREE.AnimationClip>
@@ -232,6 +251,7 @@ export interface RuntimeAgent {
   targetYaw: number
   finalStatus: string
   currentStatus: string
+  behavior: OfficeBehaviorKey | null
   moving: boolean
   pendingStatus: string | null
   pendingStatusAt: number | null
@@ -372,7 +392,7 @@ export function statusColor(status: string): number {
 
 function createNameplate(
   name: string,
-  status: string,
+  stateLabel: string,
   profileKey: string,
 ): {
   object: CSS2DObject
@@ -385,7 +405,7 @@ function createNameplate(
   const primary = document.createElement('strong')
   primary.textContent = name
   const secondary = document.createElement('span')
-  secondary.textContent = officeAgentState(status).label
+  secondary.textContent = stateLabel
   element.append(primary, secondary)
 
   const object = new CSS2DObject(element)
@@ -462,9 +482,30 @@ function setInteractive(root: THREE.Object3D, agentId: string): void {
   })
 }
 
+function availableClip(
+  rigged: RiggedPresentation,
+  candidates: string[],
+): string {
+  const byLower = new Map(
+    [...rigged.actions.keys()].map((name) => [name.toLowerCase(), name]),
+  )
+
+  for (const candidate of candidates) {
+    const resolved = byLower.get(candidate.toLowerCase())
+    if (resolved) return resolved
+  }
+
+  return CLIPS.idle
+}
+
 function clipFor(runtime: RuntimeAgent): string {
   if (runtime.moving) return CLIPS.walk
-  return CLIPS.idle
+  if (!runtime.rigged || !runtime.behavior) return CLIPS.idle
+
+  return availableClip(
+    runtime.rigged,
+    BEHAVIOR_CLIP_CANDIDATES[runtime.behavior],
+  )
 }
 
 function playRigged(runtime: RuntimeAgent, force = false): void {
@@ -480,8 +521,20 @@ function playRigged(runtime: RuntimeAgent, force = false): void {
     ['RUNNING', 'STARTING', 'WORKING', 'PLANNING', 'ARRIVING'].includes(
       runtime.currentStatus.toUpperCase(),
     )
+  const behaviorRate =
+    runtime.behavior === 'WAITING_DECISION' ||
+    runtime.behavior === 'PRAYER_QUIET'
+      ? 0.72
+      : runtime.behavior === 'PLANNING_MEETING' ||
+          runtime.behavior === 'DESK_FOCUS'
+        ? 1.04
+        : 0.9
   next.setEffectiveTimeScale(
-    runtime.moving ? 1 : running ? rigged.idleRate * 1.06 : rigged.idleRate,
+    runtime.moving
+      ? 1
+      : running
+        ? rigged.idleRate * behaviorRate
+        : rigged.idleRate * behaviorRate,
   )
 
   if (!force && rigged.activeClip === desired) return
@@ -546,16 +599,14 @@ async function attachRiggedPresentation(
 
     const mixer = new THREE.AnimationMixer(model)
     const actions = new Map<string, THREE.AnimationAction>()
-    for (const name of Object.values(CLIPS)) {
-      const clip = assets.clips.get(name)
-      if (!clip) continue
+    assets.clips.forEach((clip, name) => {
       const action = mixer.clipAction(clip)
       action.setLoop(THREE.LoopRepeat, Infinity)
       if (name === CLIPS.idle && clip.duration > 0) {
         action.time = clip.duration * appearance.idlePhase
       }
       actions.set(name, action)
-    }
+    })
 
     runtime.root.add(model)
     runtime.rigged = {
@@ -597,7 +648,7 @@ export function createCharacterRuntime(
 
   const { object: label, element: labelElement } = createNameplate(
     name,
-    agent.status,
+    agent.behavior ? officeBehaviorLabel(agent.behavior) : agent.status,
     agent.agent_profile_key,
   )
   root.add(label)
@@ -620,6 +671,7 @@ export function createCharacterRuntime(
     targetYaw: station.yaw,
     finalStatus: agent.status,
     currentStatus: agent.status,
+    behavior: agent.behavior ?? null,
     moving: false,
     pendingStatus: null,
     pendingStatusAt: null,
@@ -652,7 +704,11 @@ export function setCharacterStatus(
   ].join(' ')
 
   const secondary = runtime.labelElement.querySelector('span')
-  if (secondary) secondary.textContent = officeAgentState(status).label
+  if (secondary) {
+    secondary.textContent = runtime.behavior
+      ? officeBehaviorLabel(runtime.behavior)
+      : officeAgentState(status).label
+  }
 
   const selected = runtime.labelElement.classList.contains('is-selected')
   runtime.labelElement.classList.toggle(
@@ -661,6 +717,20 @@ export function setCharacterStatus(
   )
 
   playRigged(runtime)
+}
+
+export function setCharacterBehavior(
+  runtime: RuntimeAgent,
+  behavior: OfficeBehaviorKey | null,
+): void {
+  runtime.behavior = behavior
+  const secondary = runtime.labelElement.querySelector('span')
+  if (secondary) {
+    secondary.textContent = behavior
+      ? officeBehaviorLabel(behavior)
+      : officeAgentState(runtime.currentStatus).label
+  }
+  playRigged(runtime, true)
 }
 
 export function setCharacterSelected(
