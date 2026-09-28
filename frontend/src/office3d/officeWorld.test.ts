@@ -32,6 +32,16 @@ describe('office world context', () => {
     )
   })
 
+  it('allows staggered arrival to reach full attendance before core hours', () => {
+    const world = officeWorldContext(
+      new Date('2026-09-28T01:50:00Z'),
+      JAKARTA,
+    )
+
+    expect(world.mode).toBe('ARRIVAL')
+    expect(world.ambientOccupancyCap).toBe(9)
+  })
+
   it('reduces occupancy progressively after core hours', () => {
     expect(
       officeWorldContext(
