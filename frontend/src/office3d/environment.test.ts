@@ -110,7 +110,8 @@ describe('office navigation clearance', () => {
     expect(architecture.x).toBeGreaterThan(2)
     expect(architecture.z).toBeLessThan(-4)
     expect(decision.x).toBeGreaterThan(5)
-    expect(decision.z).toBeGreaterThan(4)
+    expect(decision.z).toBeGreaterThan(3)
+    expect(decision.z).toBeLessThan(4)
   })
 
   it('keeps all eight core roles on unique deterministic workstation anchors', () => {
