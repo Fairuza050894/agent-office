@@ -187,6 +187,9 @@ export function OfficeWorkspacePage() {
           setPlanningArtifacts([])
           setPlanningRequirements([])
           setPlanningEvents([])
+          setSelectedFloor(
+            officeAmbientWindow(new Date(), [], localTimezone()).floor,
+          )
           return
         }
 
@@ -255,6 +258,9 @@ export function OfficeWorkspacePage() {
     setPlanningRequirements([])
     setPlanningEvents([])
     setSelectedOfficeMemberId(null)
+    setSelectedFloor(
+      officeAmbientWindow(new Date(), [], localTimezone()).floor,
+    )
     setComposerError(null)
   }
 
@@ -270,6 +276,9 @@ export function OfficeWorkspacePage() {
       setPlanningArtifacts([])
       setPlanningRequirements([])
       setPlanningEvents([])
+      setSelectedFloor(
+        officeAmbientWindow(new Date(), [], localTimezone()).floor,
+      )
       return
     }
 
