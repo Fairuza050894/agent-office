@@ -115,6 +115,12 @@ describe('Agent Office operational shell', () => {
     expect(
       screen.getByRole('region', { name: 'Bottom Operations Dock' }),
     ).toHaveClass('dock-collapsed')
+    expect(screen.getByRole('button', { name: /L1.*Commons/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /L2.*Build/i })).toBeInTheDocument()
+    const strategyFloor = screen.getByRole('button', { name: /L3.*Strategy/i })
+    expect(strategyFloor).toBeInTheDocument()
+    fireEvent.click(strategyFloor)
+    expect(strategyFloor).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Start Run' })).toBeDisabled()
   })

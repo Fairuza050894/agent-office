@@ -1,7 +1,8 @@
 import * as THREE from 'three'
 
-import type { AgentRun, RunStage } from '../api'
+import type { RunStage } from '../api'
 import type { StationPlacement } from './character'
+import type { OfficeFloorKey, OfficeZoneKey } from './livingOffice'
 
 const OFFICE_WIDTH = 20
 const OFFICE_DEPTH = 14
@@ -18,6 +19,12 @@ interface Workstation {
   station: THREE.Vector3
   yaw: number
   route: THREE.Vector3[]
+}
+
+export interface OfficeEnvironmentMember {
+  id: string
+  agent_profile_key: string
+  zone?: OfficeZoneKey
 }
 
 interface Obstacle {
@@ -119,6 +126,79 @@ const ROLE_STATIONS: Record<string, string> = {
   verifier: 'desk-b3',
   'documentation-writer': 'desk-b4',
   'ux-reviewer': 'desk-b4',
+}
+
+const ZONE_PLACEMENTS: Record<OfficeZoneKey, StationPlacement[]> = {
+  entrance: [
+    { position: point(-0.8, -5.75), yaw: 0 },
+    { position: point(0, -5.75), yaw: 0 },
+    { position: point(0.8, -5.75), yaw: 0 },
+  ],
+  'coffee-bar': [
+    { position: point(6.25, -3.05), yaw: Math.PI * 0.5 },
+    { position: point(7.0, -2.85), yaw: Math.PI * 0.5 },
+  ],
+  pantry: [
+    { position: point(6.25, -2.45), yaw: Math.PI },
+    { position: point(7.15, -2.35), yaw: Math.PI },
+  ],
+  lounge: [
+    { position: point(-7.6, 4.75), yaw: Math.PI * 0.35 },
+    { position: point(-6.4, 4.65), yaw: -Math.PI * 0.35 },
+  ],
+  'game-corner': [
+    { position: point(6.45, 4.85), yaw: Math.PI * 0.5 },
+    { position: point(7.65, 4.8), yaw: -Math.PI * 0.5 },
+  ],
+  'quiet-room': [
+    { position: point(-4.15, -2.0), yaw: 0 },
+    { position: point(-3.1, -2.0), yaw: 0 },
+  ],
+  'engineering-pod': WORKSTATIONS.map((workstation) => ({
+    position: workstation.station.clone(),
+    yaw: workstation.yaw,
+  })),
+  'qa-bench': [
+    { position: point(-3.0, 3.64), yaw: Math.PI },
+    { position: point(-1.0, 3.64), yaw: Math.PI },
+  ],
+  'review-wall': [
+    { position: point(5.1, 0.25), yaw: Math.PI * 0.5 },
+    { position: point(5.1, 1.35), yaw: Math.PI * 0.5 },
+  ],
+  'docs-desk': [
+    { position: point(3.0, 3.64), yaw: Math.PI },
+    { position: point(1.0, 3.64), yaw: Math.PI },
+  ],
+  'planning-table': [
+    { position: point(-1.75, -1.05), yaw: 0 },
+    { position: point(0, 2.02), yaw: Math.PI },
+    { position: point(1.75, -1.05), yaw: 0 },
+    { position: point(-1.75, 1.9), yaw: Math.PI },
+    { position: point(0, -1.18), yaw: 0 },
+    { position: point(1.75, 1.9), yaw: Math.PI },
+  ],
+  'architecture-wall': [
+    { position: point(4.55, -1.0), yaw: Math.PI * 0.5 },
+    { position: point(4.75, 0.85), yaw: Math.PI * 0.5 },
+    { position: point(4.55, 2.65), yaw: Math.PI * 0.5 },
+  ],
+  'decision-room': [
+    { position: point(-7.65, 4.65), yaw: Math.PI * 0.25 },
+    { position: point(-6.15, 4.55), yaw: -Math.PI * 0.25 },
+  ],
+}
+
+export function officeZonePlacement(
+  zone: OfficeZoneKey,
+  index: number,
+): StationPlacement {
+  const placements = ZONE_PLACEMENTS[zone]
+  const placement = placements[index % placements.length]
+  return {
+    position: placement.position.clone(),
+    yaw: placement.yaw,
+  }
 }
 
 const WAITING_BAYS = [
@@ -647,6 +727,64 @@ function createLoungeAndFocus(parent: THREE.Group): void {
   parent.add(createPlant(point(x + 1.65, z + 1.35), 1.15))
 }
 
+function createQuietRoom(parent: THREE.Group): void {
+  const x = -3.6
+  const z = -2.15
+
+  addBox(parent, [4.2, 0.04, 3.3], [x, 0.045, z], 0x40505a)
+  addGlassPanel(parent, [4.2, 2.35, 0.06], [x, 1.18, z - 1.62])
+  addGlassPanel(parent, [0.06, 2.35, 3.3], [x - 2.08, 1.18, z])
+  addBox(parent, [2.65, 0.025, 1.75], [x, 0.075, z + 0.2], 0x416b5c)
+  addBox(parent, [2.5, 1.05, 0.08], [x, 1.45, z - 1.52], 0x5f6f78)
+  parent.add(createPlant(point(x + 1.45, z + 1.05), 0.72))
+}
+
+function createCommonsHub(parent: THREE.Group): void {
+  const rug = addBox(parent, [6.6, 0.025, 4.3], [0, 0.055, 1.2], 0x4e5754)
+  rug.receiveShadow = true
+
+  addBox(parent, [2.15, 0.42, 0.72], [-1.9, 0.32, 1.95], 0x405f72)
+  addBox(parent, [2.15, 0.72, 0.18], [-1.9, 0.64, 2.23], 0x405f72)
+  addBox(parent, [2.15, 0.42, 0.72], [1.9, 0.32, 0.55], 0x5c526c)
+  addBox(parent, [2.15, 0.72, 0.18], [1.9, 0.64, 0.27], 0x5c526c)
+
+  addBox(parent, [1.3, 0.1, 0.72], [0, 0.34, 1.25], 0x946d4e)
+  addCylinder(parent, 0.055, 0.5, [-0.45, 0.16, 1.25], 0x303943)
+  addCylinder(parent, 0.055, 0.5, [0.45, 0.16, 1.25], 0x303943)
+
+  for (const [x, z] of [
+    [-0.85, 0.15],
+    [0.9, 2.35],
+  ] as Array<[number, number]>) {
+    const table = addCylinder(parent, 0.46, 0.08, [x, 0.63, z], 0x876247)
+    table.rotation.y = Math.PI * 0.25
+    addCylinder(parent, 0.055, 0.58, [x, 0.31, z], 0x303943)
+  }
+}
+
+function createStrategyHub(parent: THREE.Group): void {
+  const rug = addBox(parent, [7.4, 0.025, 4.7], [0, 0.055, 0.45], 0x4d5558)
+  rug.receiveShadow = true
+
+  addBox(parent, [4.6, 0.13, 1.35], [0, 0.78, 0.4], 0x825d43)
+  for (const x of [-1.75, 1.75]) {
+    for (const z of [0.0, 0.8]) {
+      addBox(parent, [0.08, 0.72, 0.08], [x, 0.39, z], 0x303943)
+    }
+  }
+
+  addBox(parent, [3.4, 1.45, 0.1], [4.15, 1.72, -5.98], 0x334c5d)
+  const board = addBox(parent, [2.95, 1.08, 0.035], [4.15, 1.72, -5.9], 0x1d3c50)
+  ;(board.material as THREE.MeshStandardMaterial).emissive.setHex(0x102c3d)
+  ;(board.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.42
+
+  addBox(parent, [1.45, 0.9, 0.12], [3.75, 1.18, 3.95], 0x53616b)
+  addBox(parent, [1.05, 0.62, 0.035], [3.68, 1.28, 3.95], 0x29475a)
+
+  parent.add(createPlant(point(-3.2, 2.65), 0.72))
+  parent.add(createPlant(point(3.15, -1.9), 0.66))
+}
+
 function createReviewWall(parent: THREE.Group): void {
   addBox(parent, [0.14, 2.45, 2.5], [6.05, 1.22, 0.75], 0x46545f)
   const panel = addBox(parent, [0.05, 1.28, 1.75], [5.96, 1.55, 0.75], 0x27445d)
@@ -688,25 +826,16 @@ function createDoor(position: THREE.Vector3): THREE.Group {
 }
 
 function createCeilingLights(parent: THREE.Group): void {
-  const material = new THREE.MeshStandardMaterial({
-    color: 0xf4dfb4,
-    emissive: 0xffd991,
-    emissiveIntensity: 2.15,
-    roughness: 0.38,
-  })
-
-  for (const [x, z] of [
-    [-2.6, 0.7],
-    [2.6, 0.7],
-    [-2.6, 3.0],
-    [2.6, 3.0],
-  ] as Array<[number, number]>) {
-    const fixture = new THREE.Mesh(
-      new THREE.BoxGeometry(2.7, 0.12, 0.32),
-      material.clone(),
-    )
-    fixture.position.set(x, 3.55, z)
-    parent.add(fixture)
+  for (const [x, z, intensity] of [
+    [-3.4, 0.8, 0.24],
+    [0, 0.8, 0.28],
+    [3.4, 0.8, 0.24],
+    [-1.7, 3.7, 0.2],
+    [1.7, 3.7, 0.2],
+  ] as Array<[number, number, number]>) {
+    const light = new THREE.PointLight(0xffdfad, intensity, 6.5)
+    light.position.set(x, 3.25, z)
+    parent.add(light)
   }
 }
 
@@ -801,39 +930,70 @@ export function stageCenter(index: number): THREE.Vector3 {
   return WORKSTATIONS[index % WORKSTATIONS.length].station.clone()
 }
 
-export function createOfficeEnvironment(
-  environment: THREE.Group,
-  _stages: RunStage[],
-  agents: AgentRun[],
-): Map<string, StationPlacement> {
-  clearGroup(environment)
-
+function createOfficeShell(environment: THREE.Group): void {
   addBox(environment, [20.5, 0.34, 14.5], [0, -0.22, 0], 0x111821)
   createWoodFloor(environment)
-
   addBox(environment, [20, 3.2, 0.16], [0, 1.56, -6.98], 0x4b5a67)
   addBox(environment, [0.16, 3.2, 14], [-9.92, 1.56, 0], 0x46545f)
   addBox(environment, [0.16, 3.2, 14], [9.92, 1.56, 0], 0x46545f)
-
   createWindowWall(environment)
   environment.add(createDoor(new THREE.Vector3(0, 0, -6.9)))
-  createMeetingRoom(environment)
+  createCeilingLights(environment)
+}
+
+function createCommonsFloor(environment: THREE.Group): void {
   createPantry(environment)
   createGameRoom(environment)
   createLoungeAndFocus(environment)
-  createReviewWall(environment)
-  createWorkArea(environment)
-  createCeilingLights(environment)
+  createQuietRoom(environment)
+  createCommonsHub(environment)
 
-  const meetingLight = new THREE.PointLight(0xffe0b0, 0.72, 7.5)
-  meetingLight.position.set(-7.1, 2.8, -3.6)
   const pantryLight = new THREE.PointLight(0xffd6a0, 0.82, 7)
   pantryLight.position.set(7.1, 2.65, -4.0)
   const gameLight = new THREE.PointLight(0x8abbd4, 0.58, 6.5)
   gameLight.position.set(7.0, 2.5, 4.2)
   const loungeLight = new THREE.PointLight(0xffcf9a, 0.46, 6)
   loungeLight.position.set(-7.0, 2.4, 4.2)
-  environment.add(meetingLight, pantryLight, gameLight, loungeLight)
+  environment.add(pantryLight, gameLight, loungeLight)
+}
+
+function createBuildFloor(environment: THREE.Group): void {
+  createWorkArea(environment)
+  createReviewWall(environment)
+  createPantry(environment)
+
+  const reviewLight = new THREE.PointLight(0xa8d2e8, 0.52, 6.5)
+  reviewLight.position.set(5.6, 2.45, 0.9)
+  const deskLight = new THREE.PointLight(0xffe0b0, 0.48, 8)
+  deskLight.position.set(0, 3.0, 1.5)
+  environment.add(reviewLight, deskLight)
+}
+
+function createStrategyFloor(environment: THREE.Group): void {
+  createMeetingRoom(environment)
+  createReviewWall(environment)
+  createLoungeAndFocus(environment)
+  createStrategyHub(environment)
+
+  const meetingLight = new THREE.PointLight(0xffe0b0, 0.72, 7.5)
+  meetingLight.position.set(-7.1, 2.8, -3.6)
+  const reviewLight = new THREE.PointLight(0x8abbd4, 0.5, 6.5)
+  reviewLight.position.set(5.7, 2.5, 0.8)
+  environment.add(meetingLight, reviewLight)
+}
+
+export function createOfficeEnvironment(
+  environment: THREE.Group,
+  _stages: RunStage[],
+  members: OfficeEnvironmentMember[],
+  floor: OfficeFloorKey = 'build',
+): Map<string, StationPlacement> {
+  clearGroup(environment)
+  createOfficeShell(environment)
+
+  if (floor === 'commons') createCommonsFloor(environment)
+  else if (floor === 'strategy') createStrategyFloor(environment)
+  else createBuildFloor(environment)
 
   environment.add(createPlant(point(-4.65, -1.7), 0.9))
   environment.add(createPlant(point(4.65, -1.7), 0.9))
@@ -842,15 +1002,33 @@ export function createOfficeEnvironment(
 
   const stations = new Map<string, StationPlacement>()
   const used = new Set<string>()
+  const zoneUse = new Map<OfficeZoneKey, number>()
 
-  agents.forEach((agent) => {
-    const workstation = roleWorkstation(agent.agent_profile_key, used)
-    used.add(workstation.id)
-    stations.set(agent.id, {
-      position: workstation.station.clone(),
-      yaw: workstation.yaw,
-    })
+  members.forEach((member) => {
+    if (member.zone) {
+      const index = zoneUse.get(member.zone) ?? 0
+      stations.set(member.id, officeZonePlacement(member.zone, index))
+      zoneUse.set(member.zone, index + 1)
+      return
+    }
+
+    if (floor === 'build') {
+      const workstation = roleWorkstation(member.agent_profile_key, used)
+      used.add(workstation.id)
+      stations.set(member.id, {
+        position: workstation.station.clone(),
+        yaw: workstation.yaw,
+      })
+      return
+    }
+
+    const fallbackZone: OfficeZoneKey =
+      floor === 'strategy' ? 'planning-table' : 'lounge'
+    const index = zoneUse.get(fallbackZone) ?? 0
+    stations.set(member.id, officeZonePlacement(fallbackZone, index))
+    zoneUse.set(fallbackZone, index + 1)
   })
 
   return stations
 }
+

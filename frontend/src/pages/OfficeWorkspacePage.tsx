@@ -22,6 +22,11 @@ import {
 } from '../components/office/UniversalComposerShell'
 import { OfficeRendererBoundary } from '../components/OfficeRendererBoundary'
 import { OfficeScene } from '../components/OfficeScene'
+import {
+  livingOfficeMembers,
+  officeAmbientWindow,
+  type OfficeFloorKey,
+} from '../office3d/livingOffice'
 
 function localTimezone(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
@@ -57,6 +62,10 @@ export function OfficeWorkspacePage() {
   const [selectedProjectId, setSelectedProjectId] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isMaximized, setIsMaximized] = useState(false)
+  const [selectedFloor, setSelectedFloor] = useState<OfficeFloorKey>(
+    () => officeAmbientWindow().floor,
+  )
+  const [officeNow, setOfficeNow] = useState(() => new Date())
   const [registryError, setRegistryError] = useState<string | null>(null)
 
   const [planningThreads, setPlanningThreads] = useState<ComposerThread[]>([])
@@ -74,6 +83,11 @@ export function OfficeWorkspacePage() {
   const [planningDecisionBusy, setPlanningDecisionBusy] = useState(false)
   const [planningActionBusy, setPlanningActionBusy] = useState(false)
   const [composerError, setComposerError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setOfficeNow(new Date()), 60_000)
+    return () => window.clearInterval(timer)
+  }, [])
 
   useEffect(() => {
     let active = true
@@ -151,6 +165,7 @@ export function OfficeWorkspacePage() {
         setPlanningArtifacts(snapshot.artifacts)
         setPlanningRequirements(snapshot.requirements)
         setPlanningEvents(snapshot.events)
+        setSelectedFloor(snapshot.team ? 'strategy' : officeAmbientWindow().floor)
       })
       .catch((reason) => {
         if (!active) return
@@ -236,6 +251,7 @@ export function OfficeWorkspacePage() {
       setPlanningArtifacts(snapshot.artifacts)
       setPlanningRequirements(snapshot.requirements)
       setPlanningEvents(snapshot.events)
+      setSelectedFloor(snapshot.team ? 'strategy' : officeAmbientWindow().floor)
     } catch (reason) {
       setComposerError(
         reason instanceof Error
@@ -288,6 +304,7 @@ export function OfficeWorkspacePage() {
       setPlanningTeam(prepared.team_proposal)
       setPlanningArtifacts(prepared.artifacts)
       setPlanningRequirements(prepared.requirements)
+      setSelectedFloor('strategy')
 
       try {
         const eventPage = await api.listPlanningEvents(thread.id)
@@ -408,6 +425,27 @@ export function OfficeWorkspacePage() {
 
   const planningMode =
     resolution?.resolved_intent ?? activeThread?.resolved_intent ?? null
+  const ambientWindow = useMemo(() => officeAmbientWindow(officeNow), [officeNow])
+  const workspaceMembers = useMemo(
+    () => livingOfficeMembers(activeThread, planningTeam, profiles, officeNow),
+    [activeThread, officeNow, planningTeam, profiles],
+  )
+  const selectedFloorMembers = workspaceMembers.filter(
+    (member) => member.floor === selectedFloor,
+  )
+  const selectedFloorHasPlanning = selectedFloorMembers.some(
+    (member) => member.truth === 'PLANNING',
+  )
+  const selectedFloorHasAmbient = selectedFloorMembers.some(
+    (member) => member.truth === 'AMBIENT',
+  )
+  const officePresenceLabel = selectedFloorHasPlanning
+    ? selectedFloorHasAmbient
+      ? `${activeThread?.status === 'AWAITING_USER' ? 'Waiting for you' : 'Planning'} + ambient`
+      : `${activeThread?.status === 'AWAITING_USER' ? 'Waiting for you' : 'Planning'} presence`
+    : selectedFloorHasAmbient
+      ? `${ambientWindow.label} · ambient`
+      : 'Quiet floor · no presence'
 
   return (
     <div
@@ -455,6 +493,10 @@ export function OfficeWorkspacePage() {
             replayRange={null}
             showRoster={false}
             presentation="workspace"
+            floor={selectedFloor}
+            workspaceMembers={workspaceMembers}
+            onFloorChange={setSelectedFloor}
+            presenceLabel={officePresenceLabel}
           />
         </OfficeRendererBoundary>
       </div>

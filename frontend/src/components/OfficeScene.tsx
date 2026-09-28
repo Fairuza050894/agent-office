@@ -1,7 +1,12 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 
 import type { AgentProfile, AgentRun, RunStage } from '../api'
 import type { OfficeReplayRange } from '../office3d/replay'
+import {
+  OFFICE_FLOORS,
+  type OfficeFloorKey,
+  type OfficePresenceMember,
+} from '../office3d/livingOffice'
 import { officeAgentState } from '../officeProjection'
 import { ThreeOfficeScene } from './ThreeOfficeScene'
 
@@ -18,6 +23,10 @@ export interface OfficeSceneProps {
   replayRange: OfficeReplayRange | null
   showRoster?: boolean
   presentation?: 'operational' | 'workspace'
+  floor?: OfficeFloorKey
+  workspaceMembers?: OfficePresenceMember[]
+  onFloorChange?: (floor: OfficeFloorKey) => void
+  presenceLabel?: string | null
 }
 
 function profileName(
@@ -40,11 +49,21 @@ export function OfficeScene({
   replayRange,
   showRoster = true,
   presentation = 'operational',
+  floor = 'build',
+  workspaceMembers = [],
+  onFloorChange,
+  presenceLabel = null,
 }: OfficeSceneProps) {
   const profileByKey = useMemo(
     () => new Map(profiles.map((profile) => [profile.key, profile])),
     [profiles],
   )
+  const [cameraResetNonce, setCameraResetNonce] = useState(0)
+
+  const changeFloor = (nextFloor: OfficeFloorKey) => {
+    onFloorChange?.(nextFloor)
+    setCameraResetNonce((current) => current + 1)
+  }
 
   return (
     <section
@@ -66,13 +85,46 @@ export function OfficeScene({
               : 'Canonical AgentRun state · drag to orbit · right-drag to pan · wheel to zoom'}
           </span>
         </div>
-        <span className="office-render-mode">
-          {presentation === 'workspace'
-            ? 'Workspace shell'
-            : mode === 'replay'
-              ? 'Historical replay · factual timestamps compressed'
-              : 'Canonical state'}
-        </span>
+        <div className="office-scene-meta">
+          {presentation === 'workspace' && onFloorChange && (
+            <div className="office-floor-switcher" aria-label="Office floor">
+              {OFFICE_FLOORS.map((candidate) => (
+                <button
+                  key={candidate.key}
+                  type="button"
+                  className={candidate.key === floor ? 'active' : ''}
+                  aria-pressed={candidate.key === floor}
+                  title={`${candidate.label} · ${candidate.purpose}`}
+                  onClick={() => changeFloor(candidate.key)}
+                >
+                  <span>{candidate.shortLabel}</span>
+                  <strong>{candidate.label}</strong>
+                </button>
+              ))}
+            </div>
+          )}
+          <span className="office-render-mode">
+            {presentation === 'workspace'
+              ? [
+                  `${OFFICE_FLOORS.find((candidate) => candidate.key === floor)?.label ?? 'Office'} floor`,
+                  presenceLabel,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')
+              : mode === 'replay'
+                ? 'Historical replay · factual timestamps compressed'
+                : 'Canonical state'}
+          </span>
+          {presentation === 'workspace' && (
+            <button
+              type="button"
+              className="office-camera-reset"
+              onClick={() => setCameraResetNonce((current) => current + 1)}
+            >
+              Reset view
+            </button>
+          )}
+        </div>
       </div>
 
       <ThreeOfficeScene
@@ -86,6 +138,9 @@ export function OfficeScene({
         replayNonce={replayNonce}
         replayStartedAt={replayStartedAt}
         replayRange={replayRange}
+        floor={floor}
+        workspaceMembers={workspaceMembers}
+        cameraResetNonce={cameraResetNonce}
       />
 
       {showRoster && (

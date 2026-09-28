@@ -12,8 +12,26 @@ export function officeAgentState(status: string): OfficeState {
       return { key: 'pending', label: 'Waiting to start' }
     case 'STARTING':
       return { key: 'starting', label: 'Starting' }
+    case 'ARRIVING':
+      return { key: 'starting', label: 'Arriving' }
     case 'RUNNING':
       return { key: 'running', label: 'Running' }
+    case 'WORKING':
+      return { key: 'running', label: 'Working' }
+    case 'PLANNING':
+      return { key: 'running', label: 'Planning' }
+    case 'AVAILABLE':
+      return { key: 'completed', label: 'Available' }
+    case 'COFFEE_BREAK':
+      return { key: 'waiting', label: 'Coffee break' }
+    case 'LUNCH_BREAK':
+      return { key: 'waiting', label: 'Lunch break' }
+    case 'SOCIAL_BREAK':
+      return { key: 'waiting', label: 'Social break' }
+    case 'PRAYER_BREAK':
+      return { key: 'waiting', label: 'Prayer break' }
+    case 'WAITING_USER':
+      return { key: 'waiting', label: 'Waiting for you' }
     case 'WAITING':
       return { key: 'waiting', label: 'Waiting' }
     case 'BLOCKED':
@@ -24,6 +42,8 @@ export function officeAgentState(status: string): OfficeState {
       return { key: 'completed', label: 'Completed' }
     case 'CANCELLED':
       return { key: 'cancelled', label: 'Cancelled' }
+    case 'OFFLINE':
+      return { key: 'cancelled', label: 'Offline' }
     default:
       return { key: 'unknown', label: status || 'Unknown' }
   }
