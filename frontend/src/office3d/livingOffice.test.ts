@@ -377,6 +377,38 @@ describe('living office model', () => {
     })
   })
 
+  it('reserves scheduled-event capacity before baseline ambience allocation', () => {
+    const now = new Date(2026, 8, 28, 15, 15)
+    const members = ambientOfficeMembers(extendedProfiles, now, [
+      {
+        id: 'prayer-window',
+        label: 'Prayer window',
+        startsAt: new Date(2026, 8, 28, 15, 0).toISOString(),
+        endsAt: new Date(2026, 8, 28, 15, 30).toISOString(),
+        floor: 'commons',
+        zone: 'quiet-room',
+        presence: 'PRAYER_BREAK',
+        priority: 90,
+        maxParticipants: 1,
+        roleKeys: ['technical-writer'],
+      },
+    ])
+
+    const quietRoomMembers = members.filter(
+      (member) => member.zone === 'quiet-room',
+    )
+    expect(quietRoomMembers.length).toBeLessThanOrEqual(
+      OFFICE_AMBIENT_ZONE_CAPACITY['quiet-room'] ?? 0,
+    )
+    expect(
+      quietRoomMembers.some(
+        (member) =>
+          member.agent_profile_key === 'technical-writer' &&
+          member.status === 'PRAYER_BREAK',
+      ),
+    ).toBe(true)
+  })
+
   it('clamps scheduled ambience to the configured zone capacity', () => {
     const now = new Date(2026, 8, 28, 15, 15)
     const members = ambientOfficeMembers(extendedProfiles, now, [
