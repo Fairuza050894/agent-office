@@ -41,6 +41,15 @@ function profileName(
   return profiles.get(agent.agent_profile_key)?.name ?? agent.agent_profile_key
 }
 
+function concisePresenceLabel(label: string | null): string {
+  if (!label) return 'Quiet'
+  if (label === 'Quiet floor · no presence') return 'Quiet'
+  if (label === 'Available · ambient') return 'Ambient'
+  if (label === 'Planning presence') return 'Planning'
+  if (label === 'Waiting for you presence') return 'Waiting for you'
+  return label.replace(' floor', '').replace(' presence', '')
+}
+
 function nextEventCountdown(minutes: number): string {
   const safeMinutes = Math.max(0, Math.round(minutes))
   if (safeMinutes < 60) return `in ${safeMinutes}m`
@@ -116,6 +125,15 @@ export function OfficeScene({
     setCameraResetNonce((current) => current + 1)
   }
 
+  const activeFloor =
+    OFFICE_FLOORS.find((candidate) => candidate.key === floor) ?? OFFICE_FLOORS[0]
+  const activeFloorPresence = floorPresenceCount[floor]
+  const activeFloorState = concisePresenceLabel(presenceLabel)
+  const activeFloorSummary =
+    activeFloorPresence > 0
+      ? `${activeFloorPresence} present · ${activeFloorState}`
+      : activeFloorState
+
   return (
     <section
       className="office-renderer"
@@ -125,97 +143,125 @@ export function OfficeScene({
           : 'Run office 3D projection'
       }
     >
-      <div className="office-scene-heading">
-        <div>
-          <strong>
-            {presentation === 'workspace' ? 'Office workspace' : 'Operational office'}
-          </strong>
-          <span>
-            {presentation === 'workspace'
-              ? 'No factual Run selected · drag to orbit · right-drag to pan · wheel to zoom'
-              : 'Canonical AgentRun state · drag to orbit · right-drag to pan · wheel to zoom'}
-          </span>
-          {presentation === 'workspace' && worldContext && (
-            <div
-              className={`office-world-hud mode-${worldContext.mode.toLowerCase()}`}
-              aria-label="Office world status"
-            >
-              <div className="office-world-clock-card">
-                <span title={worldContext.timeZone}>{worldContext.timeZoneLabel}</span>
-                <strong>{worldContext.clockLabel}</strong>
-                <small>{worldContext.dayLabel}</small>
+      <div
+        className={`office-scene-heading ${
+          presentation === 'workspace' ? 'office-scene-heading-workspace' : ''
+        }`}
+      >
+        {presentation === 'workspace' ? (
+          <>
+            <div className="office-scene-context">
+              <div className="office-scene-title-group">
+                <strong>Office Workspace</strong>
+                <span>Live office view · No active run selected</span>
               </div>
-              <div className="office-world-stat">
-                <span>Office mode</span>
-                <strong>{worldContext.modeLabel}</strong>
-                <small title={worldContext.occupancyExplanation}>
-                  {worldContext.lifecycleLabel}
-                  {' · '}
-                  {worldContext.isOfficeOpen ? 'scheduled open' : 'scheduled quiet'}
-                </small>
-              </div>
-              <div className="office-world-stat">
-                <span>Presence</span>
-                <strong>{totalPresence}</strong>
-                <small>
-                  {worldContext.ambientOccupancyCap} ambient cap · all floors
-                </small>
-              </div>
-              <div className="office-world-stat office-world-next">
-                <span>Next event</span>
-                <strong>{worldContext.nextEventTimeLabel}</strong>
-                <small>
-                  {worldContext.nextEventLabel}
-                  {' · '}
-                  {nextEventCountdown(worldContext.minutesUntilNextEvent)}
-                </small>
-              </div>
+              <details className="office-scene-controls">
+                <summary>Controls</summary>
+                <div>
+                  <span><kbd>Drag</kbd> orbit</span>
+                  <span><kbd>Right-drag</kbd> pan</span>
+                  <span><kbd>Wheel</kbd> zoom</span>
+                </div>
+              </details>
             </div>
-          )}
-        </div>
-        <div className="office-scene-meta">
-          {presentation === 'workspace' && onFloorChange && (
-            <div className="office-floor-switcher" aria-label="Office floor">
-              {OFFICE_FLOORS.map((candidate) => (
-                <button
-                  key={candidate.key}
-                  type="button"
-                  className={candidate.key === floor ? 'active' : ''}
-                  aria-pressed={candidate.key === floor}
-                  title={`${candidate.label} · ${candidate.purpose}`}
-                  onClick={() => changeFloor(candidate.key)}
-                >
-                  <span>{candidate.shortLabel}</span>
-                  <strong>{candidate.label}</strong>
-                  <em aria-label={`${floorPresenceCount[candidate.key]} present`}>
-                    {floorPresenceCount[candidate.key]}
-                  </em>
-                </button>
-              ))}
+
+            {worldContext && (
+              <div
+                className={`office-world-hud mode-${worldContext.mode.toLowerCase()}`}
+                aria-label="Office world status"
+              >
+                <div className="office-world-stat office-world-clock-card">
+                  <span>Local time</span>
+                  <strong>{worldContext.clockLabel}</strong>
+                  <small>
+                    {worldContext.timeZoneLabel} · {worldContext.dayLabel}
+                  </small>
+                </div>
+                <div className="office-world-stat">
+                  <span>Office mode</span>
+                  <strong>{worldContext.modeLabel}</strong>
+                  <small title={worldContext.occupancyExplanation}>
+                    {worldContext.lifecycleLabel}
+                  </small>
+                </div>
+                <div className="office-world-stat">
+                  <span>Presence</span>
+                  <strong>{totalPresence} in office</strong>
+                  <small>
+                    Ambient cap {worldContext.ambientOccupancyCap} · all floors
+                  </small>
+                </div>
+                <div className="office-world-stat office-world-next">
+                  <span>Next</span>
+                  <strong>{worldContext.nextEventLabel}</strong>
+                  <small>
+                    {worldContext.nextEventTimeLabel}
+                    {' · '}
+                    {nextEventCountdown(worldContext.minutesUntilNextEvent)}
+                  </small>
+                </div>
+              </div>
+            )}
+
+            <div className="office-scene-navigation">
+              {onFloorChange && (
+                <div className="office-floor-switcher" aria-label="Office floor">
+                  {OFFICE_FLOORS.map((candidate) => (
+                    <button
+                      key={candidate.key}
+                      type="button"
+                      className={candidate.key === floor ? 'active' : ''}
+                      aria-pressed={candidate.key === floor}
+                      title={`${candidate.label} · ${candidate.purpose}`}
+                      onClick={() => changeFloor(candidate.key)}
+                    >
+                      <span>{candidate.shortLabel}</span>
+                      <strong>{candidate.label}</strong>
+                      <em aria-label={`${floorPresenceCount[candidate.key]} present`}>
+                        {floorPresenceCount[candidate.key]}
+                      </em>
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div className="office-floor-summary">
+                <strong>{activeFloor.label}</strong>
+                <span>{activeFloorSummary}</span>
+              </div>
+              <button
+                type="button"
+                className="office-camera-reset"
+                onClick={() => setCameraResetNonce((current) => current + 1)}
+              >
+                Reset view
+              </button>
             </div>
-          )}
-          <span className="office-render-mode">
-            {presentation === 'workspace'
-              ? [
-                  `${OFFICE_FLOORS.find((candidate) => candidate.key === floor)?.label ?? 'Office'} floor`,
-                  presenceLabel,
-                ]
-                  .filter(Boolean)
-                  .join(' · ')
-              : mode === 'replay'
-                ? 'Historical replay · factual timestamps compressed'
-                : 'Canonical state'}
-          </span>
-          {presentation === 'workspace' && (
-            <button
-              type="button"
-              className="office-camera-reset"
-              onClick={() => setCameraResetNonce((current) => current + 1)}
-            >
-              Reset view
-            </button>
-          )}
-        </div>
+          </>
+        ) : (
+          <>
+            <div className="office-scene-context">
+              <div className="office-scene-title-group">
+                <strong>Operational office</strong>
+                <span>Canonical AgentRun state</span>
+              </div>
+              <details className="office-scene-controls">
+                <summary>Controls</summary>
+                <div>
+                  <span><kbd>Drag</kbd> orbit</span>
+                  <span><kbd>Right-drag</kbd> pan</span>
+                  <span><kbd>Wheel</kbd> zoom</span>
+                </div>
+              </details>
+            </div>
+            <div className="office-scene-navigation">
+              <span className="office-render-mode">
+                {mode === 'replay'
+                  ? 'Historical replay · factual timestamps compressed'
+                  : 'Canonical state'}
+              </span>
+            </div>
+          </>
+        )}
       </div>
 
       <ThreeOfficeScene
