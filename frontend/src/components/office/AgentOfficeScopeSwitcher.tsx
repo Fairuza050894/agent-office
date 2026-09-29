@@ -34,11 +34,11 @@ export function AgentOfficeScopeSwitcher({
       {activeScope === 'workspace' ? (
         liveHref ? (
           <Link href={liveHref} className="office-scope-link">
-            Run
+            Live
           </Link>
         ) : (
           <span className="office-scope-link disabled" aria-disabled="true">
-            Run
+            Live
           </span>
         )
       ) : (
@@ -48,7 +48,7 @@ export function AgentOfficeScopeSwitcher({
           aria-pressed={activeScope === 'live'}
           onClick={onLive}
         >
-          Run
+          Live
         </button>
       )}
 
