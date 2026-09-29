@@ -13,7 +13,7 @@ Current work:
 
 ```text
 branch: phase-10c-time-context
-checkpoint: af5b87a
+checkpoint: def6ad4
 phase: Phase 10C — Office World Time Context & Realistic Occupancy
 ```
 
@@ -91,6 +91,7 @@ or mutate operational execution truth.
   - presentation sideboard
   - floor lamp
 - floor-specific shell accents for Commons / Build / Strategy
+- corrected rigged-character movement facing without changing station yaw
 - specialist zone anchors aligned to the richer environment
 - world occupancy cap enforced across baseline modes
 - scheduled events reserve capacity before baseline ambience
@@ -184,6 +185,7 @@ Pending local visual review of:
 - Commons/Build/Strategy support-prop differentiation
 - Composer and Operations Dock compatibility
 - furniture/path clipping
+- character travel direction vs visual facing
 
 ## Design and verification records
 
