@@ -95,7 +95,7 @@ describe('office world context', () => {
     expect(world.nextEventLabel).toBe('Next weekday arrival')
   })
 
-  it('treats only recent late-night planning activity as live presence', () => {
+  it('tracks late-night planning freshness separately from physical office policy', () => {
     const now = new Date('2026-09-28T17:44:00Z')
 
     expect(
