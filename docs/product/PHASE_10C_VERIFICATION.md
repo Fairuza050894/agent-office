@@ -5,7 +5,7 @@ Date: 2026-09-29
 Branch: `phase-10c-time-context`  
 Base: `main@60fd03c`  
 Merge policy: manual only  
-Implementation checkpoint: `d8f3f53`
+Implementation checkpoint: `9884d07`
 
 ## Delivered scope
 
@@ -127,7 +127,37 @@ Before the rendered gate, additional source review closed these issues:
 - decision-room anchors are placed in front of decision tables instead of inside them;
 - L1/L2/L3 floor buttons expose truthful live presence counts.
 
-The code checkpoint for this audit is `d8f3f53`.
+The original occupancy-hardening checkpoint was `d8f3f53`. The current implementation checkpoint is `9884d07`, which adds explicit building lifecycle, mode-driven scene cues, and closed-office remote planning semantics.
+
+## Office-world lifecycle hardening
+
+Additional review of the rendered late-night Office exposed a realism issue:
+fresh planning truth could still keep people physically rendered in the building
+after 22:00.
+
+The current policy is now:
+
+```text
+CLOSED office
+  -> ambient presence = 0 by default
+  -> fresh planning remains durable in Composer/Dock
+  -> physical planning presence = 0
+  -> Strategy may show "Planning remote · office closed"
+```
+
+A future explicit overtime/scheduled-work contract may deliberately opt into
+after-hours physical presence. Ordinary planning does not.
+
+The world context now also exposes:
+
+- lifecycle: Closed / Opening up / Open / Winding down
+- occupancy explanation
+- scene cue keyed to the active Office mode
+
+The 3D environment consumes the scene cue without modifying canonical truth.
+Current dynamic props include arrival/reception cues, lunch trays, coffee cups,
+Build/Strategy active-work visual props, wrap-up cues, and restrained
+late/night lighting accents.
 
 ## Rendered acceptance required
 
