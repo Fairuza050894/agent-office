@@ -3264,3 +3264,29 @@ button.office-scope-link {
   color: #445967;
   cursor: not-allowed;
 }
+
+
+/* Agent Office focus chrome */
+
+.office-shell-focus .app-header {
+  height: 36px;
+  min-height: 36px;
+  padding: 0 10px;
+}
+
+.office-shell-focus .header-breadcrumb {
+  display: none;
+}
+
+.office-shell-focus .header-left {
+  min-width: 24px;
+}
+
+.office-shell-focus .system-pill {
+  min-height: 22px;
+  padding-block: 2px;
+}
+
+.office-shell-focus .app-main {
+  padding-top: 8px;
+}
