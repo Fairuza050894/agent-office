@@ -509,13 +509,27 @@ export function OfficeWorkspacePage() {
     ambientBehaviorLabels.length > 0
       ? `${ambientBehaviorLabels.slice(0, 2).join(' + ')} · ambient`
       : 'Ambient'
+  const remotePlanning =
+    selectedFloor === 'strategy' &&
+    Boolean(activeThread && planningTeam) &&
+    !officeWorld.allowsPhysicalPlanningPresence &&
+    Boolean(
+      activeThread &&
+        isPlanningPresenceFresh(
+          activeThread.updated_at,
+          officeClockNow,
+          officeTimeZone,
+        ),
+    )
   const officePresenceLabel = selectedFloorHasPlanning
     ? selectedFloorHasAmbient
       ? `${activeThread?.status === 'AWAITING_USER' ? 'Waiting for you' : 'Planning'} + ambient`
       : `${activeThread?.status === 'AWAITING_USER' ? 'Waiting for you' : 'Planning'} presence`
     : selectedFloorHasAmbient
       ? ambientPresenceLabel
-      : 'Quiet floor · no presence'
+      : remotePlanning
+        ? 'Planning remote · office closed'
+        : 'Quiet floor · no presence'
 
   const changeOfficeFloor = (floor: OfficeFloorKey) => {
     setSelectedFloor(floor)
