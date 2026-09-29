@@ -128,7 +128,7 @@ export function OfficeWorkspacePage() {
     }, 1_000)
 
     return () => window.clearInterval(timer)
-  }, [requestedProjectId])
+  }, [])
 
   useEffect(() => {
     let active = true
@@ -175,7 +175,7 @@ export function OfficeWorkspacePage() {
     return () => {
       active = false
     }
-  }, [])
+  }, [requestedProjectId])
 
   useEffect(() => {
     let active = true
