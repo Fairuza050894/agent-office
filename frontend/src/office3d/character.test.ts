@@ -1,8 +1,10 @@
+import * as THREE from 'three'
 import { describe, expect, it } from 'vitest'
 
 import {
   officeCharacterAppearance,
   officeCharacterVariant,
+  officeMovementYaw,
   shouldShowOfficeNameplate,
 } from './character'
 
@@ -40,6 +42,17 @@ describe('officeCharacterAppearance', () => {
     expect(shouldShowOfficeNameplate('BLOCKED', false)).toBe(true)
     expect(shouldShowOfficeNameplate('FAILED', false)).toBe(true)
     expect(shouldShowOfficeNameplate('COMPLETED', true)).toBe(true)
+  })
+
+  it('aligns the rigged visual forward axis with movement velocity', () => {
+    expect(officeMovementYaw(new THREE.Vector3(0, 0, 1))).toBeCloseTo(Math.PI)
+    expect(Math.abs(officeMovementYaw(new THREE.Vector3(0, 0, -1)))).toBeCloseTo(0)
+    expect(officeMovementYaw(new THREE.Vector3(1, 0, 0))).toBeCloseTo(
+      -Math.PI / 2,
+    )
+    expect(officeMovementYaw(new THREE.Vector3(-1, 0, 0))).toBeCloseTo(
+      Math.PI / 2,
+    )
   })
 
   it('keeps unknown-role fallback deterministic', () => {
