@@ -1170,6 +1170,7 @@ function createOfficeShell(
 
   createWindowWall(environment)
   environment.add(createDoor(new THREE.Vector3(0, 0, -6.9)))
+  createLiftCore(environment, floor)
   createCeilingLights(environment)
 }
 
