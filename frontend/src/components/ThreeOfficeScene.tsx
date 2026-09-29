@@ -30,6 +30,7 @@ import type {
   OfficeZoneKey,
 } from '../office3d/livingOffice'
 import { officeLightingForHour } from '../office3d/lighting'
+import type { OfficeModeKey } from '../office3d/officeWorld'
 import {
   officeReplayPlan,
   type OfficeReplayEvent,
@@ -51,6 +52,7 @@ export interface ThreeOfficeSceneProps {
   workspaceMembers?: OfficePresenceMember[]
   cameraResetNonce?: number
   officeHour?: number
+  officeMode?: OfficeModeKey | null
 }
 
 interface SceneMember extends OfficeCharacterSource {
@@ -188,6 +190,7 @@ export function ThreeOfficeScene({
   workspaceMembers = [],
   cameraResetNonce = 0,
   officeHour = new Date().getHours(),
+  officeMode = null,
 }: ThreeOfficeSceneProps) {
   const hostRef = useRef<HTMLDivElement>(null)
   const engineRef = useRef<Engine | null>(null)
@@ -599,6 +602,7 @@ export function ThreeOfficeScene({
       stages,
       sceneMembers,
       floor,
+      officeMode,
     )
 
     const liveIds = new Set(sceneMembers.map((member) => member.id))
@@ -689,6 +693,7 @@ export function ThreeOfficeScene({
     agents,
     floor,
     mode,
+    officeMode,
     profiles,
     selectedAgentId,
     stages,
