@@ -314,6 +314,13 @@ export function officeCharacterVariant(profileKey: string): CharacterVariantKey 
   return officeCharacterAppearance(profileKey).variant
 }
 
+export function officeMovementYaw(direction: THREE.Vector3): number {
+  // Current rigged office characters are visually forward along root -Z after
+  // their presentation offset. Align that visual forward axis with velocity.
+  return Math.atan2(-direction.x, -direction.z)
+}
+
+
 function loadCharacterAssets(
   variantKey: CharacterVariantKey,
 ): Promise<CharacterAssets> {
