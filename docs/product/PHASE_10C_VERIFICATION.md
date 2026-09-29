@@ -5,7 +5,18 @@ Date: 2026-09-29
 Branch: `phase-10c-time-context`  
 Base: `main@60fd03c`  
 Merge policy: manual only  
-Implementation checkpoint: `af86c0c`
+Implementation checkpoint: `2f91840`
+
+## Surface boundary
+
+Phase 10C Office-world work applies to **Office Workspace** at `/office`.
+
+The separate **Run Office View** at `/runs/:runId/office` continues to project
+canonical Run / AgentRun state and owns Live + Historical Replay.
+
+The replay-facing fix recorded later in this document is a shared-renderer
+regression fix for **Run Office View only**. It is not an Office Workspace
+behavior.
 
 ## Delivered scope
 
@@ -205,11 +216,11 @@ Hardening through `af5b87a` now provides:
 A follow-up local screenshot is still required because GitHub Actions currently
 cannot assign a runner and this pass materially changes rendered layout.
 
-## Replay character-facing fix
+## Run Office View — Historical Replay character-facing fix
 
-Rendered review clarified that the live/operational 3D Office movement was already
-correct. The backward-walking defect occurred specifically during Historical
-Replay.
+Rendered review clarified that **Run Office View Live** movement was already
+correct. The backward-walking defect occurred specifically during **Run Office
+View Historical Replay**. It was not a bug in the `/office` Office Workspace.
 
 The correction is intentionally mode-scoped:
 
