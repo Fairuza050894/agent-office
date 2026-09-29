@@ -8,8 +8,10 @@ Branch: `phase-10c-time-context`
 Phase 10C adds a deterministic office-world clock and realistic occupancy layer
 to the Living 3D Agent Office.
 
-The world layer explains **when** the office is open, quiet, in lunch/coffee
-mode, or in a late session. It does not create operational work.
+The world layer explains **when** the office is closed, opening, open, or winding
+down; whether the current rhythm is arrival, focus, lunch, coffee, wrap-up, or
+quiet; and which non-human scene cues belong to that time. It does not create
+operational work.
 
 Core rule:
 
@@ -95,6 +97,13 @@ weekend          20 minutes
 A stale planning record remains durable in Composer/Operations Dock but does not
 keep virtual people in the building indefinitely.
 
+Physical planning presence is also bounded by the building lifecycle. When the
+Office lifecycle is `CLOSED` (night quiet or weekend quiet), even a fresh
+planning record stays visible in Composer/Dock but is treated as remote/offsite
+and is not rendered as people physically remaining in the office. A future
+explicit overtime/scheduled-work contract may opt into physical after-hours
+presence deliberately; default planning does not.
+
 ## Occupancy truth
 
 Ambient occupancy is capped by the office mode.
@@ -142,6 +151,33 @@ minute boundary
 ```
 
 This keeps the clock alive without rebuilding the scene continuously.
+
+## Building lifecycle and scene cues
+
+Office modes resolve to an explicit building lifecycle:
+
+```text
+CLOSED     -> night quiet / weekend quiet
+OPENING    -> staggered morning arrival
+OPEN       -> core work / lunch / afternoon / coffee
+WIND_DOWN  -> wrap-up / evening / late evening
+```
+
+The context also emits a presentation-only scene cue. The selected 3D floor may
+use that cue to vary props without changing any Task, Run, AgentRun, planning
+artifact, or repository state.
+
+Examples currently implemented:
+
+- arrival -> reception/welcome setup and early coffee cups
+- lunch -> table trays in Commons
+- coffee -> coffee-bar cup cluster
+- core/afternoon -> active Build/Strategy visual cues
+- wrap-up -> light end-of-day desk cues
+- late/night -> restrained safety/accent lighting rather than populated overtime
+
+These are world ambience only. They must never be interpreted as evidence that
+a person or agent performed work.
 
 ## World HUD
 
