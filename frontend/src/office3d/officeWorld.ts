@@ -39,6 +39,7 @@ export interface OfficeWorldContext {
   occupancyExplanation: string
   dayKind: OfficeDayKind
   isOfficeOpen: boolean
+  allowsPhysicalPlanningPresence: boolean
   ambientOccupancyCap: number
   planningFreshMinutes: number
   clockLabel: string
@@ -455,6 +456,7 @@ export function officeWorldContext(
     occupancyExplanation: occupancyExplanation(mode, dayKind),
     dayKind,
     isOfficeOpen: mode.isOfficeOpen,
+    allowsPhysicalPlanningPresence: mode.isOfficeOpen,
     ambientOccupancyCap: mode.ambientOccupancyCap,
     planningFreshMinutes: mode.planningFreshMinutes,
     clockLabel: formatClock(local),
