@@ -92,17 +92,17 @@ describe('Agent Office operational shell', () => {
 
     await screen.findByRole('heading', { level: 1, name: 'Agent Office' })
     const sidebar = screen.getByRole('complementary', { name: 'Sidebar Navigation' })
-    const collapse = screen.getByRole('button', { name: 'Collapse Office navigation' })
+    const expand = screen.getByRole('button', { name: 'Expand Office navigation' })
 
-    expect(sidebar).not.toHaveClass('sidebar-collapsed')
-    fireEvent.click(collapse)
     expect(sidebar).toHaveClass('sidebar-collapsed')
+    fireEvent.click(expand)
+    expect(sidebar).not.toHaveClass('sidebar-collapsed')
     expect(
-      screen.getByRole('button', { name: 'Expand Office navigation' }),
+      screen.getByRole('button', { name: 'Collapse Office navigation' }),
     ).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Expand Office navigation' }))
-    expect(sidebar).not.toHaveClass('sidebar-collapsed')
+    fireEvent.click(screen.getByRole('button', { name: 'Collapse Office navigation' }))
+    expect(sidebar).toHaveClass('sidebar-collapsed')
   })
 
   it('renders the Phase 9A Office-first workspace shell', async () => {
