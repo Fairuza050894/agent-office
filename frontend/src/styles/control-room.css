@@ -3484,8 +3484,10 @@ button.office-scope-link {
 }
 
 .office-scene-context .office-scene-controls > .office-scene-control-panel {
-  right: 0;
-  left: auto;
+  right: auto;
+  left: 0;
+  box-sizing: border-box;
+  max-width: min(286px, calc(100vw - 48px));
 }
 
 .office-camera-preset-group {
@@ -3672,6 +3674,11 @@ button.office-scope-link {
 }
 
 @media (max-width: 560px) {
+  .office-scene-context .office-scene-controls > .office-scene-control-panel {
+    width: min(260px, calc(100vw - 32px)) !important;
+    max-width: calc(100vw - 32px);
+  }
+
   .office-camera-preset-group > div {
     grid-template-columns: 1fr;
   }
