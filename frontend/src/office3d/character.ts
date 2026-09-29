@@ -314,10 +314,17 @@ export function officeCharacterVariant(profileKey: string): CharacterVariantKey 
   return officeCharacterAppearance(profileKey).variant
 }
 
-export function officeMovementYaw(direction: THREE.Vector3): number {
-  // Current rigged office characters are visually forward along root -Z after
-  // their presentation offset. Align that visual forward axis with velocity.
-  return Math.atan2(-direction.x, -direction.z)
+export function officeMovementYaw(
+  direction: THREE.Vector3,
+  replay = false,
+): number {
+  const liveYaw = Math.atan2(direction.x, direction.z)
+
+  // Rendered verification shows the operational/live character orientation is
+  // already correct. Historical replay uses the inverse presentation facing
+  // during its entrance sequence, so isolate the 180° correction to replay
+  // rather than changing the verified live movement contract.
+  return replay ? liveYaw + Math.PI : liveYaw
 }
 
 function loadCharacterAssets(
