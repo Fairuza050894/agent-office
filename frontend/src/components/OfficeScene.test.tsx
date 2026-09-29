@@ -36,8 +36,10 @@ const member: OfficePresenceMember = {
   truth: 'AMBIENT',
 }
 
-describe('OfficeScene operational surface', () => {
-  it('labels Run Office View separately from the Office Workspace', () => {
+describe('OfficeScene operational scope', () => {
+  it('keeps the same floor language while projecting canonical Run truth', () => {
+    const onFloorChange = vi.fn()
+
     render(
       <OfficeScene
         stages={[]}
@@ -52,15 +54,23 @@ describe('OfficeScene operational surface', () => {
         replayRange={null}
         showRoster={false}
         presentation="operational"
+        floor="strategy"
+        onFloorChange={onFloorChange}
+        operationalFloorCounts={{ commons: 0, build: 3, strategy: 2 }}
       />,
     )
 
-    expect(screen.getByText('Run Office View')).toBeInTheDocument()
-    expect(screen.getByText('Canonical Run / AgentRun projection')).toBeInTheDocument()
-    expect(screen.queryByText('Office Workspace')).not.toBeInTheDocument()
+    expect(screen.getByText('Strategy')).toBeInTheDocument()
+    expect(screen.getByText('Historical Run / AgentRun replay')).toBeInTheDocument()
     expect(
-      screen.getByLabelText('Run Office View 3D projection'),
+      screen.getByLabelText('Agent Office operational 3D projection'),
     ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /L2.*Build/i }),
+    ).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /L2.*Build/i }))
+    expect(onFloorChange).toHaveBeenCalledWith('build')
   })
 })
 
