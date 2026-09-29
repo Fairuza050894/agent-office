@@ -228,7 +228,7 @@ export function ThreeOfficeScene({
 
   useEffect(() => {
     selectedAgentIdRef.current = selectedAgentId
-  }, [selectedAgentId, startLoop])
+  }, [selectedAgentId])
 
   const startLoop = useCallback(() => {
     const engine = engineRef.current
@@ -805,7 +805,7 @@ export function ThreeOfficeScene({
     }
 
     renderEngine(engine)
-  }, [selectedAgentId])
+  }, [selectedAgentId, startLoop])
 
   useEffect(() => {
     const engine = engineRef.current
