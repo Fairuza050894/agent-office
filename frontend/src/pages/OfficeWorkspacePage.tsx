@@ -80,7 +80,7 @@ async function loadPlanningSnapshot(thread: ComposerThread) {
 }
 
 export function OfficeWorkspacePage() {
-  const { currentSearch } = useRouter()
+  const { currentSearch, navigate } = useRouter()
   const requestedProjectId = useMemo(
     () => new URLSearchParams(currentSearch).get('project'),
     [currentSearch],
@@ -318,6 +318,16 @@ export function OfficeWorkspacePage() {
     null
 
   const resetPlanningView = (projectId: string) => {
+    const nextFloor = officeAmbientWindow(
+      new Date(),
+      [],
+      localTimezone(),
+    ).floor
+    navigate(
+      projectId
+        ? `/office?project=${projectId}&floor=${nextFloor}`
+        : `/office?floor=${nextFloor}`,
+    )
     setSelectedProjectId(projectId)
     setIsRestoringThread(Boolean(projectId))
     setPlanningThreads([])
@@ -329,9 +339,7 @@ export function OfficeWorkspacePage() {
     setPlanningRequirements([])
     setPlanningEvents([])
     setSelectedOfficeMemberId(null)
-    setSelectedFloor(
-      officeAmbientWindow(new Date(), [], localTimezone()).floor,
-    )
+    setSelectedFloor(nextFloor)
     setComposerError(null)
     setLatestProjectRun(null)
   }
@@ -606,6 +614,10 @@ export function OfficeWorkspacePage() {
   const changeOfficeFloor = (floor: OfficeFloorKey) => {
     setSelectedFloor(floor)
     setSelectedOfficeMemberId(null)
+    const params = new URLSearchParams()
+    if (selectedProjectId) params.set('project', selectedProjectId)
+    params.set('floor', floor)
+    navigate(`/office?${params.toString()}`)
   }
 
   const selectOfficeMember = (memberId: string) => {
