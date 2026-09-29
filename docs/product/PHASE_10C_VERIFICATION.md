@@ -228,6 +228,10 @@ requires Replay to remain exactly 180 degrees from the verified live heading.
 This remains presentation-only and does not alter Replay timing, factual events,
 AgentRun state, path generation, or station assignment.
 
+Rendered confirmation on 2026-09-29: **PASS**. The user verified that Historical
+Replay now walks forward rather than backward, while live/operational movement
+remains correct.
+
 ## Rendered acceptance required
 
 After pulling the branch locally, verify:
@@ -246,8 +250,8 @@ After pulling the branch locally, verify:
     Strategy shows remote/closed-office context rather than physical people;
 11. the polished command strip remains readable in normal and Maximize modes;
 12. floor-specific support props do not clip paths or character anchors;
-13. live/operational movement remains unchanged;
-14. Historical Replay characters no longer walk backward;
+13. live/operational movement remains unchanged — **PASS**;
+14. Historical Replay characters no longer walk backward — **PASS**;
 15. stopped characters still restore the existing station targetYaw.
 
 ## Automated commands to run when runner/local environment is available
