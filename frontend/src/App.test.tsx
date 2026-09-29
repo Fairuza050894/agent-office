@@ -105,8 +105,8 @@ describe('Agent Office operational shell', () => {
     expect(sidebar).toHaveClass('sidebar-collapsed')
   })
 
-  it('renders the Phase 9A Office-first workspace shell', async () => {
-    render(<App initialPath="/office" />)
+  it('renders the Agent Office workspace shell from a floor deep link', async () => {
+    render(<App initialPath="/office?floor=strategy" />)
 
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Agent Office' }),
@@ -122,7 +122,6 @@ describe('Agent Office operational shell', () => {
     expect(screen.getByRole('button', { name: /L2.*Build/i })).toBeInTheDocument()
     const strategyFloor = screen.getByRole('button', { name: /L3.*Strategy/i })
     expect(strategyFloor).toBeInTheDocument()
-    fireEvent.click(strategyFloor)
     expect(strategyFloor).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Start Run' })).toBeDisabled()

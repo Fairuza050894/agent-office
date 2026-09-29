@@ -109,6 +109,38 @@ describe('office navigation clearance', () => {
     expect(arrival.children.length).toBeGreaterThan(night.children.length)
   })
 
+  it('keeps each floor detail vocabulary isolated', () => {
+    const floors = ['commons', 'build', 'strategy'] as const
+
+    for (const floor of floors) {
+      const environment = new THREE.Group()
+      createOfficeEnvironment(environment, [], [], floor, 'CORE_WORK')
+
+      const detailGroups: string[] = []
+      environment.traverse((object) => {
+        if (object.name.startsWith('office-floor-details-')) {
+          detailGroups.push(object.name)
+        }
+      })
+
+      expect(detailGroups).toEqual([`office-floor-details-${floor}`])
+    }
+  })
+
+  it('renders exactly one shared lift core on every floor', () => {
+    for (const floor of ['commons', 'build', 'strategy'] as const) {
+      const environment = new THREE.Group()
+      createOfficeEnvironment(environment, [], [], floor, 'CORE_WORK')
+
+      const liftCores: THREE.Object3D[] = []
+      environment.traverse((object) => {
+        if (object.name === 'office-lift-core') liftCores.push(object)
+      })
+
+      expect(liftCores).toHaveLength(1)
+    }
+  })
+
   it('aligns specialist zones with their distinct floor spaces', () => {
     const qa = officeZonePlacement('qa-bench', 0).position
     const docs = officeZonePlacement('docs-desk', 0).position

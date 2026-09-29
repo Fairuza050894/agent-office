@@ -15,11 +15,12 @@ import { EmptyState } from '../components/EmptyState'
 import { AgentInspector } from '../components/office/AgentInspector'
 import { BottomOperationsDock } from '../components/office/BottomOperationsDock'
 import { OfficeCommandRail } from '../components/office/OfficeCommandRail'
-import { UniversalComposerShell } from '../components/office/UniversalComposerShell'
+import { AgentOfficeScopeSwitcher } from '../components/office/AgentOfficeScopeSwitcher'
 import { OfficeRendererBoundary } from '../components/OfficeRendererBoundary'
 import { OfficeScene } from '../components/OfficeScene'
 import {
   OFFICE_FLOORS,
+  officeFloorFromParam,
   officeRoleHomeLocation,
   type OfficeFloorKey,
 } from '../office3d/livingOffice'
@@ -32,6 +33,7 @@ import {
 import { officeLatestAgentEvent } from '../officeProjection'
 import { PageHeader } from '../components/PageHeader'
 import { Link } from '../router/Link'
+import { useRouter } from '../router/useRouter'
 
 export interface RunOfficePageProps {
   runId: string
@@ -40,6 +42,15 @@ export interface RunOfficePageProps {
 type LiveState = 'connected' | 'disconnected' | 'unsupported'
 
 export function RunOfficePage({ runId }: RunOfficePageProps) {
+  const { currentSearch, navigate } = useRouter()
+  const requestedReplay = useMemo(
+    () => new URLSearchParams(currentSearch).get('mode') === 'replay',
+    [currentSearch],
+  )
+  const requestedFloor = useMemo(
+    () => officeFloorFromParam(new URLSearchParams(currentSearch).get('floor')),
+    [currentSearch],
+  )
   const [run, setRun] = useState<Run | null>(null)
   const [project, setProject] = useState<Project | null>(null)
   const [stages, setStages] = useState<RunStage[]>([])
@@ -51,8 +62,12 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null)
   const [motionPaused, setMotionPaused] = useState(false)
   const [isMaximized, setIsMaximized] = useState(false)
-  const [officeMode, setOfficeMode] = useState<'live' | 'replay'>('live')
-  const [selectedFloor, setSelectedFloor] = useState<OfficeFloorKey>('build')
+  const [officeMode, setOfficeMode] = useState<'live' | 'replay'>(
+    requestedReplay ? 'replay' : 'live',
+  )
+  const [selectedFloor, setSelectedFloor] = useState<OfficeFloorKey>(
+    requestedFloor ?? 'build',
+  )
   const [replayNonce, setReplayNonce] = useState(0)
   const [replayStartedAt, setReplayStartedAt] = useState<number | null>(null)
   const [replayRangeSnapshot, setReplayRangeSnapshot] =
@@ -65,7 +80,7 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const initialFloorResolved = useRef(false)
+  const initialFloorResolved = useRef(Boolean(requestedFloor))
 
   const refreshProjection = useCallback(async () => {
     const [loadedRun, loadedStages, loadedAgents, loadedWorkspaces] =
@@ -142,6 +157,35 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
   useEffect(() => {
     void Promise.resolve().then(refreshAll)
   }, [refreshAll])
+
+  useEffect(() => {
+    if (!run) return
+
+    if (requestedReplay && officeMode !== 'replay') {
+      const range = officeReplayRange(agents, events)
+      setReplayRangeSnapshot(range)
+      setReplayStartedAt(performance.now())
+      setReplayElapsed(0)
+      setOfficeMode('replay')
+      setMotionPaused(false)
+      setReplayNonce((current) => current + 1)
+      return
+    }
+
+    if (!requestedReplay && officeMode === 'replay') {
+      setOfficeMode('live')
+      setReplayStartedAt(null)
+      setReplayRangeSnapshot(null)
+      setReplayElapsed(null)
+    }
+  }, [agents, events, officeMode, requestedReplay, run])
+
+  useEffect(() => {
+    if (!requestedFloor) return
+    setSelectedFloor(requestedFloor)
+    setSelectedAgentId(null)
+    initialFloorResolved.current = true
+  }, [requestedFloor])
 
   useEffect(() => {
     let active = true
@@ -384,58 +428,50 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
       <OfficeCommandRail
         title="Agent Office"
         projectName={project?.name ?? run.project_id}
-        modeLabel={officeMode === 'replay' ? 'Run · Replay' : 'Run · Live'}
+        modeLabel={officeMode === 'replay' ? 'Replay' : 'Live'}
         statusLabel={run.status}
         meta={`${agents.length} AgentRun${agents.length === 1 ? '' : 's'} · ${stages.length} stage${stages.length === 1 ? '' : 's'}`}
         actions={
           <>
-            <div className="office-scope-switcher" aria-label="Agent Office scope">
-              <Link
-                href={`/office?project=${project?.id ?? run.project_id}`}
-                className="office-scope-link"
-              >
-                Workspace
-              </Link>
-              <button
-                type="button"
-                className={`office-scope-link ${officeMode === 'live' ? 'active' : ''}`}
-                aria-pressed={officeMode === 'live'}
-                onClick={() => {
-                  setOfficeMode('live')
-                  setReplayStartedAt(null)
-                  setReplayRangeSnapshot(null)
-                  setReplayElapsed(null)
-                }}
-              >
-                Live Run
-              </button>
-              <button
-                type="button"
-                className={`office-scope-link ${officeMode === 'replay' ? 'active' : ''}`}
-                aria-pressed={officeMode === 'replay'}
-                onClick={() => {
-                  const range = officeReplayRange(agents, events)
-                  setReplayRangeSnapshot(range)
-                  setReplayStartedAt(performance.now())
-                  setReplayElapsed(0)
-                  setOfficeMode('replay')
-                  setMotionPaused(false)
-                  setReplayNonce((current) => current + 1)
-                }}
-              >
-                Replay
-              </button>
-            </div>
+            <AgentOfficeScopeSwitcher
+              projectId={project?.id ?? run.project_id}
+              runId={run.id}
+              activeScope={officeMode}
+              floor={selectedFloor}
+              onLive={() => {
+                setOfficeMode('live')
+                setReplayStartedAt(null)
+                setReplayRangeSnapshot(null)
+                setReplayElapsed(null)
+                navigate(
+                  `/runs/${run.id}/office?floor=${selectedFloor}`,
+                )
+              }}
+              onReplay={() => {
+                const range = officeReplayRange(agents, events)
+                setReplayRangeSnapshot(range)
+                setReplayStartedAt(performance.now())
+                setReplayElapsed(0)
+                setOfficeMode('replay')
+                setMotionPaused(false)
+                setReplayNonce((current) => current + 1)
+                navigate(
+                  `/runs/${run.id}/office?floor=${selectedFloor}&mode=replay`,
+                )
+              }}
+            />
             <span className="office-live-state" role="status">
               <span
                 className={`status-dot ${liveState === 'connected' ? 'connected' : 'disconnected'}`}
                 aria-hidden="true"
               />
-              {liveState === 'connected'
-                ? 'Events connected'
-                : liveState === 'unsupported'
-                  ? 'Manual refresh'
-                  : 'Events disconnected'}
+              {officeMode === 'replay'
+                ? 'Historical events'
+                : liveState === 'connected'
+                  ? 'Events connected'
+                  : liveState === 'unsupported'
+                    ? 'Manual refresh'
+                    : 'Events disconnected'}
             </span>
             <details className="office-action-menu">
               <summary>Run controls</summary>
@@ -501,6 +537,11 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
               initialFloorResolved.current = true
               setSelectedFloor(floor)
               setSelectedAgentId(null)
+              navigate(
+                officeMode === 'replay'
+                  ? `/runs/${run.id}/office?floor=${floor}&mode=replay`
+                  : `/runs/${run.id}/office?floor=${floor}`,
+              )
             }}
             operationalFloorCounts={operationalFloorCounts}
           />
@@ -519,28 +560,13 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
         )}
       </div>
 
-      <UniversalComposerShell
-        projects={project ? [project] : []}
-        selectedProjectId={project?.id ?? ''}
-        projectLocked
-        executors={executors}
-        selectedExecutorId={
-          run.resolved_executor_id ?? run.requested_executor_id ?? null
-        }
-        contextLabel={
-          project
-            ? `${project.repository.name} · Run #${run.id.slice(0, 8)}`
-            : `Run #${run.id.slice(0, 8)}`
-        }
-      />
-
       <BottomOperationsDock
         events={recentSignals}
         agents={agents}
         profiles={profiles}
         selectedAgentId={selectedAgentId}
         onSelectAgent={(agentId) => selectOperationalAgent(agentId)}
-        modeLabel={officeMode === 'replay' ? 'Historical replay' : 'Canonical state'}
+        modeLabel={officeMode === 'replay' ? 'Replay' : 'Live Run'}
         forceCollapsed={isMaximized}
       />
 

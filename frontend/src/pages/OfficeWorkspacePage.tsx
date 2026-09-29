@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import {
   api,
@@ -12,10 +12,12 @@ import {
   type PlanningEvent,
   type Project,
   type RequirementCandidate,
+  type Run,
   type TeamProposal,
 } from '../api'
 import { BottomOperationsDock } from '../components/office/BottomOperationsDock'
 import { OfficeCommandRail } from '../components/office/OfficeCommandRail'
+import { AgentOfficeScopeSwitcher } from '../components/office/AgentOfficeScopeSwitcher'
 import {
   UniversalComposerShell,
   type ComposerSubmitPayload,
@@ -26,6 +28,7 @@ import { useRouter } from '../router/useRouter'
 import {
   livingOfficeMembers,
   officeAmbientWindow,
+  officeFloorFromParam,
   officeBehaviorLabel,
   type OfficeFloorKey,
 } from '../office3d/livingOffice'
@@ -77,11 +80,16 @@ async function loadPlanningSnapshot(thread: ComposerThread) {
 }
 
 export function OfficeWorkspacePage() {
-  const { currentSearch } = useRouter()
+  const { currentSearch, navigate } = useRouter()
   const requestedProjectId = useMemo(
     () => new URLSearchParams(currentSearch).get('project'),
     [currentSearch],
   )
+  const requestedFloor = useMemo(
+    () => officeFloorFromParam(new URLSearchParams(currentSearch).get('floor')),
+    [currentSearch],
+  )
+  const requestedFloorRef = useRef<OfficeFloorKey | null>(requestedFloor)
   const [projects, setProjects] = useState<Project[]>([])
   const [executors, setExecutors] = useState<Executor[]>([])
   const [profiles, setProfiles] = useState<AgentProfile[]>([])
@@ -89,7 +97,9 @@ export function OfficeWorkspacePage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isMaximized, setIsMaximized] = useState(false)
   const [selectedFloor, setSelectedFloor] = useState<OfficeFloorKey>(
-    () => officeAmbientWindow(new Date(), [], localTimezone()).floor,
+    () =>
+      requestedFloor ??
+      officeAmbientWindow(new Date(), [], localTimezone()).floor,
   )
   const [officeNow, setOfficeNow] = useState(() => new Date())
   const [officeClockNow, setOfficeClockNow] = useState(() => new Date())
@@ -97,6 +107,7 @@ export function OfficeWorkspacePage() {
     string | null
   >(null)
   const [registryError, setRegistryError] = useState<string | null>(null)
+  const [latestProjectRun, setLatestProjectRun] = useState<Run | null>(null)
 
   const [planningThreads, setPlanningThreads] = useState<ComposerThread[]>([])
   const [activeThread, setActiveThread] = useState<ComposerThread | null>(null)
@@ -113,6 +124,10 @@ export function OfficeWorkspacePage() {
   const [planningDecisionBusy, setPlanningDecisionBusy] = useState(false)
   const [planningActionBusy, setPlanningActionBusy] = useState(false)
   const [composerError, setComposerError] = useState<string | null>(null)
+
+  useEffect(() => {
+    requestedFloorRef.current = requestedFloor
+  }, [requestedFloor])
 
   useEffect(() => {
     let lastMinute = Math.floor(Date.now() / 60_000)
@@ -181,6 +196,50 @@ export function OfficeWorkspacePage() {
     let active = true
 
     if (!selectedProjectId) {
+      setLatestProjectRun(null)
+      return () => {
+        active = false
+      }
+    }
+
+    const loadLatestRun = async () => {
+      try {
+        const tasks = await api.listTasks(selectedProjectId)
+        const runGroups = await Promise.all(
+          tasks.map((task) => api.listRuns(task.id)),
+        )
+        if (!active) return
+
+        const latest =
+          runGroups
+            .flat()
+            .slice()
+            .sort((left, right) =>
+              right.updated_at.localeCompare(left.updated_at),
+            )[0] ?? null
+        setLatestProjectRun(latest)
+      } catch {
+        if (active) setLatestProjectRun(null)
+      }
+    }
+
+    void loadLatestRun()
+
+    return () => {
+      active = false
+    }
+  }, [selectedProjectId])
+
+  useEffect(() => {
+    if (!requestedFloor) return
+    setSelectedFloor(requestedFloor)
+    setSelectedOfficeMemberId(null)
+  }, [requestedFloor])
+
+  useEffect(() => {
+    let active = true
+
+    if (!selectedProjectId) {
       return () => {
         active = false
       }
@@ -201,9 +260,11 @@ export function OfficeWorkspacePage() {
           setPlanningArtifacts([])
           setPlanningRequirements([])
           setPlanningEvents([])
-          setSelectedFloor(
-            officeAmbientWindow(new Date(), [], localTimezone()).floor,
-          )
+          if (!requestedFloorRef.current) {
+            setSelectedFloor(
+              officeAmbientWindow(new Date(), [], localTimezone()).floor,
+            )
+          }
           return
         }
 
@@ -217,7 +278,9 @@ export function OfficeWorkspacePage() {
         setPlanningArtifacts(snapshot.artifacts)
         setPlanningRequirements(snapshot.requirements)
         setPlanningEvents(snapshot.events)
-        setSelectedFloor(initialFloorForThread(latest, snapshot.team))
+        if (!requestedFloorRef.current) {
+          setSelectedFloor(initialFloorForThread(latest, snapshot.team))
+        }
       })
       .catch((reason) => {
         if (!active) return
@@ -261,6 +324,16 @@ export function OfficeWorkspacePage() {
     null
 
   const resetPlanningView = (projectId: string) => {
+    const nextFloor = officeAmbientWindow(
+      new Date(),
+      [],
+      localTimezone(),
+    ).floor
+    navigate(
+      projectId
+        ? `/office?project=${projectId}&floor=${nextFloor}`
+        : `/office?floor=${nextFloor}`,
+    )
     setSelectedProjectId(projectId)
     setIsRestoringThread(Boolean(projectId))
     setPlanningThreads([])
@@ -272,10 +345,9 @@ export function OfficeWorkspacePage() {
     setPlanningRequirements([])
     setPlanningEvents([])
     setSelectedOfficeMemberId(null)
-    setSelectedFloor(
-      officeAmbientWindow(new Date(), [], localTimezone()).floor,
-    )
+    setSelectedFloor(nextFloor)
     setComposerError(null)
+    setLatestProjectRun(null)
   }
 
   const openPlanningThread = async (threadId: string) => {
@@ -548,6 +620,10 @@ export function OfficeWorkspacePage() {
   const changeOfficeFloor = (floor: OfficeFloorKey) => {
     setSelectedFloor(floor)
     setSelectedOfficeMemberId(null)
+    const params = new URLSearchParams()
+    if (selectedProjectId) params.set('project', selectedProjectId)
+    params.set('floor', floor)
+    navigate(`/office?${params.toString()}`)
   }
 
   const selectOfficeMember = (memberId: string) => {
@@ -581,13 +657,29 @@ export function OfficeWorkspacePage() {
             : `${projects.length} Project${projects.length === 1 ? '' : 's'}`
         }
         actions={
-          <button
-            type="button"
-            className="btn btn-secondary btn-sm"
-            onClick={() => setIsMaximized((current) => !current)}
-          >
-            {isMaximized ? 'Exit maximize' : 'Maximize'}
-          </button>
+          <>
+            <AgentOfficeScopeSwitcher
+              projectId={selectedProject?.id ?? null}
+              runId={latestProjectRun?.id ?? null}
+              activeScope="workspace"
+              floor={selectedFloor}
+            />
+            {latestProjectRun && (
+              <span
+                className="office-command-meta"
+                title={`Latest Run ${latestProjectRun.id}`}
+              >
+                Run {latestProjectRun.id.slice(0, 8)} · {latestProjectRun.status}
+              </span>
+            )}
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => setIsMaximized((current) => !current)}
+            >
+              {isMaximized ? 'Exit maximize' : 'Maximize'}
+            </button>
+          </>
         }
       />
 
