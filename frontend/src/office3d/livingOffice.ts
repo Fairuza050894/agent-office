@@ -146,6 +146,27 @@ const ROLE_HOME_ZONE: Record<
   'technical-writer': { floor: 'build', zone: 'docs-desk' },
 }
 
+export function officeRoleHomeLocation(
+  roleKey: string,
+): { floor: OfficeFloorKey; zone: OfficeZoneKey } {
+  const known = ROLE_HOME_ZONE[
+    roleKey as (typeof LIVING_OFFICE_CORE_ROLES)[number]
+  ]
+  if (known) return known
+
+  const normalized = roleKey.toLowerCase()
+  if (
+    normalized.includes('architect') ||
+    normalized.includes('product') ||
+    normalized.includes('analyst') ||
+    normalized.includes('design')
+  ) {
+    return { floor: 'strategy', zone: 'architecture-wall' }
+  }
+
+  return { floor: 'build', zone: 'engineering-pod' }
+}
+
 const ROLE_AMBIENT_ZONES: Record<
   (typeof LIVING_OFFICE_CORE_ROLES)[number],
   {
