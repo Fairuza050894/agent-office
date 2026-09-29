@@ -28,6 +28,7 @@ import { useRouter } from '../router/useRouter'
 import {
   livingOfficeMembers,
   officeAmbientWindow,
+  officeFloorFromParam,
   officeBehaviorLabel,
   type OfficeFloorKey,
 } from '../office3d/livingOffice'
@@ -84,6 +85,10 @@ export function OfficeWorkspacePage() {
     () => new URLSearchParams(currentSearch).get('project'),
     [currentSearch],
   )
+  const requestedFloor = useMemo(
+    () => officeFloorFromParam(new URLSearchParams(currentSearch).get('floor')),
+    [currentSearch],
+  )
   const [projects, setProjects] = useState<Project[]>([])
   const [executors, setExecutors] = useState<Executor[]>([])
   const [profiles, setProfiles] = useState<AgentProfile[]>([])
@@ -91,7 +96,9 @@ export function OfficeWorkspacePage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isMaximized, setIsMaximized] = useState(false)
   const [selectedFloor, setSelectedFloor] = useState<OfficeFloorKey>(
-    () => officeAmbientWindow(new Date(), [], localTimezone()).floor,
+    () =>
+      requestedFloor ??
+      officeAmbientWindow(new Date(), [], localTimezone()).floor,
   )
   const [officeNow, setOfficeNow] = useState(() => new Date())
   const [officeClockNow, setOfficeClockNow] = useState(() => new Date())
@@ -216,7 +223,7 @@ export function OfficeWorkspacePage() {
     return () => {
       active = false
     }
-  }, [selectedProjectId])
+  }, [requestedFloor, selectedProjectId])
 
   useEffect(() => {
     let active = true
@@ -243,7 +250,8 @@ export function OfficeWorkspacePage() {
           setPlanningRequirements([])
           setPlanningEvents([])
           setSelectedFloor(
-            officeAmbientWindow(new Date(), [], localTimezone()).floor,
+            requestedFloor ??
+              officeAmbientWindow(new Date(), [], localTimezone()).floor,
           )
           return
         }
@@ -258,7 +266,9 @@ export function OfficeWorkspacePage() {
         setPlanningArtifacts(snapshot.artifacts)
         setPlanningRequirements(snapshot.requirements)
         setPlanningEvents(snapshot.events)
-        setSelectedFloor(initialFloorForThread(latest, snapshot.team))
+        setSelectedFloor(
+          requestedFloor ?? initialFloorForThread(latest, snapshot.team),
+        )
       })
       .catch((reason) => {
         if (!active) return
@@ -628,6 +638,7 @@ export function OfficeWorkspacePage() {
               projectId={selectedProject?.id ?? null}
               runId={latestProjectRun?.id ?? null}
               activeScope="workspace"
+              floor={selectedFloor}
             />
             {latestProjectRun && (
               <span
