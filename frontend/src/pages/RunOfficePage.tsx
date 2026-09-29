@@ -20,6 +20,7 @@ import { OfficeRendererBoundary } from '../components/OfficeRendererBoundary'
 import { OfficeScene } from '../components/OfficeScene'
 import {
   OFFICE_FLOORS,
+  officeFloorFromParam,
   officeRoleHomeLocation,
   type OfficeFloorKey,
 } from '../office3d/livingOffice'
@@ -46,6 +47,10 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
     () => new URLSearchParams(currentSearch).get('mode') === 'replay',
     [currentSearch],
   )
+  const requestedFloor = useMemo(
+    () => officeFloorFromParam(new URLSearchParams(currentSearch).get('floor')),
+    [currentSearch],
+  )
   const [run, setRun] = useState<Run | null>(null)
   const [project, setProject] = useState<Project | null>(null)
   const [stages, setStages] = useState<RunStage[]>([])
@@ -60,7 +65,9 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
   const [officeMode, setOfficeMode] = useState<'live' | 'replay'>(
     requestedReplay ? 'replay' : 'live',
   )
-  const [selectedFloor, setSelectedFloor] = useState<OfficeFloorKey>('build')
+  const [selectedFloor, setSelectedFloor] = useState<OfficeFloorKey>(
+    requestedFloor ?? 'build',
+  )
   const [replayNonce, setReplayNonce] = useState(0)
   const [replayStartedAt, setReplayStartedAt] = useState<number | null>(null)
   const [replayRangeSnapshot, setReplayRangeSnapshot] =
@@ -73,7 +80,7 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const initialFloorResolved = useRef(false)
+  const initialFloorResolved = useRef(Boolean(requestedFloor))
 
   const refreshProjection = useCallback(async () => {
     const [loadedRun, loadedStages, loadedAgents, loadedWorkspaces] =
@@ -173,6 +180,12 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
     }
   }, [agents, events, officeMode, requestedReplay, run])
 
+  useEffect(() => {
+    if (!requestedFloor) return
+    setSelectedFloor(requestedFloor)
+    setSelectedAgentId(null)
+    initialFloorResolved.current = true
+  }, [requestedFloor])
 
   useEffect(() => {
     let active = true
@@ -424,12 +437,15 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
               projectId={project?.id ?? run.project_id}
               runId={run.id}
               activeScope={officeMode}
+              floor={selectedFloor}
               onLive={() => {
                 setOfficeMode('live')
                 setReplayStartedAt(null)
                 setReplayRangeSnapshot(null)
                 setReplayElapsed(null)
-                navigate(`/runs/${run.id}/office`)
+                navigate(
+                  `/runs/${run.id}/office?floor=${selectedFloor}`,
+                )
               }}
               onReplay={() => {
                 const range = officeReplayRange(agents, events)
@@ -439,7 +455,9 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
                 setOfficeMode('replay')
                 setMotionPaused(false)
                 setReplayNonce((current) => current + 1)
-                navigate(`/runs/${run.id}/office?mode=replay`)
+                navigate(
+                  `/runs/${run.id}/office?floor=${selectedFloor}&mode=replay`,
+                )
               }}
             />
             <span className="office-live-state" role="status">
