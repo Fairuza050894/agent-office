@@ -139,14 +139,52 @@ describe('OfficeScene workspace presence', () => {
     expect(hud).toHaveTextContent('00:44:00')
     expect(hud).toHaveTextContent('Night quiet')
     expect(hud).toHaveTextContent('Closed')
-    expect(hud).toHaveTextContent('0 ambient cap')
-    expect(hud).toHaveTextContent('0')
+    expect(hud).toHaveTextContent('0 in office')
+    expect(hud).toHaveTextContent('Ambient cap 0')
     expect(hud).toHaveTextContent('Morning arrival')
     expect(hud).toHaveTextContent('07:00')
     expect(screen.getByRole('button', { name: 'Mock 3D member' })).toHaveAttribute(
       'data-office-mode',
       'NIGHT_QUIET',
     )
+  })
+
+  it('keeps workspace context, controls, and world status hierarchically separate', () => {
+    render(
+      <OfficeScene
+        stages={[]}
+        agents={[]}
+        profiles={[]}
+        selectedAgentId={null}
+        onSelectAgent={vi.fn()}
+        motionPaused={false}
+        mode="live"
+        replayNonce={0}
+        replayStartedAt={null}
+        replayRange={null}
+        showRoster={false}
+        presentation="workspace"
+        floor="build"
+        workspaceMembers={[]}
+        onFloorChange={vi.fn()}
+        presenceLabel="Quiet floor · no presence"
+        officeHour={9}
+        worldContext={officeWorldContext(
+          new Date('2026-09-29T02:20:00Z'),
+          'Asia/Jakarta',
+        )}
+        totalPresence={0}
+      />,
+    )
+
+    expect(screen.getByText('Office Workspace')).toBeInTheDocument()
+    expect(
+      screen.getByText('Live office view · No active run selected'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Controls')).toBeInTheDocument()
+    expect(screen.queryByText(/drag to orbit/i)).not.toBeInTheDocument()
+    expect(screen.getByText('Build')).toBeInTheDocument()
+    expect(screen.getByText('Quiet')).toBeInTheDocument()
   })
 
   it('shows truthful per-floor presence counts', () => {
