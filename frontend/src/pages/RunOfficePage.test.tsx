@@ -204,7 +204,7 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('Phase 9A Office Workspace', () => {
+describe('Agent Office operational scopes', () => {
   it('maps every required AgentRun state explicitly', () => {
     expect(officeAgentState('PENDING')).toEqual({ key: 'pending', label: 'Waiting to start' })
     expect(officeAgentState('STARTING')).toEqual({ key: 'starting', label: 'Starting' })
