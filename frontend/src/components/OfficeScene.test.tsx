@@ -8,12 +8,15 @@ import { OfficeScene } from './OfficeScene'
 vi.mock('./ThreeOfficeScene', () => ({
   ThreeOfficeScene: ({
     onSelectAgent,
+    officeMode,
   }: {
     onSelectAgent: (agentId: string) => void
+    officeMode?: string | null
   }) => (
     <button
       type="button"
       aria-label="Mock 3D member"
+      data-office-mode={officeMode ?? ''}
       onClick={() => onSelectAgent('ambient:backend-engineer')}
     >
       member
@@ -135,9 +138,15 @@ describe('OfficeScene workspace presence', () => {
     const hud = screen.getByLabelText('Office world status')
     expect(hud).toHaveTextContent('00:44:00')
     expect(hud).toHaveTextContent('Night quiet')
+    expect(hud).toHaveTextContent('Closed')
+    expect(hud).toHaveTextContent('0 ambient cap')
     expect(hud).toHaveTextContent('0')
     expect(hud).toHaveTextContent('Morning arrival')
     expect(hud).toHaveTextContent('07:00')
+    expect(screen.getByRole('button', { name: 'Mock 3D member' })).toHaveAttribute(
+      'data-office-mode',
+      'NIGHT_QUIET',
+    )
   })
 
   it('shows truthful per-floor presence counts', () => {
