@@ -185,8 +185,8 @@ Pending local visual review of:
 - Commons/Build/Strategy support-prop differentiation
 - Composer and Operations Dock compatibility
 - furniture/path clipping
-- live movement remains unchanged
-- Replay travel direction vs visual facing
+- live movement remains unchanged — rendered PASS
+- Replay travel direction vs visual facing — rendered PASS
 
 ## Design and verification records
 
