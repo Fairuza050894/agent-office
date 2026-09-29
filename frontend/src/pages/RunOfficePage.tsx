@@ -270,11 +270,11 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
     return (
       <div className="page-view office-view">
         <PageHeader
-          title="Office View"
+          title="Run Office View"
           description="Loading the factual Run projection."
         />
         <div className="status-feedback" role="status">
-          <span className="status-spinner" /> Loading Office View...
+          <span className="status-spinner" /> Loading Run Office View...
         </div>
       </div>
     )
@@ -284,7 +284,7 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
     return (
       <div className="page-view office-view">
         <PageHeader
-          title="Office View unavailable"
+          title="Run Office View unavailable"
           description="The visual projection could not load canonical Run state."
           action={
             <Link href={`/runs/${runId}`} className="btn btn-secondary">
@@ -293,7 +293,7 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
           }
         />
         <EmptyState
-          title="Office View could not load."
+          title="Run Office View could not load."
           message={error ?? 'Run state is unavailable.'}
           detail="Workflow execution and operational views remain independent from the Office renderer."
         />
@@ -323,9 +323,9 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
       className={`page-view office-view office-workspace ${isMaximized ? 'office-maximized' : ''}`}
     >
       <OfficeCommandRail
-        title="Office View"
+        title="Run Office View"
         projectName={project?.name ?? run.project_id}
-        modeLabel={officeMode === 'replay' ? 'Historical replay' : 'Operational'}
+        modeLabel={officeMode === 'replay' ? 'Historical replay' : 'Live run'}
         statusLabel={run.status}
         meta={`${agents.length} AgentRun${agents.length === 1 ? '' : 's'} · ${stages.length} stage${stages.length === 1 ? '' : 's'}`}
         actions={
@@ -463,9 +463,9 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
       />
 
       <p className="office-workspace-note">
-        Office View remains a projection. Cancellation, Findings, Evidence,
-        executor selection, approvals, and canonical execution state remain
-        available in the operational Run view.
+        Run Office View is a visual projection of this Run. Cancellation,
+        Findings, Evidence, executor selection, approvals, and canonical
+        execution state remain authoritative in Run detail and operational data.
       </p>
     </div>
   )
