@@ -42,15 +42,6 @@ function profileName(
   return profiles.get(agent.agent_profile_key)?.name ?? agent.agent_profile_key
 }
 
-function concisePresenceLabel(label: string | null): string {
-  if (!label) return 'Quiet'
-  if (label === 'Quiet floor · no presence') return 'Quiet'
-  if (label === 'Available · ambient') return 'Ambient'
-  if (label === 'Planning presence') return 'Planning'
-  if (label === 'Waiting for you presence') return 'Waiting for you'
-  return label.replace(' floor', '').replace(' presence', '')
-}
-
 function nextEventCountdown(minutes: number): string {
   const safeMinutes = Math.max(0, Math.round(minutes))
   if (safeMinutes < 60) return `in ${safeMinutes}m`
@@ -86,7 +77,6 @@ export function OfficeScene({
   floor = 'build',
   workspaceMembers = [],
   onFloorChange,
-  presenceLabel = null,
   officeHour,
   worldContext = null,
   totalPresence = 0,
