@@ -5,16 +5,16 @@
 Current base:
 
 ```text
-main@60fd03c
-Phase 10B PR #12 merged
+main@a0dea88
+Phase 10C PR #13 merged
 ```
 
 Current work:
 
 ```text
-branch: phase-10c-time-context
-checkpoint: 2f91840
-phase: Phase 10C — Office World Time Context & Realistic Occupancy
+branch: phase-10d-unified-agent-office
+checkpoint: b17dbde
+phase: Phase 10D — Unified Agent Office Experience
 ```
 
 ## Status
@@ -30,203 +30,213 @@ phase: Phase 10C — Office World Time Context & Realistic Occupancy
 - Phase 10 Living 3D Agent Office
   - Phase 10A CLOSED / MERGED
   - Phase 10B CLOSED / MERGED
-  - Phase 10C IMPLEMENTED — automated runner hold; rendered review pending
+  - Phase 10C CLOSED / MERGED
+  - Phase 10D IMPLEMENTED — automated runner hold; rendered review pending
 
-## 3D surface boundary
+## One Agent Office model
+
+Agent Office is one experience with three truth scopes:
+
+```text
+WORKSPACE
+  planning + ambient Office world
+
+LIVE
+  canonical Run / AgentRun projection
+
+REPLAY
+  historical canonical Run / AgentRun / Event projection
+```
+
+Routes remain compatible deep-link entry points:
 
 ```text
 /office
-  Office Workspace
-  planning + ambient + office-world simulation
-
 /runs/:runId/office
-  Run Office View
-  canonical Run / AgentRun + Live + Historical Replay
+/runs/:runId/office?mode=replay
 ```
 
-The two surfaces reuse renderer code but do not share the same truth source.
-Historical Replay belongs to Run Office View only.
+They are not separate products.
 
-Phase 10C remains presentation-only. It may affect clock, lighting, occupancy,
-ambient presence, floor selection, and visual environment, but it may not create
-or mutate operational execution truth.
+Shared presentation infrastructure includes:
 
-## Phase 10C implemented scope
+- L1 Commons / L2 Build / L3 Strategy
+- Three.js environment and character runtime
+- camera language
+- Agent Office command rail
+- Operations Dock
+- shared lift core
+- floor identity and presentation vocabulary
 
-- explicit Office-world clock
-- project/thread timezone -> browser timezone -> UTC fallback
-- localized timezone badge
-- live HH:MM:SS clock
-- weekday/weekend schedule evaluation in Office timezone
-- Office mode status
-- next Office event + countdown
-- truthful L1/L2/L3 occupancy badges
-- realistic time-based ambient occupancy caps
-- zero ambient occupancy after 22:00
-- zero default weekend ambience
-- planning-presence freshness windows
-- stale durable planning records no longer keep virtual people physically present
-- CLOSED office suppresses even fresh planning as physical presence; planning remains remote/durable
-- explicit building lifecycle: Closed / Opening up / Open / Winding down
-- mode-driven dynamic floor props and scene cues
-- 1-second HUD clock with minute-level presence recalculation
-- lighting synchronized to Office timezone
-- polished Office scene command strip
-  - workspace context separated from controls
-  - clock / mode / presence / next-event hierarchy
-  - concise active-floor summary
-  - responsive and Maximize-safe layout
-- richer Commons floor:
-  - reception
-  - community wall
-  - collaboration hub
-  - pantry / coffee
-  - lounge
-  - quiet room
-  - game corner
-  - parcel/personal lockers
-  - snack/hydration storage
-- richer Build floor:
-  - engineering pod
-  - dedicated QA lab
-  - pairing island
-  - documentation nook
-  - ops/server rack
-  - review wall
-  - sprint board
-  - charging/utility station
-- richer Strategy floor:
-  - planning table
-  - meeting room
-  - roadmap wall
-  - decision pods
-  - architecture/review area
-  - breakout area
-  - reference library
-  - presentation sideboard
-  - floor lamp
-- floor-specific shell accents for Commons / Build / Strategy
-- replay-only 180° character-facing correction while preserving verified live movement and station yaw
-- specialist zone anchors aligned to the richer environment
-- world occupancy cap enforced across baseline modes
-- scheduled events reserve capacity before baseline ambience
-- all zone capacities locked to actual 3D placement slots
-- threadless/new-thread workspace resets to the correct ambient floor
+Truth sources remain strictly separated.
 
-## Time / truth boundary
+## Phase 10D implemented scope
 
-Office mode is schedule context, not execution.
+### Experience continuity
 
-Examples:
+- unified scope rail: Workspace / Live / Replay
+- selected floor survives scope transitions through route state
+- selected Project survives Workspace refresh through route state
+- explicit floor deep links remain authoritative over async planning restore
+- Live / Replay URL and visual scope stay synchronized
+- latest Project Run is directly reachable from Workspace
+- one shared lift core occupies the same location on every floor
+
+### UX simplification
+
+Primary navigation:
 
 ```text
-Night quiet != planning data disappears
-Planning remains durable, but physical Office presence is suppressed while CLOSED.
-
-Late office != factual overtime
-No Run/AgentRun means no execution claim.
-
-Weekend quiet != planning history deleted
-Durable planning remains available in Composer/Dock.
+Office
+Projects
+Runs
 ```
 
-Ambient occupancy:
+Specialist Engineering / Observability / Control surfaces remain available under
+`More tools`.
+
+Operational Live / Replay no longer render an inert Universal Composer.
+
+Planning remains in Workspace.
+
+Run secondary actions are consolidated under a compact Run controls menu.
+
+The duplicate wall clock was removed from the top command rail. Workspace keeps
+the Office-world clock as the authoritative temporal context.
+
+### Building identity
+
+Commons:
+
+- reception / arrival
+- pantry and coffee
+- lounge / collaboration
+- quiet room
+- game area
+- parcel / personal lockers
+- snack / hydration utility
+- acoustic phone / focus pods
+
+Build:
+
+- engineering pod
+- QA lab
+- pairing island
+- documentation nook
+- review wall
+- ops/server rack
+- sprint board
+- charging utility
+- print / artifact station
+- standing incident huddle point
+
+Strategy:
+
+- planning table
+- meeting room
+- roadmap wall
+- architecture / review
+- decision pods
+- breakout area
+- reference library
+- presentation sideboard
+- floor lamp
+- prototype / decision plinths
+
+Each floor has one semantic floor-detail group and one shared lift core.
+
+## Bugs closed in Phase 10D
+
+1. duplicate lift geometry could be rendered twice on each floor
+2. Workspace Project selection could leave stale URL state
+3. selected floor could be lost when switching Workspace / Live / Replay
+4. async planning restore could override an explicit floor deep link
+5. Run scope carried an inert disabled Composer
+6. unavailable scopes looked interactive
+7. Replay connection copy could imply live EventSource activity
+8. floor changes could unnecessarily trigger unrelated data work
+
+Replay movement-facing fix from Phase 10C remains rendered PASS.
+
+## Truth boundary
 
 ```text
-00:00–07:00  0
-07:00–09:00  up to 9
-09:00–12:00  up to 9
-12:00–13:00  up to 9
-13:00–15:00  up to 9
-15:00–16:00  up to 9
-16:00–18:00  up to 7
-18:00–20:00  up to 2
-20:00–22:00  up to 1
-22:00–24:00  0
-weekend       0 by default
+Workspace presence != execution
+Animation != Evidence
+Live / Replay require canonical Run truth
+Ambient personas never become AgentRuns
+Replay changes playback presentation, not historical truth
 ```
-
-Scheduled-event providers remain the explicit exception path and are still
-capacity-bounded.
 
 ## Automated verification state
 
-GitHub Actions currently cannot assign a runner to this branch.
+GitHub Actions still cannot assign a runner on the Phase 10D branch.
 
-Observed repeatedly:
+Latest confirmed shape:
 
 ```text
-runner_id: 0
-runner_name: ""
-steps: []
-frontend/backend/repository jobs terminate within seconds
-latest confirmed: run 36464809996 on d8f3f53
+frontend/backend/repository
+runner: none
+steps: null
+jobs terminate before verification executes
 ```
 
-This is an infrastructure/runner availability failure, not a test assertion.
+This is not an assertion result.
 
-Do not claim automated green until a run receives an actual runner and executes
-the verification steps.
+Do not claim automated green until a runner actually executes:
 
-The code adds regression tests for:
+- backend pytest
+- Ruff
+- Ruff format
+- MyPy
+- frontend Vitest
+- typecheck
+- lint
+- production build
+- repository whitespace checks
 
-- explicit timezone clock/mode
-- same instant across different timezones
-- evening -> late -> night occupancy reduction
-- weekend quiet
-- planning freshness by Office time
-- invalid timezone fallback
-- explicit timezone occupancy
-- Office-world HUD
-- richer specialist-zone placement
+An independent sandbox clone was attempted but the execution sandbox cannot
+resolve github.com, so local verification is not available from this environment.
 
-## Phase 10C rendered gate
+## Phase 10D rendered gate
 
-Pending local visual review of:
+Pending local verification:
 
-- clock / timezone correctness
-- Office mode correctness
-- next-event correctness
-- midnight/night occupancy
-- stale vs recent planning persistence
-- closed-office remote planning label
-- building lifecycle label
-- dynamic scene cues by Office mode
-- timezone-synchronized lighting
-- L1/L2/L3 visual differentiation
-- QA / docs / roadmap / decision areas
-- polished command-strip hierarchy and copy
-- normal + Maximize command-strip layout
-- Commons/Build/Strategy support-prop differentiation
-- Composer and Operations Dock compatibility
-- furniture/path clipping
-- Run Office View Live movement remains unchanged — rendered PASS
-- Run Office View Historical Replay travel direction vs visual facing — rendered PASS
+- Workspace -> Live -> Replay feels like one persistent Agent Office
+- selected floor survives every scope transition
+- Project context survives return to Workspace
+- Live / Replay contain no inert Composer
+- exactly one lift appears on every floor
+- lift stays in the same physical location on L1/L2/L3
+- new micro-zones do not obstruct movement
+- Commons / Build / Strategy are immediately distinguishable
+- unavailable scopes read as disabled
+- Live movement remains correct
+- Replay movement remains correct
+- inspector and Operations Dock remain usable
+- normal / collapsed-navigation / Maximize layouts remain clean
+- no ambient state leaks into canonical Live or Replay truth
 
 ## Design and verification records
 
 ```text
+docs/architecture/UNIFIED_AGENT_OFFICE.md
+docs/product/PHASE_10D_VERIFICATION.md
 docs/product/LIVING_3D_AGENT_OFFICE_PRD.md
 docs/architecture/LIVING_OFFICE_TECHNICAL_DESIGN.md
 docs/architecture/OFFICE_WORLD_SIMULATION.md
-docs/product/PHASE_10A_VERIFICATION.md
-docs/product/PHASE_10B_VERIFICATION.md
-docs/product/PHASE_10C_VERIFICATION.md
 ```
 
 ## Deferred intentionally
 
-Not implemented in Phase 10C:
-
-- persistent Office settings in backend/database
-- production prayer-time provider
-- calendar integration
-- compatible real seated / typing / talking animation pipeline
-- factual operational Activity Interpreter
+- actual elevator ride / cross-floor character animation
+- persisted camera pose across browser sessions
+- validated seated / typing / talking animation retargeting pipeline
 - rooftop floor
-- weather-aware ambience
-- user-configurable ambience density
-- role-scoped persistent memory / Phase 9D runtime work
+- production prayer-time/calendar providers
+- factual operational Activity Interpreter
+- Phase 9D role-scoped memory
+- Phase 9E planning-to-execution promotion
 
-Keep the Phase 10C pull request Draft while automated verification is blocked
-and rendered review is pending. Merge remains manual only.
+Keep Phase 10D Draft while automated verification is blocked and rendered
+review is pending. Merge remains manual only.
