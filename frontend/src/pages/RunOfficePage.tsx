@@ -437,31 +437,39 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
                   ? 'Manual refresh'
                   : 'Events disconnected'}
             </span>
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              aria-pressed={motionPaused}
-              disabled={officeMode === 'replay'}
-              title={
-                officeMode === 'replay'
-                  ? 'Historical replay uses one shared playback clock.'
-                  : undefined
-              }
-              onClick={() => setMotionPaused((current) => !current)}
-            >
-              {motionPaused ? 'Resume motion' : 'Pause motion'}
-            </button>
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              disabled={isRefreshing}
-              onClick={() => void refreshAll()}
-            >
-              {isRefreshing ? 'Refreshing…' : 'Refresh'}
-            </button>
-            <Link href={`/runs/${run.id}`} className="btn btn-secondary btn-sm">
-              Run details
-            </Link>
+            <details className="office-action-menu">
+              <summary>Run controls</summary>
+              <div>
+                <button
+                  type="button"
+                  className="office-action-menu-item"
+                  aria-pressed={motionPaused}
+                  disabled={officeMode === 'replay'}
+                  title={
+                    officeMode === 'replay'
+                      ? 'Historical replay uses one shared playback clock.'
+                      : undefined
+                  }
+                  onClick={() => setMotionPaused((current) => !current)}
+                >
+                  {motionPaused ? 'Resume motion' : 'Pause motion'}
+                </button>
+                <button
+                  type="button"
+                  className="office-action-menu-item"
+                  disabled={isRefreshing}
+                  onClick={() => void refreshAll()}
+                >
+                  {isRefreshing ? 'Refreshing…' : 'Refresh data'}
+                </button>
+                <Link
+                  href={`/runs/${run.id}`}
+                  className="office-action-menu-item"
+                >
+                  Open Run details
+                </Link>
+              </div>
+            </details>
             <button
               type="button"
               className="btn btn-secondary btn-sm"
