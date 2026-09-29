@@ -5,7 +5,7 @@ Date: 2026-09-29
 Branch: `phase-10c-time-context`  
 Base: `main@60fd03c`  
 Merge policy: manual only  
-Implementation checkpoint: `2322f1b`
+Implementation checkpoint: `af5b87a`
 
 ## Delivered scope
 
@@ -127,7 +127,7 @@ Before the rendered gate, additional source review closed these issues:
 - decision-room anchors are placed in front of decision tables instead of inside them;
 - L1/L2/L3 floor buttons expose truthful live presence counts.
 
-The original occupancy-hardening checkpoint was `d8f3f53`. Lifecycle and closed-office planning semantics landed at `9884d07`. The current implementation checkpoint is `2322f1b`, which adds rendered-review UI polish, richer per-floor support props, and maximize-safe scene command-strip layout.
+The original occupancy-hardening checkpoint was `d8f3f53`. Lifecycle and closed-office planning semantics landed at `9884d07`. The current implementation checkpoint is `af5b87a`, which adds rendered-review UI polish, richer per-floor support props, maximize-safe scene command-strip layout, and floor-specific shell accents.
 
 ## Office-world lifecycle hardening
 
@@ -180,7 +180,7 @@ Observed issues:
 - the old Maximize CSS still constrained the scene heading to 28px, which would
   clip the richer HUD.
 
-Hardening at `2322f1b` now provides:
+Hardening through `af5b87a` now provides:
 
 - a three-zone scene command strip:
   - workspace context
@@ -198,6 +198,8 @@ Hardening at `2322f1b` now provides:
 - Commons-specific parcel lockers and snack/hydration storage;
 - Build-specific sprint board and charging/utility station;
 - Strategy-specific reference library, presentation sideboard, and floor lamp;
+- distinct Commons / Build / Strategy shell accent palettes while preserving one
+  coherent office-building visual language;
 - the existing time-driven scene cues remain separate from canonical truth.
 
 A follow-up local screenshot is still required because GitHub Actions currently
