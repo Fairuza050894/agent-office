@@ -25,10 +25,11 @@ import {
   stageCenter,
   waitingPosition,
 } from '../office3d/environment'
-import type {
-  OfficeFloorKey,
-  OfficePresenceMember,
-  OfficeZoneKey,
+import {
+  officeRoleHomeLocation,
+  type OfficeFloorKey,
+  type OfficePresenceMember,
+  type OfficeZoneKey,
 } from '../office3d/livingOffice'
 import { officeLightingForHour } from '../office3d/lighting'
 import type { OfficeModeKey } from '../office3d/officeWorld'
@@ -582,15 +583,22 @@ export function ThreeOfficeScene({
       (member) => member.floor === floor,
     )
     const sceneMembers: SceneMember[] = [
-      ...agents.map((agent) => ({
-        id: agent.id,
-        agent_profile_key: agent.agent_profile_key,
-        name:
-          profileByKey.get(agent.agent_profile_key)?.name ??
-          agent.agent_profile_key,
-        status: agent.status,
-        stageKey: agent.stage_key,
-      })),
+      ...agents.map((agent) => {
+        const home = officeRoleHomeLocation(agent.agent_profile_key)
+        return {
+          id: agent.id,
+          agent_profile_key: agent.agent_profile_key,
+          name:
+            profileByKey.get(agent.agent_profile_key)?.name ??
+            agent.agent_profile_key,
+          status: agent.status,
+          stageKey: agent.stage_key,
+          zone:
+            floor !== 'build' && home.floor === floor
+              ? home.zone
+              : undefined,
+        }
+      }),
       ...visibleWorkspaceMembers.map((member) => ({
         id: member.id,
         agent_profile_key: member.agent_profile_key,
