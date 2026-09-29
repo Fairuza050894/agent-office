@@ -1435,7 +1435,6 @@ export function createOfficeEnvironment(
 ): Map<string, StationPlacement> {
   clearGroup(environment)
   createOfficeShell(environment, floor)
-  createLiftCore(environment, floor)
 
   if (floor === 'commons') createCommonsFloor(environment, officeMode)
   else if (floor === 'strategy') createStrategyFloor(environment, officeMode)
