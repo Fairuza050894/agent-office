@@ -285,3 +285,22 @@ git diff --check
 ```
 
 Do not mark this phase Ready for Review until those checks execute successfully.
+
+
+## Workspace floor-navigation containment hardening
+
+The baseline floor-label containment fix is already present on `main` via PR #15.
+This follow-up adds a narrower Workspace-only boundary without changing Run Office
+View semantics:
+
+- `/office` uses `office-floor-switcher-workspace`;
+- each Workspace chip owns its floor code, floor name, and presence count;
+- the operational/Run switcher deliberately does not receive the Workspace class;
+- Reset view remains separate and aligned;
+- normal, Maximize, and narrow layouts stay contained.
+
+Regression coverage verifies the DOM containment itself rather than only counting
+visible labels. This remains presentation-only and does not change Run, AgentRun,
+Replay, planning, occupancy, or Office-world truth.
+
+PR #16 remains Draft until rendered and automated gates pass.

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { OfficePresenceMember } from '../office3d/livingOffice'
@@ -65,11 +65,13 @@ describe('OfficeScene operational scope', () => {
     expect(
       screen.getByLabelText('Agent Office operational 3D projection'),
     ).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: /L2.*Build/i }),
-    ).toBeInTheDocument()
+    const buildFloor = screen.getByRole('button', { name: /L2.*Build/i })
+    expect(buildFloor).toBeInTheDocument()
+    expect(buildFloor.closest('.office-floor-switcher')).not.toHaveClass(
+      'office-floor-switcher-workspace',
+    )
 
-    fireEvent.click(screen.getByRole('button', { name: /L2.*Build/i }))
+    fireEvent.click(buildFloor)
     expect(onFloorChange).toHaveBeenCalledWith('build')
   })
 })
@@ -250,6 +252,30 @@ describe('OfficeScene workspace presence', () => {
         officeHour={20}
       />,
     )
+
+    const switcher = screen.getByRole('group', { name: 'Office floor' })
+    expect(switcher).toHaveClass('office-floor-switcher-workspace')
+    expect(within(switcher).getAllByRole('button')).toHaveLength(3)
+
+    for (const [shortLabel, label] of [
+      ['L1', 'Commons'],
+      ['L2', 'Build'],
+      ['L3', 'Strategy'],
+    ] as const) {
+      const chip = within(switcher).getByRole('button', {
+        name: new RegExp(`${shortLabel}.*${label}`, 'i'),
+      })
+
+      expect(within(chip).getByText(shortLabel)).toHaveClass(
+        'office-floor-chip-code',
+      )
+      expect(within(chip).getByText(label)).toHaveClass(
+        'office-floor-chip-name',
+      )
+      expect(within(chip).getByLabelText(/present/i)).toHaveClass(
+        'office-floor-chip-count',
+      )
+    }
 
     expect(screen.getAllByText('Commons')).toHaveLength(1)
     expect(screen.getAllByText('Build')).toHaveLength(1)

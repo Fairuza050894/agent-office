@@ -196,7 +196,11 @@ export function OfficeScene({
 
             <div className="office-scene-navigation">
               {onFloorChange && (
-                <div className="office-floor-switcher" aria-label="Office floor">
+                <div
+                  className="office-floor-switcher office-floor-switcher-workspace"
+                  role="group"
+                  aria-label="Office floor"
+                >
                   {OFFICE_FLOORS.map((candidate) => (
                     <button
                       key={candidate.key}
@@ -206,9 +210,16 @@ export function OfficeScene({
                       title={`${candidate.label} · ${candidate.purpose}`}
                       onClick={() => changeFloor(candidate.key)}
                     >
-                      <span>{candidate.shortLabel}</span>
-                      <strong>{candidate.label}</strong>
-                      <em aria-label={`${effectiveFloorCounts[candidate.key]} present`}>
+                      <span className="office-floor-chip-code">
+                        {candidate.shortLabel}
+                      </span>
+                      <strong className="office-floor-chip-name">
+                        {candidate.label}
+                      </strong>
+                      <em
+                        className="office-floor-chip-count"
+                        aria-label={`${effectiveFloorCounts[candidate.key]} present`}
+                      >
                         {effectiveFloorCounts[candidate.key]}
                       </em>
                     </button>

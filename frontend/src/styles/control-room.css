@@ -3386,3 +3386,90 @@ button.office-scope-link {
     align-self: flex-end;
   }
 }
+
+
+/* Phase 10C — Workspace-only floor chip hardening */
+
+.office-scene-heading-workspace .office-floor-switcher-workspace {
+  width: min(100%, 390px);
+  max-width: 100%;
+  flex: 0 1 390px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  overflow: hidden;
+}
+
+.office-scene-heading-workspace .office-floor-switcher-workspace button {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  justify-content: stretch;
+  gap: 4px;
+  overflow: hidden;
+  padding-inline: 7px;
+  text-align: left;
+}
+
+.office-scene-heading-workspace .office-floor-switcher-workspace .office-floor-chip-code,
+.office-scene-heading-workspace .office-floor-switcher-workspace .office-floor-chip-name,
+.office-scene-heading-workspace .office-floor-switcher-workspace .office-floor-chip-count {
+  min-width: 0;
+  max-width: none;
+  margin: 0;
+  overflow: visible;
+  white-space: nowrap;
+}
+
+.office-scene-heading-workspace .office-floor-switcher-workspace .office-floor-chip-code {
+  color: #6f8a9a;
+  font-size: .46rem;
+  font-weight: 760;
+}
+
+.office-scene-heading-workspace .office-floor-switcher-workspace .office-floor-chip-name {
+  color: inherit;
+  font-size: .53rem;
+  font-weight: 680;
+  line-height: 1;
+}
+
+.office-scene-heading-workspace .office-floor-switcher-workspace .office-floor-chip-count {
+  display: inline-grid;
+  min-width: 16px;
+  height: 16px;
+  place-items: center;
+  padding-inline: 3px;
+  overflow: hidden;
+}
+
+.office-scene-heading-workspace .office-floor-switcher-workspace button.active .office-floor-chip-code {
+  color: #93dff4;
+}
+
+@media (max-width: 620px) {
+  .office-scene-heading-workspace .office-floor-switcher-workspace {
+    width: 100%;
+    max-width: 100%;
+    flex-basis: auto;
+  }
+
+  .office-scene-heading-workspace .office-floor-switcher-workspace button {
+    gap: 3px;
+    padding-inline: 5px;
+  }
+}
+
+@media (max-width: 420px) {
+  .office-scene-heading-workspace .office-floor-switcher-workspace .office-floor-chip-code {
+    font-size: .43rem;
+  }
+
+  .office-scene-heading-workspace .office-floor-switcher-workspace .office-floor-chip-name {
+    font-size: .49rem;
+  }
+
+  .office-scene-heading-workspace .office-floor-switcher-workspace .office-floor-chip-count {
+    min-width: 15px;
+    padding-inline: 2px;
+  }
+}
