@@ -135,11 +135,6 @@ export function OfficeScene({
   const activeFloor =
     OFFICE_FLOORS.find((candidate) => candidate.key === floor) ?? OFFICE_FLOORS[0]
   const activeFloorPresence = effectiveFloorCounts[floor]
-  const activeFloorState = concisePresenceLabel(presenceLabel)
-  const activeFloorSummary =
-    activeFloorPresence > 0
-      ? `${activeFloorPresence} present · ${activeFloorState}`
-      : activeFloorState
 
   return (
     <section
@@ -231,10 +226,6 @@ export function OfficeScene({
                   ))}
                 </div>
               )}
-              <div className="office-floor-summary">
-                <strong>{activeFloor.label}</strong>
-                <span>{activeFloorSummary}</span>
-              </div>
               <button
                 type="button"
                 className="office-camera-reset"
@@ -285,14 +276,6 @@ export function OfficeScene({
                   ))}
                 </div>
               )}
-              <div className="office-floor-summary">
-                <strong>{activeFloor.label}</strong>
-                <span>
-                  {activeFloorPresence > 0
-                    ? `${activeFloorPresence} AgentRun${activeFloorPresence === 1 ? '' : 's'} · ${mode === 'replay' ? 'Replay' : 'Live'}`
-                    : `Quiet · ${mode === 'replay' ? 'Replay' : 'Live'}`}
-                </span>
-              </div>
               <button
                 type="button"
                 className="office-camera-reset"
