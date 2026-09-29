@@ -109,6 +109,24 @@ describe('office navigation clearance', () => {
     expect(arrival.children.length).toBeGreaterThan(night.children.length)
   })
 
+  it('keeps each floor detail vocabulary isolated', () => {
+    const floors = ['commons', 'build', 'strategy'] as const
+
+    for (const floor of floors) {
+      const environment = new THREE.Group()
+      createOfficeEnvironment(environment, [], [], floor, 'CORE_WORK')
+
+      const detailGroups: string[] = []
+      environment.traverse((object) => {
+        if (object.name.startsWith('office-floor-details-')) {
+          detailGroups.push(object.name)
+        }
+      })
+
+      expect(detailGroups).toEqual([`office-floor-details-${floor}`])
+    }
+  })
+
   it('renders exactly one shared lift core on every floor', () => {
     for (const floor of ['commons', 'build', 'strategy'] as const) {
       const environment = new THREE.Group()
