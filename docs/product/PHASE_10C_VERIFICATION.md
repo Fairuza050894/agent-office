@@ -5,7 +5,7 @@ Date: 2026-09-29
 Branch: `phase-10c-time-context`  
 Base: `main@60fd03c`  
 Merge policy: manual only  
-Implementation checkpoint: `9884d07`
+Implementation checkpoint: `2322f1b`
 
 ## Delivered scope
 
@@ -127,7 +127,7 @@ Before the rendered gate, additional source review closed these issues:
 - decision-room anchors are placed in front of decision tables instead of inside them;
 - L1/L2/L3 floor buttons expose truthful live presence counts.
 
-The original occupancy-hardening checkpoint was `d8f3f53`. The current implementation checkpoint is `9884d07`, which adds explicit building lifecycle, mode-driven scene cues, and closed-office remote planning semantics.
+The original occupancy-hardening checkpoint was `d8f3f53`. Lifecycle and closed-office planning semantics landed at `9884d07`. The current implementation checkpoint is `2322f1b`, which adds rendered-review UI polish, richer per-floor support props, and maximize-safe scene command-strip layout.
 
 ## Office-world lifecycle hardening
 
@@ -159,13 +159,57 @@ Current dynamic props include arrival/reception cues, lunch trays, coffee cups,
 Build/Strategy active-work visual props, wrap-up cues, and restrained
 late/night lighting accents.
 
+## Morning rendered-review hardening
+
+The 2026-09-29 09:20–09:21 local screenshots confirmed that the Office-world
+clock, Core work hours mode, next-event countdown, per-floor presence counts,
+and richer floor identities were functioning. The review also exposed a visual
+quality gap in the scene header and repeated/under-filled environmental detail.
+
+Observed issues:
+
+- the old "Office workspace / No factual Run selected / drag..." line mixed
+  product context with camera instructions;
+- time, mode, presence, next event, floor controls, and floor state lacked a
+  clear visual hierarchy;
+- the HUD looked like independent boxes rather than one intentional command
+  strip;
+- floor status copy was verbose and inconsistent;
+- three floors were functionally different but still shared too much visual
+  emptiness / repeated vocabulary;
+- the old Maximize CSS still constrained the scene heading to 28px, which would
+  clip the richer HUD.
+
+Hardening at `2322f1b` now provides:
+
+- a three-zone scene command strip:
+  - workspace context
+  - Office-world status
+  - floor navigation/status
+- concise "Live office view · No active run selected" product copy;
+- camera help moved into a compact Controls disclosure;
+- normalized Time / Office mode / Presence / Next hierarchy;
+- Presence copy such as "9 in office" with the ambient cap as secondary detail;
+- Next event uses the event name as the primary value and time/countdown as
+  secondary detail;
+- concise active-floor summary such as "Build · 5 present · Ambient";
+- maximize-safe command-strip sizing;
+- responsive two-row / stacked behavior for narrower widths;
+- Commons-specific parcel lockers and snack/hydration storage;
+- Build-specific sprint board and charging/utility station;
+- Strategy-specific reference library, presentation sideboard, and floor lamp;
+- the existing time-driven scene cues remain separate from canonical truth.
+
+A follow-up local screenshot is still required because GitHub Actions currently
+cannot assign a runner and this pass materially changes rendered layout.
+
 ## Rendered acceptance required
 
 After pulling the branch locally, verify:
 
 1. around midnight Jakarta time, the HUD shows the correct WIB/local office time;
-2. Office mode reads Night quiet and ambient population is zero unless a
-   genuinely recent planning session or explicit scheduled event exists;
+2. Office mode reads Night quiet and ambient physical population is zero unless
+   an explicit scheduled/overtime event later opts into physical presence;
 3. next event shows Morning arrival at 07:00;
 4. L1/L2/L3 are visibly more differentiated than Phase 10B;
 5. L2 contains visible QA, pairing, documentation, and ops areas;
@@ -173,8 +217,10 @@ After pulling the branch locally, verify:
 7. lighting matches the clock timezone;
 8. switching floors does not change planning truth;
 9. opening a stale planning thread at night does not repopulate L3;
-10. opening or updating a genuinely recent planning thread may show its INCLUDED
-    planning roles, clearly labeled as planning truth.
+10. a fresh planning thread at night remains available in Composer/Dock but
+    Strategy shows remote/closed-office context rather than physical people;
+11. the polished command strip remains readable in normal and Maximize modes;
+12. floor-specific support props do not clip paths or character anchors.
 
 ## Automated commands to run when runner/local environment is available
 
