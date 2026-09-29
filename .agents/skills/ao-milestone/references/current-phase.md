@@ -13,7 +13,7 @@ Current work:
 
 ```text
 branch: phase-10c-time-context
-checkpoint: 2322f1b
+checkpoint: af5b87a
 phase: Phase 10C — Office World Time Context & Realistic Occupancy
 ```
 
@@ -90,6 +90,7 @@ or mutate operational execution truth.
   - reference library
   - presentation sideboard
   - floor lamp
+- floor-specific shell accents for Commons / Build / Strategy
 - specialist zone anchors aligned to the richer environment
 - world occupancy cap enforced across baseline modes
 - scheduled events reserve capacity before baseline ambience
