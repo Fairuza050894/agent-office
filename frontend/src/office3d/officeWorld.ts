@@ -1,5 +1,23 @@
 export type OfficeDayKind = 'WEEKDAY' | 'WEEKEND'
 
+export type OfficeLifecycleKey =
+  | 'CLOSED'
+  | 'OPENING'
+  | 'OPEN'
+  | 'WIND_DOWN'
+
+export type OfficeSceneCueKey =
+  | 'NIGHT_LOCKED'
+  | 'ARRIVAL_READY'
+  | 'FOCUS_ACTIVE'
+  | 'LUNCH_SET'
+  | 'AFTERNOON_ACTIVE'
+  | 'COFFEE_SOCIAL'
+  | 'WRAP_UP'
+  | 'EVENING_LIGHT'
+  | 'LATE_LIGHT'
+  | 'WEEKEND_LOCKED'
+
 export type OfficeModeKey =
   | 'NIGHT_QUIET'
   | 'ARRIVAL'
@@ -15,6 +33,10 @@ export type OfficeModeKey =
 export interface OfficeWorldContext {
   mode: OfficeModeKey
   modeLabel: string
+  lifecycle: OfficeLifecycleKey
+  lifecycleLabel: string
+  sceneCue: OfficeSceneCueKey
+  occupancyExplanation: string
   dayKind: OfficeDayKind
   isOfficeOpen: boolean
   ambientOccupancyCap: number
@@ -153,6 +175,71 @@ const NEXT_EVENT_LABELS: Partial<Record<OfficeModeKey, string>> = {
   EVENING: 'Evening wind-down',
   LATE_EVENING: 'Late office',
   NIGHT_QUIET: 'Night quiet',
+}
+
+const LIFECYCLE_BY_MODE: Record<OfficeModeKey, OfficeLifecycleKey> = {
+  NIGHT_QUIET: 'CLOSED',
+  ARRIVAL: 'OPENING',
+  CORE_WORK: 'OPEN',
+  LUNCH: 'OPEN',
+  AFTERNOON_FOCUS: 'OPEN',
+  COFFEE_BREAK: 'OPEN',
+  WRAP_UP: 'WIND_DOWN',
+  EVENING: 'WIND_DOWN',
+  LATE_EVENING: 'WIND_DOWN',
+  WEEKEND_QUIET: 'CLOSED',
+}
+
+const LIFECYCLE_LABELS: Record<OfficeLifecycleKey, string> = {
+  CLOSED: 'Closed',
+  OPENING: 'Opening up',
+  OPEN: 'Open',
+  WIND_DOWN: 'Winding down',
+}
+
+const SCENE_CUE_BY_MODE: Record<OfficeModeKey, OfficeSceneCueKey> = {
+  NIGHT_QUIET: 'NIGHT_LOCKED',
+  ARRIVAL: 'ARRIVAL_READY',
+  CORE_WORK: 'FOCUS_ACTIVE',
+  LUNCH: 'LUNCH_SET',
+  AFTERNOON_FOCUS: 'AFTERNOON_ACTIVE',
+  COFFEE_BREAK: 'COFFEE_SOCIAL',
+  WRAP_UP: 'WRAP_UP',
+  EVENING: 'EVENING_LIGHT',
+  LATE_EVENING: 'LATE_LIGHT',
+  WEEKEND_QUIET: 'WEEKEND_LOCKED',
+}
+
+function occupancyExplanation(
+  mode: OfficeModeDefinition,
+  dayKind: OfficeDayKind,
+): string {
+  if (dayKind === 'WEEKEND') {
+    return 'Weekend default · ambient office empty'
+  }
+
+  switch (mode.key) {
+    case 'NIGHT_QUIET':
+      return 'Closed · no ambient team scheduled'
+    case 'ARRIVAL':
+      return 'Staggered arrivals until core hours'
+    case 'CORE_WORK':
+      return 'Core-hours office capacity'
+    case 'LUNCH':
+      return 'Team redistributes across lunch and quiet zones'
+    case 'AFTERNOON_FOCUS':
+      return 'Focused afternoon attendance'
+    case 'COFFEE_BREAK':
+      return 'Short social break within office capacity'
+    case 'WRAP_UP':
+      return 'Presence tapers toward end of day'
+    case 'EVENING':
+      return 'Reduced evening presence'
+    case 'LATE_EVENING':
+      return 'At most one ambient person remains'
+    default:
+      return 'Office schedule'
+  }
 }
 
 const WEEKDAY_INDEX: Record<string, number> = {
@@ -362,6 +449,10 @@ export function officeWorldContext(
   return {
     mode: mode.key,
     modeLabel: mode.label,
+    lifecycle: LIFECYCLE_BY_MODE[mode.key],
+    lifecycleLabel: LIFECYCLE_LABELS[LIFECYCLE_BY_MODE[mode.key]],
+    sceneCue: SCENE_CUE_BY_MODE[mode.key],
+    occupancyExplanation: occupancyExplanation(mode, dayKind),
     dayKind,
     isOfficeOpen: mode.isOfficeOpen,
     ambientOccupancyCap: mode.ambientOccupancyCap,
