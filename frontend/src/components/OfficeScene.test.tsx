@@ -223,10 +223,37 @@ describe('OfficeScene workspace presence', () => {
     expect(
       screen.queryByText(/No factual Run selected/i),
     ).not.toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: /L2.*Build/i }),
-    ).toBeInTheDocument()
-    expect(screen.getByText('Quiet')).toBeInTheDocument()
+    const activeFloor = screen.getByRole('button', { name: /L2.*Build/i })
+    expect(activeFloor).toBeInTheDocument()
+    expect(activeFloor).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getAllByText('Build')).toHaveLength(1)
+  })
+
+  it('keeps every floor name contained inside its switcher card', () => {
+    render(
+      <OfficeScene
+        stages={[]}
+        agents={[]}
+        profiles={[]}
+        selectedAgentId={null}
+        onSelectAgent={vi.fn()}
+        motionPaused={false}
+        mode="live"
+        replayNonce={0}
+        replayStartedAt={null}
+        replayRange={null}
+        showRoster={false}
+        presentation="workspace"
+        floor="commons"
+        workspaceMembers={[member]}
+        onFloorChange={vi.fn()}
+        officeHour={20}
+      />,
+    )
+
+    expect(screen.getAllByText('Commons')).toHaveLength(1)
+    expect(screen.getAllByText('Build')).toHaveLength(1)
+    expect(screen.getAllByText('Strategy')).toHaveLength(1)
   })
 
   it('shows truthful per-floor presence counts', () => {
