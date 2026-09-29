@@ -3,6 +3,7 @@
 Status: IMPLEMENTED / AUTOMATED RUNNER HOLD / RENDERED REVIEW PENDING
 Date: 2026-09-29
 Branch: `phase-10d-unified-agent-office`
+Implementation checkpoint: `eaf8bfe`
 
 ## Goal
 
@@ -44,6 +45,11 @@ restoration.
 ### Operational simplification
 
 Live / Replay no longer render an inert Universal Composer.
+
+Transient operational movement labels are also intentionally quiet. STARTING,
+ARRIVING, and break-style transient states do not force every moving character
+to display a nameplate; selection and meaningful running/waiting/blocking states
+remain available. This reduces label collisions during multi-agent entry/replay.
 
 Operational scopes contain:
 
@@ -100,6 +106,7 @@ These additions remain outside canonical truth.
 - accepted Office floor deep-link values
 - Workspace floor deep-link restoration
 - Run / Replay floor continuity
+- explicit floor-ref synchronization outside render
 - Workspace link preserves selected floor
 - operational scope does not render Universal Composer
 - exactly one semantic lift core exists per floor
@@ -115,6 +122,7 @@ These additions remain outside canonical truth.
 6. scope test contract still expected obsolete `Live Run` wording
 7. unavailable scope controls visually looked clickable
 8. Replay EventSource status could read like live activity
+9. explicit floor ref was being mutated during render rather than in an effect
 
 ## Automated verification state
 
