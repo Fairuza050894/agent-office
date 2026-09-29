@@ -1,6 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type KeyboardEvent } from 'react'
 
 import type { AgentProfile, AgentRun, RunStage } from '../api'
+import {
+  officeCameraViews,
+  type OfficeCameraView,
+  type OfficeCameraViewKey,
+} from '../office3d/camera'
 import type { OfficeReplayRange } from '../office3d/replay'
 import type { OfficeWorldContext } from '../office3d/officeWorld'
 import {
@@ -61,6 +66,64 @@ function nextEventCountdown(minutes: number): string {
     : `in ${days}d`
 }
 
+interface SceneControlsProps {
+  views: readonly [OfficeCameraView, OfficeCameraView, OfficeCameraView]
+  activeView: OfficeCameraViewKey
+  labelsVisible: boolean
+  onSelectView: (view: OfficeCameraViewKey) => void
+  onToggleLabels: () => void
+}
+
+function SceneControls({
+  views,
+  activeView,
+  labelsVisible,
+  onSelectView,
+  onToggleLabels,
+}: SceneControlsProps) {
+  return (
+    <details className="office-scene-controls">
+      <summary>Controls</summary>
+      <div className="office-scene-control-panel">
+        <div className="office-camera-preset-group">
+          <small>Camera</small>
+          <div role="group" aria-label="Camera view">
+            {views.map((view) => (
+              <button
+                key={view.key}
+                type="button"
+                className={view.key === activeView ? 'active' : ''}
+                aria-pressed={view.key === activeView}
+                aria-keyshortcuts={view.shortcut}
+                onClick={() => onSelectView(view.key)}
+              >
+                <span>{view.label}</span>
+                <kbd>{view.shortcut}</kbd>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="office-scene-control-hints">
+          <span><kbd>Drag</kbd> orbit</span>
+          <span><kbd>Right-drag</kbd> pan</span>
+          <span><kbd>Wheel</kbd> zoom</span>
+        </div>
+        <button
+          type="button"
+          className="office-label-toggle"
+          aria-pressed={labelsVisible}
+          aria-keyshortcuts="L"
+          onClick={onToggleLabels}
+        >
+          <span>Labels</span>
+          <strong>{labelsVisible ? 'On' : 'Off'}</strong>
+          <kbd>L</kbd>
+        </button>
+      </div>
+    </details>
+  )
+}
+
 export function OfficeScene({
   stages,
   agents,
@@ -87,6 +150,12 @@ export function OfficeScene({
     [profiles],
   )
   const [cameraResetNonce, setCameraResetNonce] = useState(0)
+  const [cameraView, setCameraView] = useState<OfficeCameraViewKey>('overview')
+  const [labelsVisible, setLabelsVisible] = useState(true)
+  const [floorTransition, setFloorTransition] = useState<{
+    floor: OfficeFloorKey
+    key: number
+  } | null>(null)
   const selectedWorkspaceMember =
     presentation === 'workspace' && selectedAgentId
       ? workspaceMembers.find(
@@ -116,10 +185,56 @@ export function OfficeScene({
     presentation === 'workspace'
       ? floorPresenceCount
       : operationalFloorCounts ?? floorPresenceCount
+  const cameraViews = officeCameraViews(floor)
+
+  const selectCameraView = (nextView: OfficeCameraViewKey) => {
+    setCameraView(nextView)
+    setCameraResetNonce((current) => current + 1)
+  }
+
+  const resetCameraView = () => {
+    setCameraView('overview')
+    setCameraResetNonce((current) => current + 1)
+  }
 
   const changeFloor = (nextFloor: OfficeFloorKey) => {
+    if (nextFloor === floor) return
+
+    setCameraView('overview')
+    setFloorTransition((current) => ({
+      floor: nextFloor,
+      key: (current?.key ?? 0) + 1,
+    }))
     onFloorChange?.(nextFloor)
     setCameraResetNonce((current) => current + 1)
+  }
+
+  const handleSceneKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    if (event.altKey || event.ctrlKey || event.metaKey) return
+
+    const target =
+      event.target instanceof HTMLElement ? event.target : null
+    if (
+      target?.closest(
+        'input, textarea, select, button, a, summary, [contenteditable="true"]',
+      )
+    ) {
+      return
+    }
+
+    const requestedView = cameraViews.find(
+      (candidate) => candidate.shortcut === event.key,
+    )
+    if (requestedView) {
+      event.preventDefault()
+      selectCameraView(requestedView.key)
+      return
+    }
+
+    if (event.key.toLowerCase() === 'l') {
+      event.preventDefault()
+      setLabelsVisible((visible) => !visible)
+    }
   }
 
   const activeFloor =
@@ -128,6 +243,7 @@ export function OfficeScene({
   return (
     <section
       className="office-renderer"
+      onKeyDown={handleSceneKeyDown}
       aria-label={
         presentation === 'workspace'
           ? 'Office workspace 3D environment'
@@ -146,14 +262,13 @@ export function OfficeScene({
                 <strong>Office Workspace</strong>
                 <span>Live office view · No active run selected</span>
               </div>
-              <details className="office-scene-controls">
-                <summary>Controls</summary>
-                <div>
-                  <span><kbd>Drag</kbd> orbit</span>
-                  <span><kbd>Right-drag</kbd> pan</span>
-                  <span><kbd>Wheel</kbd> zoom</span>
-                </div>
-              </details>
+              <SceneControls
+                views={cameraViews}
+                activeView={cameraView}
+                labelsVisible={labelsVisible}
+                onSelectView={selectCameraView}
+                onToggleLabels={() => setLabelsVisible((visible) => !visible)}
+              />
             </div>
 
             {worldContext && (
@@ -229,7 +344,7 @@ export function OfficeScene({
               <button
                 type="button"
                 className="office-camera-reset"
-                onClick={() => setCameraResetNonce((current) => current + 1)}
+                onClick={resetCameraView}
               >
                 Reset view
               </button>
@@ -246,14 +361,13 @@ export function OfficeScene({
                     : 'Live canonical Run / AgentRun projection'}
                 </span>
               </div>
-              <details className="office-scene-controls">
-                <summary>Controls</summary>
-                <div>
-                  <span><kbd>Drag</kbd> orbit</span>
-                  <span><kbd>Right-drag</kbd> pan</span>
-                  <span><kbd>Wheel</kbd> zoom</span>
-                </div>
-              </details>
+              <SceneControls
+                views={cameraViews}
+                activeView={cameraView}
+                labelsVisible={labelsVisible}
+                onSelectView={selectCameraView}
+                onToggleLabels={() => setLabelsVisible((visible) => !visible)}
+              />
             </div>
             <div className="office-scene-navigation">
               {onFloorChange && (
@@ -279,7 +393,7 @@ export function OfficeScene({
               <button
                 type="button"
                 className="office-camera-reset"
-                onClick={() => setCameraResetNonce((current) => current + 1)}
+                onClick={resetCameraView}
               >
                 Reset view
               </button>
@@ -302,9 +416,30 @@ export function OfficeScene({
         floor={floor}
         workspaceMembers={workspaceMembers}
         cameraResetNonce={cameraResetNonce}
+        cameraView={cameraView}
+        labelsVisible={labelsVisible}
         officeHour={officeHour}
         officeMode={worldContext?.mode ?? null}
       />
+
+      {floorTransition && (
+        <div
+          key={floorTransition.key}
+          className="office-floor-transition-cue"
+          aria-hidden="true"
+        >
+          <span>
+            {OFFICE_FLOORS.find(
+              (candidate) => candidate.key === floorTransition.floor,
+            )?.shortLabel}
+          </span>
+          <strong>
+            {OFFICE_FLOORS.find(
+              (candidate) => candidate.key === floorTransition.floor,
+            )?.label}
+          </strong>
+        </div>
+      )}
 
       {selectedWorkspaceMember && (
         <aside

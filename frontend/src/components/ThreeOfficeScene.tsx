@@ -32,6 +32,10 @@ import {
   type OfficeZoneKey,
 } from '../office3d/livingOffice'
 import { officeLightingForHour } from '../office3d/lighting'
+import {
+  officeCameraView,
+  type OfficeCameraViewKey,
+} from '../office3d/camera'
 import type { OfficeModeKey } from '../office3d/officeWorld'
 import {
   officeReplayPlan,
@@ -53,6 +57,8 @@ export interface ThreeOfficeSceneProps {
   floor?: OfficeFloorKey
   workspaceMembers?: OfficePresenceMember[]
   cameraResetNonce?: number
+  cameraView?: OfficeCameraViewKey
+  labelsVisible?: boolean
   officeHour?: number
   officeMode?: OfficeModeKey | null
 }
@@ -62,6 +68,15 @@ interface SceneMember extends OfficeCharacterSource {
   zone?: OfficeZoneKey
   placementIndex?: number
   stageKey?: string
+}
+
+interface CameraTransition {
+  startedAt: number
+  duration: number
+  fromPosition: THREE.Vector3
+  fromTarget: THREE.Vector3
+  toPosition: THREE.Vector3
+  toTarget: THREE.Vector3
 }
 
 interface Engine {
@@ -84,6 +99,7 @@ interface Engine {
   replayIndex: number
   focusTarget: THREE.Vector3 | null
   focusUntil: number | null
+  cameraTransition: CameraTransition | null
   disposed: boolean
 }
 
@@ -153,28 +169,19 @@ function applyOfficeLighting(engine: Engine, hour: number): void {
   engine.fillLight.intensity = profile.fillIntensity
 }
 
-function floorCameraPreset(floor: OfficeFloorKey): {
-  position: THREE.Vector3
-  target: THREE.Vector3
-} {
-  switch (floor) {
-    case 'commons':
-      return {
-        position: new THREE.Vector3(14.4, 10.8, 16.2),
-        target: new THREE.Vector3(0, 0.72, 0.65),
-      }
-    case 'strategy':
-      return {
-        position: new THREE.Vector3(14.0, 10.9, 16.0),
-        target: new THREE.Vector3(0, 0.76, 0.55),
-      }
-    default:
-      return {
-        position: new THREE.Vector3(13.65, 10.75, 15.2),
-        target: new THREE.Vector3(0, 0.68, 0.3),
-      }
-  }
+function prefersReducedMotion(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  )
 }
+
+function smoothStep(progress: number): number {
+  const clamped = Math.max(0, Math.min(1, progress))
+  return clamped * clamped * (3 - 2 * clamped)
+}
+
 
 
 export function ThreeOfficeScene({
@@ -191,6 +198,8 @@ export function ThreeOfficeScene({
   floor = 'build',
   workspaceMembers = [],
   cameraResetNonce = 0,
+  cameraView = 'overview',
+  labelsVisible = true,
   officeHour = new Date().getHours(),
   officeMode = null,
 }: ThreeOfficeSceneProps) {
@@ -276,6 +285,32 @@ export function ThreeOfficeScene({
       }
 
       let needsFrame = false
+
+      if (current.cameraTransition) {
+        const transition = current.cameraTransition
+        const progress = Math.min(
+          1,
+          Math.max(0, (now - transition.startedAt) / transition.duration),
+        )
+        const eased = smoothStep(progress)
+
+        current.camera.position.lerpVectors(
+          transition.fromPosition,
+          transition.toPosition,
+          eased,
+        )
+        current.controls.target.lerpVectors(
+          transition.fromTarget,
+          transition.toTarget,
+          eased,
+        )
+        current.controls.update()
+        needsFrame = true
+
+        if (progress >= 1) {
+          current.cameraTransition = null
+        }
+      }
 
       if (current.focusTarget && current.focusUntil !== null) {
         const before = current.controls.target.clone()
@@ -367,7 +402,12 @@ export function ThreeOfficeScene({
         modeRef.current === 'replay' &&
         current.replayIndex < current.replayEvents.length
 
-      if ((needsFrame || replayPending) && !motionPausedRef.current) {
+      const cameraTransitionPending = current.cameraTransition !== null
+
+      if (
+        cameraTransitionPending ||
+        ((needsFrame || replayPending) && !motionPausedRef.current)
+      ) {
         current.frame = requestAnimationFrame(tick)
       }
     }
@@ -469,6 +509,7 @@ export function ThreeOfficeScene({
         replayIndex: 0,
         focusTarget: null,
         focusUntil: null,
+        cameraTransition: null,
         disposed: false,
       }
       engineRef.current = engine
@@ -488,8 +529,14 @@ export function ThreeOfficeScene({
       resizeObserver = new ResizeObserver(resize)
       resizeObserver.observe(host)
       resize()
+
+      const handleControlsStart = () => {
+        if (engine) engine.cameraTransition = null
+        startLoop()
+      }
+
       controls.addEventListener('change', render)
-      controls.addEventListener('start', startLoop)
+      controls.addEventListener('start', handleControlsStart)
 
       const raycaster = new THREE.Raycaster()
       const pointer = new THREE.Vector2()
@@ -517,7 +564,7 @@ export function ThreeOfficeScene({
       return () => {
         resizeObserver?.disconnect()
         controls.removeEventListener('change', render)
-        controls.removeEventListener('start', startLoop)
+        controls.removeEventListener('start', handleControlsStart)
         renderer.domElement.removeEventListener('click', handleClick)
 
         const frame = engine?.frame
@@ -563,14 +610,40 @@ export function ThreeOfficeScene({
     const engine = engineRef.current
     if (!engine) return
 
-    const preset = floorCameraPreset(floor)
-    engine.camera.position.copy(preset.position)
-    engine.controls.target.copy(preset.target)
+    const preset = officeCameraView(floor, cameraView)
+    const toPosition = new THREE.Vector3(...preset.position)
+    const toTarget = new THREE.Vector3(...preset.target)
+
     engine.focusTarget = null
     engine.focusUntil = null
-    engine.controls.update()
+
+    if (prefersReducedMotion()) {
+      engine.cameraTransition = null
+      engine.camera.position.copy(toPosition)
+      engine.controls.target.copy(toTarget)
+      engine.controls.update()
+      renderEngine(engine)
+      return
+    }
+
+    engine.cameraTransition = {
+      startedAt: performance.now(),
+      duration: 520,
+      fromPosition: engine.camera.position.clone(),
+      fromTarget: engine.controls.target.clone(),
+      toPosition,
+      toTarget,
+    }
+    startLoop()
+  }, [cameraResetNonce, cameraView, floor, startLoop])
+
+  useEffect(() => {
+    const engine = engineRef.current
+    if (!engine) return
+
+    engine.labels.domElement.style.display = labelsVisible ? '' : 'none'
     renderEngine(engine)
-  }, [cameraResetNonce, floor])
+  }, [labelsVisible])
 
   useEffect(() => {
     const engine = engineRef.current
@@ -724,6 +797,7 @@ export function ThreeOfficeScene({
     if (selectedAgentId) {
       const runtime = engine.runtimes.get(selectedAgentId)
       if (runtime) {
+        engine.cameraTransition = null
         engine.focusTarget = runtime.root.position.clone()
         engine.focusUntil = performance.now() + 850
         startLoop()
