@@ -3,6 +3,7 @@ import * as THREE from 'three'
 import type { RunStage } from '../api'
 import type { StationPlacement } from './character'
 import type { OfficeFloorKey, OfficeZoneKey } from './livingOffice'
+import type { OfficeModeKey } from './officeWorld'
 
 const OFFICE_WIDTH = 20
 const OFFICE_DEPTH = 14
@@ -1112,7 +1113,123 @@ function createOfficeShell(environment: THREE.Group): void {
   createCeilingLights(environment)
 }
 
-function createCommonsFloor(environment: THREE.Group): void {
+function createCup(
+  parent: THREE.Group,
+  x: number,
+  z: number,
+  color = 0xd8c7a8,
+): void {
+  addCylinder(parent, 0.09, 0.16, [x, 0.94, z], color)
+  addBox(parent, [0.08, 0.07, 0.03], [x + 0.1, 0.97, z], color)
+}
+
+function createLunchTray(
+  parent: THREE.Group,
+  x: number,
+  z: number,
+): void {
+  addBox(parent, [0.56, 0.035, 0.36], [x, 0.73, z], 0x756f65)
+  addCylinder(parent, 0.12, 0.025, [x - 0.13, 0.76, z], 0xd6c7a5)
+  addCylinder(parent, 0.07, 0.04, [x + 0.16, 0.77, z + 0.04], 0x8b6d4d)
+}
+
+function createCommonsWorldCue(
+  parent: THREE.Group,
+  mode: OfficeModeKey | null,
+): void {
+  if (!mode) return
+
+  if (mode === 'ARRIVAL') {
+    addBox(parent, [2.4, 0.025, 0.9], [-7.2, 0.07, -5.65], 0x445965)
+    createCup(parent, 6.15, -4.08)
+    createCup(parent, 6.55, -4.08)
+    return
+  }
+
+  if (mode === 'LUNCH') {
+    createLunchTray(parent, -0.8, 1.18)
+    createLunchTray(parent, 0.8, 1.18)
+    createLunchTray(parent, 0, 0.35)
+    return
+  }
+
+  if (mode === 'COFFEE_BREAK') {
+    createCup(parent, 6.0, -4.05, 0xcaa47c)
+    createCup(parent, 6.42, -4.05, 0xb9805f)
+    createCup(parent, 6.84, -4.05, 0x9f795f)
+    createCup(parent, 7.26, -4.05, 0xd0b391)
+    return
+  }
+
+  if (
+    mode === 'EVENING' ||
+    mode === 'LATE_EVENING' ||
+    mode === 'NIGHT_QUIET' ||
+    mode === 'WEEKEND_QUIET'
+  ) {
+    const securityLamp = new THREE.PointLight(0x6e91b0, 0.18, 4)
+    securityLamp.position.set(-8.5, 1.55, -5.15)
+    parent.add(securityLamp)
+  }
+}
+
+function createBuildWorldCue(
+  parent: THREE.Group,
+  mode: OfficeModeKey | null,
+): void {
+  if (!mode) return
+
+  if (
+    mode === 'CORE_WORK' ||
+    mode === 'AFTERNOON_FOCUS' ||
+    mode === 'WRAP_UP'
+  ) {
+    for (const [x, color] of [
+      [-0.55, 0x4f9d78],
+      [0, 0xd09a35],
+      [0.55, 0x4f8ca8],
+    ] as Array<[number, number]>) {
+      addBox(parent, [0.34, 0.03, 0.22], [x, 1.16, -5.86], color)
+    }
+  }
+
+  if (mode === 'WRAP_UP') {
+    createCup(parent, -3.15, 0.18, 0xb68d68)
+    createCup(parent, 3.15, 2.68, 0xb68d68)
+  }
+}
+
+function createStrategyWorldCue(
+  parent: THREE.Group,
+  mode: OfficeModeKey | null,
+): void {
+  if (!mode) return
+
+  if (
+    mode === 'CORE_WORK' ||
+    mode === 'AFTERNOON_FOCUS' ||
+    mode === 'WRAP_UP'
+  ) {
+    for (const [x, z, color] of [
+      [-0.7, 0.38, 0x5d8195],
+      [0, 0.38, 0x7f6a8d],
+      [0.7, 0.38, 0x788b60],
+    ] as Array<[number, number, number]>) {
+      addBox(parent, [0.38, 0.025, 0.24], [x, 0.87, z], color)
+    }
+  }
+
+  if (mode === 'LATE_EVENING') {
+    const tableLamp = new THREE.PointLight(0xffc77e, 0.28, 4.5)
+    tableLamp.position.set(0, 1.5, 0.4)
+    parent.add(tableLamp)
+  }
+}
+
+function createCommonsFloor(
+  environment: THREE.Group,
+  mode: OfficeModeKey | null,
+): void {
   createPantry(environment)
   createGameRoom(environment)
   createLoungeAndFocus(environment)
@@ -1120,6 +1237,7 @@ function createCommonsFloor(environment: THREE.Group): void {
   createCommonsHub(environment)
   createReceptionCorner(environment)
   createCommunityWall(environment)
+  createCommonsWorldCue(environment, mode)
 
   const pantryLight = new THREE.PointLight(0xffd6a0, 0.82, 7)
   pantryLight.position.set(7.1, 2.65, -4.0)
@@ -1130,13 +1248,17 @@ function createCommonsFloor(environment: THREE.Group): void {
   environment.add(pantryLight, gameLight, loungeLight)
 }
 
-function createBuildFloor(environment: THREE.Group): void {
+function createBuildFloor(
+  environment: THREE.Group,
+  mode: OfficeModeKey | null,
+): void {
   createWorkArea(environment)
   createReviewWall(environment)
   createQaLab(environment)
   createPairingIsland(environment)
   createDocsNook(environment)
   createOpsRack(environment)
+  createBuildWorldCue(environment, mode)
 
   const reviewLight = new THREE.PointLight(0xa8d2e8, 0.52, 6.5)
   reviewLight.position.set(5.6, 2.45, 0.9)
@@ -1145,13 +1267,17 @@ function createBuildFloor(environment: THREE.Group): void {
   environment.add(reviewLight, deskLight)
 }
 
-function createStrategyFloor(environment: THREE.Group): void {
+function createStrategyFloor(
+  environment: THREE.Group,
+  mode: OfficeModeKey | null,
+): void {
   createMeetingRoom(environment)
   createReviewWall(environment)
   createLoungeAndFocus(environment)
   createStrategyHub(environment)
   createRoadmapWall(environment)
   createDecisionPods(environment)
+  createStrategyWorldCue(environment, mode)
 
   const meetingLight = new THREE.PointLight(0xffe0b0, 0.72, 7.5)
   meetingLight.position.set(-7.1, 2.8, -3.6)
@@ -1165,13 +1291,14 @@ export function createOfficeEnvironment(
   _stages: RunStage[],
   members: OfficeEnvironmentMember[],
   floor: OfficeFloorKey = 'build',
+  officeMode: OfficeModeKey | null = null,
 ): Map<string, StationPlacement> {
   clearGroup(environment)
   createOfficeShell(environment)
 
-  if (floor === 'commons') createCommonsFloor(environment)
-  else if (floor === 'strategy') createStrategyFloor(environment)
-  else createBuildFloor(environment)
+  if (floor === 'commons') createCommonsFloor(environment, officeMode)
+  else if (floor === 'strategy') createStrategyFloor(environment, officeMode)
+  else createBuildFloor(environment, officeMode)
 
   environment.add(createPlant(point(-4.65, -1.7), 0.9))
   environment.add(createPlant(point(4.65, -1.7), 0.9))
