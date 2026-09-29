@@ -13,7 +13,7 @@ Current work:
 
 ```text
 branch: phase-10c-time-context
-checkpoint: d8f3f53
+checkpoint: 9884d07
 phase: Phase 10C — Office World Time Context & Realistic Occupancy
 ```
 
@@ -51,6 +51,9 @@ or mutate operational execution truth.
 - zero default weekend ambience
 - planning-presence freshness windows
 - stale durable planning records no longer keep virtual people physically present
+- CLOSED office suppresses even fresh planning as physical presence; planning remains remote/durable
+- explicit building lifecycle: Closed / Opening up / Open / Winding down
+- mode-driven dynamic floor props and scene cues
 - 1-second HUD clock with minute-level presence recalculation
 - lighting synchronized to Office timezone
 - richer Commons floor:
@@ -88,8 +91,8 @@ Office mode is schedule context, not execution.
 Examples:
 
 ```text
-Night quiet != nobody can plan
-Recent planning truth may still appear.
+Night quiet != planning data disappears
+Planning remains durable, but physical Office presence is suppressed while CLOSED.
 
 Late office != factual overtime
 No Run/AgentRun means no execution claim.
@@ -156,7 +159,10 @@ Pending local visual review of:
 - Office mode correctness
 - next-event correctness
 - midnight/night occupancy
-- stale vs recent planning presence
+- stale vs recent planning persistence
+- closed-office remote planning label
+- building lifecycle label
+- dynamic scene cues by Office mode
 - timezone-synchronized lighting
 - L1/L2/L3 visual differentiation
 - QA / docs / roadmap / decision areas
