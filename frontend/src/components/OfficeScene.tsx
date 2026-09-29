@@ -32,6 +32,7 @@ export interface OfficeSceneProps {
   officeHour?: number
   worldContext?: OfficeWorldContext | null
   totalPresence?: number
+  operationalFloorCounts?: Record<OfficeFloorKey, number>
 }
 
 function profileName(
@@ -89,6 +90,7 @@ export function OfficeScene({
   officeHour,
   worldContext = null,
   totalPresence = 0,
+  operationalFloorCounts,
 }: OfficeSceneProps) {
   const profileByKey = useMemo(
     () => new Map(profiles.map((profile) => [profile.key, profile])),
@@ -120,6 +122,11 @@ export function OfficeScene({
     [workspaceMembers],
   )
 
+  const effectiveFloorCounts =
+    presentation === 'workspace'
+      ? floorPresenceCount
+      : operationalFloorCounts ?? floorPresenceCount
+
   const changeFloor = (nextFloor: OfficeFloorKey) => {
     onFloorChange?.(nextFloor)
     setCameraResetNonce((current) => current + 1)
@@ -127,7 +134,7 @@ export function OfficeScene({
 
   const activeFloor =
     OFFICE_FLOORS.find((candidate) => candidate.key === floor) ?? OFFICE_FLOORS[0]
-  const activeFloorPresence = floorPresenceCount[floor]
+  const activeFloorPresence = effectiveFloorCounts[floor]
   const activeFloorState = concisePresenceLabel(presenceLabel)
   const activeFloorSummary =
     activeFloorPresence > 0
@@ -217,8 +224,8 @@ export function OfficeScene({
                     >
                       <span>{candidate.shortLabel}</span>
                       <strong>{candidate.label}</strong>
-                      <em aria-label={`${floorPresenceCount[candidate.key]} present`}>
-                        {floorPresenceCount[candidate.key]}
+                      <em aria-label={`${effectiveFloorCounts[candidate.key]} present`}>
+                        {effectiveFloorCounts[candidate.key]}
                       </em>
                     </button>
                   ))}
@@ -241,8 +248,12 @@ export function OfficeScene({
           <>
             <div className="office-scene-context">
               <div className="office-scene-title-group">
-                <strong>Run Office View</strong>
-                <span>Canonical Run / AgentRun projection</span>
+                <strong>{activeFloor.label}</strong>
+                <span>
+                  {mode === 'replay'
+                    ? 'Historical Run / AgentRun replay'
+                    : 'Live canonical Run / AgentRun projection'}
+                </span>
               </div>
               <details className="office-scene-controls">
                 <summary>Controls</summary>
@@ -254,11 +265,41 @@ export function OfficeScene({
               </details>
             </div>
             <div className="office-scene-navigation">
-              <span className="office-render-mode">
-                {mode === 'replay'
-                  ? 'Historical replay · factual timestamps compressed'
-                  : 'Canonical state'}
-              </span>
+              {onFloorChange && (
+                <div className="office-floor-switcher" aria-label="Office floor">
+                  {OFFICE_FLOORS.map((candidate) => (
+                    <button
+                      key={candidate.key}
+                      type="button"
+                      className={candidate.key === floor ? 'active' : ''}
+                      aria-pressed={candidate.key === floor}
+                      title={`${candidate.label} · ${candidate.purpose}`}
+                      onClick={() => changeFloor(candidate.key)}
+                    >
+                      <span>{candidate.shortLabel}</span>
+                      <strong>{candidate.label}</strong>
+                      <em aria-label={`${effectiveFloorCounts[candidate.key]} present`}>
+                        {effectiveFloorCounts[candidate.key]}
+                      </em>
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div className="office-floor-summary">
+                <strong>{activeFloor.label}</strong>
+                <span>
+                  {activeFloorPresence > 0
+                    ? `${activeFloorPresence} AgentRun${activeFloorPresence === 1 ? '' : 's'} · ${mode === 'replay' ? 'Replay' : 'Live'}`
+                    : `Quiet · ${mode === 'replay' ? 'Replay' : 'Live'}`}
+                </span>
+              </div>
+              <button
+                type="button"
+                className="office-camera-reset"
+                onClick={() => setCameraResetNonce((current) => current + 1)}
+              >
+                Reset view
+              </button>
             </div>
           </>
         )}
