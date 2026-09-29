@@ -12,6 +12,7 @@ import {
   officeAmbientWindow,
   officeBehaviorFor,
   officeBehaviorLabel,
+  officeFloorFromParam,
   officeRoleHomeLocation,
   planningPresenceMembers,
   livingOfficeMembers,
@@ -149,6 +150,16 @@ const proposal: TeamProposal = {
     },
   ],
 }
+
+describe('office floor deep links', () => {
+  it('accepts only supported office floors', () => {
+    expect(officeFloorFromParam('commons')).toBe('commons')
+    expect(officeFloorFromParam('build')).toBe('build')
+    expect(officeFloorFromParam('strategy')).toBe('strategy')
+    expect(officeFloorFromParam('roof')).toBeNull()
+    expect(officeFloorFromParam(null)).toBeNull()
+  })
+})
 
 describe('living office model', () => {
   it('defines a multi-floor startup office', () => {

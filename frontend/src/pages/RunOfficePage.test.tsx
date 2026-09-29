@@ -204,7 +204,7 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('Phase 9A Office Workspace', () => {
+describe('Agent Office operational scopes', () => {
   it('maps every required AgentRun state explicitly', () => {
     expect(officeAgentState('PENDING')).toEqual({ key: 'pending', label: 'Waiting to start' })
     expect(officeAgentState('STARTING')).toEqual({ key: 'starting', label: 'Starting' })
@@ -239,18 +239,21 @@ describe('Phase 9A Office Workspace', () => {
       name: /Backend Developer.*Running/i,
     })
 
-    expect(screen.getByRole('region', { name: 'Universal Composer' })).toBeInTheDocument()
+    expect(
+      screen.queryByRole('region', { name: 'Universal Composer' }),
+    ).not.toBeInTheDocument()
     expect(
       screen.getByRole('link', { name: 'Workspace' }),
-    ).toHaveAttribute('href', `/office?project=${PROJECT.id}`)
+    ).toHaveAttribute(
+      'href',
+      `/office?project=${PROJECT.id}&floor=build`,
+    )
     expect(
-      screen.getByRole('button', { name: 'Live Run' }),
+      screen.getByRole('button', { name: 'Live' }),
     ).toHaveAttribute('aria-pressed', 'true')
     expect(
       screen.getByRole('button', { name: /L2.*Build/i }),
     ).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Start Run' })).toBeDisabled()
 
     fireEvent.click(agentButton)
 
@@ -268,6 +271,32 @@ describe('Phase 9A Office Workspace', () => {
     expect(
       screen.queryByRole('complementary', { name: 'Selected AgentRun details' }),
     ).not.toBeInTheDocument()
+  })
+
+  it('preserves floor continuity when opening Historical Replay', async () => {
+    vi.stubGlobal('fetch', officeFetch())
+    render(
+      <App
+        initialPath={`/runs/${RUN.id}/office?floor=strategy&mode=replay`}
+      />,
+    )
+
+    await screen.findByRole('region', {
+      name: 'Bottom Operations Dock',
+    })
+
+    expect(
+      screen.getByRole('button', { name: /L3.*Strategy/i }),
+    ).toHaveAttribute('aria-pressed', 'true')
+    expect(
+      screen.getByRole('button', { name: 'Replay' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+    expect(
+      screen.getByRole('link', { name: 'Workspace' }),
+    ).toHaveAttribute(
+      'href',
+      `/office?project=${PROJECT.id}&floor=strategy`,
+    )
   })
 
   it('renders only factual dock activity and creates no worker when AgentRuns are absent', async () => {

@@ -4,7 +4,26 @@ Status: Proposed
 Version: 0.2
 Working branch: `phase-9-concept`
 Scope: post-Phase-8 product evolution
-Implementation status: not started
+Implementation status: progressively implemented through Phase 10D
+
+> Implementation alignment — 2026-09-29
+>
+> The original vNext concept described several visual "modes". The implemented
+> product now treats them as truth scopes inside **one Agent Office experience**:
+>
+> ```text
+> Workspace -> planning + ambient Office world
+> Live      -> canonical Run / AgentRun projection
+> Replay    -> historical canonical Run / AgentRun / Event projection
+> ```
+>
+> `/office` and `/runs/:runId/office` remain compatible deep-link entry
+> routes, but they are not separate virtual offices. Shared floors, scene,
+> character runtime, camera language, lift, command rail, and Operations Dock
+> provide continuity. The source-of-truth boundary remains strict.
+>
+> Current implementation details are authoritative in
+> `docs/architecture/UNIFIED_AGENT_OFFICE.md`.
 
 ---
 

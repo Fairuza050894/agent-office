@@ -119,6 +119,13 @@ export const OFFICE_FLOORS: OfficeFloorDefinition[] = [
   },
 ]
 
+export function officeFloorFromParam(value: string | null): OfficeFloorKey | null {
+  return value === 'commons' || value === 'build' || value === 'strategy'
+    ? value
+    : null
+}
+
+
 export const LIVING_OFFICE_CORE_ROLES = [
   'product-manager',
   'system-analyst',
