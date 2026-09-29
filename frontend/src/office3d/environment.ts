@@ -1226,6 +1226,82 @@ function createStrategyWorldCue(
   }
 }
 
+function createCommonsDetailProps(parent: THREE.Group): void {
+  // Parcel / personal lockers near the entry wall.
+  for (const x of [-8.75, -8.05, -7.35]) {
+    addBox(parent, [0.58, 1.55, 0.5], [x, 0.78, -5.92], 0x52616a)
+    addBox(parent, [0.4, 0.025, 0.02], [x, 0.9, -5.65], 0x2d3a43)
+    addBox(parent, [0.4, 0.025, 0.02], [x, 0.42, -5.65], 0x2d3a43)
+  }
+
+  // Snack / hydration rack that makes Commons read differently from work floors.
+  addBox(parent, [0.95, 1.55, 0.58], [8.85, 0.78, -0.35], 0x4e5e67)
+  for (const y of [0.5, 0.86, 1.22]) {
+    addBox(parent, [0.72, 0.05, 0.42], [8.85, y, -0.62], 0x7f664e)
+  }
+  for (const [y, color] of [
+    [0.58, 0x7a9b68],
+    [0.94, 0xc58c5f],
+    [1.3, 0x6388a4],
+  ] as Array<[number, number]>) {
+    addBox(parent, [0.16, 0.17, 0.08], [8.85, y, -0.83], color)
+  }
+}
+
+function createBuildDetailProps(parent: THREE.Group): void {
+  // Sprint / engineering board.
+  addBox(parent, [3.55, 1.55, 0.08], [-6.65, 1.72, -6.82], 0x394955)
+  const board = addBox(
+    parent,
+    [3.18, 1.18, 0.035],
+    [-6.65, 1.72, -6.74],
+    0x163141,
+  )
+  ;(board.material as THREE.MeshStandardMaterial).emissive.setHex(0x0e2634)
+  ;(board.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.32
+
+  for (const [x, y, color] of [
+    [-7.7, 1.95, 0x5d8195],
+    [-7.05, 1.55, 0x7a6950],
+    [-6.4, 1.9, 0x69835f],
+    [-5.75, 1.5, 0x80617e],
+  ] as Array<[number, number, number]>) {
+    addBox(parent, [0.42, 0.3, 0.02], [x, y, -6.7], color)
+  }
+
+  // Charging / utility station.
+  addBox(parent, [1.55, 0.82, 0.6], [8.75, 0.42, -1.8], 0x4d5a63)
+  addBox(parent, [1.35, 0.08, 0.72], [8.75, 0.88, -1.8], 0x7f624a)
+  for (const x of [8.35, 8.75, 9.15]) {
+    addBox(parent, [0.23, 0.08, 0.35], [x, 0.97, -1.8], 0x26333d)
+  }
+}
+
+function createStrategyDetailProps(parent: THREE.Group): void {
+  // Reference bookshelf / strategy library.
+  addBox(parent, [1.55, 2.05, 0.5], [-8.85, 1.03, 2.0], 0x46555e)
+  for (const y of [0.38, 0.8, 1.22, 1.64]) {
+    addBox(parent, [1.34, 0.055, 0.42], [-8.85, y, 1.78], 0x7e624c)
+  }
+  for (const [x, y, color] of [
+    [-9.22, 0.58, 0x55788b],
+    [-8.92, 0.58, 0x75677f],
+    [-8.6, 1.0, 0x7d875c],
+    [-9.12, 1.42, 0x8b684f],
+    [-8.72, 1.42, 0x537985],
+  ] as Array<[number, number, number]>) {
+    addBox(parent, [0.18, 0.28, 0.12], [x, y, 1.52], color)
+  }
+
+  // Presentation sideboard and a warm floor lamp.
+  addBox(parent, [2.05, 0.72, 0.48], [7.85, 0.36, -3.65], 0x505d65)
+  addBox(parent, [1.78, 0.08, 0.58], [7.85, 0.78, -3.65], 0x87654b)
+  addCylinder(parent, 0.07, 1.5, [8.9, 0.75, 2.7], 0x343f47)
+  const shade = addCylinder(parent, 0.32, 0.38, [8.9, 1.56, 2.7], 0xc9a36b)
+  ;(shade.material as THREE.MeshStandardMaterial).emissive.setHex(0x6e4d24)
+  ;(shade.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.42
+}
+
 function createCommonsFloor(
   environment: THREE.Group,
   mode: OfficeModeKey | null,
@@ -1237,6 +1313,7 @@ function createCommonsFloor(
   createCommonsHub(environment)
   createReceptionCorner(environment)
   createCommunityWall(environment)
+  createCommonsDetailProps(environment)
   createCommonsWorldCue(environment, mode)
 
   const pantryLight = new THREE.PointLight(0xffd6a0, 0.82, 7)
@@ -1258,6 +1335,7 @@ function createBuildFloor(
   createPairingIsland(environment)
   createDocsNook(environment)
   createOpsRack(environment)
+  createBuildDetailProps(environment)
   createBuildWorldCue(environment, mode)
 
   const reviewLight = new THREE.PointLight(0xa8d2e8, 0.52, 6.5)
@@ -1277,6 +1355,7 @@ function createStrategyFloor(
   createStrategyHub(environment)
   createRoadmapWall(environment)
   createDecisionPods(environment)
+  createStrategyDetailProps(environment)
   createStrategyWorldCue(environment, mode)
 
   const meetingLight = new THREE.PointLight(0xffe0b0, 0.72, 7.5)
