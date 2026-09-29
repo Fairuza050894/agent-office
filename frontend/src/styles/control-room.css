@@ -3187,3 +3187,80 @@ button.office-scope-link {
   padding-block: 5px;
   font-size: .61rem;
 }
+
+
+.office-action-menu {
+  position: relative;
+}
+
+.office-action-menu > summary {
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid #2a414f;
+  border-radius: 4px;
+  background: #0d1922;
+  color: #7e94a3;
+  font-size: .55rem;
+  font-weight: 650;
+  line-height: 26px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.office-action-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.office-action-menu > summary:hover,
+.office-action-menu > summary:focus-visible,
+.office-action-menu[open] > summary {
+  border-color: #3d5b6c;
+  color: #d3e0e8;
+  outline: none;
+}
+
+.office-action-menu > div {
+  position: absolute;
+  top: calc(100% + 5px);
+  right: 0;
+  z-index: 60;
+  display: grid;
+  min-width: 160px;
+  overflow: hidden;
+  border: 1px solid #2b4352;
+  border-radius: 5px;
+  background: #09151e;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, .32);
+}
+
+.office-action-menu-item {
+  display: flex;
+  min-height: 32px;
+  align-items: center;
+  padding: 0 10px;
+  border: 0;
+  border-bottom: 1px solid #172833;
+  background: transparent;
+  color: #8fa3b1;
+  font: inherit;
+  font-size: .56rem;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.office-action-menu-item:last-child {
+  border-bottom: 0;
+}
+
+.office-action-menu-item:hover:not(:disabled),
+.office-action-menu-item:focus-visible {
+  background: #10232e;
+  color: #e0ebf1;
+  outline: none;
+}
+
+.office-action-menu-item:disabled {
+  color: #445967;
+  cursor: not-allowed;
+}
