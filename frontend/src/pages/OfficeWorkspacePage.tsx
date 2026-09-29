@@ -22,6 +22,7 @@ import {
 } from '../components/office/UniversalComposerShell'
 import { OfficeRendererBoundary } from '../components/OfficeRendererBoundary'
 import { OfficeScene } from '../components/OfficeScene'
+import { useRouter } from '../router/useRouter'
 import {
   livingOfficeMembers,
   officeAmbientWindow,
@@ -76,6 +77,11 @@ async function loadPlanningSnapshot(thread: ComposerThread) {
 }
 
 export function OfficeWorkspacePage() {
+  const { currentSearch } = useRouter()
+  const requestedProjectId = useMemo(
+    () => new URLSearchParams(currentSearch).get('project'),
+    [currentSearch],
+  )
   const [projects, setProjects] = useState<Project[]>([])
   const [executors, setExecutors] = useState<Executor[]>([])
   const [profiles, setProfiles] = useState<AgentProfile[]>([])
@@ -122,7 +128,7 @@ export function OfficeWorkspacePage() {
     }, 1_000)
 
     return () => window.clearInterval(timer)
-  }, [])
+  }, [requestedProjectId])
 
   useEffect(() => {
     let active = true
@@ -134,7 +140,15 @@ export function OfficeWorkspacePage() {
     ])
       .then(([loadedProjects, loadedExecutors, loadedProfiles]) => {
         if (!active) return
+        const requestedProject =
+          requestedProjectId &&
+          loadedProjects.find(
+            (project) =>
+              project.id === requestedProjectId &&
+              project.status === 'ACTIVE',
+          )
         const initialProjectId =
+          requestedProject?.id ??
           loadedProjects.find((project) => project.status === 'ACTIVE')?.id ??
           loadedProjects[0]?.id ??
           ''
@@ -547,15 +561,19 @@ export function OfficeWorkspacePage() {
       className={`page-view office-workspace ${isMaximized ? 'office-maximized' : ''}`}
     >
       <OfficeCommandRail
-        title="Office"
+        title="Agent Office"
         projectName={selectedProject?.name ?? 'No Project selected'}
-        modeLabel={planningMode ?? 'Workspace'}
+        modeLabel={
+          planningMode && planningMode !== 'AUTO'
+            ? `Workspace · ${planningMode}`
+            : 'Workspace'
+        }
         statusLabel={
           isLoading
             ? 'Loading registries'
             : activeThread
               ? `${activeThread.status} planning thread`
-              : 'No active Run selected'
+              : 'Project workspace'
         }
         meta={
           registryError
