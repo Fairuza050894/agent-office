@@ -16,7 +16,6 @@ import { AgentInspector } from '../components/office/AgentInspector'
 import { BottomOperationsDock } from '../components/office/BottomOperationsDock'
 import { OfficeCommandRail } from '../components/office/OfficeCommandRail'
 import { AgentOfficeScopeSwitcher } from '../components/office/AgentOfficeScopeSwitcher'
-import { UniversalComposerShell } from '../components/office/UniversalComposerShell'
 import { OfficeRendererBoundary } from '../components/OfficeRendererBoundary'
 import { OfficeScene } from '../components/OfficeScene'
 import {
@@ -535,21 +534,6 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
           />
         )}
       </div>
-
-      <UniversalComposerShell
-        projects={project ? [project] : []}
-        selectedProjectId={project?.id ?? ''}
-        projectLocked
-        executors={executors}
-        selectedExecutorId={
-          run.resolved_executor_id ?? run.requested_executor_id ?? null
-        }
-        contextLabel={
-          project
-            ? `${project.repository.name} · Run #${run.id.slice(0, 8)}`
-            : `Run #${run.id.slice(0, 8)}`
-        }
-      />
 
       <BottomOperationsDock
         events={recentSignals}
