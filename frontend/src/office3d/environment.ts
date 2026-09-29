@@ -1291,30 +1291,45 @@ function createStrategyWorldCue(
 }
 
 function createCommonsDetailProps(parent: THREE.Group): void {
+  const details = new THREE.Group()
+  details.name = 'office-floor-details-commons'
+
   // Parcel / personal lockers near the entry wall.
   for (const x of [-8.75, -8.05, -7.35]) {
-    addBox(parent, [0.58, 1.55, 0.5], [x, 0.78, -5.92], 0x52616a)
-    addBox(parent, [0.4, 0.025, 0.02], [x, 0.9, -5.65], 0x2d3a43)
-    addBox(parent, [0.4, 0.025, 0.02], [x, 0.42, -5.65], 0x2d3a43)
+    addBox(details, [0.58, 1.55, 0.5], [x, 0.78, -5.92], 0x52616a)
+    addBox(details, [0.4, 0.025, 0.02], [x, 0.9, -5.65], 0x2d3a43)
+    addBox(details, [0.4, 0.025, 0.02], [x, 0.42, -5.65], 0x2d3a43)
   }
 
   // Snack / hydration rack that makes Commons read differently from work floors.
-  addBox(parent, [0.95, 1.55, 0.58], [8.85, 0.78, -0.35], 0x4e5e67)
+  addBox(details, [0.95, 1.55, 0.58], [8.85, 0.78, -0.35], 0x4e5e67)
   for (const y of [0.5, 0.86, 1.22]) {
-    addBox(parent, [0.72, 0.05, 0.42], [8.85, y, -0.62], 0x7f664e)
+    addBox(details, [0.72, 0.05, 0.42], [8.85, y, -0.62], 0x7f664e)
   }
   for (const [y, color] of [
     [0.58, 0x7a9b68],
     [0.94, 0xc58c5f],
     [1.3, 0x6388a4],
   ] as Array<[number, number]>) {
-    addBox(parent, [0.16, 0.17, 0.08], [8.85, y, -0.83], color)
+    addBox(details, [0.16, 0.17, 0.08], [8.85, y, -0.83], color)
   }
+
+  // Two compact acoustic phone/focus pods.
+  for (const z of [-0.85, 1.05]) {
+    addBox(details, [0.72, 2.05, 1.15], [-9.42, 1.03, z], 0x374650)
+    addBox(details, [0.035, 1.72, 0.86], [-9.03, 1.06, z], 0x4f7180)
+    addBox(details, [0.42, 0.06, 0.34], [-9.1, 0.72, z], 0x805f48)
+  }
+
+  parent.add(details)
 }
 
 function createBuildDetailProps(parent: THREE.Group): void {
+  const details = new THREE.Group()
+  details.name = 'office-floor-details-build'
+
   // Sprint / engineering board.
-  addBox(parent, [3.55, 1.55, 0.08], [-6.65, 1.72, -6.82], 0x394955)
+  addBox(details, [3.55, 1.55, 0.08], [-6.65, 1.72, -6.82], 0x394955)
   const board = addBox(
     parent,
     [3.18, 1.18, 0.035],
@@ -1330,22 +1345,33 @@ function createBuildDetailProps(parent: THREE.Group): void {
     [-6.4, 1.9, 0x69835f],
     [-5.75, 1.5, 0x80617e],
   ] as Array<[number, number, number]>) {
-    addBox(parent, [0.42, 0.3, 0.02], [x, y, -6.7], color)
+    addBox(details, [0.42, 0.3, 0.02], [x, y, -6.7], color)
   }
 
   // Charging / utility station.
-  addBox(parent, [1.55, 0.82, 0.6], [8.75, 0.42, -1.8], 0x4d5a63)
-  addBox(parent, [1.35, 0.08, 0.72], [8.75, 0.88, -1.8], 0x7f624a)
+  addBox(details, [1.55, 0.82, 0.6], [8.75, 0.42, -1.8], 0x4d5a63)
+  addBox(details, [1.35, 0.08, 0.72], [8.75, 0.88, -1.8], 0x7f624a)
   for (const x of [8.35, 8.75, 9.15]) {
-    addBox(parent, [0.23, 0.08, 0.35], [x, 0.97, -1.8], 0x26333d)
+    addBox(details, [0.23, 0.08, 0.35], [x, 0.97, -1.8], 0x26333d)
   }
+  // Print/artifact station and a standing incident huddle point.
+  addBox(details, [1.15, 0.92, 0.7], [8.75, 0.46, 0.15], 0x53616a)
+  addBox(details, [0.78, 0.18, 0.46], [8.75, 1.02, 0.15], 0x222f39)
+  addCylinder(details, 0.48, 0.09, [-8.3, 0.92, 2.15], 0x826147)
+  addCylinder(details, 0.055, 0.78, [-8.3, 0.43, 2.15], 0x303943)
+
+  parent.add(details)
+
 }
 
 function createStrategyDetailProps(parent: THREE.Group): void {
+  const details = new THREE.Group()
+  details.name = 'office-floor-details-strategy'
+
   // Reference bookshelf / strategy library.
-  addBox(parent, [1.55, 2.05, 0.5], [-8.85, 1.03, 2.0], 0x46555e)
+  addBox(details, [1.55, 2.05, 0.5], [-8.85, 1.03, 2.0], 0x46555e)
   for (const y of [0.38, 0.8, 1.22, 1.64]) {
-    addBox(parent, [1.34, 0.055, 0.42], [-8.85, y, 1.78], 0x7e624c)
+    addBox(details, [1.34, 0.055, 0.42], [-8.85, y, 1.78], 0x7e624c)
   }
   for (const [x, y, color] of [
     [-9.22, 0.58, 0x55788b],
@@ -1354,16 +1380,28 @@ function createStrategyDetailProps(parent: THREE.Group): void {
     [-9.12, 1.42, 0x8b684f],
     [-8.72, 1.42, 0x537985],
   ] as Array<[number, number, number]>) {
-    addBox(parent, [0.18, 0.28, 0.12], [x, y, 1.52], color)
+    addBox(details, [0.18, 0.28, 0.12], [x, y, 1.52], color)
   }
 
   // Presentation sideboard and a warm floor lamp.
-  addBox(parent, [2.05, 0.72, 0.48], [7.85, 0.36, -3.65], 0x505d65)
-  addBox(parent, [1.78, 0.08, 0.58], [7.85, 0.78, -3.65], 0x87654b)
-  addCylinder(parent, 0.07, 1.5, [8.9, 0.75, 2.7], 0x343f47)
-  const shade = addCylinder(parent, 0.32, 0.38, [8.9, 1.56, 2.7], 0xc9a36b)
+  addBox(details, [2.05, 0.72, 0.48], [7.85, 0.36, -3.65], 0x505d65)
+  addBox(details, [1.78, 0.08, 0.58], [7.85, 0.78, -3.65], 0x87654b)
+  addCylinder(details, 0.07, 1.5, [8.9, 0.75, 2.7], 0x343f47)
+  const shade = addCylinder(details, 0.32, 0.38, [8.9, 1.56, 2.7], 0xc9a36b)
   ;(shade.material as THREE.MeshStandardMaterial).emissive.setHex(0x6e4d24)
   ;(shade.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.42
+  // Prototype / decision plinths for a more studio-like strategy floor.
+  for (const [x, color] of [
+    [-7.95, 0x5b7585],
+    [-7.25, 0x7b6857],
+    [-6.55, 0x667c63],
+  ] as Array<[number, number]>) {
+    addBox(details, [0.48, 0.62, 0.48], [x, 0.31, -1.75], 0x3d4a52)
+    addBox(details, [0.32, 0.22, 0.32], [x, 0.73, -1.75], color)
+  }
+
+  parent.add(details)
+
 }
 
 function createCommonsFloor(
