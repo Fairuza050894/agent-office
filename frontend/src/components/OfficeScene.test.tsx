@@ -36,6 +36,34 @@ const member: OfficePresenceMember = {
   truth: 'AMBIENT',
 }
 
+describe('OfficeScene operational surface', () => {
+  it('labels Run Office View separately from the Office Workspace', () => {
+    render(
+      <OfficeScene
+        stages={[]}
+        agents={[]}
+        profiles={[]}
+        selectedAgentId={null}
+        onSelectAgent={vi.fn()}
+        motionPaused={false}
+        mode="replay"
+        replayNonce={1}
+        replayStartedAt={0}
+        replayRange={null}
+        showRoster={false}
+        presentation="operational"
+      />,
+    )
+
+    expect(screen.getByText('Run Office View')).toBeInTheDocument()
+    expect(screen.getByText('Canonical Run / AgentRun projection')).toBeInTheDocument()
+    expect(screen.queryByText('Office Workspace')).not.toBeInTheDocument()
+    expect(
+      screen.getByLabelText('Run Office View 3D projection'),
+    ).toBeInTheDocument()
+  })
+})
+
 describe('OfficeScene workspace presence', () => {
   it('renders a truthful selected-member inspector', () => {
     const onSelectAgent = vi.fn()
