@@ -60,7 +60,9 @@ describe('Agent Office operational shell', () => {
 
     const nav = screen.getByRole('navigation', { name: 'Primary Navigation' })
     expect(within(nav).getByText('Workspace')).toBeInTheDocument()
-    expect(within(nav).getByText('More tools')).toBeInTheDocument()
+    const moreToolsSummary = within(nav).getByText('More tools')
+    expect(moreToolsSummary).toBeInTheDocument()
+    expect(moreToolsSummary.closest('details')).toHaveAttribute('open')
 
     for (const label of [
       'Office',
