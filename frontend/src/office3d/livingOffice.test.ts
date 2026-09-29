@@ -12,6 +12,7 @@ import {
   officeAmbientWindow,
   officeBehaviorFor,
   officeBehaviorLabel,
+  officeRoleHomeLocation,
   planningPresenceMembers,
   livingOfficeMembers,
 } from './livingOffice'
@@ -156,6 +157,19 @@ describe('living office model', () => {
       'build',
       'strategy',
     ])
+  })
+
+  it('uses one home-floor contract for workspace and operational role projection', () => {
+    expect(officeRoleHomeLocation('product-manager')).toEqual({
+      floor: 'strategy',
+      zone: 'planning-table',
+    })
+    expect(officeRoleHomeLocation('backend-engineer')).toEqual({
+      floor: 'build',
+      zone: 'engineering-pod',
+    })
+    expect(officeRoleHomeLocation('architect').floor).toBe('strategy')
+    expect(officeRoleHomeLocation('legacy-explorer').floor).toBe('build')
   })
 
   it('maps accepted planning roles to factual planning presence', () => {
