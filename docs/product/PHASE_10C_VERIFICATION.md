@@ -285,3 +285,46 @@ git diff --check
 ```
 
 Do not mark this phase Ready for Review until those checks execute successfully.
+
+
+## Workspace floor-navigation containment hardening
+
+A follow-up rendered review found that the **Office Workspace** floor selector
+still allowed the visible floor-name hierarchy to read as if `Commons`,
+`Build`, and `Strategy` were detached from their chips. The Run Office View
+was already visually correct and must not regress.
+
+The hardening is intentionally Workspace-scoped:
+
+- `/office` uses a dedicated `office-floor-switcher-workspace` styling boundary;
+- every chip contains its floor code, floor name, and live presence count;
+- the active floor no longer emits a second loose floor-name/status label;
+- Reset view remains a separate aligned control;
+- responsive behavior stays contained in normal and Maximize layouts;
+- Run Office View keeps its existing switcher styling and canonical Run/AgentRun
+  presentation unchanged.
+
+Regression coverage now verifies that:
+
+- the Workspace switcher is a dedicated labelled group;
+- each of `L1 Commons`, `L2 Build`, and `L3 Strategy` is represented by one
+  button;
+- the code, name, and presence count all live inside that button;
+- the operational/Run switcher does not receive the Workspace-only class.
+
+Code checkpoint for this pass:
+
+```text
+0326f7f test: lock workspace floor chip containment
+```
+
+### Repository-state note
+
+At the start of this continuation, GitHub reported PR #13 as already merged and
+closed on 2026-09-29, even though the previous working note still described it
+as Draft. No direct edit to `main` was made in this continuation. All new
+hardening remains on `phase-10c-time-context` for a separate Draft review.
+
+The latest available GitHub Actions run associated with the prior PR head still
+shows frontend, backend, and repository jobs completing with no assigned steps.
+That remains an infrastructure/runner condition, not an assertion failure.
