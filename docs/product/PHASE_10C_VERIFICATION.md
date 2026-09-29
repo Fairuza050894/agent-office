@@ -30,6 +30,11 @@ Implementation checkpoint: `d8f3f53`
 - richer L1 Commons identity
 - richer L2 Build identity
 - richer L3 Strategy identity
+- explicit building lifecycle: Closed / Opening up / Open / Winding down
+- mode-driven dynamic floor props for arrival, lunch, coffee, focus, wrap-up,
+  evening, and night cues
+- closed-office planning rendered as remote/offsite rather than physical
+  overnight presence
 - QA / documentation / architecture / decision anchors aligned to their spaces
 - regression tests for timezone, world HUD, occupancy, and specialist-zone layout
 
@@ -43,9 +48,10 @@ ambient occupancy cap  0
 next event             Morning arrival 07:00
 ```
 
-A genuinely recent planning session can still appear because it is planning
-truth. A stale planning record remains in Composer but disappears from physical
-presence.
+Planning truth remains durable in Composer/Dock, but a CLOSED office no longer
+renders people physically in the building merely because the planning thread is
+fresh. Fresh late-night planning is treated as remote/offsite by default. A stale
+planning record likewise remains durable but absent from physical presence.
 
 The same absolute timestamp may represent a different office mode in another
 configured timezone. Tests cover this explicitly.
