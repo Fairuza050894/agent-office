@@ -473,11 +473,12 @@ export function planningPresenceMembers(
 ): OfficePresenceMember[] {
   if (!thread || !proposal) return []
   const effectiveTimeZone = timeZone ?? thread.timezone
-  if (
-    now &&
-    !isPlanningPresenceFresh(thread.updated_at, now, effectiveTimeZone)
-  ) {
-    return []
+  if (now) {
+    const world = officeWorldContext(now, effectiveTimeZone)
+    if (!world.allowsPhysicalPlanningPresence) return []
+    if (!isPlanningPresenceFresh(thread.updated_at, now, effectiveTimeZone)) {
+      return []
+    }
   }
 
   const names = profileByKey(profiles)
