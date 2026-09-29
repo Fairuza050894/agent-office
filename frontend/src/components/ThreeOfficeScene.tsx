@@ -341,10 +341,9 @@ export function ThreeOfficeScene({
           } else {
             direction.normalize()
             runtime.root.position.addScaledVector(direction, step)
-            // Quaternius models are authored facing -Z. The character module
-            // rotates the GLB presentation by PI, so the runtime root itself
-            // follows the canonical +Z Three.js heading convention here.
-            runtime.root.rotation.y = Math.atan2(direction.x, direction.z)
+            // Align the rigged model's visual forward axis with velocity.
+            // Station yaw remains authoritative once movement finishes.
+            runtime.root.rotation.y = officeMovementYaw(direction)
           }
         }
 
