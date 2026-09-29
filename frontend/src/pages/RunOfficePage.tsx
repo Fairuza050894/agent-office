@@ -535,6 +535,11 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
               initialFloorResolved.current = true
               setSelectedFloor(floor)
               setSelectedAgentId(null)
+              navigate(
+                officeMode === 'replay'
+                  ? `/runs/${run.id}/office?floor=${floor}&mode=replay`
+                  : `/runs/${run.id}/office?floor=${floor}`,
+              )
             }}
             operationalFloorCounts={operationalFloorCounts}
           />
