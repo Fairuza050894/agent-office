@@ -1128,17 +1128,19 @@ function createLiftCore(
   floor: OfficeFloorKey,
 ): void {
   const floorIndex = floor === 'commons' ? 0 : floor === 'build' ? 1 : 2
+  const lift = new THREE.Group()
+  lift.name = 'office-lift-core'
 
-  addBox(parent, [3.15, 2.75, 0.14], [4.9, 1.42, -6.77], 0x2d3942)
-  addBox(parent, [1.2, 2.2, 0.06], [4.2, 1.12, -6.66], 0x56636b)
-  addBox(parent, [1.2, 2.2, 0.06], [5.6, 1.12, -6.66], 0x56636b)
-  addBox(parent, [0.05, 2.16, 0.075], [4.9, 1.12, -6.61], 0x26333b)
+  addBox(lift, [3.15, 2.75, 0.14], [4.9, 1.42, -6.77], 0x2d3942)
+  addBox(lift, [1.2, 2.2, 0.06], [4.2, 1.12, -6.66], 0x56636b)
+  addBox(lift, [1.2, 2.2, 0.06], [5.6, 1.12, -6.66], 0x56636b)
+  addBox(lift, [0.05, 2.16, 0.075], [4.9, 1.12, -6.61], 0x26333b)
 
-  addBox(parent, [0.72, 0.34, 0.08], [4.9, 2.66, -6.6], 0x17252e)
+  addBox(lift, [0.72, 0.34, 0.08], [4.9, 2.66, -6.6], 0x17252e)
   for (let index = 0; index < 3; index += 1) {
     const active = index === floorIndex
     const lamp = addCylinder(
-      parent,
+      lift,
       0.075,
       0.04,
       [4.7 + index * 0.2, 2.66, -6.52],
@@ -1151,7 +1153,8 @@ function createLiftCore(
     }
   }
 
-  addBox(parent, [2.45, 0.025, 1.35], [4.9, 0.065, -5.85], 0x3c4548)
+  addBox(lift, [2.45, 0.025, 1.35], [4.9, 0.065, -5.85], 0x3c4548)
+  parent.add(lift)
 }
 
 function createOfficeShell(
