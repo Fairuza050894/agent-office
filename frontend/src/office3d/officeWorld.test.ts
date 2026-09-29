@@ -14,6 +14,10 @@ describe('office world context', () => {
     const world = officeWorldContext(instant, JAKARTA)
 
     expect(world.mode).toBe('NIGHT_QUIET')
+    expect(world.lifecycle).toBe('CLOSED')
+    expect(world.lifecycleLabel).toBe('Closed')
+    expect(world.sceneCue).toBe('NIGHT_LOCKED')
+    expect(world.occupancyExplanation).toContain('no ambient team')
     expect(world.ambientOccupancyCap).toBe(0)
     expect(world.isOfficeOpen).toBe(false)
     expect(world.clockLabel).toBe('00:44:00')
@@ -30,6 +34,21 @@ describe('office world context', () => {
     expect(officeWorldContext(instant, 'America/Los_Angeles').mode).not.toBe(
       'NIGHT_QUIET',
     )
+  })
+
+  it('maps office modes to explicit building lifecycle states', () => {
+    expect(
+      officeWorldContext(new Date('2026-09-29T00:30:00Z'), JAKARTA).lifecycle,
+    ).toBe('OPENING')
+    expect(
+      officeWorldContext(new Date('2026-09-29T03:30:00Z'), JAKARTA).lifecycle,
+    ).toBe('OPEN')
+    expect(
+      officeWorldContext(new Date('2026-09-29T11:30:00Z'), JAKARTA).lifecycle,
+    ).toBe('WIND_DOWN')
+    expect(
+      officeWorldContext(new Date('2026-09-29T16:30:00Z'), JAKARTA).lifecycle,
+    ).toBe('CLOSED')
   })
 
   it('allows staggered arrival to reach full attendance before core hours', () => {
