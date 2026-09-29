@@ -1102,12 +1102,41 @@ export function stageCenter(index: number): THREE.Vector3 {
   return WORKSTATIONS[index % WORKSTATIONS.length].station.clone()
 }
 
-function createOfficeShell(environment: THREE.Group): void {
+const FLOOR_ACCENT: Record<
+  OfficeFloorKey,
+  { wall: number; accent: number; trim: number }
+> = {
+  commons: {
+    wall: 0x4a5757,
+    accent: 0x536a5b,
+    trim: 0x8a6a4e,
+  },
+  build: {
+    wall: 0x46545f,
+    accent: 0x3d6172,
+    trim: 0x536f7d,
+  },
+  strategy: {
+    wall: 0x4d515f,
+    accent: 0x62586f,
+    trim: 0x7c6754,
+  },
+}
+
+function createOfficeShell(
+  environment: THREE.Group,
+  floor: OfficeFloorKey,
+): void {
   addBox(environment, [20.5, 0.34, 14.5], [0, -0.22, 0], 0x111821)
   createWoodFloor(environment)
-  addBox(environment, [20, 3.2, 0.16], [0, 1.56, -6.98], 0x4b5a67)
-  addBox(environment, [0.16, 3.2, 14], [-9.92, 1.56, 0], 0x46545f)
-  addBox(environment, [0.16, 3.2, 14], [9.92, 1.56, 0], 0x46545f)
+  const palette = FLOOR_ACCENT[floor]
+  addBox(environment, [20, 3.2, 0.16], [0, 1.56, -6.98], palette.wall)
+  addBox(environment, [0.16, 3.2, 14], [-9.92, 1.56, 0], palette.wall)
+  addBox(environment, [0.16, 3.2, 14], [9.92, 1.56, 0], palette.wall)
+
+  addBox(environment, [4.8, 2.72, 0.035], [6.8, 1.5, -6.86], palette.accent)
+  addBox(environment, [3.4, 0.08, 0.04], [6.8, 0.18, -6.81], palette.trim)
+
   createWindowWall(environment)
   environment.add(createDoor(new THREE.Vector3(0, 0, -6.9)))
   createCeilingLights(environment)
@@ -1373,7 +1402,7 @@ export function createOfficeEnvironment(
   officeMode: OfficeModeKey | null = null,
 ): Map<string, StationPlacement> {
   clearGroup(environment)
-  createOfficeShell(environment)
+  createOfficeShell(environment, floor)
 
   if (floor === 'commons') createCommonsFloor(environment, officeMode)
   else if (floor === 'strategy') createStrategyFloor(environment, officeMode)
