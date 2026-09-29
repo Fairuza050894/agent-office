@@ -147,7 +147,7 @@ export function OfficeScene({
       aria-label={
         presentation === 'workspace'
           ? 'Office workspace 3D environment'
-          : 'Run Office View 3D projection'
+          : 'Agent Office operational 3D projection'
       }
     >
       <div
