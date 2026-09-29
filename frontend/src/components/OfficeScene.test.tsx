@@ -182,8 +182,12 @@ describe('OfficeScene workspace presence', () => {
       screen.getByText('Live office view · No active run selected'),
     ).toBeInTheDocument()
     expect(screen.getByText('Controls')).toBeInTheDocument()
-    expect(screen.queryByText(/drag to orbit/i)).not.toBeInTheDocument()
-    expect(screen.getByText('Build')).toBeInTheDocument()
+    expect(
+      screen.queryByText(/No factual Run selected/i),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /L2.*Build/i }),
+    ).toBeInTheDocument()
     expect(screen.getByText('Quiet')).toBeInTheDocument()
   })
 
