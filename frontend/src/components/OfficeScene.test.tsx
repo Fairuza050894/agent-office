@@ -9,14 +9,20 @@ vi.mock('./ThreeOfficeScene', () => ({
   ThreeOfficeScene: ({
     onSelectAgent,
     officeMode,
+    cameraView,
+    labelsVisible,
   }: {
     onSelectAgent: (agentId: string) => void
     officeMode?: string | null
+    cameraView?: string
+    labelsVisible?: boolean
   }) => (
     <button
       type="button"
       aria-label="Mock 3D member"
       data-office-mode={officeMode ?? ''}
+      data-camera-view={cameraView ?? ''}
+      data-labels-visible={String(labelsVisible ?? true)}
       onClick={() => onSelectAgent('ambient:backend-engineer')}
     >
       member
@@ -229,6 +235,82 @@ describe('OfficeScene workspace presence', () => {
     expect(activeFloor).toBeInTheDocument()
     expect(activeFloor).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getAllByText('Build')).toHaveLength(1)
+  })
+
+  it('offers floor-aware camera presets and a label layer toggle', () => {
+    render(
+      <OfficeScene
+        stages={[]}
+        agents={[]}
+        profiles={[]}
+        selectedAgentId={null}
+        onSelectAgent={vi.fn()}
+        motionPaused={false}
+        mode="live"
+        replayNonce={0}
+        replayStartedAt={null}
+        replayRange={null}
+        showRoster={false}
+        presentation="workspace"
+        floor="build"
+        workspaceMembers={[]}
+        onFloorChange={vi.fn()}
+        officeHour={9}
+      />,
+    )
+
+    fireEvent.click(screen.getByText('Controls'))
+
+    const cameraViews = screen.getByRole('group', { name: 'Camera view' })
+    expect(within(cameraViews).getByRole('button', { name: /Overview/i })).toBeInTheDocument()
+    expect(within(cameraViews).getByRole('button', { name: /Engineering/i })).toBeInTheDocument()
+    expect(within(cameraViews).getByRole('button', { name: /QA \/ Review/i })).toBeInTheDocument()
+
+    fireEvent.click(
+      within(cameraViews).getByRole('button', { name: /Engineering/i }),
+    )
+    expect(screen.getByRole('button', { name: 'Mock 3D member' })).toHaveAttribute(
+      'data-camera-view',
+      'primary',
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /Labels/i }))
+    expect(screen.getByRole('button', { name: 'Mock 3D member' })).toHaveAttribute(
+      'data-labels-visible',
+      'false',
+    )
+  })
+
+  it('supports keyboard-first camera and label controls from the 3D surface', () => {
+    render(
+      <OfficeScene
+        stages={[]}
+        agents={[]}
+        profiles={[]}
+        selectedAgentId={null}
+        onSelectAgent={vi.fn()}
+        motionPaused={false}
+        mode="live"
+        replayNonce={0}
+        replayStartedAt={null}
+        replayRange={null}
+        showRoster={false}
+        presentation="workspace"
+        floor="strategy"
+        workspaceMembers={[]}
+        onFloorChange={vi.fn()}
+        officeHour={9}
+      />,
+    )
+
+    const scene = screen.getByLabelText('Office workspace 3D environment')
+    const renderer = screen.getByRole('button', { name: 'Mock 3D member' })
+
+    fireEvent.keyDown(scene, { key: '3' })
+    expect(renderer).toHaveAttribute('data-camera-view', 'secondary')
+
+    fireEvent.keyDown(scene, { key: 'l' })
+    expect(renderer).toHaveAttribute('data-labels-visible', 'false')
   })
 
   it('keeps every floor name contained inside its switcher card', () => {
