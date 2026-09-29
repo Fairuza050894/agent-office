@@ -90,7 +90,6 @@ export function OfficeWorkspacePage() {
     [currentSearch],
   )
   const requestedFloorRef = useRef<OfficeFloorKey | null>(requestedFloor)
-  requestedFloorRef.current = requestedFloor
   const [projects, setProjects] = useState<Project[]>([])
   const [executors, setExecutors] = useState<Executor[]>([])
   const [profiles, setProfiles] = useState<AgentProfile[]>([])
@@ -125,6 +124,10 @@ export function OfficeWorkspacePage() {
   const [planningDecisionBusy, setPlanningDecisionBusy] = useState(false)
   const [planningActionBusy, setPlanningActionBusy] = useState(false)
   const [composerError, setComposerError] = useState<string | null>(null)
+
+  useEffect(() => {
+    requestedFloorRef.current = requestedFloor
+  }, [requestedFloor])
 
   useEffect(() => {
     let lastMinute = Math.floor(Date.now() / 60_000)
