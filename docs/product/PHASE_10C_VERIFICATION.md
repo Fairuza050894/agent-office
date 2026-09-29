@@ -5,7 +5,7 @@ Date: 2026-09-29
 Branch: `phase-10c-time-context`  
 Base: `main@60fd03c`  
 Merge policy: manual only  
-Implementation checkpoint: `def6ad4`
+Implementation checkpoint: `af86c0c`
 
 ## Delivered scope
 
@@ -127,7 +127,7 @@ Before the rendered gate, additional source review closed these issues:
 - decision-room anchors are placed in front of decision tables instead of inside them;
 - L1/L2/L3 floor buttons expose truthful live presence counts.
 
-The original occupancy-hardening checkpoint was `d8f3f53`. Lifecycle and closed-office planning semantics landed at `9884d07`. The current implementation checkpoint is `def6ad4`, which includes rendered-review UI polish, richer per-floor support props, maximize-safe scene command-strip layout, floor-specific shell accents, and corrected rigged-character movement facing.
+The original occupancy-hardening checkpoint was `d8f3f53`. Lifecycle and closed-office planning semantics landed at `9884d07`. The current implementation checkpoint is `af86c0c`, which includes rendered-review UI polish, richer per-floor support props, maximize-safe scene command-strip layout, floor-specific shell accents, and a replay-only character-facing correction that preserves verified live movement.
 
 ## Office-world lifecycle hardening
 
@@ -205,27 +205,28 @@ Hardening through `af5b87a` now provides:
 A follow-up local screenshot is still required because GitHub Actions currently
 cannot assign a runner and this pass materially changes rendered layout.
 
-## Character movement-facing fix
+## Replay character-facing fix
 
-Rendered review identified a real presentation bug: rigged characters moved along
-the correct path but visually faced the opposite direction, producing a
-moonwalk/backwards-walking effect.
+Rendered review clarified that the live/operational 3D Office movement was already
+correct. The backward-walking defect occurred specifically during Historical
+Replay.
 
-Root cause:
+The correction is intentionally mode-scoped:
 
-- the GLB presentation keeps a 180-degree model yaw offset;
-- station-facing orientation is already visually correct and must remain
-  authoritative when an agent stops;
-- movement heading previously aligned root +Z to velocity, while the rigged
-  character's visual forward axis after the presentation offset is root -Z.
+```text
+live movement    -> existing verified heading unchanged
+historical replay -> live heading + 180 degrees
+movement finished -> existing station targetYaw restored
+```
 
-The fix therefore does **not** rotate the model globally or change station yaw.
-Movement-only heading now aligns the visual -Z forward axis to the current
-velocity vector via `officeMovementYaw()`. When movement finishes, the existing
-`targetYaw` / station orientation is restored unchanged.
+This avoids fixing Replay by breaking normal live movement.
 
-Regression tests cover +Z, -Z, +X, and -X movement directions so the facing
-convention cannot silently regress.
+The replay-facing adapter is applied only while `modeRef.current === 'replay'`.
+Regression coverage compares live and Replay yaw across +Z, -Z, +X, and -X and
+requires Replay to remain exactly 180 degrees from the verified live heading.
+
+This remains presentation-only and does not alter Replay timing, factual events,
+AgentRun state, path generation, or station assignment.
 
 ## Rendered acceptance required
 
@@ -245,8 +246,9 @@ After pulling the branch locally, verify:
     Strategy shows remote/closed-office context rather than physical people;
 11. the polished command strip remains readable in normal and Maximize modes;
 12. floor-specific support props do not clip paths or character anchors;
-13. moving rigged characters face their travel direction rather than walking
-    backward, while stopped characters still respect their station yaw.
+13. live/operational movement remains unchanged;
+14. Historical Replay characters no longer walk backward;
+15. stopped characters still restore the existing station targetYaw.
 
 ## Automated commands to run when runner/local environment is available
 
