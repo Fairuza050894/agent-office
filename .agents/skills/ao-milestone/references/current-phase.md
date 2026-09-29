@@ -13,7 +13,7 @@ Current work:
 
 ```text
 branch: phase-10c-time-context
-checkpoint: 9884d07
+checkpoint: 2322f1b
 phase: Phase 10C — Office World Time Context & Realistic Occupancy
 ```
 
@@ -56,6 +56,11 @@ or mutate operational execution truth.
 - mode-driven dynamic floor props and scene cues
 - 1-second HUD clock with minute-level presence recalculation
 - lighting synchronized to Office timezone
+- polished Office scene command strip
+  - workspace context separated from controls
+  - clock / mode / presence / next-event hierarchy
+  - concise active-floor summary
+  - responsive and Maximize-safe layout
 - richer Commons floor:
   - reception
   - community wall
@@ -64,6 +69,8 @@ or mutate operational execution truth.
   - lounge
   - quiet room
   - game corner
+  - parcel/personal lockers
+  - snack/hydration storage
 - richer Build floor:
   - engineering pod
   - dedicated QA lab
@@ -71,6 +78,8 @@ or mutate operational execution truth.
   - documentation nook
   - ops/server rack
   - review wall
+  - sprint board
+  - charging/utility station
 - richer Strategy floor:
   - planning table
   - meeting room
@@ -78,6 +87,9 @@ or mutate operational execution truth.
   - decision pods
   - architecture/review area
   - breakout area
+  - reference library
+  - presentation sideboard
+  - floor lamp
 - specialist zone anchors aligned to the richer environment
 - world occupancy cap enforced across baseline modes
 - scheduled events reserve capacity before baseline ambience
@@ -166,6 +178,9 @@ Pending local visual review of:
 - timezone-synchronized lighting
 - L1/L2/L3 visual differentiation
 - QA / docs / roadmap / decision areas
+- polished command-strip hierarchy and copy
+- normal + Maximize command-strip layout
+- Commons/Build/Strategy support-prop differentiation
 - Composer and Operations Dock compatibility
 - furniture/path clipping
 
