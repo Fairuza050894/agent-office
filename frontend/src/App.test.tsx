@@ -55,15 +55,19 @@ describe('Agent Office operational shell', () => {
     expect(within(sidebar).queryByText('Phase 5')).not.toBeInTheDocument()
   })
 
-  it('renders required global navigation plus Tasks utility registry', () => {
+  it('keeps core navigation visible and low-frequency tools available on demand', () => {
     render(<App initialPath="/settings" />)
 
     const nav = screen.getByRole('navigation', { name: 'Primary Navigation' })
+    expect(within(nav).getByText('Workspace')).toBeInTheDocument()
+    expect(within(nav).getByText('More tools')).toBeInTheDocument()
+
     for (const label of [
       'Office',
-      'Overview',
       'Projects',
       'Runs',
+      'Overview',
+      'Tasks',
       'Agents',
       'Workflows',
       'Executors',
@@ -71,7 +75,6 @@ describe('Agent Office operational shell', () => {
       'Evidence',
       'Audit',
       'Settings',
-      'Tasks',
     ]) {
       expect(within(nav).getByRole('link', { name: label })).toBeInTheDocument()
     }
@@ -87,7 +90,7 @@ describe('Agent Office operational shell', () => {
   it('collapses and restores Office navigation without leaving the workspace', async () => {
     render(<App initialPath="/office" />)
 
-    await screen.findByRole('heading', { level: 1, name: 'Office' })
+    await screen.findByRole('heading', { level: 1, name: 'Agent Office' })
     const sidebar = screen.getByRole('complementary', { name: 'Sidebar Navigation' })
     const collapse = screen.getByRole('button', { name: 'Collapse Office navigation' })
 
@@ -106,7 +109,7 @@ describe('Agent Office operational shell', () => {
     render(<App initialPath="/office" />)
 
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Office' }),
+      await screen.findByRole('heading', { level: 1, name: 'Agent Office' }),
     ).toBeInTheDocument()
     expect(
       screen.getByRole('region', { name: 'Office workspace 3D environment' }),
