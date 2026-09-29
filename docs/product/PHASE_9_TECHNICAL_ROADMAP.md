@@ -84,7 +84,9 @@ Optional scoped forms:
 Compatibility requirement:
 
 - existing `/runs/:runId/office` deep links remain valid
-- Run-scoped route opens the same Office workspace in Operational scope
+- `/office` is the project-aware Office Workspace
+- `/runs/:runId/office` remains a distinct Run Office View backed by canonical
+  Run / AgentRun state; it is not the Office Workspace in another mode
 
 ## Frontend modules
 
