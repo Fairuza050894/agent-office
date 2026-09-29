@@ -13,7 +13,7 @@ Current work:
 
 ```text
 branch: phase-10d-unified-agent-office
-checkpoint: b17dbde
+checkpoint: eaf8bfe
 phase: Phase 10D — Unified Agent Office Experience
 ```
 
@@ -100,6 +100,10 @@ Operational Live / Replay no longer render an inert Universal Composer.
 Planning remains in Workspace.
 
 Run secondary actions are consolidated under a compact Run controls menu.
+
+Transient movement/break nameplates remain quiet unless selection or meaningful
+operational state makes the label useful, reducing crowding in multi-agent
+Replay and arrival scenes.
 
 The duplicate wall clock was removed from the top command rail. Workspace keeps
 the Office-world clock as the authoritative temporal context.
