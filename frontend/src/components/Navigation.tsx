@@ -96,7 +96,7 @@ export function Navigation({
           {!isCollapsed && (
             <details
               className="nav-tools"
-              defaultOpen={utilityRouteActive}
+              open={utilityRouteActive ? true : undefined}
             >
               <summary>More tools</summary>
               <div className="nav-tools-body">
