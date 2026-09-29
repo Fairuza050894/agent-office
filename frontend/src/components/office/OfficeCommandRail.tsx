@@ -17,7 +17,6 @@ export function OfficeCommandRail({
   meta,
   actions,
 }: OfficeCommandRailProps) {
-
   return (
     <header className="office-command-rail">
       <div className="office-command-context">
