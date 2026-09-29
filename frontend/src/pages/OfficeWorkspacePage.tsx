@@ -223,7 +223,13 @@ export function OfficeWorkspacePage() {
     return () => {
       active = false
     }
-  }, [requestedFloor, selectedProjectId])
+  }, [selectedProjectId])
+
+  useEffect(() => {
+    if (!requestedFloor) return
+    setSelectedFloor(requestedFloor)
+    setSelectedOfficeMemberId(null)
+  }, [requestedFloor])
 
   useEffect(() => {
     let active = true
