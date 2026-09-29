@@ -3121,3 +3121,69 @@ button.office-scope-link {
     justify-content: flex-start;
   }
 }
+
+
+/* Reduced navigation hierarchy */
+
+.nav-tools {
+  margin: 8px 8px 0;
+  border-top: 1px solid #1a2a35;
+  padding-top: 7px;
+}
+
+.nav-tools > summary {
+  display: flex;
+  height: 30px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px;
+  border-radius: 4px;
+  color: #687f90;
+  font-size: .59rem;
+  font-weight: 650;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.nav-tools > summary::-webkit-details-marker {
+  display: none;
+}
+
+.nav-tools > summary::after {
+  content: '+';
+  color: #506a7a;
+  font-family: var(--ao-mono);
+}
+
+.nav-tools[open] > summary::after {
+  content: '−';
+}
+
+.nav-tools > summary:hover,
+.nav-tools > summary:focus-visible {
+  background: #0f1f2a;
+  color: #c8d7e1;
+  outline: none;
+}
+
+.nav-tools-body {
+  display: grid;
+  gap: 5px;
+  padding-top: 5px;
+}
+
+.nav-section-utility {
+  margin: 0;
+}
+
+.nav-section-utility .nav-section-title {
+  padding-inline: 8px;
+  font-size: .45rem;
+}
+
+.nav-section-utility .nav-link {
+  min-height: 29px;
+  padding-block: 5px;
+  font-size: .61rem;
+}
