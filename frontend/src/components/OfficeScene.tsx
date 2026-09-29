@@ -148,14 +148,18 @@ export function OfficeScene({
               <div className="office-world-stat">
                 <span>Office mode</span>
                 <strong>{worldContext.modeLabel}</strong>
-                <small>
-                  {worldContext.isOfficeOpen ? 'Office open' : 'Office quiet'}
+                <small title={worldContext.occupancyExplanation}>
+                  {worldContext.lifecycleLabel}
+                  {' · '}
+                  {worldContext.isOfficeOpen ? 'scheduled open' : 'scheduled quiet'}
                 </small>
               </div>
               <div className="office-world-stat">
                 <span>Presence</span>
                 <strong>{totalPresence}</strong>
-                <small>across all floors</small>
+                <small>
+                  {worldContext.ambientOccupancyCap} ambient cap · all floors
+                </small>
               </div>
               <div className="office-world-stat office-world-next">
                 <span>Next event</span>
@@ -229,6 +233,7 @@ export function OfficeScene({
         workspaceMembers={workspaceMembers}
         cameraResetNonce={cameraResetNonce}
         officeHour={officeHour}
+        officeMode={worldContext?.mode ?? null}
       />
 
       {selectedWorkspaceMember && (
