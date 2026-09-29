@@ -13,7 +13,7 @@ Current work:
 
 ```text
 branch: phase-10c-time-context
-checkpoint: af86c0c
+checkpoint: 2f91840
 phase: Phase 10C — Office World Time Context & Realistic Occupancy
 ```
 
@@ -31,6 +31,21 @@ phase: Phase 10C — Office World Time Context & Realistic Occupancy
   - Phase 10A CLOSED / MERGED
   - Phase 10B CLOSED / MERGED
   - Phase 10C IMPLEMENTED — automated runner hold; rendered review pending
+
+## 3D surface boundary
+
+```text
+/office
+  Office Workspace
+  planning + ambient + office-world simulation
+
+/runs/:runId/office
+  Run Office View
+  canonical Run / AgentRun + Live + Historical Replay
+```
+
+The two surfaces reuse renderer code but do not share the same truth source.
+Historical Replay belongs to Run Office View only.
 
 Phase 10C remains presentation-only. It may affect clock, lighting, occupancy,
 ambient presence, floor selection, and visual environment, but it may not create
@@ -185,8 +200,8 @@ Pending local visual review of:
 - Commons/Build/Strategy support-prop differentiation
 - Composer and Operations Dock compatibility
 - furniture/path clipping
-- live movement remains unchanged — rendered PASS
-- Replay travel direction vs visual facing — rendered PASS
+- Run Office View Live movement remains unchanged — rendered PASS
+- Run Office View Historical Replay travel direction vs visual facing — rendered PASS
 
 ## Design and verification records
 
