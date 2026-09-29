@@ -367,21 +367,13 @@ export function shouldShowOfficeNameplate(
 
   return [
     'RUNNING',
-    'STARTING',
     'WORKING',
     'PLANNING',
-    'ARRIVING',
     'WAITING',
     'WAITING_USER',
-    'COFFEE_BREAK',
-    'LUNCH_BREAK',
-    'SOCIAL_BREAK',
-    'PRAYER_BREAK',
     'BLOCKED',
     'FAILED',
-  ].includes(
-    status.toUpperCase(),
-  )
+  ].includes(status.toUpperCase())
 }
 
 export function statusColor(status: string): number {
