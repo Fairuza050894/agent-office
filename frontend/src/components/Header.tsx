@@ -18,14 +18,14 @@ export function Header({
   const { currentPath } = useRouter()
   const activeItem = NAV_ITEMS.find((item) => item.path === currentPath)
   const contextualLabel =
-    activeItem?.label ??
-    (currentPath.match(/^\/runs\/[^/]+\/office$/)
-      ? 'Office View'
-      : currentPath.match(/^\/runs\/[^/]+$/)
-        ? 'Run detail'
-        : currentPath.match(/^\/projects\/[^/]+$/)
-          ? 'Project detail'
-          : 'Operations')
+    (currentPath === '/office' || currentPath.match(/^\/runs\/[^/]+\/office$/))
+      ? 'Agent Office'
+      : activeItem?.label ??
+        (currentPath.match(/^\/runs\/[^/]+$/)
+          ? 'Run detail'
+          : currentPath.match(/^\/projects\/[^/]+$/)
+            ? 'Project detail'
+            : 'Operations')
 
   const [status, setStatus] = useState<
     'checking' | 'connected' | 'disconnected'
