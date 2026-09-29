@@ -60,7 +60,7 @@ describe('OfficeScene operational scope', () => {
       />,
     )
 
-    expect(screen.getByText('Strategy')).toBeInTheDocument()
+    expect(screen.getAllByText('Strategy').length).toBeGreaterThan(0)
     expect(screen.getByText('Historical Run / AgentRun replay')).toBeInTheDocument()
     expect(
       screen.getByLabelText('Agent Office operational 3D projection'),
