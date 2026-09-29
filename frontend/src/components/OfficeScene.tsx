@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type KeyboardEvent } from 'react'
+import { useMemo, useState, type KeyboardEvent } from 'react'
 
 import type { AgentProfile, AgentRun, RunStage } from '../api'
 import {
@@ -186,10 +186,6 @@ export function OfficeScene({
       ? floorPresenceCount
       : operationalFloorCounts ?? floorPresenceCount
   const cameraViews = officeCameraViews(floor)
-
-  useEffect(() => {
-    setCameraView('overview')
-  }, [floor])
 
   const selectCameraView = (nextView: OfficeCameraViewKey) => {
     setCameraView(nextView)
