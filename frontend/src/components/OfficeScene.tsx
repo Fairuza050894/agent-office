@@ -124,7 +124,6 @@ export function OfficeScene({
 
   const activeFloor =
     OFFICE_FLOORS.find((candidate) => candidate.key === floor) ?? OFFICE_FLOORS[0]
-  const activeFloorPresence = effectiveFloorCounts[floor]
 
   return (
     <section
