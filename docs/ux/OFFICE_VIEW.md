@@ -1,29 +1,47 @@
-# Run Office View
+# Agent Office 3D Experience
 
 Status: Phase 8 implementation specification
 
-## Surface boundary
+## One Agent Office, multiple truth scopes
 
-Agent Office now has two distinct 3D surfaces. They share rendering primitives
-but they do not represent the same product state.
+Agent Office is one persistent 3D workplace. Routes are compatible entry points
+into different truth scopes; they are not separate virtual offices.
+
+```text
+Agent Office
+  |
+  +-- Workspace
+  |     planning + ambient + office-world context
+  |
+  +-- Live Run
+  |     canonical Run / AgentRun truth
+  |
+  +-- Historical Replay
+        persisted historical Run / AgentRun / Event truth
+```
+
+Entry routes remain:
 
 ```text
 /office
-  -> Office Workspace
-  -> planning / ambient / office-world presentation
-  -> time context, floors, occupancy, planning presence
-
 /runs/:runId/office
-  -> Run Office View
-  -> canonical Run / AgentRun projection
-  -> Live run + Historical Replay
 ```
 
-Historical Replay belongs only to **Run Office View**. Office-world clock,
-ambient occupancy, floor-life simulation, and planning/ambient personas belong
-to **Office Workspace**.
+`/office` enters the Workspace scope. `/runs/:runId/office` deep-links the
+same Agent Office experience into the selected Run. From there the user may
+switch between Workspace, Live Run, and Replay without adopting a second office
+mental model.
 
-A shared Three.js component does not merge these truth models.
+The 3D environment, floor vocabulary, camera model, character runtime, and
+interaction grammar are shared. Truth sources are not merged:
+
+- Workspace planning presence comes from durable planning records.
+- Workspace ambience is explicitly presentation-only.
+- Live Run presence comes from canonical Run / AgentRun state.
+- Historical Replay comes from persisted factual timestamps/events.
+
+Historical Replay is therefore a **Run truth scope**, not a feature of ambient
+Workspace simulation.
 
 Office View is an optional visual projection of canonical Run state. It does
 not own workflow state and must never become the only way to understand or
@@ -164,8 +182,8 @@ execution state.
 
 ## Phase 9A Office-first workspace
 
-Phase 9A introduces a separate Office-first workspace while retaining the
-existing Run-scoped operational projection.
+Phase 9A introduces the Office-first Workspace while retaining the
+Run-scoped deep link as a compatible entry into the same Agent Office experience.
 
 Primary routes:
 
@@ -174,13 +192,26 @@ Primary routes:
 /runs/:runId/office
 ```
 
-`/office` is the project-aware **Office Workspace**. It may render the Office
-environment without factual AgentRuns when no Run is selected.
+`/office` is the project-aware **Workspace scope**. It may render planning
+and clearly labelled ambient presence without factual AgentRuns.
 
-`/runs/:runId/office` is the **Run Office View**. It remains backward
-compatible and projects canonical Run / AgentRun / Event state. Its Live and
-Historical Replay controls are operational-view concerns and are not part of
-the Office Workspace world-simulation model.
+`/runs/:runId/office` is a backward-compatible **Run-scoped entry point** into
+the same Agent Office. Live Run and Historical Replay use canonical operational
+truth while preserving the same floors, camera interaction, characters, and
+scene shell.
+
+Primary application navigation is intentionally reduced around the main
+workflow:
+
+```text
+Office
+Projects
+Runs
+```
+
+Overview, Tasks, engineering registries, observability, Audit, and Settings
+remain available under **More tools**. This reduces global navigation noise
+without removing capability or stable routes.
 
 Desktop structure:
 
