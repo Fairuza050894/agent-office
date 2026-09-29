@@ -223,11 +223,11 @@ describe('Phase 9A Office Workspace', () => {
       name: 'Bottom Operations Dock',
     })
     expect(
-      screen.getByRole('heading', { level: 1, name: 'Office View' }),
+      screen.getByRole('heading', { level: 1, name: 'Agent Office' }),
     ).toBeInTheDocument()
 
     const projection = screen.getByRole('region', {
-      name: 'Run office 3D projection',
+      name: 'Agent Office operational 3D projection',
     })
     expect(projection.querySelectorAll('.office-agent-button')).toHaveLength(0)
     expect(
@@ -240,6 +240,15 @@ describe('Phase 9A Office Workspace', () => {
     })
 
     expect(screen.getByRole('region', { name: 'Universal Composer' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: 'Workspace' }),
+    ).toHaveAttribute('href', `/office?project=${PROJECT.id}`)
+    expect(
+      screen.getByRole('button', { name: 'Live Run' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+    expect(
+      screen.getByRole('button', { name: /L2.*Build/i }),
+    ).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Start Run' })).toBeDisabled()
 
@@ -266,7 +275,7 @@ describe('Phase 9A Office Workspace', () => {
     render(<App initialPath={`/runs/${RUN.id}/office`} />)
 
     const projection = await screen.findByRole('region', {
-      name: 'Run office 3D projection',
+      name: 'Agent Office operational 3D projection',
     })
     expect(projection.querySelectorAll('.office-agent-button')).toHaveLength(0)
 

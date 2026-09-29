@@ -8,6 +8,7 @@ import {
   animateCharacter,
   createCharacterRuntime,
   disposeCharacter,
+  officeMovementYaw,
   setCharacterBehavior,
   setCharacterSelected,
   setCharacterStatus,
@@ -24,12 +25,14 @@ import {
   stageCenter,
   waitingPosition,
 } from '../office3d/environment'
-import type {
-  OfficeFloorKey,
-  OfficePresenceMember,
-  OfficeZoneKey,
+import {
+  officeRoleHomeLocation,
+  type OfficeFloorKey,
+  type OfficePresenceMember,
+  type OfficeZoneKey,
 } from '../office3d/livingOffice'
 import { officeLightingForHour } from '../office3d/lighting'
+import type { OfficeModeKey } from '../office3d/officeWorld'
 import {
   officeReplayPlan,
   type OfficeReplayEvent,
@@ -51,6 +54,7 @@ export interface ThreeOfficeSceneProps {
   workspaceMembers?: OfficePresenceMember[]
   cameraResetNonce?: number
   officeHour?: number
+  officeMode?: OfficeModeKey | null
 }
 
 interface SceneMember extends OfficeCharacterSource {
@@ -188,6 +192,7 @@ export function ThreeOfficeScene({
   workspaceMembers = [],
   cameraResetNonce = 0,
   officeHour = new Date().getHours(),
+  officeMode = null,
 }: ThreeOfficeSceneProps) {
   const hostRef = useRef<HTMLDivElement>(null)
   const engineRef = useRef<Engine | null>(null)
@@ -338,10 +343,13 @@ export function ThreeOfficeScene({
           } else {
             direction.normalize()
             runtime.root.position.addScaledVector(direction, step)
-            // Quaternius models are authored facing -Z. The character module
-            // rotates the GLB presentation by PI, so the runtime root itself
-            // follows the canonical +Z Three.js heading convention here.
-            runtime.root.rotation.y = Math.atan2(direction.x, direction.z)
+            // Live movement is already visually verified. Replay has a
+            // separate 180° presentation-facing correction; station yaw remains
+            // authoritative once movement finishes.
+            runtime.root.rotation.y = officeMovementYaw(
+              direction,
+              modeRef.current === 'replay',
+            )
           }
         }
 
@@ -575,15 +583,22 @@ export function ThreeOfficeScene({
       (member) => member.floor === floor,
     )
     const sceneMembers: SceneMember[] = [
-      ...agents.map((agent) => ({
-        id: agent.id,
-        agent_profile_key: agent.agent_profile_key,
-        name:
-          profileByKey.get(agent.agent_profile_key)?.name ??
-          agent.agent_profile_key,
-        status: agent.status,
-        stageKey: agent.stage_key,
-      })),
+      ...agents.map((agent) => {
+        const home = officeRoleHomeLocation(agent.agent_profile_key)
+        return {
+          id: agent.id,
+          agent_profile_key: agent.agent_profile_key,
+          name:
+            profileByKey.get(agent.agent_profile_key)?.name ??
+            agent.agent_profile_key,
+          status: agent.status,
+          stageKey: agent.stage_key,
+          zone:
+            floor !== 'build' && home.floor === floor
+              ? home.zone
+              : undefined,
+        }
+      }),
       ...visibleWorkspaceMembers.map((member) => ({
         id: member.id,
         agent_profile_key: member.agent_profile_key,
@@ -599,6 +614,7 @@ export function ThreeOfficeScene({
       stages,
       sceneMembers,
       floor,
+      officeMode,
     )
 
     const liveIds = new Set(sceneMembers.map((member) => member.id))
@@ -689,6 +705,7 @@ export function ThreeOfficeScene({
     agents,
     floor,
     mode,
+    officeMode,
     profiles,
     selectedAgentId,
     stages,

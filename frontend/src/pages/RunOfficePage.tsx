@@ -19,6 +19,11 @@ import { UniversalComposerShell } from '../components/office/UniversalComposerSh
 import { OfficeRendererBoundary } from '../components/OfficeRendererBoundary'
 import { OfficeScene } from '../components/OfficeScene'
 import {
+  OFFICE_FLOORS,
+  officeRoleHomeLocation,
+  type OfficeFloorKey,
+} from '../office3d/livingOffice'
+import {
   officeReplayDuration,
   officeReplayFactualCutoff,
   officeReplayRange,
@@ -47,6 +52,7 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
   const [motionPaused, setMotionPaused] = useState(false)
   const [isMaximized, setIsMaximized] = useState(false)
   const [officeMode, setOfficeMode] = useState<'live' | 'replay'>('live')
+  const [selectedFloor, setSelectedFloor] = useState<OfficeFloorKey>('build')
   const [replayNonce, setReplayNonce] = useState(0)
   const [replayStartedAt, setReplayStartedAt] = useState<number | null>(null)
   const [replayRangeSnapshot, setReplayRangeSnapshot] =
@@ -59,6 +65,7 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const initialFloorResolved = useRef(false)
 
   const refreshProjection = useCallback(async () => {
     const [loadedRun, loadedStages, loadedAgents, loadedWorkspaces] =
@@ -215,6 +222,58 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
     () => agents.find((agent) => agent.id === selectedAgentId) ?? null,
     [agents, selectedAgentId],
   )
+
+  const operationalFloorCounts = useMemo(
+    () =>
+      OFFICE_FLOORS.reduce(
+        (counts, floor) => {
+          counts[floor.key] = agents.filter(
+            (agent) =>
+              officeRoleHomeLocation(agent.agent_profile_key).floor === floor.key,
+          ).length
+          return counts
+        },
+        { commons: 0, build: 0, strategy: 0 } as Record<
+          OfficeFloorKey,
+          number
+        >,
+      ),
+    [agents],
+  )
+
+  const visibleAgents = useMemo(
+    () =>
+      agents.filter(
+        (agent) =>
+          officeRoleHomeLocation(agent.agent_profile_key).floor === selectedFloor,
+      ),
+    [agents, selectedFloor],
+  )
+
+  useEffect(() => {
+    if (initialFloorResolved.current || agents.length === 0) return
+
+    const preferredFloor: OfficeFloorKey =
+      operationalFloorCounts.build > 0
+        ? 'build'
+        : operationalFloorCounts.strategy > 0
+          ? 'strategy'
+          : 'commons'
+
+    setSelectedFloor(preferredFloor)
+    initialFloorResolved.current = true
+  }, [agents.length, operationalFloorCounts])
+
+  const selectOperationalAgent = (agentId: string | null) => {
+    setSelectedAgentId(agentId)
+    if (!agentId) return
+
+    const agent = agents.find((candidate) => candidate.id === agentId)
+    if (!agent) return
+
+    setSelectedFloor(officeRoleHomeLocation(agent.agent_profile_key).floor)
+  }
+
   useEffect(() => {
     if (
       officeMode !== 'replay' ||
@@ -270,11 +329,11 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
     return (
       <div className="page-view office-view">
         <PageHeader
-          title="Office View"
+          title="Run Office View"
           description="Loading the factual Run projection."
         />
         <div className="status-feedback" role="status">
-          <span className="status-spinner" /> Loading Office View...
+          <span className="status-spinner" /> Loading Run Office View...
         </div>
       </div>
     )
@@ -284,7 +343,7 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
     return (
       <div className="page-view office-view">
         <PageHeader
-          title="Office View unavailable"
+          title="Run Office View unavailable"
           description="The visual projection could not load canonical Run state."
           action={
             <Link href={`/runs/${runId}`} className="btn btn-secondary">
@@ -293,7 +352,7 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
           }
         />
         <EmptyState
-          title="Office View could not load."
+          title="Run Office View could not load."
           message={error ?? 'Run state is unavailable.'}
           detail="Workflow execution and operational views remain independent from the Office renderer."
         />
@@ -323,13 +382,50 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
       className={`page-view office-view office-workspace ${isMaximized ? 'office-maximized' : ''}`}
     >
       <OfficeCommandRail
-        title="Office View"
+        title="Agent Office"
         projectName={project?.name ?? run.project_id}
-        modeLabel={officeMode === 'replay' ? 'Historical replay' : 'Operational'}
+        modeLabel={officeMode === 'replay' ? 'Run · Replay' : 'Run · Live'}
         statusLabel={run.status}
         meta={`${agents.length} AgentRun${agents.length === 1 ? '' : 's'} · ${stages.length} stage${stages.length === 1 ? '' : 's'}`}
         actions={
           <>
+            <div className="office-scope-switcher" aria-label="Agent Office scope">
+              <Link
+                href={`/office?project=${project?.id ?? run.project_id}`}
+                className="office-scope-link"
+              >
+                Workspace
+              </Link>
+              <button
+                type="button"
+                className={`office-scope-link ${officeMode === 'live' ? 'active' : ''}`}
+                aria-pressed={officeMode === 'live'}
+                onClick={() => {
+                  setOfficeMode('live')
+                  setReplayStartedAt(null)
+                  setReplayRangeSnapshot(null)
+                  setReplayElapsed(null)
+                }}
+              >
+                Live Run
+              </button>
+              <button
+                type="button"
+                className={`office-scope-link ${officeMode === 'replay' ? 'active' : ''}`}
+                aria-pressed={officeMode === 'replay'}
+                onClick={() => {
+                  const range = officeReplayRange(agents, events)
+                  setReplayRangeSnapshot(range)
+                  setReplayStartedAt(performance.now())
+                  setReplayElapsed(0)
+                  setOfficeMode('replay')
+                  setMotionPaused(false)
+                  setReplayNonce((current) => current + 1)
+                }}
+              >
+                Replay
+              </button>
+            </div>
             <span className="office-live-state" role="status">
               <span
                 className={`status-dot ${liveState === 'connected' ? 'connected' : 'disconnected'}`}
@@ -341,61 +437,39 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
                   ? 'Manual refresh'
                   : 'Events disconnected'}
             </span>
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              aria-pressed={officeMode === 'replay'}
-              onClick={() => {
-                const range = officeReplayRange(agents, events)
-                setReplayRangeSnapshot(range)
-                setReplayStartedAt(performance.now())
-                setReplayElapsed(0)
-                setOfficeMode('replay')
-                setMotionPaused(false)
-                setReplayNonce((current) => current + 1)
-              }}
-            >
-              Replay
-            </button>
-            {officeMode === 'replay' && (
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
-                onClick={() => {
-                  setOfficeMode('live')
-                  setReplayStartedAt(null)
-                  setReplayRangeSnapshot(null)
-                  setReplayElapsed(null)
-                }}
-              >
-                Live
-              </button>
-            )}
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              aria-pressed={motionPaused}
-              disabled={officeMode === 'replay'}
-              title={
-                officeMode === 'replay'
-                  ? 'Historical replay uses one shared playback clock.'
-                  : undefined
-              }
-              onClick={() => setMotionPaused((current) => !current)}
-            >
-              {motionPaused ? 'Resume motion' : 'Pause motion'}
-            </button>
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              disabled={isRefreshing}
-              onClick={() => void refreshAll()}
-            >
-              {isRefreshing ? 'Refreshing…' : 'Refresh'}
-            </button>
-            <Link href={`/runs/${run.id}`} className="btn btn-secondary btn-sm">
-              Run details
-            </Link>
+            <details className="office-action-menu">
+              <summary>Run controls</summary>
+              <div>
+                <button
+                  type="button"
+                  className="office-action-menu-item"
+                  aria-pressed={motionPaused}
+                  disabled={officeMode === 'replay'}
+                  title={
+                    officeMode === 'replay'
+                      ? 'Historical replay uses one shared playback clock.'
+                      : undefined
+                  }
+                  onClick={() => setMotionPaused((current) => !current)}
+                >
+                  {motionPaused ? 'Resume motion' : 'Pause motion'}
+                </button>
+                <button
+                  type="button"
+                  className="office-action-menu-item"
+                  disabled={isRefreshing}
+                  onClick={() => void refreshAll()}
+                >
+                  {isRefreshing ? 'Refreshing…' : 'Refresh data'}
+                </button>
+                <Link
+                  href={`/runs/${run.id}`}
+                  className="office-action-menu-item"
+                >
+                  Open Run details
+                </Link>
+              </div>
+            </details>
             <button
               type="button"
               className="btn btn-secondary btn-sm"
@@ -411,16 +485,24 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
         <OfficeRendererBoundary operationalHref={`/runs/${run.id}`}>
           <OfficeScene
             stages={stages}
-            agents={agents}
+            agents={visibleAgents}
             profiles={profiles}
             selectedAgentId={selectedAgentId}
-            onSelectAgent={setSelectedAgentId}
+            onSelectAgent={(agentId) => selectOperationalAgent(agentId)}
+
             motionPaused={motionPaused}
             mode={officeMode}
             replayNonce={replayNonce}
             replayStartedAt={replayStartedAt}
             replayRange={replayRangeSnapshot}
             showRoster={false}
+            floor={selectedFloor}
+            onFloorChange={(floor) => {
+              initialFloorResolved.current = true
+              setSelectedFloor(floor)
+              setSelectedAgentId(null)
+            }}
+            operationalFloorCounts={operationalFloorCounts}
           />
         </OfficeRendererBoundary>
 
@@ -432,7 +514,7 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
             workspace={selectedWorkspace}
             stage={selectedStage}
             latestEvent={selectedEvent}
-            onClose={() => setSelectedAgentId(null)}
+            onClose={() => selectOperationalAgent(null)}
           />
         )}
       </div>
@@ -457,15 +539,16 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
         agents={agents}
         profiles={profiles}
         selectedAgentId={selectedAgentId}
-        onSelectAgent={setSelectedAgentId}
+        onSelectAgent={(agentId) => selectOperationalAgent(agentId)}
         modeLabel={officeMode === 'replay' ? 'Historical replay' : 'Canonical state'}
         forceCollapsed={isMaximized}
       />
 
       <p className="office-workspace-note">
-        Office View remains a projection. Cancellation, Findings, Evidence,
-        executor selection, approvals, and canonical execution state remain
-        available in the operational Run view.
+        Agent Office is showing the canonical Run scope. Workspace, Live Run,
+        and Replay share one 3D office experience while preserving different
+        truth sources. Run detail remains authoritative for execution controls,
+        Findings, Evidence, approvals, and integration state.
       </p>
     </div>
   )

@@ -1,6 +1,47 @@
-# Office View
+# Agent Office 3D Experience
 
 Status: Phase 8 implementation specification
+
+## One Agent Office, multiple truth scopes
+
+Agent Office is one persistent 3D workplace. Routes are compatible entry points
+into different truth scopes; they are not separate virtual offices.
+
+```text
+Agent Office
+  |
+  +-- Workspace
+  |     planning + ambient + office-world context
+  |
+  +-- Live Run
+  |     canonical Run / AgentRun truth
+  |
+  +-- Historical Replay
+        persisted historical Run / AgentRun / Event truth
+```
+
+Entry routes remain:
+
+```text
+/office
+/runs/:runId/office
+```
+
+`/office` enters the Workspace scope. `/runs/:runId/office` deep-links the
+same Agent Office experience into the selected Run. From there the user may
+switch between Workspace, Live Run, and Replay without adopting a second office
+mental model.
+
+The 3D environment, floor vocabulary, camera model, character runtime, and
+interaction grammar are shared. Truth sources are not merged:
+
+- Workspace planning presence comes from durable planning records.
+- Workspace ambience is explicitly presentation-only.
+- Live Run presence comes from canonical Run / AgentRun state.
+- Historical Replay comes from persisted factual timestamps/events.
+
+Historical Replay is therefore a **Run truth scope**, not a feature of ambient
+Workspace simulation.
 
 Office View is an optional visual projection of canonical Run state. It does
 not own workflow state and must never become the only way to understand or
@@ -141,8 +182,8 @@ execution state.
 
 ## Phase 9A Office-first workspace
 
-Phase 9A replaces the Phase 8 permanent right sidebar with an Office-first
-workspace.
+Phase 9A introduces the Office-first Workspace while retaining the
+Run-scoped deep link as a compatible entry into the same Agent Office experience.
 
 Primary routes:
 
@@ -151,12 +192,26 @@ Primary routes:
 /runs/:runId/office
 ```
 
-`/office` is the project-aware workspace shell. It may render the Office
-environment without factual AgentRuns when no Run is selected. This is not
-Ambient Mode; Phase 9A does not create illustrative personas.
+`/office` is the project-aware **Workspace scope**. It may render planning
+and clearly labelled ambient presence without factual AgentRuns.
 
-The Run-scoped route remains backward compatible and continues to project
-canonical AgentRun/Event state.
+`/runs/:runId/office` is a backward-compatible **Run-scoped entry point** into
+the same Agent Office. Live Run and Historical Replay use canonical operational
+truth while preserving the same floors, camera interaction, characters, and
+scene shell.
+
+Primary application navigation is intentionally reduced around the main
+workflow:
+
+```text
+Office
+Projects
+Runs
+```
+
+Overview, Tasks, engineering registries, observability, Audit, and Settings
+remain available under **More tools**. This reduces global navigation noise
+without removing capability or stable routes.
 
 Desktop structure:
 
@@ -225,7 +280,7 @@ The Phase 9A visual gate adds the following presentation rules:
 - active / waiting / blocked / failed AgentRuns retain visible nameplates
 - selecting any AgentRun reveals its nameplate and inspector
 - default Office camera framing is closer than the Phase 8 framing
-- Run Office uses `Operational` / `Historical replay` language instead of
+- Run Office View uses `Live run` / `Historical replay` language instead of
   conflating SSE connectivity with Run state
 - backend event connectivity is reported separately as an event-stream state
 - `/office` starts with the Operations Dock collapsed because no factual Run is

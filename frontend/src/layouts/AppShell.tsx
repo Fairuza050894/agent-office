@@ -25,9 +25,10 @@ function readOfficeSidebarCollapsed(): boolean {
   if (typeof window === 'undefined') return false
 
   try {
-    return window.localStorage.getItem(OFFICE_SIDEBAR_STORAGE_KEY) === 'true'
+    const stored = window.localStorage.getItem(OFFICE_SIDEBAR_STORAGE_KEY)
+    return stored === null ? true : stored === 'true'
   } catch {
-    return false
+    return true
   }
 }
 

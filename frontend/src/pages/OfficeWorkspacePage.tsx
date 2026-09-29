@@ -22,12 +22,17 @@ import {
 } from '../components/office/UniversalComposerShell'
 import { OfficeRendererBoundary } from '../components/OfficeRendererBoundary'
 import { OfficeScene } from '../components/OfficeScene'
+import { useRouter } from '../router/useRouter'
 import {
   livingOfficeMembers,
   officeAmbientWindow,
   officeBehaviorLabel,
   type OfficeFloorKey,
 } from '../office3d/livingOffice'
+import {
+  isPlanningPresenceFresh,
+  officeWorldContext,
+} from '../office3d/officeWorld'
 
 function localTimezone(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
@@ -36,6 +41,21 @@ function localTimezone(): string {
 function composerTitle(instruction: string): string {
   const compact = instruction.replace(/\s+/g, ' ').trim()
   return compact.length <= 96 ? compact : `${compact.slice(0, 93)}…`
+}
+
+function initialFloorForThread(
+  thread: ComposerThread,
+  team: TeamProposal | null,
+  now = new Date(),
+): OfficeFloorKey {
+  if (
+    team &&
+    isPlanningPresenceFresh(thread.updated_at, now, thread.timezone)
+  ) {
+    return 'strategy'
+  }
+
+  return officeAmbientWindow(now, [], thread.timezone).floor
 }
 
 async function loadPlanningSnapshot(thread: ComposerThread) {
@@ -57,6 +77,11 @@ async function loadPlanningSnapshot(thread: ComposerThread) {
 }
 
 export function OfficeWorkspacePage() {
+  const { currentSearch } = useRouter()
+  const requestedProjectId = useMemo(
+    () => new URLSearchParams(currentSearch).get('project'),
+    [currentSearch],
+  )
   const [projects, setProjects] = useState<Project[]>([])
   const [executors, setExecutors] = useState<Executor[]>([])
   const [profiles, setProfiles] = useState<AgentProfile[]>([])
@@ -64,9 +89,10 @@ export function OfficeWorkspacePage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isMaximized, setIsMaximized] = useState(false)
   const [selectedFloor, setSelectedFloor] = useState<OfficeFloorKey>(
-    () => officeAmbientWindow().floor,
+    () => officeAmbientWindow(new Date(), [], localTimezone()).floor,
   )
   const [officeNow, setOfficeNow] = useState(() => new Date())
+  const [officeClockNow, setOfficeClockNow] = useState(() => new Date())
   const [selectedOfficeMemberId, setSelectedOfficeMemberId] = useState<
     string | null
   >(null)
@@ -89,7 +115,18 @@ export function OfficeWorkspacePage() {
   const [composerError, setComposerError] = useState<string | null>(null)
 
   useEffect(() => {
-    const timer = window.setInterval(() => setOfficeNow(new Date()), 60_000)
+    let lastMinute = Math.floor(Date.now() / 60_000)
+    const timer = window.setInterval(() => {
+      const now = new Date()
+      setOfficeClockNow(now)
+
+      const minute = Math.floor(now.getTime() / 60_000)
+      if (minute !== lastMinute) {
+        lastMinute = minute
+        setOfficeNow(now)
+      }
+    }, 1_000)
+
     return () => window.clearInterval(timer)
   }, [])
 
@@ -103,7 +140,15 @@ export function OfficeWorkspacePage() {
     ])
       .then(([loadedProjects, loadedExecutors, loadedProfiles]) => {
         if (!active) return
+        const requestedProject =
+          requestedProjectId &&
+          loadedProjects.find(
+            (project) =>
+              project.id === requestedProjectId &&
+              project.status === 'ACTIVE',
+          )
         const initialProjectId =
+          requestedProject?.id ??
           loadedProjects.find((project) => project.status === 'ACTIVE')?.id ??
           loadedProjects[0]?.id ??
           ''
@@ -130,7 +175,7 @@ export function OfficeWorkspacePage() {
     return () => {
       active = false
     }
-  }, [])
+  }, [requestedProjectId])
 
   useEffect(() => {
     let active = true
@@ -156,6 +201,9 @@ export function OfficeWorkspacePage() {
           setPlanningArtifacts([])
           setPlanningRequirements([])
           setPlanningEvents([])
+          setSelectedFloor(
+            officeAmbientWindow(new Date(), [], localTimezone()).floor,
+          )
           return
         }
 
@@ -169,7 +217,7 @@ export function OfficeWorkspacePage() {
         setPlanningArtifacts(snapshot.artifacts)
         setPlanningRequirements(snapshot.requirements)
         setPlanningEvents(snapshot.events)
-        setSelectedFloor(snapshot.team ? 'strategy' : officeAmbientWindow().floor)
+        setSelectedFloor(initialFloorForThread(latest, snapshot.team))
       })
       .catch((reason) => {
         if (!active) return
@@ -224,6 +272,9 @@ export function OfficeWorkspacePage() {
     setPlanningRequirements([])
     setPlanningEvents([])
     setSelectedOfficeMemberId(null)
+    setSelectedFloor(
+      officeAmbientWindow(new Date(), [], localTimezone()).floor,
+    )
     setComposerError(null)
   }
 
@@ -239,6 +290,9 @@ export function OfficeWorkspacePage() {
       setPlanningArtifacts([])
       setPlanningRequirements([])
       setPlanningEvents([])
+      setSelectedFloor(
+        officeAmbientWindow(new Date(), [], localTimezone()).floor,
+      )
       return
     }
 
@@ -257,7 +311,7 @@ export function OfficeWorkspacePage() {
       setPlanningArtifacts(snapshot.artifacts)
       setPlanningRequirements(snapshot.requirements)
       setPlanningEvents(snapshot.events)
-      setSelectedFloor(snapshot.team ? 'strategy' : officeAmbientWindow().floor)
+      setSelectedFloor(initialFloorForThread(thread, snapshot.team))
     } catch (reason) {
       setComposerError(
         reason instanceof Error
@@ -432,9 +486,22 @@ export function OfficeWorkspacePage() {
 
   const planningMode =
     resolution?.resolved_intent ?? activeThread?.resolved_intent ?? null
+  const officeTimeZone = activeThread?.timezone ?? localTimezone()
+  const officeWorld = useMemo(
+    () => officeWorldContext(officeClockNow, officeTimeZone),
+    [officeClockNow, officeTimeZone],
+  )
   const workspaceMembers = useMemo(
-    () => livingOfficeMembers(activeThread, planningTeam, profiles, officeNow),
-    [activeThread, officeNow, planningTeam, profiles],
+    () =>
+      livingOfficeMembers(
+        activeThread,
+        planningTeam,
+        profiles,
+        officeNow,
+        [],
+        officeTimeZone,
+      ),
+    [activeThread, officeNow, officeTimeZone, planningTeam, profiles],
   )
   const selectedFloorMembers = workspaceMembers.filter(
     (member) => member.floor === selectedFloor,
@@ -456,13 +523,27 @@ export function OfficeWorkspacePage() {
     ambientBehaviorLabels.length > 0
       ? `${ambientBehaviorLabels.slice(0, 2).join(' + ')} · ambient`
       : 'Ambient'
+  const remotePlanning =
+    selectedFloor === 'strategy' &&
+    Boolean(activeThread && planningTeam) &&
+    !officeWorld.allowsPhysicalPlanningPresence &&
+    Boolean(
+      activeThread &&
+        isPlanningPresenceFresh(
+          activeThread.updated_at,
+          officeClockNow,
+          officeTimeZone,
+        ),
+    )
   const officePresenceLabel = selectedFloorHasPlanning
     ? selectedFloorHasAmbient
       ? `${activeThread?.status === 'AWAITING_USER' ? 'Waiting for you' : 'Planning'} + ambient`
       : `${activeThread?.status === 'AWAITING_USER' ? 'Waiting for you' : 'Planning'} presence`
     : selectedFloorHasAmbient
       ? ambientPresenceLabel
-      : 'Quiet floor · no presence'
+      : remotePlanning
+        ? 'Planning remote · office closed'
+        : 'Quiet floor · no presence'
 
   const changeOfficeFloor = (floor: OfficeFloorKey) => {
     setSelectedFloor(floor)
@@ -480,15 +561,19 @@ export function OfficeWorkspacePage() {
       className={`page-view office-workspace ${isMaximized ? 'office-maximized' : ''}`}
     >
       <OfficeCommandRail
-        title="Office"
+        title="Agent Office"
         projectName={selectedProject?.name ?? 'No Project selected'}
-        modeLabel={planningMode ?? 'Workspace'}
+        modeLabel={
+          planningMode && planningMode !== 'AUTO'
+            ? `Workspace · ${planningMode}`
+            : 'Workspace'
+        }
         statusLabel={
           isLoading
             ? 'Loading registries'
             : activeThread
               ? `${activeThread.status} planning thread`
-              : 'No active Run selected'
+              : 'Project workspace'
         }
         meta={
           registryError
@@ -525,7 +610,9 @@ export function OfficeWorkspacePage() {
             workspaceMembers={workspaceMembers}
             onFloorChange={changeOfficeFloor}
             presenceLabel={officePresenceLabel}
-            officeHour={officeNow.getHours()}
+            officeHour={Math.floor(officeWorld.localMinuteOfDay / 60)}
+            worldContext={officeWorld}
+            totalPresence={workspaceMembers.length}
           />
         </OfficeRendererBoundary>
       </div>

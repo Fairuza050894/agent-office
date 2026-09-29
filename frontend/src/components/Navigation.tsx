@@ -1,5 +1,6 @@
 import { NAV_SECTIONS, NAV_ITEMS, type NavSection } from '../types/navigation'
 import { Link } from '../router/Link'
+import { useRouter } from '../router/useRouter'
 
 export interface NavigationProps {
   isOpen: boolean
@@ -15,14 +16,21 @@ const SECTION_LABELS: Record<NavSection, string> = {
   CONTROL: 'Control',
 }
 
+const CORE_NAV_IDS = new Set(['office', 'projects', 'runs'])
+
 export function Navigation({
   isOpen,
   onClose,
   isCollapsed = false,
   onToggleCollapsed,
 }: NavigationProps) {
-  const getItemsBySection = (section: NavSection) =>
-    NAV_ITEMS.filter((item) => item.section === section)
+  const { currentPath } = useRouter()
+  const coreItems = NAV_ITEMS.filter((item) => CORE_NAV_IDS.has(item.id))
+  const utilityItems = NAV_ITEMS.filter((item) => !CORE_NAV_IDS.has(item.id))
+  const utilityRouteActive = utilityItems.some((item) => item.path === currentPath)
+
+  const getUtilityItemsBySection = (section: NavSection) =>
+    utilityItems.filter((item) => item.section === section)
 
   return (
     <>
@@ -67,33 +75,66 @@ export function Navigation({
         </div>
 
         <nav className="sidebar-nav" aria-label="Primary Navigation">
-          {NAV_SECTIONS.map((section) => {
-            const items = getItemsBySection(section)
-            return (
-              <div key={section} className="nav-section">
-                <div className="nav-section-title" id={`section-${section.toLowerCase()}`}>
-                  {SECTION_LABELS[section]}
-                </div>
-                <ul
-                  className="nav-list"
-                  aria-labelledby={`section-${section.toLowerCase()}`}
-                >
-                  {items.map((item) => (
-                    <li key={item.id} className="nav-item">
-                      <Link
-                        href={item.path}
-                        className="nav-link"
-                        activeClassName="active"
-                        onClick={onClose}
+          <div className="nav-section">
+            <div className="nav-section-title">Workspace</div>
+            <ul className="nav-list">
+              {coreItems.map((item) => (
+                <li key={item.id} className="nav-item">
+                  <Link
+                    href={item.path}
+                    className="nav-link"
+                    activeClassName="active"
+                    onClick={onClose}
+                  >
+                    <span className="nav-label">{item.label}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {!isCollapsed && (
+            <details
+              className="nav-tools"
+              defaultOpen={utilityRouteActive}
+            >
+              <summary>More tools</summary>
+              <div className="nav-tools-body">
+                {NAV_SECTIONS.map((section) => {
+                  const items = getUtilityItemsBySection(section)
+                  if (items.length === 0) return null
+
+                  return (
+                    <div key={section} className="nav-section nav-section-utility">
+                      <div
+                        className="nav-section-title"
+                        id={`section-${section.toLowerCase()}`}
                       >
-                        <span className="nav-label">{item.label}</span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
+                        {SECTION_LABELS[section]}
+                      </div>
+                      <ul
+                        className="nav-list"
+                        aria-labelledby={`section-${section.toLowerCase()}`}
+                      >
+                        {items.map((item) => (
+                          <li key={item.id} className="nav-item">
+                            <Link
+                              href={item.path}
+                              className="nav-link"
+                              activeClassName="active"
+                              onClick={onClose}
+                            >
+                              <span className="nav-label">{item.label}</span>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )
+                })}
               </div>
-            )
-          })}
+            </details>
+          )}
         </nav>
 
         <div className="sidebar-footer">

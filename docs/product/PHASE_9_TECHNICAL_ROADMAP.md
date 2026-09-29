@@ -84,7 +84,10 @@ Optional scoped forms:
 Compatibility requirement:
 
 - existing `/runs/:runId/office` deep links remain valid
-- Run-scoped route opens the same Office workspace in Operational scope
+- `/office` is the normal Workspace entry into Agent Office
+- `/runs/:runId/office` opens the same Agent Office world in Run scope
+- Workspace, Live Run, and Historical Replay share floor/camera/character
+  presentation but preserve separate truth sources
 
 ## Frontend modules
 

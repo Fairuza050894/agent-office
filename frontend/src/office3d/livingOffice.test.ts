@@ -12,6 +12,7 @@ import {
   officeAmbientWindow,
   officeBehaviorFor,
   officeBehaviorLabel,
+  officeRoleHomeLocation,
   planningPresenceMembers,
   livingOfficeMembers,
 } from './livingOffice'
@@ -158,6 +159,19 @@ describe('living office model', () => {
     ])
   })
 
+  it('uses one home-floor contract for workspace and operational role projection', () => {
+    expect(officeRoleHomeLocation('product-manager')).toEqual({
+      floor: 'strategy',
+      zone: 'planning-table',
+    })
+    expect(officeRoleHomeLocation('backend-engineer')).toEqual({
+      floor: 'build',
+      zone: 'engineering-pod',
+    })
+    expect(officeRoleHomeLocation('architect').floor).toBe('strategy')
+    expect(officeRoleHomeLocation('legacy-explorer').floor).toBe('build')
+  })
+
   it('maps accepted planning roles to factual planning presence', () => {
     const members = planningPresenceMembers(thread, proposal, profiles)
 
@@ -180,11 +194,11 @@ describe('living office model', () => {
   })
 
   it('uses deterministic daytime ambient windows without claiming execution', () => {
-    expect(officeAmbientWindow(new Date(2026, 8, 27, 15, 15)).key).toBe('coffee')
+    expect(officeAmbientWindow(new Date(2026, 8, 28, 15, 15)).key).toBe('coffee')
 
     const members = ambientOfficeMembers(
       profiles,
-      new Date(2026, 8, 27, 15, 15),
+      new Date(2026, 8, 28, 15, 15),
     )
 
     expect(members.length).toBeGreaterThan(0)
@@ -193,13 +207,13 @@ describe('living office model', () => {
   })
 
   it('accepts provider-supplied scheduled ambience without hard-coded prayer times', () => {
-    const now = new Date('2026-09-27T15:15:00+07:00')
+    const now = new Date('2026-09-28T15:15:00+07:00')
     const scheduled = [
       {
         id: 'prayer-asr',
         label: 'Asr prayer window',
-        startsAt: '2026-09-27T15:05:00+07:00',
-        endsAt: '2026-09-27T15:35:00+07:00',
+        startsAt: '2026-09-28T15:05:00+07:00',
+        endsAt: '2026-09-28T15:35:00+07:00',
         floor: 'commons' as const,
         zone: 'quiet-room' as const,
         presence: 'PRAYER_BREAK' as const,
@@ -235,12 +249,17 @@ describe('living office model', () => {
     expect(commons.every((member) => member.status === 'AVAILABLE')).toBe(true)
   })
 
-  it('keeps non-planning roles as ambient presence during an active planning thread', () => {
+  it('keeps non-planning roles as ambient presence during a fresh evening planning session', () => {
+    const now = new Date(2026, 8, 28, 19, 0)
+    const freshThread = {
+      ...thread,
+      updated_at: new Date(2026, 8, 28, 18, 50).toISOString(),
+    }
     const members = livingOfficeMembers(
-      thread,
+      freshThread,
       proposal,
       profiles,
-      new Date(2026, 8, 28, 23, 0),
+      now,
     )
 
     const planning = members.filter((member) => member.truth === 'PLANNING')
@@ -272,13 +291,13 @@ describe('living office model', () => {
     expect(officeBehaviorLabel('GAME_BREAK')).toBe('Game break')
   })
 
-  it('assigns deterministic role-personality behavior during after-hours ambience', () => {
-    const now = new Date(2026, 8, 28, 23, 0)
+  it('assigns deterministic role-personality behavior during late-evening ambience', () => {
+    const now = new Date(2026, 8, 28, 20, 30)
     const first = ambientOfficeMembers(profiles, now)
     const second = ambientOfficeMembers(profiles, now)
 
     expect(second).toEqual(first)
-    expect(first).toHaveLength(2)
+    expect(first).toHaveLength(1)
     expect(
       first.every((member) =>
         ['SOCIAL_CHAT', 'GAME_BREAK'].includes(member.behavior),
@@ -434,13 +453,118 @@ describe('living office model', () => {
     ).toHaveLength(2)
   })
 
-  it('reduces ambient occupancy after hours instead of fabricating work', () => {
+  it('enforces the wrap-up ambient occupancy cap', () => {
     const members = ambientOfficeMembers(
-      profiles,
-      new Date(2026, 8, 27, 22, 30),
+      extendedProfiles,
+      new Date(2026, 8, 28, 16, 30),
     )
 
-    expect(members).toHaveLength(2)
-    expect(members.every((member) => member.status === 'SOCIAL_BREAK')).toBe(true)
+    expect(members).toHaveLength(7)
+  })
+
+  it('keeps scheduled plus baseline presence within the open-office cap', () => {
+    const now = new Date(2026, 8, 28, 16, 30)
+    const members = ambientOfficeMembers(extendedProfiles, now, [
+      {
+        id: 'wrap-up-sync',
+        label: 'Wrap-up sync',
+        startsAt: new Date(2026, 8, 28, 16, 0).toISOString(),
+        endsAt: new Date(2026, 8, 28, 17, 0).toISOString(),
+        floor: 'commons',
+        zone: 'lounge',
+        presence: 'SOCIAL_BREAK',
+        priority: 80,
+        maxParticipants: 2,
+      },
+    ])
+
+    expect(members).toHaveLength(7)
+    expect(
+      members.filter((member) => member.status === 'SOCIAL_BREAK'),
+    ).toHaveLength(2)
+  })
+
+  it('applies the same explicit timezone to occupancy decisions', () => {
+    const instant = new Date('2026-09-28T17:44:00Z')
+
+    const jakarta = ambientOfficeMembers(
+      extendedProfiles,
+      instant,
+      [],
+      new Set(),
+      'Asia/Jakarta',
+    )
+    const losAngeles = ambientOfficeMembers(
+      extendedProfiles,
+      instant,
+      [],
+      new Set(),
+      'America/Los_Angeles',
+    )
+
+    expect(jakarta).toEqual([])
+    expect(losAngeles).toHaveLength(extendedProfiles.length)
+  })
+
+  it('empties ambient occupancy during night quiet instead of fabricating overtime', () => {
+    const members = ambientOfficeMembers(
+      profiles,
+      new Date(2026, 8, 28, 22, 30),
+    )
+
+    expect(members).toEqual([])
+  })
+
+  it('keeps weekend ambience quiet unless an explicit scheduled event exists', () => {
+    const now = new Date(2026, 9, 3, 11, 0)
+
+    expect(ambientOfficeMembers(extendedProfiles, now)).toEqual([])
+
+    const scheduled = ambientOfficeMembers(extendedProfiles, now, [
+      {
+        id: 'weekend-event',
+        label: 'Scheduled maintenance sync',
+        startsAt: new Date(2026, 9, 3, 10, 30).toISOString(),
+        endsAt: new Date(2026, 9, 3, 11, 30).toISOString(),
+        floor: 'commons',
+        zone: 'coffee-bar',
+        presence: 'SOCIAL_BREAK',
+        priority: 100,
+        maxParticipants: 1,
+      },
+    ])
+
+    expect(scheduled).toHaveLength(1)
+    expect(scheduled[0].truth).toBe('AMBIENT')
+  })
+
+  it('does not keep a stale durable planning thread physically in the office overnight', () => {
+    const now = new Date('2026-09-29T00:44:00+07:00')
+    const staleThread = {
+      ...thread,
+      updated_at: '2026-09-28T21:00:00+07:00',
+    }
+
+    expect(
+      planningPresenceMembers(staleThread, proposal, profiles, now),
+    ).toEqual([])
+    expect(
+      livingOfficeMembers(staleThread, proposal, profiles, now),
+    ).toEqual([])
+  })
+
+  it('keeps even a recent late-night planning session remote while the office is closed', () => {
+    const now = new Date('2026-09-29T00:44:00+07:00')
+    const recentThread = {
+      ...thread,
+      updated_at: '2026-09-29T00:35:00+07:00',
+    }
+
+    expect(
+      planningPresenceMembers(recentThread, proposal, profiles, now),
+    ).toEqual([])
+    expect(
+      livingOfficeMembers(recentThread, proposal, profiles, now),
+    ).toEqual([])
   })
 })

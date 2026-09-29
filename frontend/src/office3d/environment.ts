@@ -3,6 +3,7 @@ import * as THREE from 'three'
 import type { RunStage } from '../api'
 import type { StationPlacement } from './character'
 import type { OfficeFloorKey, OfficeZoneKey } from './livingOffice'
+import type { OfficeModeKey } from './officeWorld'
 
 const OFFICE_WIDTH = 20
 const OFFICE_DEPTH = 14
@@ -160,16 +161,16 @@ const ZONE_PLACEMENTS: Record<OfficeZoneKey, StationPlacement[]> = {
     yaw: workstation.yaw,
   })),
   'qa-bench': [
-    { position: point(-3.0, 3.64), yaw: Math.PI },
-    { position: point(-1.0, 3.64), yaw: Math.PI },
+    { position: point(-7.55, -2.8), yaw: Math.PI },
+    { position: point(-5.95, -2.8), yaw: Math.PI },
   ],
   'review-wall': [
     { position: point(5.1, 0.25), yaw: Math.PI * 0.5 },
     { position: point(5.1, 1.35), yaw: Math.PI * 0.5 },
   ],
   'docs-desk': [
-    { position: point(3.0, 3.64), yaw: Math.PI },
-    { position: point(1.0, 3.64), yaw: Math.PI },
+    { position: point(6.25, -3.05), yaw: Math.PI },
+    { position: point(7.45, -3.05), yaw: Math.PI },
   ],
   'planning-table': [
     { position: point(-1.75, -1.05), yaw: 0 },
@@ -180,13 +181,13 @@ const ZONE_PLACEMENTS: Record<OfficeZoneKey, StationPlacement[]> = {
     { position: point(1.75, 1.9), yaw: Math.PI },
   ],
   'architecture-wall': [
-    { position: point(4.55, -1.0), yaw: Math.PI * 0.5 },
-    { position: point(4.75, 0.85), yaw: Math.PI * 0.5 },
-    { position: point(4.55, 2.65), yaw: Math.PI * 0.5 },
+    { position: point(3.15, -4.65), yaw: 0 },
+    { position: point(4.25, -4.65), yaw: 0 },
+    { position: point(5.35, -4.65), yaw: 0 },
   ],
   'decision-room': [
-    { position: point(-7.65, 4.65), yaw: Math.PI * 0.25 },
-    { position: point(-6.15, 4.55), yaw: -Math.PI * 0.25 },
+    { position: point(5.6, 3.55), yaw: 0 },
+    { position: point(7.5, 3.55), yaw: 0 },
   ],
 }
 
@@ -809,6 +810,153 @@ function createStrategyHub(parent: THREE.Group): void {
   parent.add(createPlant(point(3.15, -1.9), 0.66))
 }
 
+function createReceptionCorner(parent: THREE.Group): void {
+  const x = 2.6
+  const z = -5.35
+
+  addBox(parent, [3.25, 0.035, 1.85], [x, 0.04, z], 0x4b555d)
+  addBox(parent, [2.25, 0.82, 0.62], [x, 0.43, z], 0x7f5b42)
+  addBox(parent, [2.42, 0.08, 0.72], [x, 0.88, z], 0x9a704e)
+  addBox(parent, [0.72, 0.46, 0.05], [x - 0.48, 1.2, z + 0.12], 0x19232e)
+  addBox(parent, [0.62, 0.35, 0.018], [x - 0.48, 1.2, z + 0.08], 0x3d789b)
+  addCylinder(parent, 0.065, 0.12, [x + 0.68, 1.0, z + 0.02], 0xc7cbd0)
+}
+
+function createCommunityWall(parent: THREE.Group): void {
+  addBox(parent, [0.08, 2.45, 3.15], [-9.66, 1.24, -0.35], 0x3f4c56)
+  const board = addBox(
+    parent,
+    [0.035, 1.42, 2.5],
+    [-9.58, 1.45, -0.35],
+    0x223746,
+  )
+  ;(board.material as THREE.MeshStandardMaterial).emissive.setHex(0x102837)
+  ;(board.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.32
+
+  for (const [z, color] of [
+    [-1.15, 0x6c8c78],
+    [-0.55, 0x8d6a52],
+    [0.05, 0x526f89],
+    [0.65, 0x7b5d7e],
+  ] as Array<[number, number]>) {
+    addBox(parent, [0.025, 0.28, 0.42], [-9.53, 1.55, z], color)
+  }
+
+  addBox(parent, [1.55, 0.12, 0.72], [-8.75, 0.86, 1.3], 0x875f42)
+  addCylinder(parent, 0.05, 0.78, [-9.25, 0.42, 1.3], 0x313b45)
+  addCylinder(parent, 0.05, 0.78, [-8.25, 0.42, 1.3], 0x313b45)
+}
+
+function createQaLab(parent: THREE.Group): void {
+  const x = -6.75
+  const z = -3.85
+
+  addBox(parent, [4.35, 0.035, 2.75], [x, 0.04, z], 0x48515a)
+  addBox(parent, [3.45, 0.1, 0.78], [x, 0.82, z], 0x876144)
+  for (const dx of [-1.15, 0, 1.15]) {
+    addBox(parent, [0.68, 0.4, 0.05], [x + dx, 1.16, z + 0.06], 0x151e28)
+    const screen = addBox(
+      parent,
+      [0.58, 0.31, 0.018],
+      [x + dx, 1.16, z + 0.03],
+      0x3b7191,
+    )
+    ;(screen.material as THREE.MeshStandardMaterial).emissive.setHex(0x173d54)
+    ;(screen.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.52
+  }
+  addBox(parent, [0.78, 1.45, 0.7], [x + 1.55, 0.73, z + 0.88], 0x535e67)
+}
+
+function createPairingIsland(parent: THREE.Group): void {
+  const x = -6.35
+  const z = 4.6
+
+  addBox(parent, [3.6, 0.035, 2.5], [x, 0.04, z], 0x5b514b)
+  addBox(parent, [2.7, 0.12, 1.05], [x, 0.82, z], 0x8c6648)
+  for (const dx of [-0.92, 0.92]) {
+    addBox(parent, [0.07, 0.76, 0.07], [x + dx, 0.4, z - 0.34], 0x303943)
+    addBox(parent, [0.07, 0.76, 0.07], [x + dx, 0.4, z + 0.34], 0x303943)
+  }
+  addBox(parent, [1.0, 0.56, 0.05], [x, 1.23, z], 0x17212b)
+  addBox(parent, [0.88, 0.45, 0.018], [x, 1.23, z - 0.03], 0x476f87)
+}
+
+function createDocsNook(parent: THREE.Group): void {
+  const x = 6.85
+  const z = -4.25
+
+  addBox(parent, [3.45, 0.035, 2.45], [x, 0.04, z], 0x504b46)
+  addBox(parent, [2.45, 0.1, 0.76], [x, 0.82, z], 0x8b6548)
+  for (const dx of [-0.82, 0.82]) {
+    addBox(parent, [0.07, 0.76, 0.07], [x + dx, 0.4, z - 0.25], 0x303943)
+    addBox(parent, [0.07, 0.76, 0.07], [x + dx, 0.4, z + 0.25], 0x303943)
+  }
+
+  addBox(parent, [0.8, 0.48, 0.05], [x - 0.45, 1.17, z], 0x18222c)
+  const screen = addBox(
+    parent,
+    [0.68, 0.37, 0.018],
+    [x - 0.45, 1.17, z - 0.03],
+    0x476f87,
+  )
+  ;(screen.material as THREE.MeshStandardMaterial).emissive.setHex(0x17354a)
+  ;(screen.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.38
+
+  addBox(parent, [1.1, 1.55, 0.36], [x + 1.25, 0.78, z - 0.65], 0x4b5963)
+  for (const y of [0.42, 0.77, 1.12]) {
+    addBox(parent, [0.86, 0.05, 0.3], [x + 1.25, y, z - 0.84], 0x7a604c)
+  }
+}
+
+function createOpsRack(parent: THREE.Group): void {
+  const x = 7.55
+  const z = 3.7
+
+  addBox(parent, [2.3, 0.035, 2.7], [x, 0.04, z], 0x3e4850)
+  for (const rackX of [x - 0.62, x + 0.62]) {
+    addBox(parent, [0.82, 1.95, 0.72], [rackX, 0.98, z], 0x252f38)
+    for (const y of [0.48, 0.82, 1.16, 1.5]) {
+      const panel = addBox(parent, [0.62, 0.16, 0.035], [rackX, y, z - 0.37], 0x2e4d5f)
+      ;(panel.material as THREE.MeshStandardMaterial).emissive.setHex(0x102b39)
+      ;(panel.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.32
+    }
+  }
+}
+
+function createRoadmapWall(parent: THREE.Group): void {
+  const x = 4.15
+  const z = -5.88
+
+  addBox(parent, [4.45, 1.65, 0.08], [x, 1.72, z], 0x394955)
+  const board = addBox(parent, [4.05, 1.28, 0.035], [x, 1.72, z + 0.06], 0x173141)
+  ;(board.material as THREE.MeshStandardMaterial).emissive.setHex(0x0f2735)
+  ;(board.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.38
+
+  for (const [dx, dy, color] of [
+    [-1.4, 0.32, 0x587b91],
+    [-0.7, -0.2, 0x75647f],
+    [0, 0.22, 0x79875a],
+    [0.72, -0.25, 0x8a674c],
+    [1.42, 0.3, 0x4f7781],
+  ] as Array<[number, number, number]>) {
+    addBox(parent, [0.52, 0.34, 0.02], [x + dx, 1.72 + dy, z + 0.1], color)
+  }
+}
+
+function createDecisionPods(parent: THREE.Group): void {
+  const x = 6.55
+  const z = 4.55
+
+  addBox(parent, [4.2, 0.035, 3.35], [x, 0.04, z], 0x4a4d52)
+  for (const offset of [-0.95, 0.95]) {
+    addCylinder(parent, 0.54, 0.09, [x + offset, 0.72, z], 0x856045)
+    addCylinder(parent, 0.055, 0.62, [x + offset, 0.34, z], 0x303943)
+    addBox(parent, [0.72, 0.42, 0.72], [x + offset, 0.31, z + 0.95], 0x435a6a)
+  }
+  addBox(parent, [2.65, 1.15, 0.08], [x, 1.6, z - 1.52], 0x485762)
+  addBox(parent, [2.25, 0.78, 0.035], [x, 1.6, z - 1.46], 0x29445a)
+}
+
 function createReviewWall(parent: THREE.Group): void {
   addBox(parent, [0.14, 2.45, 2.5], [6.05, 1.22, 0.75], 0x46545f)
   const panel = addBox(parent, [0.05, 1.28, 1.75], [5.96, 1.55, 0.75], 0x27445d)
@@ -954,23 +1102,279 @@ export function stageCenter(index: number): THREE.Vector3 {
   return WORKSTATIONS[index % WORKSTATIONS.length].station.clone()
 }
 
-function createOfficeShell(environment: THREE.Group): void {
+const FLOOR_ACCENT: Record<
+  OfficeFloorKey,
+  { wall: number; accent: number; trim: number }
+> = {
+  commons: {
+    wall: 0x4a5757,
+    accent: 0x536a5b,
+    trim: 0x8a6a4e,
+  },
+  build: {
+    wall: 0x46545f,
+    accent: 0x3d6172,
+    trim: 0x536f7d,
+  },
+  strategy: {
+    wall: 0x4d515f,
+    accent: 0x62586f,
+    trim: 0x7c6754,
+  },
+}
+
+function createLiftCore(
+  parent: THREE.Group,
+  floor: OfficeFloorKey,
+): void {
+  const floorIndex = floor === 'commons' ? 0 : floor === 'build' ? 1 : 2
+
+  addBox(parent, [3.15, 2.75, 0.14], [4.9, 1.42, -6.77], 0x2d3942)
+  addBox(parent, [1.2, 2.2, 0.06], [4.2, 1.12, -6.66], 0x56636b)
+  addBox(parent, [1.2, 2.2, 0.06], [5.6, 1.12, -6.66], 0x56636b)
+  addBox(parent, [0.05, 2.16, 0.075], [4.9, 1.12, -6.61], 0x26333b)
+
+  addBox(parent, [0.72, 0.34, 0.08], [4.9, 2.66, -6.6], 0x17252e)
+  for (let index = 0; index < 3; index += 1) {
+    const active = index === floorIndex
+    const lamp = addCylinder(
+      parent,
+      0.075,
+      0.04,
+      [4.7 + index * 0.2, 2.66, -6.52],
+      active ? 0x75d5f0 : 0x40515b,
+    )
+    lamp.rotation.x = Math.PI / 2
+    if (active) {
+      ;(lamp.material as THREE.MeshStandardMaterial).emissive.setHex(0x39798d)
+      ;(lamp.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.9
+    }
+  }
+
+  addBox(parent, [2.45, 0.025, 1.35], [4.9, 0.065, -5.85], 0x3c4548)
+}
+
+function createOfficeShell(
+  environment: THREE.Group,
+  floor: OfficeFloorKey,
+): void {
   addBox(environment, [20.5, 0.34, 14.5], [0, -0.22, 0], 0x111821)
   createWoodFloor(environment)
-  addBox(environment, [20, 3.2, 0.16], [0, 1.56, -6.98], 0x4b5a67)
-  addBox(environment, [0.16, 3.2, 14], [-9.92, 1.56, 0], 0x46545f)
-  addBox(environment, [0.16, 3.2, 14], [9.92, 1.56, 0], 0x46545f)
+  const palette = FLOOR_ACCENT[floor]
+  addBox(environment, [20, 3.2, 0.16], [0, 1.56, -6.98], palette.wall)
+  addBox(environment, [0.16, 3.2, 14], [-9.92, 1.56, 0], palette.wall)
+  addBox(environment, [0.16, 3.2, 14], [9.92, 1.56, 0], palette.wall)
+
+  addBox(environment, [4.8, 2.72, 0.035], [6.8, 1.5, -6.86], palette.accent)
+  addBox(environment, [3.4, 0.08, 0.04], [6.8, 0.18, -6.81], palette.trim)
+
   createWindowWall(environment)
   environment.add(createDoor(new THREE.Vector3(0, 0, -6.9)))
   createCeilingLights(environment)
 }
 
-function createCommonsFloor(environment: THREE.Group): void {
+function createCup(
+  parent: THREE.Group,
+  x: number,
+  z: number,
+  color = 0xd8c7a8,
+): void {
+  addCylinder(parent, 0.09, 0.16, [x, 0.94, z], color)
+  addBox(parent, [0.08, 0.07, 0.03], [x + 0.1, 0.97, z], color)
+}
+
+function createLunchTray(
+  parent: THREE.Group,
+  x: number,
+  z: number,
+): void {
+  addBox(parent, [0.56, 0.035, 0.36], [x, 0.73, z], 0x756f65)
+  addCylinder(parent, 0.12, 0.025, [x - 0.13, 0.76, z], 0xd6c7a5)
+  addCylinder(parent, 0.07, 0.04, [x + 0.16, 0.77, z + 0.04], 0x8b6d4d)
+}
+
+function createCommonsWorldCue(
+  parent: THREE.Group,
+  mode: OfficeModeKey | null,
+): void {
+  if (!mode) return
+
+  if (mode === 'ARRIVAL') {
+    addBox(parent, [2.4, 0.025, 0.9], [-7.2, 0.07, -5.65], 0x445965)
+    createCup(parent, 6.15, -4.08)
+    createCup(parent, 6.55, -4.08)
+    return
+  }
+
+  if (mode === 'LUNCH') {
+    createLunchTray(parent, -0.8, 1.18)
+    createLunchTray(parent, 0.8, 1.18)
+    createLunchTray(parent, 0, 0.35)
+    return
+  }
+
+  if (mode === 'COFFEE_BREAK') {
+    createCup(parent, 6.0, -4.05, 0xcaa47c)
+    createCup(parent, 6.42, -4.05, 0xb9805f)
+    createCup(parent, 6.84, -4.05, 0x9f795f)
+    createCup(parent, 7.26, -4.05, 0xd0b391)
+    return
+  }
+
+  if (
+    mode === 'EVENING' ||
+    mode === 'LATE_EVENING' ||
+    mode === 'NIGHT_QUIET' ||
+    mode === 'WEEKEND_QUIET'
+  ) {
+    const securityLamp = new THREE.PointLight(0x6e91b0, 0.18, 4)
+    securityLamp.position.set(-8.5, 1.55, -5.15)
+    parent.add(securityLamp)
+  }
+}
+
+function createBuildWorldCue(
+  parent: THREE.Group,
+  mode: OfficeModeKey | null,
+): void {
+  if (!mode) return
+
+  if (
+    mode === 'CORE_WORK' ||
+    mode === 'AFTERNOON_FOCUS' ||
+    mode === 'WRAP_UP'
+  ) {
+    for (const [x, color] of [
+      [-0.55, 0x4f9d78],
+      [0, 0xd09a35],
+      [0.55, 0x4f8ca8],
+    ] as Array<[number, number]>) {
+      addBox(parent, [0.34, 0.03, 0.22], [x, 1.16, -5.86], color)
+    }
+  }
+
+  if (mode === 'WRAP_UP') {
+    createCup(parent, -3.15, 0.18, 0xb68d68)
+    createCup(parent, 3.15, 2.68, 0xb68d68)
+  }
+}
+
+function createStrategyWorldCue(
+  parent: THREE.Group,
+  mode: OfficeModeKey | null,
+): void {
+  if (!mode) return
+
+  if (
+    mode === 'CORE_WORK' ||
+    mode === 'AFTERNOON_FOCUS' ||
+    mode === 'WRAP_UP'
+  ) {
+    for (const [x, z, color] of [
+      [-0.7, 0.38, 0x5d8195],
+      [0, 0.38, 0x7f6a8d],
+      [0.7, 0.38, 0x788b60],
+    ] as Array<[number, number, number]>) {
+      addBox(parent, [0.38, 0.025, 0.24], [x, 0.87, z], color)
+    }
+  }
+
+  if (mode === 'LATE_EVENING') {
+    const tableLamp = new THREE.PointLight(0xffc77e, 0.28, 4.5)
+    tableLamp.position.set(0, 1.5, 0.4)
+    parent.add(tableLamp)
+  }
+}
+
+function createCommonsDetailProps(parent: THREE.Group): void {
+  // Parcel / personal lockers near the entry wall.
+  for (const x of [-8.75, -8.05, -7.35]) {
+    addBox(parent, [0.58, 1.55, 0.5], [x, 0.78, -5.92], 0x52616a)
+    addBox(parent, [0.4, 0.025, 0.02], [x, 0.9, -5.65], 0x2d3a43)
+    addBox(parent, [0.4, 0.025, 0.02], [x, 0.42, -5.65], 0x2d3a43)
+  }
+
+  // Snack / hydration rack that makes Commons read differently from work floors.
+  addBox(parent, [0.95, 1.55, 0.58], [8.85, 0.78, -0.35], 0x4e5e67)
+  for (const y of [0.5, 0.86, 1.22]) {
+    addBox(parent, [0.72, 0.05, 0.42], [8.85, y, -0.62], 0x7f664e)
+  }
+  for (const [y, color] of [
+    [0.58, 0x7a9b68],
+    [0.94, 0xc58c5f],
+    [1.3, 0x6388a4],
+  ] as Array<[number, number]>) {
+    addBox(parent, [0.16, 0.17, 0.08], [8.85, y, -0.83], color)
+  }
+}
+
+function createBuildDetailProps(parent: THREE.Group): void {
+  // Sprint / engineering board.
+  addBox(parent, [3.55, 1.55, 0.08], [-6.65, 1.72, -6.82], 0x394955)
+  const board = addBox(
+    parent,
+    [3.18, 1.18, 0.035],
+    [-6.65, 1.72, -6.74],
+    0x163141,
+  )
+  ;(board.material as THREE.MeshStandardMaterial).emissive.setHex(0x0e2634)
+  ;(board.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.32
+
+  for (const [x, y, color] of [
+    [-7.7, 1.95, 0x5d8195],
+    [-7.05, 1.55, 0x7a6950],
+    [-6.4, 1.9, 0x69835f],
+    [-5.75, 1.5, 0x80617e],
+  ] as Array<[number, number, number]>) {
+    addBox(parent, [0.42, 0.3, 0.02], [x, y, -6.7], color)
+  }
+
+  // Charging / utility station.
+  addBox(parent, [1.55, 0.82, 0.6], [8.75, 0.42, -1.8], 0x4d5a63)
+  addBox(parent, [1.35, 0.08, 0.72], [8.75, 0.88, -1.8], 0x7f624a)
+  for (const x of [8.35, 8.75, 9.15]) {
+    addBox(parent, [0.23, 0.08, 0.35], [x, 0.97, -1.8], 0x26333d)
+  }
+}
+
+function createStrategyDetailProps(parent: THREE.Group): void {
+  // Reference bookshelf / strategy library.
+  addBox(parent, [1.55, 2.05, 0.5], [-8.85, 1.03, 2.0], 0x46555e)
+  for (const y of [0.38, 0.8, 1.22, 1.64]) {
+    addBox(parent, [1.34, 0.055, 0.42], [-8.85, y, 1.78], 0x7e624c)
+  }
+  for (const [x, y, color] of [
+    [-9.22, 0.58, 0x55788b],
+    [-8.92, 0.58, 0x75677f],
+    [-8.6, 1.0, 0x7d875c],
+    [-9.12, 1.42, 0x8b684f],
+    [-8.72, 1.42, 0x537985],
+  ] as Array<[number, number, number]>) {
+    addBox(parent, [0.18, 0.28, 0.12], [x, y, 1.52], color)
+  }
+
+  // Presentation sideboard and a warm floor lamp.
+  addBox(parent, [2.05, 0.72, 0.48], [7.85, 0.36, -3.65], 0x505d65)
+  addBox(parent, [1.78, 0.08, 0.58], [7.85, 0.78, -3.65], 0x87654b)
+  addCylinder(parent, 0.07, 1.5, [8.9, 0.75, 2.7], 0x343f47)
+  const shade = addCylinder(parent, 0.32, 0.38, [8.9, 1.56, 2.7], 0xc9a36b)
+  ;(shade.material as THREE.MeshStandardMaterial).emissive.setHex(0x6e4d24)
+  ;(shade.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.42
+}
+
+function createCommonsFloor(
+  environment: THREE.Group,
+  mode: OfficeModeKey | null,
+): void {
   createPantry(environment)
   createGameRoom(environment)
   createLoungeAndFocus(environment)
   createQuietRoom(environment)
   createCommonsHub(environment)
+  createReceptionCorner(environment)
+  createCommunityWall(environment)
+  createCommonsDetailProps(environment)
+  createCommonsWorldCue(environment, mode)
 
   const pantryLight = new THREE.PointLight(0xffd6a0, 0.82, 7)
   pantryLight.position.set(7.1, 2.65, -4.0)
@@ -981,10 +1385,18 @@ function createCommonsFloor(environment: THREE.Group): void {
   environment.add(pantryLight, gameLight, loungeLight)
 }
 
-function createBuildFloor(environment: THREE.Group): void {
+function createBuildFloor(
+  environment: THREE.Group,
+  mode: OfficeModeKey | null,
+): void {
   createWorkArea(environment)
   createReviewWall(environment)
-  createPantry(environment)
+  createQaLab(environment)
+  createPairingIsland(environment)
+  createDocsNook(environment)
+  createOpsRack(environment)
+  createBuildDetailProps(environment)
+  createBuildWorldCue(environment, mode)
 
   const reviewLight = new THREE.PointLight(0xa8d2e8, 0.52, 6.5)
   reviewLight.position.set(5.6, 2.45, 0.9)
@@ -993,11 +1405,18 @@ function createBuildFloor(environment: THREE.Group): void {
   environment.add(reviewLight, deskLight)
 }
 
-function createStrategyFloor(environment: THREE.Group): void {
+function createStrategyFloor(
+  environment: THREE.Group,
+  mode: OfficeModeKey | null,
+): void {
   createMeetingRoom(environment)
   createReviewWall(environment)
   createLoungeAndFocus(environment)
   createStrategyHub(environment)
+  createRoadmapWall(environment)
+  createDecisionPods(environment)
+  createStrategyDetailProps(environment)
+  createStrategyWorldCue(environment, mode)
 
   const meetingLight = new THREE.PointLight(0xffe0b0, 0.72, 7.5)
   meetingLight.position.set(-7.1, 2.8, -3.6)
@@ -1011,13 +1430,15 @@ export function createOfficeEnvironment(
   _stages: RunStage[],
   members: OfficeEnvironmentMember[],
   floor: OfficeFloorKey = 'build',
+  officeMode: OfficeModeKey | null = null,
 ): Map<string, StationPlacement> {
   clearGroup(environment)
-  createOfficeShell(environment)
+  createOfficeShell(environment, floor)
+  createLiftCore(environment, floor)
 
-  if (floor === 'commons') createCommonsFloor(environment)
-  else if (floor === 'strategy') createStrategyFloor(environment)
-  else createBuildFloor(environment)
+  if (floor === 'commons') createCommonsFloor(environment, officeMode)
+  else if (floor === 'strategy') createStrategyFloor(environment, officeMode)
+  else createBuildFloor(environment, officeMode)
 
   environment.add(createPlant(point(-4.65, -1.7), 0.9))
   environment.add(createPlant(point(4.65, -1.7), 0.9))

@@ -3,6 +3,10 @@ import type {
   ComposerThread,
   TeamProposal,
 } from '../api'
+import {
+  isPlanningPresenceFresh,
+  officeWorldContext,
+} from './officeWorld'
 
 export type OfficeFloorKey = 'commons' | 'build' | 'strategy'
 
@@ -142,6 +146,27 @@ const ROLE_HOME_ZONE: Record<
   'technical-writer': { floor: 'build', zone: 'docs-desk' },
 }
 
+export function officeRoleHomeLocation(
+  roleKey: string,
+): { floor: OfficeFloorKey; zone: OfficeZoneKey } {
+  const known = ROLE_HOME_ZONE[
+    roleKey as (typeof LIVING_OFFICE_CORE_ROLES)[number]
+  ]
+  if (known) return known
+
+  const normalized = roleKey.toLowerCase()
+  if (
+    normalized.includes('architect') ||
+    normalized.includes('product') ||
+    normalized.includes('analyst') ||
+    normalized.includes('design')
+  ) {
+    return { floor: 'strategy', zone: 'architecture-wall' }
+  }
+
+  return { floor: 'build', zone: 'engineering-pod' }
+}
+
 const ROLE_AMBIENT_ZONES: Record<
   (typeof LIVING_OFFICE_CORE_ROLES)[number],
   {
@@ -197,14 +222,23 @@ const ROLE_AMBIENT_ZONES: Record<
   },
 }
 
-export const OFFICE_AMBIENT_ZONE_CAPACITY: Partial<
-  Record<OfficeZoneKey, number>
+export const OFFICE_AMBIENT_ZONE_CAPACITY: Record<
+  OfficeZoneKey,
+  number
 > = {
+  entrance: 3,
   'coffee-bar': 2,
   pantry: 2,
   lounge: 2,
   'game-corner': 2,
   'quiet-room': 2,
+  'engineering-pod': 8,
+  'qa-bench': 2,
+  'review-wall': 2,
+  'docs-desk': 2,
+  'planning-table': 6,
+  'architecture-wall': 3,
+  'decision-room': 2,
 }
 
 const OFFICE_BEHAVIOR_LABELS: Record<OfficeBehaviorKey, string> = {
@@ -267,14 +301,6 @@ function pickAmbientZoneWithCapacity(
 
 function ambientPlacementIndex(roleKey: string, now: Date): number {
   return (stableRoleHash(roleKey) + ambientBeat(now)) % 8
-}
-
-function localCalendarDayBucket(now: Date): number {
-  return (
-    now.getFullYear() * 10_000 +
-    (now.getMonth() + 1) * 100 +
-    now.getDate()
-  )
 }
 
 function selectDailyRoles(
@@ -348,67 +374,69 @@ export function officeBehaviorLabel(behavior: OfficeBehaviorKey): string {
   return OFFICE_BEHAVIOR_LABELS[behavior]
 }
 
-function ambientWindowForHour(hour: number): OfficeAmbientWindow {
-  if (hour >= 7 && hour < 9) {
-    return {
-      key: 'arrival',
-      label: 'Arrival window',
-      floor: 'commons',
-      zone: 'entrance',
-      presence: 'ARRIVING',
-    }
-  }
-  if (hour >= 9 && hour < 12) {
-    return {
-      key: 'focus',
-      label: 'Focus work',
-      floor: 'build',
-      zone: 'engineering-pod',
-      presence: 'WORKING',
-    }
-  }
-  if (hour >= 12 && hour < 13) {
-    return {
-      key: 'lunch',
-      label: 'Lunch / quiet break',
-      floor: 'commons',
-      zone: 'pantry',
-      presence: 'LUNCH_BREAK',
-    }
-  }
-  if (hour >= 13 && hour < 15) {
-    return {
-      key: 'afternoon',
-      label: 'Afternoon work',
-      floor: 'build',
-      zone: 'engineering-pod',
-      presence: 'WORKING',
-    }
-  }
-  if (hour >= 15 && hour < 16) {
-    return {
-      key: 'coffee',
-      label: 'Coffee break',
-      floor: 'commons',
-      zone: 'coffee-bar',
-      presence: 'COFFEE_BREAK',
-    }
-  }
-  if (hour >= 16 && hour < 18) {
-    return {
-      key: 'wrap-up',
-      label: 'Wrap-up',
-      floor: 'build',
-      zone: 'review-wall',
-      presence: 'AVAILABLE',
-    }
-  }
-  return {
-    key: 'after-hours',
-    label: 'After hours',
-    floor: 'commons',
-    zone: 'lounge',
-    presence: 'SOCIAL_BREAK',
+function ambientWindowForWorld(
+  now: Date,
+  timeZone?: string | null,
+): OfficeAmbientWindow {
+  const world = officeWorldContext(now, timeZone)
+
+  switch (world.mode) {
+    case 'ARRIVAL':
+      return {
+        key: 'arrival',
+        label: world.modeLabel,
+        floor: 'commons',
+        zone: 'entrance',
+        presence: 'ARRIVING',
+      }
+    case 'CORE_WORK':
+      return {
+        key: 'focus',
+        label: world.modeLabel,
+        floor: 'build',
+        zone: 'engineering-pod',
+        presence: 'WORKING',
+      }
+    case 'LUNCH':
+      return {
+        key: 'lunch',
+        label: world.modeLabel,
+        floor: 'commons',
+        zone: 'pantry',
+        presence: 'LUNCH_BREAK',
+      }
+    case 'AFTERNOON_FOCUS':
+      return {
+        key: 'afternoon',
+        label: world.modeLabel,
+        floor: 'build',
+        zone: 'engineering-pod',
+        presence: 'WORKING',
+      }
+    case 'COFFEE_BREAK':
+      return {
+        key: 'coffee',
+        label: world.modeLabel,
+        floor: 'commons',
+        zone: 'coffee-bar',
+        presence: 'COFFEE_BREAK',
+      }
+    case 'WRAP_UP':
+      return {
+        key: 'wrap-up',
+        label: world.modeLabel,
+        floor: 'build',
+        zone: 'review-wall',
+        presence: 'AVAILABLE',
+      }
+    default:
+      return {
+        key: 'after-hours',
+        label: world.modeLabel,
+        floor: 'commons',
+        zone: 'lounge',
+        presence: 'SOCIAL_BREAK',
+      }
   }
 }
 
@@ -436,6 +464,7 @@ function activeScheduledEvent(
 export function officeAmbientWindow(
   now = new Date(),
   scheduledEvents: OfficeScheduledEvent[] = [],
+  timeZone?: string | null,
 ): OfficeAmbientWindow {
   const activeScheduled = activeScheduledEvent(now, scheduledEvents)
 
@@ -449,7 +478,7 @@ export function officeAmbientWindow(
     }
   }
 
-  return ambientWindowForHour(now.getHours())
+  return ambientWindowForWorld(now, timeZone)
 }
 
 function profileByKey(profiles: AgentProfile[]): Map<string, AgentProfile> {
@@ -460,8 +489,18 @@ export function planningPresenceMembers(
   thread: ComposerThread | null,
   proposal: TeamProposal | null,
   profiles: AgentProfile[],
+  now?: Date,
+  timeZone?: string | null,
 ): OfficePresenceMember[] {
   if (!thread || !proposal) return []
+  const effectiveTimeZone = timeZone ?? thread.timezone
+  if (now) {
+    const world = officeWorldContext(now, effectiveTimeZone)
+    if (!world.allowsPhysicalPlanningPresence) return []
+    if (!isPlanningPresenceFresh(thread.updated_at, now, effectiveTimeZone)) {
+      return []
+    }
+  }
 
   const names = profileByKey(profiles)
   const waitingForUser = thread.status === 'AWAITING_USER'
@@ -486,23 +525,17 @@ export function ambientOfficeMembers(
   now = new Date(),
   scheduledEvents: OfficeScheduledEvent[] = [],
   excludedRoleKeys: ReadonlySet<string> = new Set(),
+  timeZone?: string | null,
 ): OfficePresenceMember[] {
-  const baseline = ambientWindowForHour(now.getHours())
+  const world = officeWorldContext(now, timeZone)
+  const baseline = ambientWindowForWorld(now, timeZone)
   const scheduled = activeScheduledEvent(now, scheduledEvents)
   const known = profileByKey(profiles)
   const activeRoles = LIVING_OFFICE_CORE_ROLES.filter(
     (roleKey) =>
       known.get(roleKey)?.status === 'ACTIVE' && !excludedRoleKeys.has(roleKey),
   )
-  const dayBucket = localCalendarDayBucket(now)
-  const afterHoursRoles = selectDailyRoles(
-    activeRoles,
-    2,
-    dayBucket,
-    'after-hours',
-  )
-  const coffeeRoles = selectDailyRoles(activeRoles, 4, dayBucket, 'coffee')
-  const lunchRoles = selectDailyRoles(activeRoles, 6, dayBucket, 'lunch')
+  const dayBucket = world.localDateKey
   const occupiedAmbientZones = new Map<OfficeZoneKey, number>()
 
   const scheduledCandidates = activeRoles.filter(
@@ -523,6 +556,32 @@ export function ambientOfficeMembers(
   if (scheduled && scheduledRoles.size > 0) {
     occupiedAmbientZones.set(scheduled.zone, scheduledRoles.size)
   }
+
+  const baselineCandidates = activeRoles.filter(
+    (roleKey) => !scheduledRoles.has(roleKey),
+  )
+  const baselineLimit = Math.max(
+    0,
+    world.ambientOccupancyCap - scheduledRoles.size,
+  )
+  const baselineRoles = selectDailyRoles(
+    baselineCandidates,
+    baselineLimit,
+    dayBucket,
+    `world:${world.mode}`,
+  )
+  const coffeeRoles = selectDailyRoles(
+    [...baselineRoles],
+    4,
+    dayBucket,
+    'coffee',
+  )
+  const lunchRoles = selectDailyRoles(
+    [...baselineRoles],
+    6,
+    dayBucket,
+    'lunch',
+  )
 
   return activeRoles.flatMap((roleKey) => {
     const profile = known.get(roleKey)
@@ -546,8 +605,9 @@ export function ambientOfficeMembers(
       ]
     }
 
+    if (!baselineRoles.has(roleKey)) return []
+
     if (baseline.key === 'after-hours') {
-      if (!afterHoursRoles.has(roleKey)) return []
       const zone =
         pickAmbientZoneWithCapacity(
           roleKey,
@@ -624,11 +684,10 @@ export function ambientOfficeMembers(
     }
 
     if (baseline.key === 'arrival') {
-      const minuteOfDay = now.getHours() * 60 + now.getMinutes()
       const arrivalMinute = 7 * 60 + (stableRoleHash(roleKey) % 100)
 
-      if (minuteOfDay < arrivalMinute) return []
-      if (minuteOfDay >= arrivalMinute + 10) {
+      if (world.localMinuteOfDay < arrivalMinute) return []
+      if (world.localMinuteOfDay >= arrivalMinute + 10) {
         return [availableAtHome(roleKey, profile, now)]
       }
 
@@ -680,8 +739,16 @@ export function livingOfficeMembers(
   profiles: AgentProfile[],
   now = new Date(),
   scheduledEvents: OfficeScheduledEvent[] = [],
+  timeZone?: string | null,
 ): OfficePresenceMember[] {
-  const planning = planningPresenceMembers(thread, proposal, profiles)
+  const effectiveTimeZone = timeZone ?? thread?.timezone
+  const planning = planningPresenceMembers(
+    thread,
+    proposal,
+    profiles,
+    now,
+    effectiveTimeZone,
+  )
   const planningRoleKeys = new Set(
     planning.map((member) => member.agent_profile_key),
   )
@@ -690,6 +757,7 @@ export function livingOfficeMembers(
     now,
     scheduledEvents,
     planningRoleKeys,
+    effectiveTimeZone,
   )
 
   return [...planning, ...ambient]
