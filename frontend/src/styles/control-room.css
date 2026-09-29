@@ -2996,6 +2996,11 @@ body {
   padding-inline: 6px;
 }
 
+.office-maximized .office-scene-heading-workspace {
+  min-height: 64px;
+  flex: 0 0 auto;
+}
+
 @media (max-width: 1320px) {
   .office-scene-heading-workspace {
     grid-template-columns: minmax(190px, .8fr) minmax(0, 1.8fr);
