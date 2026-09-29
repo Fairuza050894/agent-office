@@ -1331,7 +1331,7 @@ function createBuildDetailProps(parent: THREE.Group): void {
   // Sprint / engineering board.
   addBox(details, [3.55, 1.55, 0.08], [-6.65, 1.72, -6.82], 0x394955)
   const board = addBox(
-    parent,
+    details,
     [3.18, 1.18, 0.035],
     [-6.65, 1.72, -6.74],
     0x163141,
@@ -1361,7 +1361,6 @@ function createBuildDetailProps(parent: THREE.Group): void {
   addCylinder(details, 0.055, 0.78, [-8.3, 0.43, 2.15], 0x303943)
 
   parent.add(details)
-
 }
 
 function createStrategyDetailProps(parent: THREE.Group): void {
@@ -1401,7 +1400,6 @@ function createStrategyDetailProps(parent: THREE.Group): void {
   }
 
   parent.add(details)
-
 }
 
 function createCommonsFloor(
