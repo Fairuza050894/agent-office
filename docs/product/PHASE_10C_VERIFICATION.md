@@ -5,7 +5,7 @@ Date: 2026-09-29
 Branch: `phase-10c-time-context`  
 Base: `main@60fd03c`  
 Merge policy: manual only  
-Implementation checkpoint: `af5b87a`
+Implementation checkpoint: `def6ad4`
 
 ## Delivered scope
 
@@ -127,7 +127,7 @@ Before the rendered gate, additional source review closed these issues:
 - decision-room anchors are placed in front of decision tables instead of inside them;
 - L1/L2/L3 floor buttons expose truthful live presence counts.
 
-The original occupancy-hardening checkpoint was `d8f3f53`. Lifecycle and closed-office planning semantics landed at `9884d07`. The current implementation checkpoint is `af5b87a`, which adds rendered-review UI polish, richer per-floor support props, maximize-safe scene command-strip layout, and floor-specific shell accents.
+The original occupancy-hardening checkpoint was `d8f3f53`. Lifecycle and closed-office planning semantics landed at `9884d07`. The current implementation checkpoint is `def6ad4`, which includes rendered-review UI polish, richer per-floor support props, maximize-safe scene command-strip layout, floor-specific shell accents, and corrected rigged-character movement facing.
 
 ## Office-world lifecycle hardening
 
@@ -205,6 +205,28 @@ Hardening through `af5b87a` now provides:
 A follow-up local screenshot is still required because GitHub Actions currently
 cannot assign a runner and this pass materially changes rendered layout.
 
+## Character movement-facing fix
+
+Rendered review identified a real presentation bug: rigged characters moved along
+the correct path but visually faced the opposite direction, producing a
+moonwalk/backwards-walking effect.
+
+Root cause:
+
+- the GLB presentation keeps a 180-degree model yaw offset;
+- station-facing orientation is already visually correct and must remain
+  authoritative when an agent stops;
+- movement heading previously aligned root +Z to velocity, while the rigged
+  character's visual forward axis after the presentation offset is root -Z.
+
+The fix therefore does **not** rotate the model globally or change station yaw.
+Movement-only heading now aligns the visual -Z forward axis to the current
+velocity vector via `officeMovementYaw()`. When movement finishes, the existing
+`targetYaw` / station orientation is restored unchanged.
+
+Regression tests cover +Z, -Z, +X, and -X movement directions so the facing
+convention cannot silently regress.
+
 ## Rendered acceptance required
 
 After pulling the branch locally, verify:
@@ -222,7 +244,9 @@ After pulling the branch locally, verify:
 10. a fresh planning thread at night remains available in Composer/Dock but
     Strategy shows remote/closed-office context rather than physical people;
 11. the polished command strip remains readable in normal and Maximize modes;
-12. floor-specific support props do not clip paths or character anchors.
+12. floor-specific support props do not clip paths or character anchors;
+13. moving rigged characters face their travel direction rather than walking
+    backward, while stopped characters still respect their station yaw.
 
 ## Automated commands to run when runner/local environment is available
 
