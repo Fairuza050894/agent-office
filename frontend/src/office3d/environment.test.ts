@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
+import * as THREE from 'three'
 
 import { OFFICE_AMBIENT_ZONE_CAPACITY } from './livingOffice'
 import {
   ENTRANCE,
   buildOfficePath,
+  createOfficeEnvironment,
   incidentPosition,
   officePathHasFurnitureClearance,
   officeRoleStation,
@@ -95,6 +97,16 @@ describe('office navigation clearance', () => {
 
     expect(planning[0].distanceTo(planning[1])).toBeGreaterThan(1.5)
     expect(planning[1].distanceTo(planning[2])).toBeGreaterThan(1.5)
+  })
+
+  it('varies commons world props across office modes without changing presence truth', () => {
+    const arrival = new THREE.Group()
+    const night = new THREE.Group()
+
+    createOfficeEnvironment(arrival, [], [], 'commons', 'ARRIVAL')
+    createOfficeEnvironment(night, [], [], 'commons', 'NIGHT_QUIET')
+
+    expect(arrival.children.length).toBeGreaterThan(night.children.length)
   })
 
   it('aligns specialist zones with their distinct floor spaces', () => {
