@@ -323,13 +323,50 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
       className={`page-view office-view office-workspace ${isMaximized ? 'office-maximized' : ''}`}
     >
       <OfficeCommandRail
-        title="Run Office View"
+        title="Agent Office"
         projectName={project?.name ?? run.project_id}
-        modeLabel={officeMode === 'replay' ? 'Historical replay' : 'Live run'}
+        modeLabel={officeMode === 'replay' ? 'Run · Replay' : 'Run · Live'}
         statusLabel={run.status}
         meta={`${agents.length} AgentRun${agents.length === 1 ? '' : 's'} · ${stages.length} stage${stages.length === 1 ? '' : 's'}`}
         actions={
           <>
+            <div className="office-scope-switcher" aria-label="Agent Office scope">
+              <Link
+                href={`/office?project=${project?.id ?? run.project_id}`}
+                className="office-scope-link"
+              >
+                Workspace
+              </Link>
+              <button
+                type="button"
+                className={`office-scope-link ${officeMode === 'live' ? 'active' : ''}`}
+                aria-pressed={officeMode === 'live'}
+                onClick={() => {
+                  setOfficeMode('live')
+                  setReplayStartedAt(null)
+                  setReplayRangeSnapshot(null)
+                  setReplayElapsed(null)
+                }}
+              >
+                Live Run
+              </button>
+              <button
+                type="button"
+                className={`office-scope-link ${officeMode === 'replay' ? 'active' : ''}`}
+                aria-pressed={officeMode === 'replay'}
+                onClick={() => {
+                  const range = officeReplayRange(agents, events)
+                  setReplayRangeSnapshot(range)
+                  setReplayStartedAt(performance.now())
+                  setReplayElapsed(0)
+                  setOfficeMode('replay')
+                  setMotionPaused(false)
+                  setReplayNonce((current) => current + 1)
+                }}
+              >
+                Replay
+              </button>
+            </div>
             <span className="office-live-state" role="status">
               <span
                 className={`status-dot ${liveState === 'connected' ? 'connected' : 'disconnected'}`}
@@ -341,36 +378,6 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
                   ? 'Manual refresh'
                   : 'Events disconnected'}
             </span>
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              aria-pressed={officeMode === 'replay'}
-              onClick={() => {
-                const range = officeReplayRange(agents, events)
-                setReplayRangeSnapshot(range)
-                setReplayStartedAt(performance.now())
-                setReplayElapsed(0)
-                setOfficeMode('replay')
-                setMotionPaused(false)
-                setReplayNonce((current) => current + 1)
-              }}
-            >
-              Replay
-            </button>
-            {officeMode === 'replay' && (
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
-                onClick={() => {
-                  setOfficeMode('live')
-                  setReplayStartedAt(null)
-                  setReplayRangeSnapshot(null)
-                  setReplayElapsed(null)
-                }}
-              >
-                Live
-              </button>
-            )}
             <button
               type="button"
               className="btn btn-secondary btn-sm"
@@ -463,9 +470,10 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
       />
 
       <p className="office-workspace-note">
-        Run Office View is a visual projection of this Run. Cancellation,
-        Findings, Evidence, executor selection, approvals, and canonical
-        execution state remain authoritative in Run detail and operational data.
+        Agent Office is showing the canonical Run scope. Workspace, Live Run,
+        and Replay share one 3D office experience while preserving different
+        truth sources. Run detail remains authoritative for execution controls,
+        Findings, Evidence, approvals, and integration state.
       </p>
     </div>
   )
