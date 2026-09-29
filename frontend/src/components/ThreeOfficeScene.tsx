@@ -342,9 +342,13 @@ export function ThreeOfficeScene({
           } else {
             direction.normalize()
             runtime.root.position.addScaledVector(direction, step)
-            // Align the rigged model's visual forward axis with velocity.
-            // Station yaw remains authoritative once movement finishes.
-            runtime.root.rotation.y = officeMovementYaw(direction)
+            // Live movement is already visually verified. Replay has a
+            // separate 180° presentation-facing correction; station yaw remains
+            // authoritative once movement finishes.
+            runtime.root.rotation.y = officeMovementYaw(
+              direction,
+              modeRef.current === 'replay',
+            )
           }
         }
 
