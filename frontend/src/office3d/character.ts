@@ -320,7 +320,6 @@ export function officeMovementYaw(direction: THREE.Vector3): number {
   return Math.atan2(-direction.x, -direction.z)
 }
 
-
 function loadCharacterAssets(
   variantKey: CharacterVariantKey,
 ): Promise<CharacterAssets> {
