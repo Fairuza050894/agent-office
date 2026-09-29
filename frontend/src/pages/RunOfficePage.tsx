@@ -19,6 +19,11 @@ import { UniversalComposerShell } from '../components/office/UniversalComposerSh
 import { OfficeRendererBoundary } from '../components/OfficeRendererBoundary'
 import { OfficeScene } from '../components/OfficeScene'
 import {
+  OFFICE_FLOORS,
+  officeRoleHomeLocation,
+  type OfficeFloorKey,
+} from '../office3d/livingOffice'
+import {
   officeReplayDuration,
   officeReplayFactualCutoff,
   officeReplayRange,
@@ -47,6 +52,7 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
   const [motionPaused, setMotionPaused] = useState(false)
   const [isMaximized, setIsMaximized] = useState(false)
   const [officeMode, setOfficeMode] = useState<'live' | 'replay'>('live')
+  const [selectedFloor, setSelectedFloor] = useState<OfficeFloorKey>('build')
   const [replayNonce, setReplayNonce] = useState(0)
   const [replayStartedAt, setReplayStartedAt] = useState<number | null>(null)
   const [replayRangeSnapshot, setReplayRangeSnapshot] =
@@ -215,6 +221,44 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
     () => agents.find((agent) => agent.id === selectedAgentId) ?? null,
     [agents, selectedAgentId],
   )
+
+  const operationalFloorCounts = useMemo(
+    () =>
+      OFFICE_FLOORS.reduce(
+        (counts, floor) => {
+          counts[floor.key] = agents.filter(
+            (agent) =>
+              officeRoleHomeLocation(agent.agent_profile_key).floor === floor.key,
+          ).length
+          return counts
+        },
+        { commons: 0, build: 0, strategy: 0 } as Record<
+          OfficeFloorKey,
+          number
+        >,
+      ),
+    [agents],
+  )
+
+  const visibleAgents = useMemo(
+    () =>
+      agents.filter(
+        (agent) =>
+          officeRoleHomeLocation(agent.agent_profile_key).floor === selectedFloor,
+      ),
+    [agents, selectedFloor],
+  )
+
+  const selectOperationalAgent = (agentId: string | null) => {
+    setSelectedAgentId(agentId)
+    if (!agentId) return
+
+    const agent = agents.find((candidate) => candidate.id === agentId)
+    if (!agent) return
+
+    setSelectedFloor(officeRoleHomeLocation(agent.agent_profile_key).floor)
+  }
+
   useEffect(() => {
     if (
       officeMode !== 'replay' ||
@@ -418,16 +462,23 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
         <OfficeRendererBoundary operationalHref={`/runs/${run.id}`}>
           <OfficeScene
             stages={stages}
-            agents={agents}
+            agents={visibleAgents}
             profiles={profiles}
             selectedAgentId={selectedAgentId}
-            onSelectAgent={setSelectedAgentId}
+            onSelectAgent={(agentId) => selectOperationalAgent(agentId)}
+
             motionPaused={motionPaused}
             mode={officeMode}
             replayNonce={replayNonce}
             replayStartedAt={replayStartedAt}
             replayRange={replayRangeSnapshot}
             showRoster={false}
+            floor={selectedFloor}
+            onFloorChange={(floor) => {
+              setSelectedFloor(floor)
+              setSelectedAgentId(null)
+            }}
+            operationalFloorCounts={operationalFloorCounts}
           />
         </OfficeRendererBoundary>
 
@@ -439,7 +490,7 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
             workspace={selectedWorkspace}
             stage={selectedStage}
             latestEvent={selectedEvent}
-            onClose={() => setSelectedAgentId(null)}
+            onClose={() => selectOperationalAgent(null)}
           />
         )}
       </div>
@@ -464,7 +515,7 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
         agents={agents}
         profiles={profiles}
         selectedAgentId={selectedAgentId}
-        onSelectAgent={setSelectedAgentId}
+        onSelectAgent={(agentId) => selectOperationalAgent(agentId)}
         modeLabel={officeMode === 'replay' ? 'Historical replay' : 'Canonical state'}
         forceCollapsed={isMaximized}
       />
