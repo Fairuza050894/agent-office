@@ -1,6 +1,29 @@
-# Office View
+# Run Office View
 
 Status: Phase 8 implementation specification
+
+## Surface boundary
+
+Agent Office now has two distinct 3D surfaces. They share rendering primitives
+but they do not represent the same product state.
+
+```text
+/office
+  -> Office Workspace
+  -> planning / ambient / office-world presentation
+  -> time context, floors, occupancy, planning presence
+
+/runs/:runId/office
+  -> Run Office View
+  -> canonical Run / AgentRun projection
+  -> Live run + Historical Replay
+```
+
+Historical Replay belongs only to **Run Office View**. Office-world clock,
+ambient occupancy, floor-life simulation, and planning/ambient personas belong
+to **Office Workspace**.
+
+A shared Three.js component does not merge these truth models.
 
 Office View is an optional visual projection of canonical Run state. It does
 not own workflow state and must never become the only way to understand or
@@ -141,8 +164,8 @@ execution state.
 
 ## Phase 9A Office-first workspace
 
-Phase 9A replaces the Phase 8 permanent right sidebar with an Office-first
-workspace.
+Phase 9A introduces a separate Office-first workspace while retaining the
+existing Run-scoped operational projection.
 
 Primary routes:
 
@@ -151,12 +174,13 @@ Primary routes:
 /runs/:runId/office
 ```
 
-`/office` is the project-aware workspace shell. It may render the Office
-environment without factual AgentRuns when no Run is selected. This is not
-Ambient Mode; Phase 9A does not create illustrative personas.
+`/office` is the project-aware **Office Workspace**. It may render the Office
+environment without factual AgentRuns when no Run is selected.
 
-The Run-scoped route remains backward compatible and continues to project
-canonical AgentRun/Event state.
+`/runs/:runId/office` is the **Run Office View**. It remains backward
+compatible and projects canonical Run / AgentRun / Event state. Its Live and
+Historical Replay controls are operational-view concerns and are not part of
+the Office Workspace world-simulation model.
 
 Desktop structure:
 
@@ -225,7 +249,7 @@ The Phase 9A visual gate adds the following presentation rules:
 - active / waiting / blocked / failed AgentRuns retain visible nameplates
 - selecting any AgentRun reveals its nameplate and inspector
 - default Office camera framing is closer than the Phase 8 framing
-- Run Office uses `Operational` / `Historical replay` language instead of
+- Run Office View uses `Live run` / `Historical replay` language instead of
   conflating SSE connectivity with Run state
 - backend event connectivity is reported separately as an event-stream state
 - `/office` starts with the Operations Dock collapsed because no factual Run is
