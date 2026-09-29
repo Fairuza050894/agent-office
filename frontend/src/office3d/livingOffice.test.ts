@@ -539,25 +539,18 @@ describe('living office model', () => {
     ).toEqual([])
   })
 
-  it('still renders a genuinely recent late-night planning session', () => {
+  it('keeps even a recent late-night planning session remote while the office is closed', () => {
     const now = new Date('2026-09-29T00:44:00+07:00')
     const recentThread = {
       ...thread,
       updated_at: '2026-09-29T00:35:00+07:00',
     }
 
-    const members = livingOfficeMembers(
-      recentThread,
-      proposal,
-      profiles,
-      now,
-    )
-
     expect(
-      members.filter((member) => member.truth === 'PLANNING'),
-    ).toHaveLength(2)
+      planningPresenceMembers(recentThread, proposal, profiles, now),
+    ).toEqual([])
     expect(
-      members.filter((member) => member.truth === 'AMBIENT'),
-    ).toHaveLength(0)
+      livingOfficeMembers(recentThread, proposal, profiles, now),
+    ).toEqual([])
   })
 })
