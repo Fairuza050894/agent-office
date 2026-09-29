@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import {
   api,
@@ -89,6 +89,8 @@ export function OfficeWorkspacePage() {
     () => officeFloorFromParam(new URLSearchParams(currentSearch).get('floor')),
     [currentSearch],
   )
+  const requestedFloorRef = useRef<OfficeFloorKey | null>(requestedFloor)
+  requestedFloorRef.current = requestedFloor
   const [projects, setProjects] = useState<Project[]>([])
   const [executors, setExecutors] = useState<Executor[]>([])
   const [profiles, setProfiles] = useState<AgentProfile[]>([])
@@ -255,10 +257,11 @@ export function OfficeWorkspacePage() {
           setPlanningArtifacts([])
           setPlanningRequirements([])
           setPlanningEvents([])
-          setSelectedFloor(
-            requestedFloor ??
+          if (!requestedFloorRef.current) {
+            setSelectedFloor(
               officeAmbientWindow(new Date(), [], localTimezone()).floor,
-          )
+            )
+          }
           return
         }
 
@@ -272,9 +275,9 @@ export function OfficeWorkspacePage() {
         setPlanningArtifacts(snapshot.artifacts)
         setPlanningRequirements(snapshot.requirements)
         setPlanningEvents(snapshot.events)
-        setSelectedFloor(
-          requestedFloor ?? initialFloorForThread(latest, snapshot.team),
-        )
+        if (!requestedFloorRef.current) {
+          setSelectedFloor(initialFloorForThread(latest, snapshot.team))
+        }
       })
       .catch((reason) => {
         if (!active) return
