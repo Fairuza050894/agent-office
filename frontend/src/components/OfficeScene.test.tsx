@@ -71,6 +71,15 @@ describe('OfficeScene operational scope', () => {
     expect(
       screen.getByLabelText('Agent Office operational 3D projection'),
     ).toBeInTheDocument()
+    fireEvent.click(screen.getByText('Controls'))
+    const cameraViews = screen.getByRole('group', { name: 'Camera view' })
+    expect(
+      within(cameraViews).getByRole('button', { name: /Planning/i }),
+    ).toBeInTheDocument()
+    expect(
+      within(cameraViews).getByRole('button', { name: /Meeting/i }),
+    ).toBeInTheDocument()
+
     const buildFloor = screen.getByRole('button', { name: /L2.*Build/i })
     expect(buildFloor).toBeInTheDocument()
     expect(buildFloor.closest('.office-floor-switcher')).not.toHaveClass(
