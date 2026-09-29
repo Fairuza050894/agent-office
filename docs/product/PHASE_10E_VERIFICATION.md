@@ -142,3 +142,27 @@ git diff --check
 ```
 
 Do not mark the phase automated-green unless these commands actually execute.
+
+
+## Rendered fix — Controls panel containment
+
+Rendered review on `/office` found the Phase 10E Controls disclosure opening
+leftward from the trigger. Because the Office scene wrapper intentionally clips
+overflow, the left edge of the panel was cut off.
+
+The panel is now anchored from the trigger toward the open scene area:
+
+- desktop / Maximize: opens to the right of `Controls`;
+- narrow layouts: width is capped against the viewport;
+- panel remains an overlay and does not reflow the Office HUD;
+- camera buttons, interaction hints, and Labels control must all remain fully
+  readable;
+- no change to camera semantics, Run truth, Replay truth, or movement logic.
+
+Rendered regression check:
+
+1. open `Controls` on L1/L2/L3;
+2. confirm the full first preset label is visible;
+3. confirm `Drag`, `Right-drag`, `Wheel`, and `Labels` are not clipped;
+4. repeat in Maximize;
+5. repeat once in Live / Replay.
