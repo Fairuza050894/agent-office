@@ -3058,3 +3058,66 @@ body {
     overflow-x: auto;
   }
 }
+
+
+/* Unified Agent Office scope navigation */
+
+.office-scope-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid #29404e;
+  border-radius: 5px;
+  background: #0b1821;
+}
+
+.office-scope-link {
+  height: 26px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: #748b9a;
+  font-family: inherit;
+  font-size: .56rem;
+  font-weight: 650;
+  line-height: 26px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+button.office-scope-link {
+  line-height: 1;
+}
+
+.office-scope-link:hover,
+.office-scope-link:focus-visible {
+  background: #112530;
+  color: #d5e2e9;
+  outline: none;
+}
+
+.office-scope-link.active,
+.office-scope-link[aria-pressed='true'] {
+  background: rgba(83, 199, 240, .11);
+  color: #a8e6f8;
+  box-shadow: inset 0 0 0 1px rgba(83, 199, 240, .22);
+}
+
+.office-command-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+@media (max-width: 1180px) {
+  .office-command-rail {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .office-command-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
