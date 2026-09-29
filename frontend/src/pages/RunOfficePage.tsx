@@ -428,7 +428,7 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
       <OfficeCommandRail
         title="Agent Office"
         projectName={project?.name ?? run.project_id}
-        modeLabel={officeMode === 'replay' ? 'Run · Replay' : 'Run · Live'}
+        modeLabel={officeMode === 'replay' ? 'Replay' : 'Live'}
         statusLabel={run.status}
         meta={`${agents.length} AgentRun${agents.length === 1 ? '' : 's'} · ${stages.length} stage${stages.length === 1 ? '' : 's'}`}
         actions={
@@ -465,11 +465,13 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
                 className={`status-dot ${liveState === 'connected' ? 'connected' : 'disconnected'}`}
                 aria-hidden="true"
               />
-              {liveState === 'connected'
-                ? 'Events connected'
-                : liveState === 'unsupported'
-                  ? 'Manual refresh'
-                  : 'Events disconnected'}
+              {officeMode === 'replay'
+                ? 'Historical events'
+                : liveState === 'connected'
+                  ? 'Events connected'
+                  : liveState === 'unsupported'
+                    ? 'Manual refresh'
+                    : 'Events disconnected'}
             </span>
             <details className="office-action-menu">
               <summary>Run controls</summary>
@@ -564,7 +566,7 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
         profiles={profiles}
         selectedAgentId={selectedAgentId}
         onSelectAgent={(agentId) => selectOperationalAgent(agentId)}
-        modeLabel={officeMode === 'replay' ? 'Historical replay' : 'Canonical state'}
+        modeLabel={officeMode === 'replay' ? 'Replay' : 'Live Run'}
         forceCollapsed={isMaximized}
       />
 
