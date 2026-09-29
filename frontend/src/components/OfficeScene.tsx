@@ -140,7 +140,7 @@ export function OfficeScene({
       aria-label={
         presentation === 'workspace'
           ? 'Office workspace 3D environment'
-          : 'Run office 3D projection'
+          : 'Run Office View 3D projection'
       }
     >
       <div
@@ -241,8 +241,8 @@ export function OfficeScene({
           <>
             <div className="office-scene-context">
               <div className="office-scene-title-group">
-                <strong>Operational office</strong>
-                <span>Canonical AgentRun state</span>
+                <strong>Run Office View</strong>
+                <span>Canonical Run / AgentRun projection</span>
               </div>
               <details className="office-scene-controls">
                 <summary>Controls</summary>
