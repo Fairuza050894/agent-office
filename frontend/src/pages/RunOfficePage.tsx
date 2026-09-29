@@ -153,15 +153,25 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
   }, [refreshAll])
 
   useEffect(() => {
-    if (!run || !requestedReplay || officeMode === 'replay') return
+    if (!run) return
 
-    const range = officeReplayRange(agents, events)
-    setReplayRangeSnapshot(range)
-    setReplayStartedAt(performance.now())
-    setReplayElapsed(0)
-    setOfficeMode('replay')
-    setMotionPaused(false)
-    setReplayNonce((current) => current + 1)
+    if (requestedReplay && officeMode !== 'replay') {
+      const range = officeReplayRange(agents, events)
+      setReplayRangeSnapshot(range)
+      setReplayStartedAt(performance.now())
+      setReplayElapsed(0)
+      setOfficeMode('replay')
+      setMotionPaused(false)
+      setReplayNonce((current) => current + 1)
+      return
+    }
+
+    if (!requestedReplay && officeMode === 'replay') {
+      setOfficeMode('live')
+      setReplayStartedAt(null)
+      setReplayRangeSnapshot(null)
+      setReplayElapsed(null)
+    }
   }, [agents, events, officeMode, requestedReplay, run])
 
 
