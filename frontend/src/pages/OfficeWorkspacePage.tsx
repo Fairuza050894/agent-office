@@ -12,10 +12,12 @@ import {
   type PlanningEvent,
   type Project,
   type RequirementCandidate,
+  type Run,
   type TeamProposal,
 } from '../api'
 import { BottomOperationsDock } from '../components/office/BottomOperationsDock'
 import { OfficeCommandRail } from '../components/office/OfficeCommandRail'
+import { AgentOfficeScopeSwitcher } from '../components/office/AgentOfficeScopeSwitcher'
 import {
   UniversalComposerShell,
   type ComposerSubmitPayload,
@@ -97,6 +99,7 @@ export function OfficeWorkspacePage() {
     string | null
   >(null)
   const [registryError, setRegistryError] = useState<string | null>(null)
+  const [latestProjectRun, setLatestProjectRun] = useState<Run | null>(null)
 
   const [planningThreads, setPlanningThreads] = useState<ComposerThread[]>([])
   const [activeThread, setActiveThread] = useState<ComposerThread | null>(null)
@@ -176,6 +179,44 @@ export function OfficeWorkspacePage() {
       active = false
     }
   }, [requestedProjectId])
+
+  useEffect(() => {
+    let active = true
+
+    if (!selectedProjectId) {
+      setLatestProjectRun(null)
+      return () => {
+        active = false
+      }
+    }
+
+    const loadLatestRun = async () => {
+      try {
+        const tasks = await api.listTasks(selectedProjectId)
+        const runGroups = await Promise.all(
+          tasks.map((task) => api.listRuns(task.id)),
+        )
+        if (!active) return
+
+        const latest =
+          runGroups
+            .flat()
+            .slice()
+            .sort((left, right) =>
+              right.updated_at.localeCompare(left.updated_at),
+            )[0] ?? null
+        setLatestProjectRun(latest)
+      } catch {
+        if (active) setLatestProjectRun(null)
+      }
+    }
+
+    void loadLatestRun()
+
+    return () => {
+      active = false
+    }
+  }, [selectedProjectId])
 
   useEffect(() => {
     let active = true
@@ -276,6 +317,7 @@ export function OfficeWorkspacePage() {
       officeAmbientWindow(new Date(), [], localTimezone()).floor,
     )
     setComposerError(null)
+    setLatestProjectRun(null)
   }
 
   const openPlanningThread = async (threadId: string) => {
@@ -581,13 +623,28 @@ export function OfficeWorkspacePage() {
             : `${projects.length} Project${projects.length === 1 ? '' : 's'}`
         }
         actions={
-          <button
-            type="button"
-            className="btn btn-secondary btn-sm"
-            onClick={() => setIsMaximized((current) => !current)}
-          >
-            {isMaximized ? 'Exit maximize' : 'Maximize'}
-          </button>
+          <>
+            <AgentOfficeScopeSwitcher
+              projectId={selectedProject?.id ?? null}
+              runId={latestProjectRun?.id ?? null}
+              activeScope="workspace"
+            />
+            {latestProjectRun && (
+              <span
+                className="office-command-meta"
+                title={`Latest Run ${latestProjectRun.id}`}
+              >
+                Run {latestProjectRun.id.slice(0, 8)} · {latestProjectRun.status}
+              </span>
+            )}
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => setIsMaximized((current) => !current)}
+            >
+              {isMaximized ? 'Exit maximize' : 'Maximize'}
+            </button>
+          </>
         }
       />
 
