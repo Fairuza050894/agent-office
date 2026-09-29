@@ -44,14 +44,24 @@ describe('officeCharacterAppearance', () => {
     expect(shouldShowOfficeNameplate('COMPLETED', true)).toBe(true)
   })
 
-  it('aligns the rigged visual forward axis with movement velocity', () => {
-    expect(officeMovementYaw(new THREE.Vector3(0, 0, 1))).toBeCloseTo(Math.PI)
-    expect(Math.abs(officeMovementYaw(new THREE.Vector3(0, 0, -1)))).toBeCloseTo(0)
-    expect(officeMovementYaw(new THREE.Vector3(1, 0, 0))).toBeCloseTo(
-      -Math.PI / 2,
-    )
-    expect(officeMovementYaw(new THREE.Vector3(-1, 0, 0))).toBeCloseTo(
-      Math.PI / 2,
+  it('preserves verified live facing and applies the correction only to replay', () => {
+    const directions = [
+      new THREE.Vector3(0, 0, 1),
+      new THREE.Vector3(0, 0, -1),
+      new THREE.Vector3(1, 0, 0),
+      new THREE.Vector3(-1, 0, 0),
+    ]
+
+    directions.forEach((direction) => {
+      const liveYaw = officeMovementYaw(direction)
+      const replayYaw = officeMovementYaw(direction, true)
+
+      expect(replayYaw - liveYaw).toBeCloseTo(Math.PI)
+    })
+
+    expect(officeMovementYaw(new THREE.Vector3(0, 0, 1))).toBeCloseTo(0)
+    expect(Math.abs(officeMovementYaw(new THREE.Vector3(0, 0, -1)))).toBeCloseTo(
+      Math.PI,
     )
   })
 
