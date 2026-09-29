@@ -20,6 +20,7 @@ describe('office world context', () => {
     expect(world.occupancyExplanation).toContain('no ambient team')
     expect(world.ambientOccupancyCap).toBe(0)
     expect(world.isOfficeOpen).toBe(false)
+    expect(world.allowsPhysicalPlanningPresence).toBe(false)
     expect(world.clockLabel).toBe('00:44:00')
     expect(world.dayLabel).toContain('29')
     expect(world.timeZone).toBe(JAKARTA)
