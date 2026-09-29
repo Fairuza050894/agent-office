@@ -65,6 +65,7 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const initialFloorResolved = useRef(false)
 
   const refreshProjection = useCallback(async () => {
     const [loadedRun, loadedStages, loadedAgents, loadedWorkspaces] =
@@ -248,6 +249,20 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
       ),
     [agents, selectedFloor],
   )
+
+  useEffect(() => {
+    if (initialFloorResolved.current || agents.length === 0) return
+
+    const preferredFloor: OfficeFloorKey =
+      operationalFloorCounts.build > 0
+        ? 'build'
+        : operationalFloorCounts.strategy > 0
+          ? 'strategy'
+          : 'commons'
+
+    setSelectedFloor(preferredFloor)
+    initialFloorResolved.current = true
+  }, [agents.length, operationalFloorCounts])
 
   const selectOperationalAgent = (agentId: string | null) => {
     setSelectedAgentId(agentId)
@@ -475,6 +490,7 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
             showRoster={false}
             floor={selectedFloor}
             onFloorChange={(floor) => {
+              initialFloorResolved.current = true
               setSelectedFloor(floor)
               setSelectedAgentId(null)
             }}
