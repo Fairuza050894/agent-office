@@ -8,6 +8,7 @@ import {
   animateCharacter,
   createCharacterRuntime,
   disposeCharacter,
+  officeMovementYaw,
   setCharacterBehavior,
   setCharacterSelected,
   setCharacterStatus,
