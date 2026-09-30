@@ -46,7 +46,7 @@ describe('officeCharacterAppearance', () => {
     expect(shouldShowOfficeNameplate('COMPLETED', true)).toBe(true)
   })
 
-  it('preserves verified live facing and applies the correction only to replay', () => {
+  it('keeps Live facing unchanged and corrects Replay and Workspace presentation facing', () => {
     const directions = [
       new THREE.Vector3(0, 0, 1),
       new THREE.Vector3(0, 0, -1),
@@ -55,16 +55,23 @@ describe('officeCharacterAppearance', () => {
     ]
 
     directions.forEach((direction) => {
-      const liveYaw = officeMovementYaw(direction)
-      const replayYaw = officeMovementYaw(direction, true)
+      const liveYaw = officeMovementYaw(direction, 'live')
+      const replayYaw = officeMovementYaw(direction, 'replay')
+      const workspaceYaw = officeMovementYaw(direction, 'workspace')
 
       expect(replayYaw - liveYaw).toBeCloseTo(Math.PI)
+      expect(workspaceYaw - liveYaw).toBeCloseTo(Math.PI)
+      expect(workspaceYaw).toBeCloseTo(replayYaw)
     })
 
-    expect(officeMovementYaw(new THREE.Vector3(0, 0, 1))).toBeCloseTo(0)
-    expect(Math.abs(officeMovementYaw(new THREE.Vector3(0, 0, -1)))).toBeCloseTo(
-      Math.PI,
-    )
+    expect(
+      officeMovementYaw(new THREE.Vector3(0, 0, 1), 'live'),
+    ).toBeCloseTo(0)
+    expect(
+      Math.abs(
+        officeMovementYaw(new THREE.Vector3(0, 0, -1), 'live'),
+      ),
+    ).toBeCloseTo(Math.PI)
   })
 
   it('keeps unknown-role fallback deterministic', () => {
