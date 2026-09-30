@@ -37,6 +37,7 @@ import {
   officeAmbientWindow,
   officeFloorFromParam,
   officeBehaviorLabel,
+  officePresenceStatusLabel,
   type OfficeFloorKey,
   type OfficeWorkAssignment,
 } from '../office3d/livingOffice'
@@ -67,35 +68,6 @@ function initialFloorForThread(
   }
 
   return officeAmbientWindow(now, [], thread.timezone).floor
-}
-
-function workspacePresenceStatusLabel(status: string): string {
-  switch (status) {
-    case 'WAITING_WORK':
-      return 'Waiting'
-    case 'WAITING_USER':
-      return 'Waiting for you'
-    case 'LUNCH_BREAK':
-      return 'Lunch break'
-    case 'COFFEE_BREAK':
-      return 'Coffee break'
-    case 'PRAYER_BREAK':
-      return 'Prayer / quiet break'
-    case 'SOCIAL_BREAK':
-      return 'Social break'
-    case 'WORKING':
-      return 'Working'
-    case 'PLANNING':
-      return 'Planning'
-    case 'AVAILABLE':
-      return 'Available'
-    case 'ARRIVING':
-      return 'Arriving'
-    case 'OFFLINE':
-      return 'Offline'
-    default:
-      return status.replaceAll('_', ' ').toLowerCase()
-  }
 }
 
 async function loadPlanningSnapshot(thread: ComposerThread) {
@@ -928,7 +900,7 @@ export function OfficeWorkspacePage() {
           }
           status={
             selectedOfficeMember
-              ? `${workspacePresenceStatusLabel(selectedOfficeMember.status)} · ${selectedOfficeMember.zone.replaceAll('-', ' ')}`
+              ? `${officePresenceStatusLabel(selectedOfficeMember.status)} · ${selectedOfficeMember.zone.replaceAll('-', ' ')}`
               : activeThread
                 ? `${activeThread.status} · ${planningMode ?? 'PLANNING'}`
                 : 'No active planning thread'
@@ -946,7 +918,7 @@ export function OfficeWorkspacePage() {
                         'Canonical work assignment'}
                     </strong>
                     <span>
-                      {workspacePresenceStatusLabel(selectedOfficeMember.status)}
+                      {officePresenceStatusLabel(selectedOfficeMember.status)}
                       {' · '}
                       {selectedOfficeMember.stageKey ?? 'Unknown stage'}
                       {' · Run '}
@@ -1037,7 +1009,7 @@ export function OfficeWorkspacePage() {
                 <div className="office-context-callout">
                   <strong>{selectedOfficeMember.name}</strong>
                   <span>
-                    {selectedOfficeMember.truth} · {workspacePresenceStatusLabel(selectedOfficeMember.status)} · {selectedOfficeMember.zone.replaceAll('-', ' ')}
+                    {selectedOfficeMember.truth} · {officePresenceStatusLabel(selectedOfficeMember.status)} · {selectedOfficeMember.zone.replaceAll('-', ' ')}
                   </span>
                   {selectedOfficeMember.truth === 'WORK' && (
                     <span>
