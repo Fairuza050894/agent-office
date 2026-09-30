@@ -278,7 +278,11 @@ describe('Agent Office operational scopes', () => {
 
     fireEvent.click(agentButton)
 
-    expect(within(contextRail).getByText('Backend Developer')).toBeInTheDocument()
+    expect(
+      within(contextRail).getByText('Backend Developer', {
+        selector: 'header strong',
+      }),
+    ).toBeInTheDocument()
     fireEvent.click(within(contextRail).getByRole('tab', { name: 'Details' }))
 
     expect(within(contextRail).getByText('Reference Executor')).toBeInTheDocument()
