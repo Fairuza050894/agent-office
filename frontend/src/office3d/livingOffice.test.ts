@@ -16,6 +16,8 @@ import {
   officeRoleHomeLocation,
   planningPresenceMembers,
   livingOfficeMembers,
+  workPresenceMembers,
+  type OfficeWorkAssignment,
 } from './livingOffice'
 
 const profiles: AgentProfile[] = [
@@ -202,6 +204,132 @@ describe('living office model', () => {
     )
 
     expect(members.every((member) => member.status === 'WAITING_USER')).toBe(true)
+  })
+
+  it('projects active AgentRun work as canonical WORK presence', () => {
+    const assignments: OfficeWorkAssignment[] = [
+      {
+        taskId: 'task-1',
+        taskTitle: 'Implement payment retry',
+        runId: 'run-1',
+        runStatus: 'RUNNING',
+        agentRunId: 'agent-run-1',
+        agentRunStatus: 'RUNNING',
+        agentProfileKey: 'backend-engineer',
+        stageKey: 'IMPLEMENTATION',
+        updatedAt: '2026-09-28T03:00:00Z',
+      },
+    ]
+
+    const members = workPresenceMembers(
+      assignments,
+      profiles,
+      new Date('2026-09-28T10:15:00+07:00'),
+      'Asia/Jakarta',
+    )
+
+    expect(members).toHaveLength(1)
+    expect(members[0]).toMatchObject({
+      truth: 'WORK',
+      status: 'WORKING',
+      behavior: 'DESK_FOCUS',
+      floor: 'build',
+      zone: 'engineering-pod',
+      taskTitle: 'Implement payment retry',
+      runId: 'run-1',
+      agentRunId: 'agent-run-1',
+    })
+  })
+
+  it('does not fake a lunch pause while an AgentRun is still RUNNING', () => {
+    const assignments: OfficeWorkAssignment[] = [
+      {
+        taskId: 'task-1',
+        taskTitle: 'Implement payment retry',
+        runId: 'run-1',
+        runStatus: 'RUNNING',
+        agentRunId: 'agent-run-1',
+        agentRunStatus: 'RUNNING',
+        agentProfileKey: 'backend-engineer',
+        stageKey: 'IMPLEMENTATION',
+        updatedAt: '2026-09-28T05:10:00Z',
+      },
+    ]
+
+    const [member] = workPresenceMembers(
+      assignments,
+      profiles,
+      new Date('2026-09-28T12:15:00+07:00'),
+      'Asia/Jakarta',
+    )
+
+    expect(member.status).toBe('WORKING')
+    expect(member.floor).toBe('build')
+    expect(member.zone).toBe('engineering-pod')
+  })
+
+  it('allows waiting work to enter a factual scheduled break window', () => {
+    const assignments: OfficeWorkAssignment[] = [
+      {
+        taskId: 'task-1',
+        taskTitle: 'Implement payment retry',
+        runId: 'run-1',
+        runStatus: 'RUNNING',
+        agentRunId: 'agent-run-1',
+        agentRunStatus: 'WAITING',
+        agentProfileKey: 'backend-engineer',
+        stageKey: 'IMPLEMENTATION',
+        updatedAt: '2026-09-28T05:10:00Z',
+      },
+    ]
+
+    const [member] = workPresenceMembers(
+      assignments,
+      profiles,
+      new Date('2026-09-28T12:15:00+07:00'),
+      'Asia/Jakarta',
+    )
+
+    expect(member.truth).toBe('WORK')
+    expect(member.status).toBe('LUNCH_BREAK')
+    expect(member.floor).toBe('commons')
+    expect(['pantry', 'lounge']).toContain(member.zone)
+  })
+
+  it('lets active work override duplicate planning and ambient role projection', () => {
+    const assignments: OfficeWorkAssignment[] = [
+      {
+        taskId: 'task-1',
+        taskTitle: 'Implement payment retry',
+        runId: 'run-1',
+        runStatus: 'RUNNING',
+        agentRunId: 'agent-run-1',
+        agentRunStatus: 'RUNNING',
+        agentProfileKey: 'product-manager',
+        stageKey: 'PLANNING',
+        updatedAt: '2026-09-28T03:00:00Z',
+      },
+    ]
+    const freshThread = {
+      ...thread,
+      updated_at: '2026-09-28T03:05:00Z',
+    }
+
+    const members = livingOfficeMembers(
+      freshThread,
+      proposal,
+      profiles,
+      new Date('2026-09-28T10:15:00+07:00'),
+      [],
+      'Asia/Jakarta',
+      assignments,
+    )
+
+    const productManager = members.filter(
+      (member) => member.agent_profile_key === 'product-manager',
+    )
+    expect(productManager).toHaveLength(1)
+    expect(productManager[0].truth).toBe('WORK')
   })
 
   it('uses deterministic daytime ambient windows without claiming execution', () => {
