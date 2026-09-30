@@ -13,9 +13,15 @@ import {
   type Project,
   type RequirementCandidate,
   type Run,
+  type Task,
   type TeamProposal,
 } from '../api'
 import { BottomOperationsDock } from '../components/office/BottomOperationsDock'
+import {
+  ContextualOperationsRail,
+  TaskQuickCreate,
+  type TaskQuickCreatePayload,
+} from '../components/office/ContextualOperationsRail'
 import { OfficeCommandRail } from '../components/office/OfficeCommandRail'
 import { AgentOfficeScopeSwitcher } from '../components/office/AgentOfficeScopeSwitcher'
 import {
@@ -108,6 +114,10 @@ export function OfficeWorkspacePage() {
   >(null)
   const [registryError, setRegistryError] = useState<string | null>(null)
   const [latestProjectRun, setLatestProjectRun] = useState<Run | null>(null)
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [taskActionBusy, setTaskActionBusy] = useState(false)
+  const [taskActionMessage, setTaskActionMessage] = useState<string | null>(null)
+  const [contextCollapsed, setContextCollapsed] = useState(false)
 
   const [planningThreads, setPlanningThreads] = useState<ComposerThread[]>([])
   const [activeThread, setActiveThread] = useState<ComposerThread | null>(null)
@@ -203,12 +213,13 @@ export function OfficeWorkspacePage() {
 
     const loadLatestRun = async () => {
       try {
-        const tasks = await api.listTasks(selectedProjectId)
+        const loadedTasks = await api.listTasks(selectedProjectId)
         const runGroups = await Promise.all(
-          tasks.map((task) => api.listRuns(task.id)),
+          loadedTasks.map((task) => api.listRuns(task.id)),
         )
         if (!active) return
 
+        setTasks(loadedTasks)
         const latest =
           runGroups
             .flat()
@@ -218,7 +229,10 @@ export function OfficeWorkspacePage() {
             )[0] ?? null
         setLatestProjectRun(latest)
       } catch {
-        if (active) setLatestProjectRun(null)
+        if (active) {
+          setTasks([])
+          setLatestProjectRun(null)
+        }
       }
     }
 
@@ -331,6 +345,68 @@ export function OfficeWorkspacePage() {
     executors[0]?.id ??
     null
 
+  const createWorkspaceTask = async (payload: TaskQuickCreatePayload) => {
+    if (!selectedProjectId) {
+      setTaskActionMessage('Select a Project before creating a Task.')
+      return
+    }
+
+    setTaskActionBusy(true)
+    setTaskActionMessage(null)
+    try {
+      const created = await api.createTask(selectedProjectId, {
+        title: payload.title,
+        objective: payload.objective,
+        requested_executor_id: activeThread?.executor_id ?? selectedExecutorId,
+        requested_workflow_id: activeThread?.workflow_id ?? null,
+      })
+      setTasks((current) => [
+        created,
+        ...current.filter((task) => task.id !== created.id),
+      ])
+      setTaskActionMessage(`Task ${created.id.slice(0, 8)} created. Execution is still gated by the canonical Run workflow.`)
+    } catch (reason) {
+      setTaskActionMessage(
+        reason instanceof Error ? reason.message : 'Unable to create Task.',
+      )
+    } finally {
+      setTaskActionBusy(false)
+    }
+  }
+
+  const createTaskFromApprovedRequirements = async () => {
+    const approved = planningRequirements.filter(
+      (requirement) => requirement.status === 'APPROVED',
+    )
+    if (approved.length === 0) {
+      setTaskActionMessage('Approve at least one RequirementCandidate first.')
+      return
+    }
+
+    const title =
+      approved.length === 1
+        ? approved[0].title
+        : activeThread?.title ?? 'Approved planning scope'
+    const objective = approved
+      .map((requirement) => requirement.requirement)
+      .join('\n')
+    const acceptance = approved
+      .map((requirement) => requirement.acceptance_hint)
+      .filter((value): value is string => Boolean(value))
+      .join(' · ')
+
+    await createWorkspaceTask({
+      title,
+      objective,
+    })
+
+    if (acceptance) {
+      setTaskActionMessage(
+        `Task created from ${approved.length} approved requirement${approved.length === 1 ? '' : 's'}. Acceptance: ${acceptance}`,
+      )
+    }
+  }
+
   const resetPlanningView = (projectId: string) => {
     const nextFloor = officeAmbientWindow(
       new Date(),
@@ -355,6 +431,8 @@ export function OfficeWorkspacePage() {
     setSelectedOfficeMemberId(null)
     setSelectedFloor(nextFloor)
     setComposerError(null)
+    setTaskActionMessage(null)
+    setTasks([])
     setLatestProjectRun(null)
   }
 
@@ -586,6 +664,8 @@ export function OfficeWorkspacePage() {
   const selectedFloorMembers = workspaceMembers.filter(
     (member) => member.floor === selectedFloor,
   )
+  const selectedOfficeMember =
+    workspaceMembers.find((member) => member.id === selectedOfficeMemberId) ?? null
   const selectedFloorHasPlanning = selectedFloorMembers.some(
     (member) => member.truth === 'PLANNING',
   )
@@ -691,57 +771,181 @@ export function OfficeWorkspacePage() {
         }
       />
 
-      <div className="office-workspace-scene">
-        <OfficeRendererBoundary operationalHref="/overview">
-          <OfficeScene
-            stages={[]}
-            agents={[]}
-            profiles={profiles}
-            selectedAgentId={selectedOfficeMemberId}
-            onSelectAgent={selectOfficeMember}
-            motionPaused={false}
-            mode="live"
-            replayNonce={0}
-            replayStartedAt={null}
-            replayRange={null}
-            showRoster={false}
-            presentation="workspace"
-            floor={selectedFloor}
-            workspaceMembers={workspaceMembers}
-            onFloorChange={changeOfficeFloor}
-            presenceLabel={officePresenceLabel}
-            officeHour={Math.floor(officeWorld.localMinuteOfDay / 60)}
-            worldContext={officeWorld}
-            totalPresence={workspaceMembers.length}
-          />
-        </OfficeRendererBoundary>
-      </div>
+      <div
+        className={`office-workspace-scene office-context-layout ${contextCollapsed ? 'context-collapsed' : ''}`}
+      >
+        <div className="office-workspace-stage">
+          <OfficeRendererBoundary operationalHref="/overview">
+            <OfficeScene
+              stages={[]}
+              agents={[]}
+              profiles={profiles}
+              selectedAgentId={selectedOfficeMemberId}
+              onSelectAgent={selectOfficeMember}
+              motionPaused={false}
+              mode="live"
+              replayNonce={0}
+              replayStartedAt={null}
+              replayRange={null}
+              showRoster={false}
+              presentation="workspace"
+              floor={selectedFloor}
+              workspaceMembers={workspaceMembers}
+              onFloorChange={changeOfficeFloor}
+              presenceLabel={officePresenceLabel}
+              officeHour={Math.floor(officeWorld.localMinuteOfDay / 60)}
+              worldContext={officeWorld}
+              totalPresence={workspaceMembers.length}
+            />
+          </OfficeRendererBoundary>
+        </div>
 
-      <UniversalComposerShell
-        key={`${selectedProjectId || 'unscoped'}:${activeThread?.id ?? 'new'}`}
-        projects={projects}
-        selectedProjectId={selectedProjectId}
-        onProjectChange={resetPlanningView}
-        threads={planningThreads}
-        selectedThreadId={activeThread?.id ?? ''}
-        onThreadChange={openPlanningThread}
-        isThreadLoading={isRestoringThread}
-        executors={executors}
-        selectedExecutorId={selectedExecutorId}
-        contextLabel={
-          registryError
-            ? 'Registry data is degraded; planning may be unavailable.'
-            : selectedProject
-              ? `${selectedProject.repository.name} · ${selectedProject.default_branch}`
-              : 'Register a Project before repository-scoped work.'
-        }
-        onSubmit={preparePlanning}
-        isSubmitting={isPreparing}
-        activeThread={activeThread}
-        resolution={resolution}
-        messages={messages}
-        error={composerError}
-      />
+        <ContextualOperationsRail
+          eyebrow={
+            selectedOfficeMember
+              ? selectedOfficeMember.truth === 'PLANNING'
+                ? 'Planning role'
+                : 'Ambient office presence'
+              : 'Project workspace'
+          }
+          title={
+            selectedOfficeMember?.name ??
+            selectedProject?.name ??
+            'Agent Office'
+          }
+          status={
+            selectedOfficeMember
+              ? `${selectedOfficeMember.status} · ${selectedOfficeMember.zone.replaceAll('-', ' ')}`
+              : activeThread
+                ? `${activeThread.status} · ${planningMode ?? 'PLANNING'}`
+                : 'No active planning thread'
+          }
+          collapsed={contextCollapsed}
+          onToggleCollapsed={() => setContextCollapsed((current) => !current)}
+          discussion={
+            <div className="office-context-stack">
+              {selectedOfficeMember && selectedOfficeMember.truth === 'AMBIENT' && (
+                <div className="office-context-callout">
+                  <strong>Ambient presence is not an active agent.</strong>
+                  <span>
+                    Start or reopen a planning thread before treating this role as project work.
+                  </span>
+                </div>
+              )}
+              <UniversalComposerShell
+                key={`${selectedProjectId || 'unscoped'}:${activeThread?.id ?? 'new'}`}
+                projects={projects}
+                selectedProjectId={selectedProjectId}
+                onProjectChange={resetPlanningView}
+                threads={planningThreads}
+                selectedThreadId={activeThread?.id ?? ''}
+                onThreadChange={openPlanningThread}
+                isThreadLoading={isRestoringThread}
+                executors={executors}
+                selectedExecutorId={selectedExecutorId}
+                contextLabel={
+                  selectedOfficeMember?.truth === 'PLANNING'
+                    ? `Role focus · ${selectedOfficeMember.name}`
+                    : registryError
+                      ? 'Registry data is degraded; planning may be unavailable.'
+                      : selectedProject
+                        ? `${selectedProject.repository.name} · ${selectedProject.default_branch}`
+                        : 'Register a Project before repository-scoped work.'
+                }
+                onSubmit={preparePlanning}
+                isSubmitting={isPreparing}
+                activeThread={activeThread}
+                resolution={resolution}
+                messages={messages}
+                error={composerError}
+              />
+              <TaskQuickCreate
+                busy={taskActionBusy}
+                onCreate={createWorkspaceTask}
+                title="Add project task"
+                note="Creates canonical Task truth. It does not bypass execution promotion."
+              />
+              {planningRequirements.some((requirement) => requirement.status === 'APPROVED') && (
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm office-context-wide-action"
+                  disabled={taskActionBusy}
+                  onClick={() => void createTaskFromApprovedRequirements()}
+                >
+                  Create task from approved requirements
+                </button>
+              )}
+              {taskActionMessage && (
+                <span className="office-context-feedback" role="status">
+                  {taskActionMessage}
+                </span>
+              )}
+            </div>
+          }
+          details={
+            <div className="office-context-stack">
+              <dl className="office-context-facts">
+                <div><dt>Project</dt><dd>{selectedProject?.name ?? 'Unavailable'}</dd></div>
+                <div><dt>Repository</dt><dd>{selectedProject?.repository.name ?? 'Unavailable'}</dd></div>
+                <div><dt>Branch</dt><dd>{selectedProject?.default_branch ?? 'Unavailable'}</dd></div>
+                <div><dt>Thread</dt><dd>{activeThread ? activeThread.id.slice(0, 8) : 'None'}</dd></div>
+                <div><dt>Tasks</dt><dd>{tasks.length}</dd></div>
+                <div><dt>Latest Run</dt><dd>{latestProjectRun ? `${latestProjectRun.id.slice(0, 8)} · ${latestProjectRun.status}` : 'None'}</dd></div>
+              </dl>
+              {selectedOfficeMember && (
+                <div className="office-context-callout">
+                  <strong>{selectedOfficeMember.name}</strong>
+                  <span>
+                    {selectedOfficeMember.truth} · {selectedOfficeMember.status} · {selectedOfficeMember.zone.replaceAll('-', ' ')}
+                  </span>
+                </div>
+              )}
+            </div>
+          }
+          files={
+            <div className="office-context-stack">
+              {planningArtifacts.length === 0 ? (
+                <div className="office-context-empty">No planning artifact exists in this thread.</div>
+              ) : (
+                planningArtifacts.map((artifact) => (
+                  <article key={artifact.id} className="office-context-file">
+                    <div><strong>{artifact.title}</strong><span>{artifact.artifact_type}</span></div>
+                    <p>{artifact.status} · {artifact.author_role_key ?? 'system'}</p>
+                  </article>
+                ))
+              )}
+              <div className="office-context-callout">
+                <strong>Preview/download boundary</strong>
+                <span>
+                  Planning artifacts are structured records, not filesystem artifacts. File preview/download will only be enabled when a bounded Artifact content endpoint exists.
+                </span>
+              </div>
+            </div>
+          }
+          logs={
+            <div className="office-context-log">
+              {planningEvents.length === 0 ? (
+                <div className="office-context-empty">No durable PlanningEvent is available.</div>
+              ) : (
+                planningEvents
+                  .slice()
+                  .sort((left, right) => right.sequence - left.sequence)
+                  .map((event) => (
+                    <article key={event.id}>
+                      <time dateTime={event.occurred_at}>
+                        {new Date(event.occurred_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </time>
+                      <div>
+                        <strong>{event.role_key ?? 'planning'}</strong>
+                        <span>{event.event_type.replace(/[._-]+/g, ' ')}</span>
+                      </div>
+                    </article>
+                  ))
+              )}
+            </div>
+          }
+        />
+      </div>
 
       <BottomOperationsDock
         key={activeThread?.id ?? 'idle-workspace'}
@@ -750,6 +954,7 @@ export function OfficeWorkspacePage() {
         profiles={profiles}
         selectedAgentId={null}
         onSelectAgent={() => undefined}
+        tasks={tasks}
         modeLabel={
           activeThread && planningMode
             ? `${planningMode} · ${activeThread.status}`
