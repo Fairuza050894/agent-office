@@ -440,13 +440,15 @@ function smoothNavigationPath(
   let index = 0
 
   while (index < points.length) {
-    let furthest = index
+    let furthest = -1
     for (let candidate = points.length - 1; candidate >= index; candidate -= 1) {
       if (navigationSegmentClear(anchor, points[candidate], floor)) {
         furthest = candidate
         break
       }
     }
+
+    if (furthest < 0) return []
 
     const waypoint = points[furthest].clone()
     result.push(waypoint)
@@ -465,7 +467,7 @@ function applyWorkspaceRightHandLane(
   if (points.length < 2) return points.map((item) => item.clone())
 
   const shifted = points.map((item) => item.clone())
-  const laneOffset = 0.16
+  const laneOffset = 0.3
 
   for (let index = 0; index < shifted.length - 1; index += 1) {
     const previous = index === 0 ? from : shifted[index - 1]
@@ -539,11 +541,9 @@ export function buildWorkspaceOfficePath(
           ? [to.clone()]
           : []),
       ]
-      return applyWorkspaceRightHandLane(
-        from,
-        smoothNavigationPath(from, withTarget, floor),
-        floor,
-      )
+      const smoothed = smoothNavigationPath(from, withTarget, floor)
+      if (smoothed.length === 0) return []
+      return applyWorkspaceRightHandLane(from, smoothed, floor)
     }
 
     open.delete(currentKey)
