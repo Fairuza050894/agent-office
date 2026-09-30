@@ -408,6 +408,7 @@ class CodexExecutor:
         )
 
     async def _probe(self, executable: str, *args: str) -> tuple[int, bytes] | None:
+        process: asyncio.subprocess.Process | None = None
         try:
             process = await asyncio.create_subprocess_exec(
                 executable,
@@ -417,14 +418,36 @@ class CodexExecutor:
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.DEVNULL,
                 limit=16 * 1024,
+                start_new_session=(os.name != "nt"),
             )
             stdout, _ = await asyncio.wait_for(
                 process.communicate(),
                 timeout=self._probe_timeout,
             )
-        except (OSError, TimeoutError, ValueError):
+        except TimeoutError:
+            if process is not None:
+                await self._terminate_probe(process)
+            return None
+        except (OSError, ValueError):
             return None
         return process.returncode or 0, stdout[:1024]
+
+    async def _terminate_probe(self, process: asyncio.subprocess.Process) -> None:
+        if process.returncode is None:
+            try:
+                self._signal_termination(process)
+            except (OSError, ProcessLookupError):
+                pass
+
+        try:
+            await asyncio.wait_for(process.wait(), timeout=self._cancel_timeout)
+        except TimeoutError:
+            if process.returncode is None:
+                try:
+                    process.kill()
+                except (OSError, ProcessLookupError):
+                    pass
+                await process.wait()
 
     def _resolve_executable(self) -> str | None:
         candidate = Path(self._executable).expanduser()
