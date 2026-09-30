@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   api,
   type AgentProfile,
+  type AgentRun,
   type ComposerMessage,
   type ComposerPreparation,
   type ComposerThread,
@@ -36,7 +37,9 @@ import {
   officeAmbientWindow,
   officeFloorFromParam,
   officeBehaviorLabel,
+  officePresenceStatusLabel,
   type OfficeFloorKey,
+  type OfficeWorkAssignment,
 } from '../office3d/livingOffice'
 import {
   isPlanningPresenceFresh,
@@ -115,6 +118,7 @@ export function OfficeWorkspacePage() {
   const [registryError, setRegistryError] = useState<string | null>(null)
   const [latestProjectRun, setLatestProjectRun] = useState<Run | null>(null)
   const [tasks, setTasks] = useState<Task[]>([])
+  const [workAssignments, setWorkAssignments] = useState<OfficeWorkAssignment[]>([])
   const [taskActionBusy, setTaskActionBusy] = useState(false)
   const [taskActionMessage, setTaskActionMessage] = useState<string | null>(null)
   const [contextCollapsed, setContextCollapsed] = useState(false)
@@ -211,18 +215,67 @@ export function OfficeWorkspacePage() {
       }
     }
 
+    let refreshing = false
     const loadLatestRun = async () => {
+      if (refreshing) return
+      refreshing = true
       try {
         const loadedTasks = await api.listTasks(selectedProjectId)
         const runGroups = await Promise.all(
           loadedTasks.map((task) => api.listRuns(task.id)),
         )
+        const allRuns = runGroups.flat()
+        const activeRuns = allRuns.filter(
+          (run) =>
+            !['COMPLETED', 'FAILED', 'CANCELLED'].includes(
+              run.status.toUpperCase(),
+            ),
+        )
+        const agentRunGroups = await Promise.all(
+          activeRuns.map(async (run) => {
+            try {
+              return {
+                run,
+                agents: await api.getRunAgents(run.id),
+              }
+            } catch {
+              return { run, agents: [] as AgentRun[] }
+            }
+          }),
+        )
         if (!active) return
 
+        const taskById = new Map(loadedTasks.map((task) => [task.id, task]))
+        const assignments: OfficeWorkAssignment[] = agentRunGroups.flatMap(
+          ({ run, agents }) => {
+            const task = taskById.get(run.task_id)
+            if (!task) return []
+
+            return agents
+              .filter(
+                (agent) =>
+                  !['COMPLETED', 'FAILED', 'CANCELLED'].includes(
+                    agent.status.toUpperCase(),
+                  ),
+              )
+              .map((agent) => ({
+                taskId: task.id,
+                taskTitle: task.title,
+                runId: run.id,
+                runStatus: run.status,
+                agentRunId: agent.id,
+                agentRunStatus: agent.status,
+                agentProfileKey: agent.agent_profile_key,
+                stageKey: agent.stage_key,
+                updatedAt: agent.updated_at,
+              }))
+          },
+        )
+
         setTasks(loadedTasks)
+        setWorkAssignments(assignments)
         const latest =
-          runGroups
-            .flat()
+          allRuns
             .slice()
             .sort((left, right) =>
               right.updated_at.localeCompare(left.updated_at),
@@ -231,15 +284,22 @@ export function OfficeWorkspacePage() {
       } catch {
         if (active) {
           setTasks([])
+          setWorkAssignments([])
           setLatestProjectRun(null)
         }
+      } finally {
+        refreshing = false
       }
     }
 
     void loadLatestRun()
+    const timer = window.setInterval(() => {
+      void loadLatestRun()
+    }, 15_000)
 
     return () => {
       active = false
+      window.clearInterval(timer)
     }
   }, [selectedProjectId])
 
@@ -437,6 +497,7 @@ export function OfficeWorkspacePage() {
     setComposerError(null)
     setTaskActionMessage(null)
     setTasks([])
+    setWorkAssignments([])
     setLatestProjectRun(null)
   }
 
@@ -662,14 +723,28 @@ export function OfficeWorkspacePage() {
         officeNow,
         [],
         officeTimeZone,
+        workAssignments,
       ),
-    [activeThread, officeNow, officeTimeZone, planningTeam, profiles],
+    [
+      activeThread,
+      officeNow,
+      officeTimeZone,
+      planningTeam,
+      profiles,
+      workAssignments,
+    ],
   )
   const selectedFloorMembers = workspaceMembers.filter(
     (member) => member.floor === selectedFloor,
   )
   const selectedOfficeMember =
     workspaceMembers.find((member) => member.id === selectedOfficeMemberId) ?? null
+  const selectedFloorHasWork = selectedFloorMembers.some(
+    (member) => member.truth === 'WORK',
+  )
+  const selectedFloorWorkCount = selectedFloorMembers.filter(
+    (member) => member.truth === 'WORK',
+  ).length
   const selectedFloorHasPlanning = selectedFloorMembers.some(
     (member) => member.truth === 'PLANNING',
   )
@@ -699,15 +774,17 @@ export function OfficeWorkspacePage() {
           officeTimeZone,
         ),
     )
-  const officePresenceLabel = selectedFloorHasPlanning
-    ? selectedFloorHasAmbient
-      ? `${activeThread?.status === 'AWAITING_USER' ? 'Waiting for you' : 'Planning'} + ambient`
-      : `${activeThread?.status === 'AWAITING_USER' ? 'Waiting for you' : 'Planning'} presence`
-    : selectedFloorHasAmbient
-      ? ambientPresenceLabel
-      : remotePlanning
-        ? 'Planning remote · office closed'
-        : 'Quiet floor · no presence'
+  const officePresenceLabel = selectedFloorHasWork
+    ? `${selectedFloorWorkCount} working${selectedFloorHasPlanning ? ' + planning' : ''}${selectedFloorHasAmbient ? ' + ambient' : ''}`
+    : selectedFloorHasPlanning
+      ? selectedFloorHasAmbient
+        ? `${activeThread?.status === 'AWAITING_USER' ? 'Waiting for you' : 'Planning'} + ambient`
+        : `${activeThread?.status === 'AWAITING_USER' ? 'Waiting for you' : 'Planning'} presence`
+      : selectedFloorHasAmbient
+        ? ambientPresenceLabel
+        : remotePlanning
+          ? 'Planning remote · office closed'
+          : 'Quiet floor · no presence'
 
   const changeOfficeFloor = (floor: OfficeFloorKey) => {
     setSelectedFloor(floor)
@@ -739,9 +816,11 @@ export function OfficeWorkspacePage() {
         statusLabel={
           isLoading
             ? 'Loading registries'
-            : activeThread
-              ? `${activeThread.status} planning thread`
-              : 'Project workspace'
+            : workAssignments.length > 0
+              ? `${workAssignments.length} active work assignment${workAssignments.length === 1 ? '' : 's'}`
+              : activeThread
+                ? `${activeThread.status} planning thread`
+                : 'Project workspace'
         }
         meta={
           registryError
@@ -807,9 +886,11 @@ export function OfficeWorkspacePage() {
         <ContextualOperationsRail
           eyebrow={
             selectedOfficeMember
-              ? selectedOfficeMember.truth === 'PLANNING'
-                ? 'Planning role'
-                : 'Ambient office presence'
+              ? selectedOfficeMember.truth === 'WORK'
+                ? 'Canonical work presence'
+                : selectedOfficeMember.truth === 'PLANNING'
+                  ? 'Planning role'
+                  : 'Ambient office presence'
               : 'Project workspace'
           }
           title={
@@ -819,7 +900,7 @@ export function OfficeWorkspacePage() {
           }
           status={
             selectedOfficeMember
-              ? `${selectedOfficeMember.status} · ${selectedOfficeMember.zone.replaceAll('-', ' ')}`
+              ? `${officePresenceStatusLabel(selectedOfficeMember.status)} · ${selectedOfficeMember.zone.replaceAll('-', ' ')}`
               : activeThread
                 ? `${activeThread.status} · ${planningMode ?? 'PLANNING'}`
                 : 'No active planning thread'
@@ -828,6 +909,34 @@ export function OfficeWorkspacePage() {
           onToggleCollapsed={() => setContextCollapsed((current) => !current)}
           discussion={
             <div className="office-context-stack">
+              {selectedOfficeMember &&
+                selectedOfficeMember.truth === 'WORK' && (
+                  <div className="office-context-callout">
+                    <strong>
+                      {selectedOfficeMember.taskTitle ??
+                        selectedOfficeMember.taskId ??
+                        'Canonical work assignment'}
+                    </strong>
+                    <span>
+                      {officePresenceStatusLabel(selectedOfficeMember.status)}
+                      {' · '}
+                      {selectedOfficeMember.stageKey ?? 'Unknown stage'}
+                      {' · Run '}
+                      {selectedOfficeMember.runId?.slice(0, 8) ?? 'Unavailable'}
+                    </span>
+                  </div>
+                )}
+              {selectedOfficeMember &&
+                selectedOfficeMember.truth === 'WORK' &&
+                ['LUNCH', 'COFFEE_BREAK'].includes(officeWorld.mode) &&
+                selectedOfficeMember.status === 'WORKING' && (
+                  <div className="office-context-callout">
+                    <strong>Break window is open, but execution is still active.</strong>
+                    <span>
+                      Agent Office keeps this role at work because the canonical AgentRun has not reached a safe waiting/checkpoint state. No executor pause is being fabricated.
+                    </span>
+                  </div>
+                )}
               {selectedOfficeMember && selectedOfficeMember.truth === 'AMBIENT' && (
                 <div className="office-context-callout">
                   <strong>Ambient presence is not an active agent.</strong>
@@ -900,8 +1009,13 @@ export function OfficeWorkspacePage() {
                 <div className="office-context-callout">
                   <strong>{selectedOfficeMember.name}</strong>
                   <span>
-                    {selectedOfficeMember.truth} · {selectedOfficeMember.status} · {selectedOfficeMember.zone.replaceAll('-', ' ')}
+                    {selectedOfficeMember.truth} · {officePresenceStatusLabel(selectedOfficeMember.status)} · {selectedOfficeMember.zone.replaceAll('-', ' ')}
                   </span>
+                  {selectedOfficeMember.truth === 'WORK' && (
+                    <span>
+                      Task {selectedOfficeMember.taskTitle ?? selectedOfficeMember.taskId} · Run {selectedOfficeMember.runId?.slice(0, 8)} · {selectedOfficeMember.stageKey}
+                    </span>
+                  )}
                 </div>
               )}
             </div>
@@ -988,9 +1102,9 @@ export function OfficeWorkspacePage() {
       />
 
       <p className="office-workspace-note">
-        Composer planning is durable and separate from operational Run truth.
-        Implementation roles remain inactive until approved requirements pass the
-        later execution-promotion gate.
+        {workAssignments.length > 0
+          ? 'Workspace is projecting canonical Task / Run / AgentRun work. Planning and ambient presence remain separate truth layers.'
+          : 'Composer planning is durable and separate from operational Run truth. Implementation roles remain inactive until approved requirements pass the later execution-promotion gate.'}
       </p>
     </div>
   )

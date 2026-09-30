@@ -3,125 +3,72 @@
 ## Current checkpoint
 
 ```text
-main@aaea623
-Phase 10E merged
-PR #18 frontend verification recovery merged
-PR #19 repository verification hardening merged
+main@c8e9c58
+Phase 10F merged
+PR #20 contextual operations + spatial/collision hardening merged
 ```
 
-Canonical full verification entry point:
+Canonical full verification:
 
 ```bash
 ./scripts/verify.sh
 ```
 
-GitHub-hosted jobs may currently end before runner assignment with
-`steps: null`. That condition is infrastructure evidence only; it is neither a
-green test result nor a code assertion failure.
+GitHub-hosted jobs may still end before runner assignment with `steps: null`.
+That is infrastructure evidence only.
 
 ## Current work
 
 ```text
-branch: phase-10f-contextual-operations
-phase: Phase 10F — Contextual Operations
+branch: phase-10g-living-workday-engine
+phase: Phase 10G — Living SDLC / AIDLC Workday Engine
 status: IMPLEMENTED / DRAFT REVIEW
 ```
 
-## Phase status
-
-- Phase 0–8 CLOSED
-- Phase 9 vNext
-  - Phase 9A CLOSED
-  - Phase 9B CLOSED
-  - Phase 9C CLOSED / MERGED
-  - Phase 9D role-scoped memory remains future work
-  - Phase 9E planning-to-execution promotion remains future work
-  - Phase 9F factual Activity Interpreter remains future work
-- Phase 10 Living 3D Agent Office
-  - Phase 10A CLOSED / MERGED
-  - Phase 10B CLOSED / MERGED
-  - Phase 10C CLOSED / MERGED
-  - Phase 10D CLOSED / MERGED
-  - Phase 10E CLOSED / MERGED
-  - Phase 10F IMPLEMENTED / DRAFT REVIEW
-
-## One Agent Office model
+## Phase 10G truth model
 
 ```text
-WORKSPACE
-  planning + ambient Office world
-  Discussion -> Universal Composer
-
-LIVE
-  canonical Run / AgentRun projection
-  Discussion -> canonical Events
-
-REPLAY
-  historical canonical Run / AgentRun / Event projection
-  Discussion -> historical canonical Events
+WORK
+  Task + Run + AgentRun
+    ↓ precedence
+PLANNING
+  ComposerThread + TeamProposal
+    ↓ precedence
+AMBIENT
+  presentation-only office schedule
 ```
 
-The building, floors, renderer, character runtime, camera language, contextual
-operations rail, and Operations Dock are shared presentation infrastructure.
+## Implemented now
 
-Truth sources remain separated.
+- active AgentRun creates canonical WORK presence in Workspace;
+- stage maps work to Strategy / Build functional areas;
+- active work suppresses duplicate planning/ambient role projection;
+- work projection refreshes every 15 seconds;
+- RUNNING work never fakes lunch/coffee/prayer pause;
+- WAITING/BLOCKED/PENDING work may use break zones;
+- provider break windows can support prayer/quiet presence without hard-coded
+  prayer times;
+- ambient relocation cadence reduced from ten minutes to three minutes;
+- stationary Workspace characters receive subtle deterministic micro-motion;
+- Phase 10F collision/facing safeguards remain active.
 
-## Phase 10F scope
+## Deferred safely
 
-### Contextual rail
+### Checkpointable WorkSession
 
-```text
-Discussion | Details | Files | Logs
-```
+Real executor pause/resume is not implemented yet. It requires an explicit
+backend checkpoint contract.
 
-The rail is collapsible and Office-local. It supersedes the older inspector and
-standalone Workspace Composer placement.
+### RAG retrieval provenance
 
-### Task workflow
-
-The rail can create canonical Task records manually or from approved
-RequirementCandidates.
-
-Task creation does not imply Run creation or execution.
-
-### Files boundary
-
-Current Files surfaces use:
-
-- PlanningArtifact metadata in Workspace
-- WorkspaceChangeSummary in Run scope
-- Evidence metadata in Run scope
-
-No generic filesystem preview/download is implemented.
-
-### GitHub boundary
-
-GitHub discovery/import is intentionally deferred because the current Project
-registry requires a validated local repository path and there is no provider
-auth/discovery/clone contract yet.
+No Context Used label is emitted until retrieval provenance exists.
 
 ## Safety invariants
 
-- no auto commit
-- no auto merge
-- no force push
 - no fake execution
-- no fake dialogue
-- no fake files
-- no arbitrary filesystem reads
-- no direct main working-tree mutation
-- Live/Replay movement behavior remains untouched
-- historical replay forward-facing fix remains required
-
-## Verification gate
-
-Before merge:
-
-1. `./scripts/verify.sh`
-2. render `/office`
-3. render one Live Run Office
-4. render Historical Replay
-5. verify normal + Maximize
-6. verify contextual rail collapse/reopen and all four tabs
-7. verify canonical Task appears in Operations Dock
-8. verify movement/replay direction remains correct
+- no fake pause
+- no fake RAG
+- no chain-of-thought exposure
+- no auto commit / merge
+- no force push
+- Live / Replay truth boundaries remain intact

@@ -36,6 +36,16 @@ class Settings(BaseModel):
         description="Application log level.",
     )
 
+    reference_scenario: str = Field(
+        default="SUCCESS",
+        pattern="^(SUCCESS|WAITING)$",
+        description=(
+            "Local ReferenceExecutor scenario. SUCCESS is the safe default. "
+            "WAITING is an explicit local verification mode used to retain "
+            "canonical non-terminal AgentRuns for rendered Office review."
+        ),
+    )
+
     codex_enabled: bool = Field(
         default=False,
         description=(
@@ -71,11 +81,15 @@ def get_settings() -> Settings:
     API-key environment variables to executor subprocesses.
     """
 
+    reference_scenario = os.getenv("AGENT_OFFICE_REFERENCE_SCENARIO")
     enabled = os.getenv("AGENT_OFFICE_CODEX_ENABLED")
     model = os.getenv("AGENT_OFFICE_CODEX_MODEL")
     cli_path = os.getenv("AGENT_OFFICE_CODEX_CLI_PATH")
 
     return Settings(
+        reference_scenario=(
+            reference_scenario.strip().upper() if reference_scenario is not None else "SUCCESS"
+        ),
         codex_enabled=(
             enabled.strip().lower() in {"1", "true", "yes", "on"} if enabled is not None else False
         ),

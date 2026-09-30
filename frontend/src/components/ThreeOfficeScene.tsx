@@ -6,6 +6,7 @@ import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
 import type { AgentProfile, AgentRun, RunStage } from '../api'
 import {
   animateCharacter,
+  applyWorkspaceIdlePresentation,
   createCharacterRuntime,
   disposeCharacter,
   officeMovementYaw,
@@ -425,8 +426,21 @@ export function ThreeOfficeScene({
           }
         }
 
+        const isWorkspaceMember = workspaceMemberIdsRef.current.has(
+          runtime.agentId,
+        )
+
         needsFrame =
           animateCharacter(runtime, now, motionPausedRef.current) || needsFrame
+
+        needsFrame =
+          applyWorkspaceIdlePresentation(
+            runtime,
+            now,
+            isWorkspaceMember &&
+              !runtime.moving &&
+              !motionPausedRef.current,
+          ) || needsFrame
 
         if (runtime.moving || runtime.pendingStatus) {
           needsFrame = true

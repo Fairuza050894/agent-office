@@ -42,6 +42,26 @@ const member: OfficePresenceMember = {
   truth: 'AMBIENT',
 }
 
+
+const workMember: OfficePresenceMember = {
+  id: 'work:agent-run-1',
+  agent_profile_key: 'backend-engineer',
+  name: 'Backend Engineer',
+  status: 'WORKING',
+  behavior: 'DESK_FOCUS',
+  floor: 'build',
+  zone: 'engineering-pod',
+  placementIndex: 0,
+  truth: 'WORK',
+  taskId: 'task-1',
+  taskTitle: 'Implement payment retry',
+  runId: 'run-1',
+  runStatus: 'RUNNING',
+  agentRunId: 'agent-run-1',
+  agentRunStatus: 'RUNNING',
+  stageKey: 'IMPLEMENTATION',
+}
+
 describe('OfficeScene operational scope', () => {
   it('keeps the same floor language while projecting canonical Run truth', () => {
     const onFloorChange = vi.fn()
@@ -125,11 +145,49 @@ describe('OfficeScene workspace presence', () => {
     expect(inspector).toHaveTextContent('Game break')
     expect(inspector).toHaveTextContent('Commons · game corner')
     expect(inspector).toHaveTextContent('Ambient presentation')
+    expect(
+      screen.getByText('Live office view · No active run selected'),
+    ).toBeInTheDocument()
 
     fireEvent.click(
       screen.getByRole('button', { name: 'Close office member inspector' }),
     )
     expect(onSelectAgent).toHaveBeenCalledWith(member.id)
+  })
+
+  it('labels selected canonical work separately from ambient presentation', () => {
+    render(
+      <OfficeScene
+        stages={[]}
+        agents={[]}
+        profiles={[]}
+        selectedAgentId={workMember.id}
+        onSelectAgent={vi.fn()}
+        motionPaused={false}
+        mode="live"
+        replayNonce={0}
+        replayStartedAt={null}
+        replayRange={null}
+        showRoster={false}
+        presentation="workspace"
+        floor="build"
+        workspaceMembers={[workMember]}
+        onFloorChange={vi.fn()}
+        presenceLabel="1 working"
+        officeHour={10}
+      />,
+    )
+
+    const inspector = screen.getByRole('complementary', {
+      name: 'Office member inspector',
+    })
+    expect(inspector).toHaveTextContent('Backend Engineer')
+    expect(inspector).toHaveTextContent('Focus')
+    expect(inspector).toHaveTextContent('Canonical Run / AgentRun work')
+    expect(inspector).not.toHaveTextContent('Ambient presentation')
+    expect(
+      screen.getByText('Live office view · Canonical work active'),
+    ).toBeInTheDocument()
   })
 
   it('does not show a stale inspector for a member on another floor', () => {

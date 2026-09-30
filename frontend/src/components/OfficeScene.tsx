@@ -163,6 +163,9 @@ export function OfficeScene({
             member.id === selectedAgentId && member.floor === floor,
         ) ?? null
       : null
+  const workspaceHasCanonicalWork =
+    presentation === 'workspace' &&
+    workspaceMembers.some((member) => member.truth === 'WORK')
   const floorPresenceCount = useMemo(
     () =>
       OFFICE_FLOORS.reduce(
@@ -260,7 +263,11 @@ export function OfficeScene({
             <div className="office-scene-context">
               <div className="office-scene-title-group">
                 <strong>Office Workspace</strong>
-                <span>Live office view · No active run selected</span>
+                <span>
+                  {workspaceHasCanonicalWork
+                    ? 'Live office view · Canonical work active'
+                    : 'Live office view · No active run selected'}
+                </span>
               </div>
               <SceneControls
                 views={cameraViews}
@@ -477,9 +484,11 @@ export function OfficeScene({
             <div>
               <dt>Truth</dt>
               <dd>
-                {selectedWorkspaceMember.truth === 'PLANNING'
-                  ? 'Planning truth'
-                  : 'Ambient presentation'}
+                {selectedWorkspaceMember.truth === 'WORK'
+                  ? 'Canonical Run / AgentRun work'
+                  : selectedWorkspaceMember.truth === 'PLANNING'
+                    ? 'Planning truth'
+                    : 'Ambient presentation'}
               </dd>
             </div>
           </dl>

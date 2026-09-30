@@ -7,6 +7,7 @@ import {
   officeMovementYaw,
   shouldShowOfficeNameplate,
   workspaceCandidateBlockedByPeer,
+  workspaceIdlePose,
 } from './character'
 
 const CORE_ROLES = [
@@ -47,7 +48,7 @@ describe('officeCharacterAppearance', () => {
     expect(shouldShowOfficeNameplate('COMPLETED', true)).toBe(true)
   })
 
-  it('keeps Live facing unchanged and corrects Replay and Workspace presentation facing', () => {
+  it('uses one normalized forward axis for Live and Workspace while preserving Replay correction', () => {
     const directions = [
       new THREE.Vector3(0, 0, 1),
       new THREE.Vector3(0, 0, -1),
@@ -60,19 +61,57 @@ describe('officeCharacterAppearance', () => {
       const replayYaw = officeMovementYaw(direction, 'replay')
       const workspaceYaw = officeMovementYaw(direction, 'workspace')
 
+      expect(workspaceYaw).toBeCloseTo(liveYaw)
       expect(replayYaw - liveYaw).toBeCloseTo(Math.PI)
-      expect(workspaceYaw - liveYaw).toBeCloseTo(Math.PI)
-      expect(workspaceYaw).toBeCloseTo(replayYaw)
     })
 
     expect(
-      officeMovementYaw(new THREE.Vector3(0, 0, 1), 'live'),
+      officeMovementYaw(new THREE.Vector3(0, 0, 1), 'workspace'),
     ).toBeCloseTo(0)
     expect(
       Math.abs(
-        officeMovementYaw(new THREE.Vector3(0, 0, -1), 'live'),
+        officeMovementYaw(new THREE.Vector3(0, 0, -1), 'workspace'),
       ),
     ).toBeCloseTo(Math.PI)
+  })
+
+  it('gives Workspace idle a deterministic Sims-like posture cycle', () => {
+    const samples = Array.from({ length: 16 }, (_, index) =>
+      workspaceIdlePose(
+        'agent-a',
+        index * 2_000,
+        'WORK_WAITING',
+      ),
+    )
+    const repeated = workspaceIdlePose(
+      'agent-a',
+      8_000,
+      'WORK_WAITING',
+    )
+
+    expect(repeated).toEqual(samples[4])
+    expect(
+      Math.max(...samples.map((pose) => Math.abs(pose.lookYaw))),
+    ).toBeGreaterThan(0.08)
+    expect(
+      Math.max(...samples.map((pose) => Math.abs(pose.lateralX))),
+    ).toBeGreaterThan(0.015)
+    expect(
+      Math.max(...samples.map((pose) => Math.abs(pose.leanZ))),
+    ).toBeGreaterThan(0.01)
+    expect(
+      Math.max(...samples.map((pose) => pose.breathScale)),
+    ).toBeGreaterThan(1.002)
+
+    expect(
+      workspaceIdlePose('agent-a', 10_000, 'PRAYER_QUIET'),
+    ).toEqual({
+      lookYaw: 0,
+      leanZ: 0,
+      lateralX: 0,
+      liftY: 0,
+      breathScale: 1,
+    })
   })
 
   it('enforces hard personal space and deterministic right-of-way for Workspace walkers', () => {
