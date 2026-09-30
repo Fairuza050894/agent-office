@@ -89,3 +89,74 @@ Keep Draft until:
 - micro-idle looks subtle rather than jittery;
 - collision/facing regressions are absent;
 - Live and Historical Replay remain unchanged.
+
+
+## Canonical local visual fixture
+
+When no real non-terminal Run exists, use the local ReferenceExecutor WAITING
+scenario. This is a real Task / Run / AgentRun lifecycle through the public HTTP
+API; it does not insert rows directly or fabricate frontend state.
+
+### 1. Restart the backend in explicit WAITING mode
+
+From a terminal dedicated to the backend:
+
+```bash
+cd ~/Projects/agent-office/backend
+AGENT_OFFICE_REFERENCE_SCENARIO=WAITING .venv/bin/uvicorn agent_office.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+The default remains `SUCCESS` when the environment variable is absent.
+
+### 2. Create the canonical visual Run
+
+From another terminal:
+
+```bash
+cd ~/Projects/agent-office
+python scripts/phase10g_visual_run.py
+```
+
+If Project selection is ambiguous:
+
+```bash
+python scripts/phase10g_visual_run.py --project-name "Agent Office"
+```
+
+The helper:
+
+- selects an existing registered Project;
+- selects built-in `bug-fix`;
+- creates a real Task;
+- creates a real Run;
+- starts orchestration through ReferenceExecutor;
+- verifies the Run stays non-terminal;
+- verifies at least one AgentRun is actually `WAITING`;
+- prints Workspace and Run Office URLs.
+
+It never edits SQLite directly and never creates fake AgentRun records.
+
+### 3. Rendered review
+
+Open the printed Workspace URL and wait up to 15 seconds for the Workspace
+work-projection refresh.
+
+Verify that the WAITING AgentRun appears as canonical WORK truth and is not
+duplicated as Planning or Ambient.
+
+### 4. Cleanup
+
+Use the printed cleanup command, or:
+
+```bash
+python scripts/phase10g_visual_run.py --cancel-run <RUN_ID>
+```
+
+ReferenceExecutor confirms cancellation for the WAITING scenario, so cleanup
+uses the normal Run cancellation lifecycle.
+
+### 5. Return backend to normal behavior
+
+Stop the WAITING-mode backend and restart normally without
+`AGENT_OFFICE_REFERENCE_SCENARIO`. The ReferenceExecutor then returns to its
+default `SUCCESS` scenario.
