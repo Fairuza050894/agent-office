@@ -6,6 +6,7 @@ import {
   officeCharacterVariant,
   officeMovementYaw,
   shouldShowOfficeNameplate,
+  workspaceCandidateBlockedByPeer,
 } from './character'
 
 const CORE_ROLES = [
@@ -72,6 +73,60 @@ describe('officeCharacterAppearance', () => {
         officeMovementYaw(new THREE.Vector3(0, 0, -1), 'live'),
       ),
     ).toBeCloseTo(Math.PI)
+  })
+
+  it('enforces hard personal space and deterministic right-of-way for Workspace walkers', () => {
+    const candidate = new THREE.Vector3(0, 0, 0)
+
+    expect(
+      workspaceCandidateBlockedByPeer('agent-b', candidate, [
+        {
+          agentId: 'agent-a',
+          position: new THREE.Vector3(0.3, 0, 0),
+          moving: true,
+        },
+      ]),
+    ).toBe(true)
+
+    expect(
+      workspaceCandidateBlockedByPeer('agent-b', candidate, [
+        {
+          agentId: 'agent-a',
+          position: new THREE.Vector3(0.52, 0, 0),
+          moving: true,
+        },
+      ]),
+    ).toBe(true)
+
+    expect(
+      workspaceCandidateBlockedByPeer('agent-a', candidate, [
+        {
+          agentId: 'agent-b',
+          position: new THREE.Vector3(0.52, 0, 0),
+          moving: true,
+        },
+      ]),
+    ).toBe(false)
+
+    expect(
+      workspaceCandidateBlockedByPeer('agent-a', candidate, [
+        {
+          agentId: 'agent-b',
+          position: new THREE.Vector3(0.52, 0, 0),
+          moving: false,
+        },
+      ]),
+    ).toBe(true)
+
+    expect(
+      workspaceCandidateBlockedByPeer('agent-a', candidate, [
+        {
+          agentId: 'agent-b',
+          position: new THREE.Vector3(0.9, 0, 0),
+          moving: false,
+        },
+      ]),
+    ).toBe(false)
   })
 
   it('keeps unknown-role fallback deterministic', () => {
