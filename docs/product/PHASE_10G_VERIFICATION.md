@@ -160,3 +160,64 @@ uses the normal Run cancellation lifecycle.
 Stop the WAITING-mode backend and restart normally without
 `AGENT_OFFICE_REFERENCE_SCENARIO`. The ReferenceExecutor then returns to its
 default `SUCCESS` scenario.
+
+
+## Rendered follow-up — walking axis and living idle
+
+Rendered review found two remaining presentation issues:
+
+1. Workspace characters could still appear to walk backward.
+2. The initial micro-idle yaw was too subtle to feel like a living character.
+
+### Walking root cause
+
+The GLB character is already normalized once through its model-level yaw offset.
+Workspace was then adding another 180-degree root correction, producing a
+double correction.
+
+Current contract:
+
+```text
+Live       normalized root forward
+Workspace  normalized root forward
+Replay     historical replay correction (+PI)
+```
+
+No path, target, movement speed, collision, Run state, or Replay timing changes.
+
+### Living idle cycle
+
+Stationary Workspace characters now use a deterministic 22–30 second
+presentation cycle with per-character phase:
+
+```text
+neutral breathing
+  -> weight shift
+  -> look left
+  -> settle
+  -> look right
+  -> opposite weight shift
+  -> repeat
+```
+
+The pose uses a presentation pivot above the rigged GLB so it does not alter
+canonical world position or collision truth.
+
+Presentation components:
+
+- lateral weight transfer
+- subtle torso lean
+- visible environment look-left / look-right
+- slow vertical breathing
+- tiny breathing scale
+- behavior-sensitive intensity
+- prayer quiet / offline remain neutral
+
+### Rendered acceptance
+
+- Workspace characters visibly face the direction they travel.
+- Live remains visually unchanged.
+- Replay keeps its previously verified correction.
+- Stationary WORK / WAITING characters visibly shift weight and look around.
+- Idle remains smooth, not twitchy or oscillating every second.
+- Character feet/world position do not drift through furniture.
