@@ -213,6 +213,7 @@ const BEHAVIOR_CLIP_CANDIDATES: Record<OfficeBehaviorKey, string[]> = {
     'Idle',
   ],
   WAITING_DECISION: ['Sitting_Idle_Loop', 'Idle'],
+  WORK_WAITING: ['Sitting_Idle_Loop', 'Idle'],
   COFFEE_CHAT: ['Idle_Talking_Loop', 'Idle'],
   LUNCH: ['Sitting_Idle_Loop', 'Idle'],
   SOCIAL_CHAT: ['Idle_Talking_Loop', 'Sitting_Talking_Loop', 'Idle'],
