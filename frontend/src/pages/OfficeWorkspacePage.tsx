@@ -155,13 +155,13 @@ export function OfficeWorkspacePage() {
     ])
       .then(([loadedProjects, loadedExecutors, loadedProfiles]) => {
         if (!active) return
-        const requestedProject =
-          requestedProjectId &&
-          loadedProjects.find(
-            (project) =>
-              project.id === requestedProjectId &&
-              project.status === 'ACTIVE',
-          )
+        const requestedProject = requestedProjectId
+          ? loadedProjects.find(
+              (project) =>
+                project.id === requestedProjectId &&
+                project.status === 'ACTIVE',
+            )
+          : undefined
         const initialProjectId =
           requestedProject?.id ??
           loadedProjects.find((project) => project.status === 'ACTIVE')?.id ??
@@ -196,7 +196,6 @@ export function OfficeWorkspacePage() {
     let active = true
 
     if (!selectedProjectId) {
-      setLatestProjectRun(null)
       return () => {
         active = false
       }
@@ -232,8 +231,17 @@ export function OfficeWorkspacePage() {
 
   useEffect(() => {
     if (!requestedFloor) return
-    setSelectedFloor(requestedFloor)
-    setSelectedOfficeMemberId(null)
+
+    let active = true
+    void Promise.resolve().then(() => {
+      if (!active) return
+      setSelectedFloor(requestedFloor)
+      setSelectedOfficeMemberId(null)
+    })
+
+    return () => {
+      active = false
+    }
   }, [requestedFloor])
 
   useEffect(() => {
@@ -640,7 +648,7 @@ export function OfficeWorkspacePage() {
         title="Agent Office"
         projectName={selectedProject?.name ?? 'No Project selected'}
         modeLabel={
-          planningMode && planningMode !== 'AUTO'
+          planningMode
             ? `Workspace · ${planningMode}`
             : 'Workspace'
         }

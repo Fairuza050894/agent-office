@@ -32,7 +32,7 @@ describe('officeCharacterAppearance', () => {
     )
   })
 
-  it('declutters completed nameplates while keeping active and selected roles visible', () => {
+  it('declutters transient and completed nameplates while keeping material and selected roles visible', () => {
     expect(shouldShowOfficeNameplate('COMPLETED', false)).toBe(false)
     expect(shouldShowOfficeNameplate('PENDING', false)).toBe(false)
     expect(shouldShowOfficeNameplate('AVAILABLE', false)).toBe(false)
@@ -40,7 +40,6 @@ describe('officeCharacterAppearance', () => {
     expect(shouldShowOfficeNameplate('ARRIVING', false)).toBe(false)
     expect(shouldShowOfficeNameplate('COFFEE_BREAK', false)).toBe(false)
     expect(shouldShowOfficeNameplate('RUNNING', false)).toBe(true)
-    expect(shouldShowOfficeNameplate('STARTING', false)).toBe(true)
     expect(shouldShowOfficeNameplate('WAITING', false)).toBe(true)
     expect(shouldShowOfficeNameplate('BLOCKED', false)).toBe(true)
     expect(shouldShowOfficeNameplate('FAILED', false)).toBe(true)

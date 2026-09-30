@@ -161,30 +161,48 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
   useEffect(() => {
     if (!run) return
 
-    if (requestedReplay && officeMode !== 'replay') {
-      const range = officeReplayRange(agents, events)
-      setReplayRangeSnapshot(range)
-      setReplayStartedAt(performance.now())
-      setReplayElapsed(0)
-      setOfficeMode('replay')
-      setMotionPaused(false)
-      setReplayNonce((current) => current + 1)
-      return
-    }
+    let active = true
+    void Promise.resolve().then(() => {
+      if (!active) return
 
-    if (!requestedReplay && officeMode === 'replay') {
-      setOfficeMode('live')
-      setReplayStartedAt(null)
-      setReplayRangeSnapshot(null)
-      setReplayElapsed(null)
+      if (requestedReplay && officeMode !== 'replay') {
+        const range = officeReplayRange(agents, events)
+        setReplayRangeSnapshot(range)
+        setReplayStartedAt(performance.now())
+        setReplayElapsed(0)
+        setOfficeMode('replay')
+        setMotionPaused(false)
+        setReplayNonce((current) => current + 1)
+        return
+      }
+
+      if (!requestedReplay && officeMode === 'replay') {
+        setOfficeMode('live')
+        setReplayStartedAt(null)
+        setReplayRangeSnapshot(null)
+        setReplayElapsed(null)
+      }
+    })
+
+    return () => {
+      active = false
     }
   }, [agents, events, officeMode, requestedReplay, run])
 
   useEffect(() => {
     if (!requestedFloor) return
-    setSelectedFloor(requestedFloor)
-    setSelectedAgentId(null)
+
     initialFloorResolved.current = true
+    let active = true
+    void Promise.resolve().then(() => {
+      if (!active) return
+      setSelectedFloor(requestedFloor)
+      setSelectedAgentId(null)
+    })
+
+    return () => {
+      active = false
+    }
   }, [requestedFloor])
 
   useEffect(() => {
