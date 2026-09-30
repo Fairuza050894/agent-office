@@ -464,10 +464,37 @@ function applyWorkspaceRightHandLane(
   points: THREE.Vector3[],
   floor: OfficeFloorKey,
 ): THREE.Vector3[] {
-  if (points.length < 2) return points.map((item) => item.clone())
+  if (points.length === 0) return []
+
+  const laneOffset = 0.3
+
+  if (points.length === 1) {
+    const target = points[0]
+    if (from.distanceTo(target) < 1.2) return [target.clone()]
+
+    const direction = target.clone().sub(from)
+    direction.y = 0
+    if (direction.lengthSq() < 1e-6) return [target.clone()]
+    direction.normalize()
+
+    const right = new THREE.Vector3(direction.z, 0, -direction.x)
+    const midpoint = from
+      .clone()
+      .lerp(target, 0.5)
+      .addScaledVector(right, laneOffset)
+
+    if (
+      !navigationPointBlocked(midpoint, floor) &&
+      navigationSegmentClear(from, midpoint, floor) &&
+      navigationSegmentClear(midpoint, target, floor)
+    ) {
+      return [midpoint, target.clone()]
+    }
+
+    return [target.clone()]
+  }
 
   const shifted = points.map((item) => item.clone())
-  const laneOffset = 0.3
 
   for (let index = 0; index < shifted.length - 1; index += 1) {
     const previous = index === 0 ? from : shifted[index - 1]
@@ -502,7 +529,7 @@ export function buildWorkspaceOfficePath(
   if (from.distanceTo(to) < 0.08) return []
 
   if (navigationSegmentClear(from, to, floor)) {
-    return [to.clone()]
+    return applyWorkspaceRightHandLane(from, [to.clone()], floor)
   }
 
   const start = nearestNavigationPoint(from, floor)
