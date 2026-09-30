@@ -976,6 +976,7 @@ export function animateCharacter(
       'ARRIVING',
       'WAITING',
       'WAITING_USER',
+      'WAITING_WORK',
       'COFFEE_BREAK',
       'LUNCH_BREAK',
       'SOCIAL_BREAK',
