@@ -296,6 +296,56 @@ describe('living office model', () => {
     expect(['pantry', 'lounge']).toContain(member.zone)
   })
 
+  it('uses provider prayer windows only when canonical work is safely waiting', () => {
+    const assignments: OfficeWorkAssignment[] = [
+      {
+        taskId: 'task-1',
+        taskTitle: 'Implement payment retry',
+        runId: 'run-1',
+        runStatus: 'RUNNING',
+        agentRunId: 'agent-run-1',
+        agentRunStatus: 'WAITING',
+        agentProfileKey: 'backend-engineer',
+        stageKey: 'IMPLEMENTATION',
+        updatedAt: '2026-09-28T08:10:00Z',
+      },
+    ]
+    const prayerWindow = [
+      {
+        id: 'provider-prayer',
+        label: 'Configured prayer window',
+        startsAt: '2026-09-28T15:00:00+07:00',
+        endsAt: '2026-09-28T15:30:00+07:00',
+        floor: 'commons' as const,
+        zone: 'quiet-room' as const,
+        presence: 'PRAYER_BREAK' as const,
+        priority: 100,
+        roleKeys: ['backend-engineer'],
+      },
+    ]
+
+    const [waiting] = workPresenceMembers(
+      assignments,
+      profiles,
+      new Date('2026-09-28T15:15:00+07:00'),
+      'Asia/Jakarta',
+      prayerWindow,
+    )
+    expect(waiting.status).toBe('PRAYER_BREAK')
+    expect(waiting.behavior).toBe('PRAYER_QUIET')
+    expect(waiting.zone).toBe('quiet-room')
+
+    const [running] = workPresenceMembers(
+      [{ ...assignments[0], agentRunStatus: 'RUNNING' }],
+      profiles,
+      new Date('2026-09-28T15:15:00+07:00'),
+      'Asia/Jakarta',
+      prayerWindow,
+    )
+    expect(running.status).toBe('WORKING')
+    expect(running.floor).toBe('build')
+  })
+
   it('lets active work override duplicate planning and ambient role projection', () => {
     const assignments: OfficeWorkAssignment[] = [
       {
