@@ -241,6 +241,33 @@ describe('living office model', () => {
     })
   })
 
+  it('shows canonical waiting work without claiming active execution or user blocking', () => {
+    const assignments: OfficeWorkAssignment[] = [
+      {
+        taskId: 'task-1',
+        taskTitle: 'Implement payment retry',
+        runId: 'run-1',
+        runStatus: 'RUNNING',
+        agentRunId: 'agent-run-1',
+        agentRunStatus: 'WAITING',
+        agentProfileKey: 'backend-engineer',
+        stageKey: 'IMPLEMENTATION',
+        updatedAt: '2026-09-28T03:00:00Z',
+      },
+    ]
+
+    const [member] = workPresenceMembers(
+      assignments,
+      profiles,
+      new Date('2026-09-28T10:15:00+07:00'),
+      'Asia/Jakarta',
+    )
+
+    expect(member.status).toBe('WAITING_WORK')
+    expect(member.behavior).toBe('WORK_WAITING')
+    expect(member.truth).toBe('WORK')
+  })
+
   it('does not fake a lunch pause while an AgentRun is still RUNNING', () => {
     const assignments: OfficeWorkAssignment[] = [
       {
@@ -495,14 +522,14 @@ describe('living office model', () => {
     expect(first.every((member) => member.floor === 'commons')).toBe(true)
   })
 
-  it('changes ambient placement deterministically across ten-minute beats', () => {
+  it('changes ambient placement deterministically across three-minute beats', () => {
     const before = ambientOfficeMembers(
       profiles,
       new Date(2026, 8, 28, 15, 1),
     )
     const after = ambientOfficeMembers(
       profiles,
-      new Date(2026, 8, 28, 15, 11),
+      new Date(2026, 8, 28, 15, 4),
     )
 
     expect(
