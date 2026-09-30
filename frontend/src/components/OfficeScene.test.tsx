@@ -145,6 +145,9 @@ describe('OfficeScene workspace presence', () => {
     expect(inspector).toHaveTextContent('Game break')
     expect(inspector).toHaveTextContent('Commons · game corner')
     expect(inspector).toHaveTextContent('Ambient presentation')
+    expect(
+      screen.getByText('Live office view · No active run selected'),
+    ).toBeInTheDocument()
 
     fireEvent.click(
       screen.getByRole('button', { name: 'Close office member inspector' }),
@@ -182,6 +185,9 @@ describe('OfficeScene workspace presence', () => {
     expect(inspector).toHaveTextContent('Focus')
     expect(inspector).toHaveTextContent('Canonical Run / AgentRun work')
     expect(inspector).not.toHaveTextContent('Ambient presentation')
+    expect(
+      screen.getByText('Live office view · Canonical work active'),
+    ).toBeInTheDocument()
   })
 
   it('does not show a stale inspector for a member on another floor', () => {
