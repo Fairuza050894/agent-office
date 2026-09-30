@@ -309,7 +309,7 @@ export function OfficeScene({
               </div>
             )}
 
-            <div className="office-scene-navigation">
+            <div className="office-scene-navigation office-scene-navigation-workspace">
               {onFloorChange && (
                 <div
                   className="office-floor-switcher office-floor-switcher-workspace"
