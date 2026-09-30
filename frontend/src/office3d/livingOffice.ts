@@ -23,6 +23,35 @@ export type OfficePresenceState =
   | 'SOCIAL_BREAK'
   | 'OFFLINE'
 
+export function officePresenceStatusLabel(
+  status: OfficePresenceState,
+): string {
+  switch (status) {
+    case 'WAITING_WORK':
+      return 'Waiting'
+    case 'WAITING_USER':
+      return 'Waiting for you'
+    case 'LUNCH_BREAK':
+      return 'Lunch break'
+    case 'COFFEE_BREAK':
+      return 'Coffee break'
+    case 'PRAYER_BREAK':
+      return 'Prayer / quiet break'
+    case 'SOCIAL_BREAK':
+      return 'Social break'
+    case 'WORKING':
+      return 'Working'
+    case 'PLANNING':
+      return 'Planning'
+    case 'AVAILABLE':
+      return 'Available'
+    case 'ARRIVING':
+      return 'Arriving'
+    case 'OFFLINE':
+      return 'Offline'
+  }
+}
+
 export type OfficeBehaviorKey =
   | 'ARRIVAL'
   | 'AVAILABLE'
