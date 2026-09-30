@@ -140,20 +140,20 @@ const ZONE_PLACEMENTS: Record<OfficeZoneKey, StationPlacement[]> = {
     { position: point(0.8, -5.75), yaw: 0 },
   ],
   'coffee-bar': [
-    { position: point(6.25, -3.05), yaw: Math.PI * 0.5 },
-    { position: point(7.0, -2.85), yaw: Math.PI * 0.5 },
+    { position: point(5.55, -3.35), yaw: Math.PI * 0.5 },
+    { position: point(5.55, -2.45), yaw: Math.PI * 0.5 },
   ],
   pantry: [
-    { position: point(6.25, -2.45), yaw: Math.PI },
-    { position: point(7.15, -2.35), yaw: Math.PI },
+    { position: point(6.1, -1.55), yaw: Math.PI },
+    { position: point(7.2, -1.55), yaw: Math.PI },
   ],
   lounge: [
-    { position: point(-7.6, 4.75), yaw: Math.PI * 0.35 },
-    { position: point(-6.4, 4.65), yaw: -Math.PI * 0.35 },
+    { position: point(-6.0, 3.65), yaw: Math.PI * 0.35 },
+    { position: point(-7.35, 3.55), yaw: -Math.PI * 0.35 },
   ],
   'game-corner': [
-    { position: point(6.45, 4.85), yaw: Math.PI * 0.5 },
-    { position: point(7.65, 4.8), yaw: -Math.PI * 0.5 },
+    { position: point(5.55, 4.25), yaw: Math.PI * 0.5 },
+    { position: point(6.25, 5.75), yaw: -Math.PI * 0.5 },
   ],
   'quiet-room': [
     { position: point(-4.15, -2.0), yaw: 0 },
@@ -260,6 +260,331 @@ const DESK_OBSTACLES: Obstacle[] = WORKSTATIONS.map((station) => ({
   halfX: 0.7,
   halfZ: 0.39,
 }))
+
+const WORKSPACE_NAVIGATION_CLEARANCE = 0.3
+const WORKSPACE_NAVIGATION_GRID = 0.5
+const WORKSPACE_NAVIGATION_BOUNDS = {
+  minX: -9.35,
+  maxX: 9.35,
+  minZ: -6.35,
+  maxZ: 6.35,
+}
+
+function obstacle(
+  x: number,
+  z: number,
+  width: number,
+  depth: number,
+): Obstacle {
+  return {
+    center: point(x, z),
+    halfX: width / 2,
+    halfZ: depth / 2,
+  }
+}
+
+const WORKSPACE_NAVIGATION_OBSTACLES: Record<OfficeFloorKey, Obstacle[]> = {
+  commons: [
+    obstacle(-1.9, 1.95, 2.2, 0.78),
+    obstacle(1.9, 0.55, 2.2, 0.78),
+    obstacle(0, 1.25, 1.38, 0.8),
+    obstacle(7.15, -4.1, 4.1, 0.82),
+    obstacle(7.15, -2.4, 2.45, 0.86),
+    obstacle(7.45, 4.5, 2.25, 1.2),
+    obstacle(-7.75, 5.2, 2.2, 0.82),
+    obstacle(-6.2, 4.9, 1.3, 0.82),
+    obstacle(2.6, -5.35, 2.5, 0.78),
+  ],
+  build: [
+    ...DESK_OBSTACLES,
+    obstacle(-4.05, 1.43, 0.18, 4.35),
+    obstacle(4.05, 1.43, 0.18, 4.35),
+    obstacle(-6.75, -3.85, 3.55, 0.88),
+    obstacle(-6.35, 4.6, 2.8, 1.15),
+    obstacle(6.85, -4.25, 2.55, 0.86),
+    obstacle(6.93, 3.7, 0.95, 0.82),
+    obstacle(8.17, 3.7, 0.95, 0.82),
+    obstacle(6.7, 0.25, 0.92, 1.28),
+    obstacle(6.7, 1.45, 0.92, 1.28),
+  ],
+  strategy: [
+    obstacle(-7.25, -3.65, 2.95, 1.3),
+    obstacle(0, 0.4, 4.75, 1.5),
+    obstacle(-7.75, 5.2, 2.2, 0.82),
+    obstacle(-6.2, 4.9, 1.3, 0.82),
+    obstacle(5.6, 4.55, 1.2, 1.2),
+    obstacle(7.5, 4.55, 1.2, 1.2),
+    obstacle(6.7, 0.25, 0.92, 1.28),
+    obstacle(6.7, 1.45, 0.92, 1.28),
+  ],
+}
+
+function navigationPointBlocked(
+  candidate: THREE.Vector3,
+  floor: OfficeFloorKey,
+  padding = WORKSPACE_NAVIGATION_CLEARANCE,
+): boolean {
+  if (
+    candidate.x < WORKSPACE_NAVIGATION_BOUNDS.minX ||
+    candidate.x > WORKSPACE_NAVIGATION_BOUNDS.maxX ||
+    candidate.z < WORKSPACE_NAVIGATION_BOUNDS.minZ ||
+    candidate.z > WORKSPACE_NAVIGATION_BOUNDS.maxZ
+  ) {
+    return true
+  }
+
+  return WORKSPACE_NAVIGATION_OBSTACLES[floor].some((item) => {
+    return (
+      candidate.x >= item.center.x - item.halfX - padding &&
+      candidate.x <= item.center.x + item.halfX + padding &&
+      candidate.z >= item.center.z - item.halfZ - padding &&
+      candidate.z <= item.center.z + item.halfZ + padding
+    )
+  })
+}
+
+function navigationSegmentClear(
+  start: THREE.Vector3,
+  end: THREE.Vector3,
+  floor: OfficeFloorKey,
+  padding = WORKSPACE_NAVIGATION_CLEARANCE,
+): boolean {
+  return !WORKSPACE_NAVIGATION_OBSTACLES[floor].some((item) =>
+    segmentIntersectsObstacle(start, end, item, padding),
+  )
+}
+
+function navigationKey(x: number, z: number): string {
+  return `${x.toFixed(2)}:${z.toFixed(2)}`
+}
+
+function navigationGridPoint(x: number, z: number): THREE.Vector3 {
+  return point(
+    Math.round(x / WORKSPACE_NAVIGATION_GRID) * WORKSPACE_NAVIGATION_GRID,
+    Math.round(z / WORKSPACE_NAVIGATION_GRID) * WORKSPACE_NAVIGATION_GRID,
+  )
+}
+
+function navigationNeighbors(
+  current: THREE.Vector3,
+  floor: OfficeFloorKey,
+): THREE.Vector3[] {
+  const result: THREE.Vector3[] = []
+
+  for (const dx of [-1, 0, 1]) {
+    for (const dz of [-1, 0, 1]) {
+      if (dx === 0 && dz === 0) continue
+
+      const candidate = point(
+        current.x + dx * WORKSPACE_NAVIGATION_GRID,
+        current.z + dz * WORKSPACE_NAVIGATION_GRID,
+      )
+      if (navigationPointBlocked(candidate, floor)) continue
+      if (!navigationSegmentClear(current, candidate, floor)) continue
+      result.push(candidate)
+    }
+  }
+
+  return result
+}
+
+function nearestNavigationPoint(
+  source: THREE.Vector3,
+  floor: OfficeFloorKey,
+): THREE.Vector3 | null {
+  const snapped = navigationGridPoint(source.x, source.z)
+  if (!navigationPointBlocked(snapped, floor)) return snapped
+
+  for (let ring = 1; ring <= 5; ring += 1) {
+    for (let dx = -ring; dx <= ring; dx += 1) {
+      for (let dz = -ring; dz <= ring; dz += 1) {
+        if (Math.max(Math.abs(dx), Math.abs(dz)) !== ring) continue
+        const candidate = point(
+          snapped.x + dx * WORKSPACE_NAVIGATION_GRID,
+          snapped.z + dz * WORKSPACE_NAVIGATION_GRID,
+        )
+        if (!navigationPointBlocked(candidate, floor)) return candidate
+      }
+    }
+  }
+
+  return null
+}
+
+function reconstructNavigationPath(
+  endKey: string,
+  cameFrom: Map<string, string>,
+  nodes: Map<string, THREE.Vector3>,
+): THREE.Vector3[] {
+  const result: THREE.Vector3[] = []
+  let currentKey: string | undefined = endKey
+
+  while (currentKey) {
+    const node = nodes.get(currentKey)
+    if (node) result.push(node.clone())
+    currentKey = cameFrom.get(currentKey)
+  }
+
+  return result.reverse()
+}
+
+function smoothNavigationPath(
+  from: THREE.Vector3,
+  points: THREE.Vector3[],
+  floor: OfficeFloorKey,
+): THREE.Vector3[] {
+  if (points.length <= 1) return points.map((item) => item.clone())
+
+  const result: THREE.Vector3[] = []
+  let anchor = from.clone()
+  let index = 0
+
+  while (index < points.length) {
+    let furthest = index
+    for (let candidate = points.length - 1; candidate >= index; candidate -= 1) {
+      if (navigationSegmentClear(anchor, points[candidate], floor)) {
+        furthest = candidate
+        break
+      }
+    }
+
+    const waypoint = points[furthest].clone()
+    result.push(waypoint)
+    anchor = waypoint
+    index = furthest + 1
+  }
+
+  return result
+}
+
+function applyWorkspaceRightHandLane(
+  from: THREE.Vector3,
+  points: THREE.Vector3[],
+  floor: OfficeFloorKey,
+): THREE.Vector3[] {
+  if (points.length < 2) return points.map((item) => item.clone())
+
+  const shifted = points.map((item) => item.clone())
+  const laneOffset = 0.16
+
+  for (let index = 0; index < shifted.length - 1; index += 1) {
+    const previous = index === 0 ? from : shifted[index - 1]
+    const next = shifted[index + 1]
+    const direction = next.clone().sub(previous)
+    direction.y = 0
+    if (direction.lengthSq() < 1e-6) continue
+    direction.normalize()
+
+    const right = new THREE.Vector3(direction.z, 0, -direction.x)
+    const candidate = shifted[index].clone().addScaledVector(right, laneOffset)
+
+    const previousSafe = navigationSegmentClear(previous, candidate, floor)
+    const nextSafe = navigationSegmentClear(candidate, next, floor)
+    if (
+      !navigationPointBlocked(candidate, floor) &&
+      previousSafe &&
+      nextSafe
+    ) {
+      shifted[index].copy(candidate)
+    }
+  }
+
+  return shifted
+}
+
+export function buildWorkspaceOfficePath(
+  from: THREE.Vector3,
+  to: THREE.Vector3,
+  floor: OfficeFloorKey,
+): THREE.Vector3[] {
+  if (from.distanceTo(to) < 0.08) return []
+
+  if (navigationSegmentClear(from, to, floor)) {
+    return [to.clone()]
+  }
+
+  const start = nearestNavigationPoint(from, floor)
+  const goal = nearestNavigationPoint(to, floor)
+  if (!start || !goal) return []
+
+  const startKey = navigationKey(start.x, start.z)
+  const goalKey = navigationKey(goal.x, goal.z)
+  const open = new Set<string>([startKey])
+  const nodes = new Map<string, THREE.Vector3>([
+    [startKey, start],
+    [goalKey, goal],
+  ])
+  const cameFrom = new Map<string, string>()
+  const gScore = new Map<string, number>([[startKey, 0]])
+  const fScore = new Map<string, number>([
+    [startKey, start.distanceTo(goal)],
+  ])
+
+  while (open.size > 0) {
+    let currentKey = ''
+    let currentScore = Number.POSITIVE_INFINITY
+    open.forEach((key) => {
+      const score = fScore.get(key) ?? Number.POSITIVE_INFINITY
+      if (score < currentScore) {
+        currentKey = key
+        currentScore = score
+      }
+    })
+    if (!currentKey) break
+    if (currentKey === goalKey) {
+      const raw = reconstructNavigationPath(goalKey, cameFrom, nodes)
+      const withTarget = [
+        ...raw,
+        ...(raw.at(-1)?.distanceTo(to) && raw.at(-1)!.distanceTo(to) > 0.08
+          ? [to.clone()]
+          : []),
+      ]
+      return applyWorkspaceRightHandLane(
+        from,
+        smoothNavigationPath(from, withTarget, floor),
+        floor,
+      )
+    }
+
+    open.delete(currentKey)
+    const current = nodes.get(currentKey)
+    if (!current) continue
+
+    navigationNeighbors(current, floor).forEach((neighbor) => {
+      const key = navigationKey(neighbor.x, neighbor.z)
+      nodes.set(key, neighbor)
+      const tentative =
+        (gScore.get(currentKey) ?? Number.POSITIVE_INFINITY) +
+        current.distanceTo(neighbor)
+
+      if (tentative >= (gScore.get(key) ?? Number.POSITIVE_INFINITY)) return
+
+      cameFrom.set(key, currentKey)
+      gScore.set(key, tentative)
+      fScore.set(key, tentative + neighbor.distanceTo(goal))
+      open.add(key)
+    })
+  }
+
+  // Fail closed: remaining stationary is preferable to crossing furniture.
+  return []
+}
+
+export function officeWorkspacePathHasFurnitureClearance(
+  path: THREE.Vector3[],
+  floor: OfficeFloorKey,
+  padding = WORKSPACE_NAVIGATION_CLEARANCE,
+): boolean {
+  if (path.length < 2) return true
+
+  for (let index = 1; index < path.length; index += 1) {
+    if (!navigationSegmentClear(path[index - 1], path[index], floor, padding)) {
+      return false
+    }
+  }
+
+  return true
+}
 
 function destinationRoute(target: THREE.Vector3): THREE.Vector3[] | null {
   const workstation = nearestWorkstation(target)
