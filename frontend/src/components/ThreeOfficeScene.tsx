@@ -18,6 +18,7 @@ import {
 } from '../office3d/character'
 import {
   buildOfficePath,
+  buildWorkspaceOfficePath,
   entrancePosition,
   incidentPosition,
   createOfficeEnvironment,
@@ -131,11 +132,41 @@ function stateTarget(
 function moveRuntime(
   runtime: RuntimeAgent,
   target: StationPlacement,
+  workspaceFloor?: OfficeFloorKey,
 ): void {
   runtime.target.copy(target.position)
   runtime.targetYaw = target.yaw
-  runtime.path = buildOfficePath(runtime.root.position, target.position)
+  runtime.path = workspaceFloor
+    ? buildWorkspaceOfficePath(runtime.root.position, target.position, workspaceFloor)
+    : buildOfficePath(runtime.root.position, target.position)
   runtime.moving = runtime.path.length > 0
+}
+
+function workspacePeerBlocksMovement(
+  engine: Engine,
+  runtime: RuntimeAgent,
+  candidate: THREE.Vector3,
+  workspaceMemberIds: Set<string>,
+): boolean {
+  const softRadius = 0.62
+  const hardRadius = 0.42
+
+  for (const other of engine.runtimes.values()) {
+    if (other === runtime || !workspaceMemberIds.has(other.agentId)) continue
+    if (!other.root.visible) continue
+
+    const candidateDistance = candidate.distanceTo(other.root.position)
+    if (candidateDistance < hardRadius) return true
+    if (candidateDistance >= softRadius) continue
+
+    if (!other.moving) return true
+
+    // Deterministic right-of-way avoids both characters advancing into the
+    // same crossing while still allowing one to clear the shared aisle.
+    if (runtime.agentId.localeCompare(other.agentId) > 0) return true
+  }
+
+  return false
 }
 
 function webGlUnavailable(): boolean {
@@ -378,18 +409,36 @@ export function ThreeOfficeScene({
             }
           } else {
             direction.normalize()
-            runtime.root.position.addScaledVector(direction, step)
-            const facing =
-              modeRef.current === 'replay'
-                ? 'replay'
-                : workspaceMemberIdsRef.current.has(runtime.agentId)
-                  ? 'workspace'
-                  : 'live'
+            const candidate = runtime.root.position
+              .clone()
+              .addScaledVector(direction, step)
+            const isWorkspaceMember = workspaceMemberIdsRef.current.has(
+              runtime.agentId,
+            )
 
-            // Position/path truth is shared. Only presentation-facing differs:
-            // Operational Live stays unchanged; Replay and Workspace apply the
-            // rig-facing correction verified in rendered review.
-            runtime.root.rotation.y = officeMovementYaw(direction, facing)
+            if (
+              isWorkspaceMember &&
+              workspacePeerBlocksMovement(
+                current,
+                runtime,
+                candidate,
+                workspaceMemberIdsRef.current,
+              )
+            ) {
+              needsFrame = true
+            } else {
+              runtime.root.position.copy(candidate)
+              const facing =
+                modeRef.current === 'replay'
+                  ? 'replay'
+                  : isWorkspaceMember
+                    ? 'workspace'
+                    : 'live'
+
+              // Position/path truth is shared. Workspace additionally respects
+              // collision-aware routing and personal-space yielding.
+              runtime.root.rotation.y = officeMovementYaw(direction, facing)
+            }
           }
         }
 
@@ -765,7 +814,11 @@ export function ThreeOfficeScene({
           runtime.pendingStatus = null
           runtime.pendingStatusAt = null
           setCharacterStatus(runtime, member.status)
-          moveRuntime(runtime, target)
+          moveRuntime(
+            runtime,
+            target,
+            workspaceMemberIdsRef.current.has(member.id) ? floor : undefined,
+          )
         }
       }
     })
