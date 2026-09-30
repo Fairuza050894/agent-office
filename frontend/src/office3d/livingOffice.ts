@@ -16,6 +16,7 @@ export type OfficePresenceState =
   | 'WORKING'
   | 'PLANNING'
   | 'WAITING_USER'
+  | 'WAITING_WORK'
   | 'LUNCH_BREAK'
   | 'COFFEE_BREAK'
   | 'PRAYER_BREAK'
@@ -28,6 +29,7 @@ export type OfficeBehaviorKey =
   | 'DESK_FOCUS'
   | 'PLANNING_MEETING'
   | 'WAITING_DECISION'
+  | 'WORK_WAITING'
   | 'COFFEE_CHAT'
   | 'LUNCH'
   | 'SOCIAL_CHAT'
@@ -274,6 +276,7 @@ const OFFICE_BEHAVIOR_LABELS: Record<OfficeBehaviorKey, string> = {
   DESK_FOCUS: 'Focus',
   PLANNING_MEETING: 'Planning',
   WAITING_DECISION: 'Waiting for you',
+  WORK_WAITING: 'Waiting',
   COFFEE_CHAT: 'Coffee break',
   LUNCH: 'Lunch break',
   SOCIAL_CHAT: 'Social break',
@@ -385,6 +388,7 @@ export function officeBehaviorFor(
     if (status === 'LUNCH_BREAK') return 'LUNCH'
     if (status === 'PRAYER_BREAK') return 'PRAYER_QUIET'
     if (status === 'WAITING_USER') return 'WAITING_DECISION'
+    if (status === 'WAITING_WORK') return 'WORK_WAITING'
     return 'DESK_FOCUS'
   }
 
@@ -652,8 +656,8 @@ export function workPresenceMembers(
 
       const status: OfficePresenceState = scheduledBreak
         ? scheduledBreak.status
-        : normalizedAgentStatus === 'BLOCKED'
-          ? 'WAITING_USER'
+        : ['WAITING', 'BLOCKED', 'PENDING'].includes(normalizedAgentStatus)
+          ? 'WAITING_WORK'
           : 'WORKING'
       const zone = scheduledBreak?.zone ?? home.zone
       const floor: OfficeFloorKey = scheduledBreak?.floor ?? home.floor
