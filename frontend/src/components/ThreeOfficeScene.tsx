@@ -6,6 +6,7 @@ import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
 import type { AgentProfile, AgentRun, RunStage } from '../api'
 import {
   animateCharacter,
+  applyWorkspaceIdlePresentation,
   createCharacterRuntime,
   disposeCharacter,
   officeMovementYaw,
@@ -13,7 +14,6 @@ import {
   setCharacterSelected,
   setCharacterStatus,
   workspaceCandidateBlockedByPeer,
-  workspaceMicroYawOffset,
   type OfficeCharacterSource,
   type RuntimeAgent,
   type StationPlacement,
@@ -429,24 +429,18 @@ export function ThreeOfficeScene({
         const isWorkspaceMember = workspaceMemberIdsRef.current.has(
           runtime.agentId,
         )
-        if (
-          isWorkspaceMember &&
-          !runtime.moving &&
-          !motionPausedRef.current
-        ) {
-          runtime.root.rotation.y =
-            runtime.targetYaw +
-            workspaceMicroYawOffset(runtime.agentId, now, runtime.behavior)
-          if (
-            runtime.behavior !== 'PRAYER_QUIET' &&
-            runtime.behavior !== 'OFFLINE'
-          ) {
-            needsFrame = true
-          }
-        }
 
         needsFrame =
           animateCharacter(runtime, now, motionPausedRef.current) || needsFrame
+
+        needsFrame =
+          applyWorkspaceIdlePresentation(
+            runtime,
+            now,
+            isWorkspaceMember &&
+              !runtime.moving &&
+              !motionPausedRef.current,
+          ) || needsFrame
 
         if (runtime.moving || runtime.pendingStatus) {
           needsFrame = true
