@@ -13,6 +13,7 @@ import {
   officeBehaviorFor,
   officeBehaviorLabel,
   officeFloorFromParam,
+  officePresenceStatusLabel,
   officeRoleHomeLocation,
   planningPresenceMembers,
   livingOfficeMembers,
@@ -160,6 +161,16 @@ describe('office floor deep links', () => {
     expect(officeFloorFromParam('strategy')).toBe('strategy')
     expect(officeFloorFromParam('roof')).toBeNull()
     expect(officeFloorFromParam(null)).toBeNull()
+  })
+})
+
+describe('living office presentation labels', () => {
+  it('humanizes internal workday states without exposing raw enum names', () => {
+    expect(officePresenceStatusLabel('WAITING_WORK')).toBe('Waiting')
+    expect(officePresenceStatusLabel('WORKING')).toBe('Working')
+    expect(officePresenceStatusLabel('PRAYER_BREAK')).toBe(
+      'Prayer / quiet break',
+    )
   })
 })
 
