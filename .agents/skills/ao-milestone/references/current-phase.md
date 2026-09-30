@@ -2,19 +2,28 @@
 
 ## Current checkpoint
 
-Current base:
-
 ```text
-main@7e1b82a
-Phase 10D merged via PR #14
-Phase 10C containment follow-up merged via PR #16
+main@aaea623
+Phase 10E merged
+PR #18 frontend verification recovery merged
+PR #19 repository verification hardening merged
 ```
 
-Current work:
+Canonical full verification entry point:
+
+```bash
+./scripts/verify.sh
+```
+
+GitHub-hosted jobs may currently end before runner assignment with
+`steps: null`. That condition is infrastructure evidence only; it is neither a
+green test result nor a code assertion failure.
+
+## Current work
 
 ```text
-branch: phase-10e-spatial-navigation
-phase: Phase 10E — Spatial Navigation & Cinematic Office UX
+branch: phase-10f-contextual-operations
+phase: Phase 10F — Contextual Operations
 status: IMPLEMENTED / DRAFT REVIEW
 ```
 
@@ -33,97 +42,86 @@ status: IMPLEMENTED / DRAFT REVIEW
   - Phase 10B CLOSED / MERGED
   - Phase 10C CLOSED / MERGED
   - Phase 10D CLOSED / MERGED
-  - Phase 10E IMPLEMENTED / DRAFT REVIEW
+  - Phase 10E CLOSED / MERGED
+  - Phase 10F IMPLEMENTED / DRAFT REVIEW
 
 ## One Agent Office model
 
 ```text
 WORKSPACE
   planning + ambient Office world
+  Discussion -> Universal Composer
 
 LIVE
   canonical Run / AgentRun projection
+  Discussion -> canonical Events
 
 REPLAY
   historical canonical Run / AgentRun / Event projection
+  Discussion -> historical canonical Events
 ```
 
-The building, floors, renderer, character runtime, camera language, command rail,
-and Operations Dock are shared presentation infrastructure.
+The building, floors, renderer, character runtime, camera language, contextual
+operations rail, and Operations Dock are shared presentation infrastructure.
 
 Truth sources remain separated.
 
-## Phase 10E scope
+## Phase 10F scope
 
-### Spatial camera language
-
-```text
-L1 Commons   Overview | Lounge      | Pantry
-L2 Build     Overview | Engineering | QA / Review
-L3 Strategy  Overview | Planning    | Meeting
-```
-
-Keyboard:
+### Contextual rail
 
 ```text
-1 / 2 / 3  camera views
-L          label layer
+Discussion | Details | Files | Logs
 ```
 
-### Motion discipline
+The rail is collapsible and Office-local. It supersedes the older inspector and
+standalone Workspace Composer placement.
 
-- short camera interpolation
-- manual input cancels automated camera travel
-- camera remains usable while agent motion is paused
-- reduced-motion preference snaps rather than animates
-- floor transition cue is removed for reduced-motion users
+### Task workflow
 
-### Density control
+The rail can create canonical Task records manually or from approved
+RequirementCandidates.
 
-Labels can be hidden independently from factual HTML surfaces.
+Task creation does not imply Run creation or execution.
 
-Inspector / Dock / Run truth remain available.
+### Files boundary
 
-### Building continuity
+Current Files surfaces use:
 
-Floor change gets a restrained short presentation cue.
+- PlanningArtifact metadata in Workspace
+- WorkspaceChangeSummary in Run scope
+- Evidence metadata in Run scope
 
-It is not an elevator Event and does not imply character movement.
+No generic filesystem preview/download is implemented.
 
-## Truth boundary
+### GitHub boundary
 
-```text
-Camera movement != Event
-Camera movement != Evidence
-Label visibility != truth filtering
-Floor cue != elevator execution
-Workspace presence != execution
-Replay remains historical canonical truth
-```
+GitHub discovery/import is intentionally deferred because the current Project
+registry requires a validated local repository path and there is no provider
+auth/discovery/clone contract yet.
 
-The verified Replay forward-facing correction remains untouched.
+## Safety invariants
 
-## Rendered gate
+- no auto commit
+- no auto merge
+- no force push
+- no fake execution
+- no fake dialogue
+- no fake files
+- no arbitrary filesystem reads
+- no direct main working-tree mutation
+- Live/Replay movement behavior remains untouched
+- historical replay forward-facing fix remains required
 
-Pending local review:
+## Verification gate
 
-- all nine semantic floor camera views frame the intended spaces;
-- camera easing feels restrained;
-- drag cancels preset motion naturally;
-- keyboard controls do not interfere with Composer/input controls;
-- Labels Off keeps inspector and Dock usable;
-- floor cue is clean in normal and Maximize;
-- reduced motion is respected;
-- Live / Replay movement remains correct;
-- no camera interaction mutates canonical truth.
+Before merge:
 
-## Records
-
-```text
-docs/architecture/SPATIAL_NAVIGATION.md
-docs/product/PHASE_10E_VERIFICATION.md
-docs/architecture/UNIFIED_AGENT_OFFICE.md
-docs/product/AGENT_OFFICE_VNEXT_CONCEPT.md
-```
-
-Merge remains manual only.
+1. `./scripts/verify.sh`
+2. render `/office`
+3. render one Live Run Office
+4. render Historical Replay
+5. verify normal + Maximize
+6. verify contextual rail collapse/reopen and all four tabs
+7. verify canonical Task appears in Operations Dock
+8. verify movement/replay direction remains correct
