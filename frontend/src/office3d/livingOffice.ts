@@ -292,7 +292,10 @@ function stableRoleHash(value: string): number {
 }
 
 function ambientBeat(now: Date): number {
-  return Math.floor(now.getTime() / (10 * 60 * 1000))
+  // Significant ambient relocation should be occasional but observable.
+  // Three-minute beats keep the office alive without turning workers into
+  // patrol NPCs; canonical WORK members remain task-anchored separately.
+  return Math.floor(now.getTime() / (3 * 60 * 1000))
 }
 
 function pickAmbientZone(
