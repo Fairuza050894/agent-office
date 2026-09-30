@@ -138,3 +138,7 @@ Workspace visual review additionally requires:
 - Build sprint notes are mounted vertically to the board with no floating-paper props;
 - rear wall accent surfaces remain clear of both the window wall and lift core.
 - Workspace ambient/planning characters face the direction of travel when moving between zones; Operational Live remains unchanged and Historical Replay retains its verified correction.
+- Workspace movement routes around the floor-specific furniture obstacle map instead of cutting through desks, sofas, counters, tables, partitions, or racks.
+- Long direct Workspace routes use a subtle keep-right lane so opposing walkers can pass instead of sharing one center line.
+- Workspace walkers preserve personal space: hard proximity blocks movement, stationary peers always receive clearance, and simultaneous walkers use deterministic right-of-way.
+- Collision-aware planning fails closed: if no safe path can be produced, the character remains stationary rather than crossing furniture.
