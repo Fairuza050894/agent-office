@@ -13,6 +13,7 @@ import {
   setCharacterSelected,
   setCharacterStatus,
   workspaceCandidateBlockedByPeer,
+  workspaceMicroYawOffset,
   type OfficeCharacterSource,
   type RuntimeAgent,
   type StationPlacement,
@@ -422,6 +423,25 @@ export function ThreeOfficeScene({
               // collision-aware routing and personal-space yielding.
               runtime.root.rotation.y = officeMovementYaw(direction, facing)
             }
+          }
+        }
+
+        const isWorkspaceMember = workspaceMemberIdsRef.current.has(
+          runtime.agentId,
+        )
+        if (
+          isWorkspaceMember &&
+          !runtime.moving &&
+          !motionPausedRef.current
+        ) {
+          runtime.root.rotation.y =
+            runtime.targetYaw +
+            workspaceMicroYawOffset(runtime.agentId, now, runtime.behavior)
+          if (
+            runtime.behavior !== 'PRAYER_QUIET' &&
+            runtime.behavior !== 'OFFLINE'
+          ) {
+            needsFrame = true
           }
         }
 
