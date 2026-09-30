@@ -88,9 +88,7 @@ def get_settings() -> Settings:
 
     return Settings(
         reference_scenario=(
-            reference_scenario.strip().upper()
-            if reference_scenario is not None
-            else "SUCCESS"
+            reference_scenario.strip().upper() if reference_scenario is not None else "SUCCESS"
         ),
         codex_enabled=(
             enabled.strip().lower() in {"1", "true", "yes", "on"} if enabled is not None else False
