@@ -1178,8 +1178,8 @@ function createOfficeShell(
   addBox(environment, [0.16, 3.2, 14], [-9.92, 1.56, 0], palette.wall)
   addBox(environment, [0.16, 3.2, 14], [9.92, 1.56, 0], palette.wall)
 
-  addBox(environment, [4.8, 2.72, 0.035], [3.75, 1.5, -6.86], palette.accent)
-  addBox(environment, [3.4, 0.08, 0.04], [3.75, 0.18, -6.81], palette.trim)
+  addBox(environment, [2.3, 2.72, 0.035], [5.0, 1.5, -6.86], palette.accent)
+  addBox(environment, [1.95, 0.08, 0.04], [5.0, 0.18, -6.81], palette.trim)
 
   createWindowWall(environment)
   environment.add(createDoor(new THREE.Vector3(0, 0, -6.9)))
