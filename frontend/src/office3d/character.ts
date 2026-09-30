@@ -435,6 +435,7 @@ export function shouldShowOfficeNameplate(
     'PLANNING',
     'WAITING',
     'WAITING_USER',
+    'WAITING_WORK',
     'BLOCKED',
     'FAILED',
   ].includes(status.toUpperCase())
@@ -452,6 +453,7 @@ export function statusColor(status: string): number {
     case 'ARRIVING':
     case 'WAITING':
     case 'WAITING_USER':
+    case 'WAITING_WORK':
     case 'COFFEE_BREAK':
     case 'LUNCH_BREAK':
     case 'SOCIAL_BREAK':
