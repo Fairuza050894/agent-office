@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   api,
   type AgentProfile,
+  type AgentRun,
   type ComposerMessage,
   type ComposerPreparation,
   type ComposerThread,
@@ -37,6 +38,7 @@ import {
   officeFloorFromParam,
   officeBehaviorLabel,
   type OfficeFloorKey,
+  type OfficeWorkAssignment,
 } from '../office3d/livingOffice'
 import {
   isPlanningPresenceFresh,
@@ -115,6 +117,7 @@ export function OfficeWorkspacePage() {
   const [registryError, setRegistryError] = useState<string | null>(null)
   const [latestProjectRun, setLatestProjectRun] = useState<Run | null>(null)
   const [tasks, setTasks] = useState<Task[]>([])
+  const [workAssignments, setWorkAssignments] = useState<OfficeWorkAssignment[]>([])
   const [taskActionBusy, setTaskActionBusy] = useState(false)
   const [taskActionMessage, setTaskActionMessage] = useState<string | null>(null)
   const [contextCollapsed, setContextCollapsed] = useState(false)
@@ -217,12 +220,58 @@ export function OfficeWorkspacePage() {
         const runGroups = await Promise.all(
           loadedTasks.map((task) => api.listRuns(task.id)),
         )
+        const allRuns = runGroups.flat()
+        const activeRuns = allRuns.filter(
+          (run) =>
+            !['COMPLETED', 'FAILED', 'CANCELLED'].includes(
+              run.status.toUpperCase(),
+            ),
+        )
+        const agentRunGroups = await Promise.all(
+          activeRuns.map(async (run) => {
+            try {
+              return {
+                run,
+                agents: await api.getRunAgents(run.id),
+              }
+            } catch {
+              return { run, agents: [] as AgentRun[] }
+            }
+          }),
+        )
         if (!active) return
 
+        const taskById = new Map(loadedTasks.map((task) => [task.id, task]))
+        const assignments: OfficeWorkAssignment[] = agentRunGroups.flatMap(
+          ({ run, agents }) => {
+            const task = taskById.get(run.task_id)
+            if (!task) return []
+
+            return agents
+              .filter(
+                (agent) =>
+                  !['COMPLETED', 'FAILED', 'CANCELLED'].includes(
+                    agent.status.toUpperCase(),
+                  ),
+              )
+              .map((agent) => ({
+                taskId: task.id,
+                taskTitle: task.title,
+                runId: run.id,
+                runStatus: run.status,
+                agentRunId: agent.id,
+                agentRunStatus: agent.status,
+                agentProfileKey: agent.agent_profile_key,
+                stageKey: agent.stage_key,
+                updatedAt: agent.updated_at,
+              }))
+          },
+        )
+
         setTasks(loadedTasks)
+        setWorkAssignments(assignments)
         const latest =
-          runGroups
-            .flat()
+          allRuns
             .slice()
             .sort((left, right) =>
               right.updated_at.localeCompare(left.updated_at),
@@ -231,6 +280,7 @@ export function OfficeWorkspacePage() {
       } catch {
         if (active) {
           setTasks([])
+          setWorkAssignments([])
           setLatestProjectRun(null)
         }
       }
@@ -437,6 +487,7 @@ export function OfficeWorkspacePage() {
     setComposerError(null)
     setTaskActionMessage(null)
     setTasks([])
+    setWorkAssignments([])
     setLatestProjectRun(null)
   }
 
@@ -662,8 +713,16 @@ export function OfficeWorkspacePage() {
         officeNow,
         [],
         officeTimeZone,
+        workAssignments,
       ),
-    [activeThread, officeNow, officeTimeZone, planningTeam, profiles],
+    [
+      activeThread,
+      officeNow,
+      officeTimeZone,
+      planningTeam,
+      profiles,
+      workAssignments,
+    ],
   )
   const selectedFloorMembers = workspaceMembers.filter(
     (member) => member.floor === selectedFloor,
@@ -902,6 +961,11 @@ export function OfficeWorkspacePage() {
                   <span>
                     {selectedOfficeMember.truth} · {selectedOfficeMember.status} · {selectedOfficeMember.zone.replaceAll('-', ' ')}
                   </span>
+                  {selectedOfficeMember.truth === 'WORK' && (
+                    <span>
+                      Task {selectedOfficeMember.taskTitle ?? selectedOfficeMember.taskId} · Run {selectedOfficeMember.runId?.slice(0, 8)} · {selectedOfficeMember.stageKey}
+                    </span>
+                  )}
                 </div>
               )}
             </div>
