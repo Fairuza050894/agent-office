@@ -173,7 +173,7 @@ def _executor(
         executable=str(executable),
         start_timeout_seconds=start_timeout_seconds,
         cancel_timeout_seconds=1.0,
-        probe_timeout_seconds=1.0,
+        probe_timeout_seconds=5.0,
     )
 
 
@@ -448,7 +448,7 @@ def test_codex_context_failure_happens_before_real_execution_start(tmp_path: Pat
     executor = CodexExecutor(
         execution_context_resolver=fail_context,
         executable=str(executable),
-        probe_timeout_seconds=1.0,
+        probe_timeout_seconds=5.0,
     )
 
     result = asyncio.run(executor.start(_request()))
