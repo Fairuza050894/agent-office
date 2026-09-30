@@ -19,6 +19,7 @@ def test_default_settings_are_local_and_safe() -> None:
     assert settings.database_path == Path("data/agent-office.sqlite")
 
     assert settings.log_level == "INFO"
+    assert settings.reference_scenario == "SUCCESS"
     assert settings.codex_enabled is False
     assert settings.codex_cli_path == "codex"
     assert settings.codex_model is None
@@ -38,3 +39,11 @@ def test_codex_runtime_settings_are_bounded_and_do_not_load_credentials(monkeypa
     assert settings.codex_model == "test-model"
     assert not hasattr(settings, "openai_api_key")
     assert not hasattr(settings, "codex_api_key")
+
+
+def test_reference_waiting_scenario_is_explicit_and_bounded(monkeypatch) -> None:
+    monkeypatch.setenv("AGENT_OFFICE_REFERENCE_SCENARIO", "waiting")
+
+    settings = get_settings()
+
+    assert settings.reference_scenario == "WAITING"
