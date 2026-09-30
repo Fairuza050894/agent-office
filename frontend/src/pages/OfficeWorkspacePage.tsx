@@ -214,7 +214,10 @@ export function OfficeWorkspacePage() {
       }
     }
 
+    let refreshing = false
     const loadLatestRun = async () => {
+      if (refreshing) return
+      refreshing = true
       try {
         const loadedTasks = await api.listTasks(selectedProjectId)
         const runGroups = await Promise.all(
@@ -283,13 +286,19 @@ export function OfficeWorkspacePage() {
           setWorkAssignments([])
           setLatestProjectRun(null)
         }
+      } finally {
+        refreshing = false
       }
     }
 
     void loadLatestRun()
+    const timer = window.setInterval(() => {
+      void loadLatestRun()
+    }, 15_000)
 
     return () => {
       active = false
+      window.clearInterval(timer)
     }
   }, [selectedProjectId])
 
