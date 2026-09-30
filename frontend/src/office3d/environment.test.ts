@@ -127,7 +127,9 @@ describe('office navigation clearance', () => {
     }
   })
 
-  it('renders exactly one shared lift core on every floor', () => {
+  it('renders exactly one shared lift core at the same clear building edge on every floor', () => {
+    const positions: string[] = []
+
     for (const floor of ['commons', 'build', 'strategy'] as const) {
       const environment = new THREE.Group()
       createOfficeEnvironment(environment, [], [], floor, 'CORE_WORK')
@@ -138,7 +140,62 @@ describe('office navigation clearance', () => {
       })
 
       expect(liftCores).toHaveLength(1)
+      expect(liftCores[0].position.x).toBeGreaterThan(7.3)
+      positions.push(
+        `${liftCores[0].position.x.toFixed(2)}:${liftCores[0].position.z.toFixed(2)}`,
+      )
     }
+
+    expect(new Set(positions).size).toBe(1)
+  })
+
+  it('keeps the shared lift landing clear of Commons pantry and Strategy roadmap wall', () => {
+    const commons = new THREE.Group()
+    createOfficeEnvironment(commons, [], [], 'commons', 'CORE_WORK')
+    const commonsLift = commons.getObjectByName('office-lift-core')
+    const pantry = commons.getObjectByName('office-pantry')
+
+    expect(commonsLift).toBeTruthy()
+    expect(pantry).toBeTruthy()
+    expect(
+      new THREE.Box3().setFromObject(commonsLift!).intersectsBox(
+        new THREE.Box3().setFromObject(pantry!),
+      ),
+    ).toBe(false)
+
+    const strategy = new THREE.Group()
+    createOfficeEnvironment(strategy, [], [], 'strategy', 'CORE_WORK')
+    const strategyLift = strategy.getObjectByName('office-lift-core')
+    const roadmap = strategy.getObjectByName('office-strategy-roadmap-wall')
+
+    expect(strategyLift).toBeTruthy()
+    expect(roadmap).toBeTruthy()
+    expect(
+      new THREE.Box3().setFromObject(strategyLift!).intersectsBox(
+        new THREE.Box3().setFromObject(roadmap!),
+      ),
+    ).toBe(false)
+  })
+
+  it('mounts Build focus notes vertically on the sprint board instead of floating over the floor', () => {
+    const environment = new THREE.Group()
+    createOfficeEnvironment(environment, [], [], 'build', 'CORE_WORK')
+
+    const notes: THREE.Mesh[] = []
+    environment.traverse((object) => {
+      if (object.name === 'office-build-focus-note' && object instanceof THREE.Mesh) {
+        notes.push(object)
+      }
+    })
+
+    expect(notes).toHaveLength(3)
+    notes.forEach((note) => {
+      const geometry = note.geometry as THREE.BoxGeometry
+      expect(geometry.parameters.height).toBeGreaterThan(0.15)
+      expect(geometry.parameters.depth).toBeLessThan(0.05)
+      expect(note.position.z).toBeLessThan(-6.6)
+      expect(note.position.y).toBeGreaterThan(1)
+    })
   })
 
   it('aligns specialist zones with their distinct floor spaces', () => {
