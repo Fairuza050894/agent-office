@@ -69,6 +69,35 @@ function initialFloorForThread(
   return officeAmbientWindow(now, [], thread.timezone).floor
 }
 
+function workspacePresenceStatusLabel(status: string): string {
+  switch (status) {
+    case 'WAITING_WORK':
+      return 'Waiting'
+    case 'WAITING_USER':
+      return 'Waiting for you'
+    case 'LUNCH_BREAK':
+      return 'Lunch break'
+    case 'COFFEE_BREAK':
+      return 'Coffee break'
+    case 'PRAYER_BREAK':
+      return 'Prayer / quiet break'
+    case 'SOCIAL_BREAK':
+      return 'Social break'
+    case 'WORKING':
+      return 'Working'
+    case 'PLANNING':
+      return 'Planning'
+    case 'AVAILABLE':
+      return 'Available'
+    case 'ARRIVING':
+      return 'Arriving'
+    case 'OFFLINE':
+      return 'Offline'
+    default:
+      return status.replaceAll('_', ' ').toLowerCase()
+  }
+}
+
 async function loadPlanningSnapshot(thread: ComposerThread) {
   const [loadedMessages, teams, artifacts, requirements, eventPage] = await Promise.all([
     api.listComposerMessages(thread.id),
@@ -899,7 +928,7 @@ export function OfficeWorkspacePage() {
           }
           status={
             selectedOfficeMember
-              ? `${selectedOfficeMember.status} · ${selectedOfficeMember.zone.replaceAll('-', ' ')}`
+              ? `${workspacePresenceStatusLabel(selectedOfficeMember.status)} · ${selectedOfficeMember.zone.replaceAll('-', ' ')}`
               : activeThread
                 ? `${activeThread.status} · ${planningMode ?? 'PLANNING'}`
                 : 'No active planning thread'
@@ -908,6 +937,23 @@ export function OfficeWorkspacePage() {
           onToggleCollapsed={() => setContextCollapsed((current) => !current)}
           discussion={
             <div className="office-context-stack">
+              {selectedOfficeMember &&
+                selectedOfficeMember.truth === 'WORK' && (
+                  <div className="office-context-callout">
+                    <strong>
+                      {selectedOfficeMember.taskTitle ??
+                        selectedOfficeMember.taskId ??
+                        'Canonical work assignment'}
+                    </strong>
+                    <span>
+                      {workspacePresenceStatusLabel(selectedOfficeMember.status)}
+                      {' · '}
+                      {selectedOfficeMember.stageKey ?? 'Unknown stage'}
+                      {' · Run '}
+                      {selectedOfficeMember.runId?.slice(0, 8) ?? 'Unavailable'}
+                    </span>
+                  </div>
+                )}
               {selectedOfficeMember &&
                 selectedOfficeMember.truth === 'WORK' &&
                 ['LUNCH', 'COFFEE_BREAK'].includes(officeWorld.mode) &&
@@ -991,7 +1037,7 @@ export function OfficeWorkspacePage() {
                 <div className="office-context-callout">
                   <strong>{selectedOfficeMember.name}</strong>
                   <span>
-                    {selectedOfficeMember.truth} · {selectedOfficeMember.status} · {selectedOfficeMember.zone.replaceAll('-', ' ')}
+                    {selectedOfficeMember.truth} · {workspacePresenceStatusLabel(selectedOfficeMember.status)} · {selectedOfficeMember.zone.replaceAll('-', ' ')}
                   </span>
                   {selectedOfficeMember.truth === 'WORK' && (
                     <span>
@@ -1084,9 +1130,9 @@ export function OfficeWorkspacePage() {
       />
 
       <p className="office-workspace-note">
-        Composer planning is durable and separate from operational Run truth.
-        Implementation roles remain inactive until approved requirements pass the
-        later execution-promotion gate.
+        {workAssignments.length > 0
+          ? 'Workspace is projecting canonical Task / Run / AgentRun work. Planning and ambient presence remain separate truth layers.'
+          : 'Composer planning is durable and separate from operational Run truth. Implementation roles remain inactive until approved requirements pass the later execution-promotion gate.'}
       </p>
     </div>
   )
