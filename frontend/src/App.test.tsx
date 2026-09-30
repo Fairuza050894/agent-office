@@ -129,6 +129,85 @@ describe('Agent Office operational shell', () => {
     expect(screen.getByRole('button', { name: 'Start Run' })).toBeDisabled()
   })
 
+  it('creates canonical project tasks from the Workspace context rail and projects them into the Dock', async () => {
+    const project = {
+      id: '10111111-1111-4111-8111-111111111111',
+      name: 'Context Project',
+      repository: { name: 'context-project' },
+      default_branch: 'main',
+      preferred_executor_id: null,
+      default_workflow_id: null,
+      status: 'ACTIVE',
+      created_at: '2026-09-30T04:00:00Z',
+      updated_at: '2026-09-30T04:00:00Z',
+      archived_at: null,
+    }
+    const createdTask = {
+      id: '10222222-2222-4222-8222-222222222222',
+      project_id: project.id,
+      title: 'Add bounded artifact preview',
+      objective: 'Expose artifact content through a safe bounded API.',
+      constraints: null,
+      requested_workflow_id: null,
+      requested_executor_id: null,
+      created_at: '2026-09-30T04:01:00Z',
+      updated_at: '2026-09-30T04:01:00Z',
+    }
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url =
+          typeof input === 'string'
+            ? input
+            : input instanceof URL
+              ? input.toString()
+              : input.url
+
+        if (url === '/api/projects') return jsonResponse([project])
+        if (url === '/api/executors') return jsonResponse([])
+        if (url === '/api/agent-profiles') return jsonResponse([])
+        if (url === `/api/projects/${project.id}/tasks` && init?.method === 'POST') {
+          return jsonResponse(createdTask)
+        }
+        if (url === `/api/projects/${project.id}/tasks`) return jsonResponse([])
+        if (url === `/api/projects/${project.id}/composer/threads`) {
+          return jsonResponse([])
+        }
+
+        throw new Error(`Unexpected fetch call in contextual task test: ${init?.method ?? 'GET'} ${url}`)
+      }),
+    )
+
+    render(<App initialPath="/office" />)
+
+    const rail = await screen.findByRole('complementary', {
+      name: 'Contextual Operations Rail',
+    })
+    await waitFor(() => {
+      expect(within(rail).getByLabelText('Composer project')).toHaveValue(project.id)
+    })
+
+    fireEvent.change(
+      within(rail).getByPlaceholderText('Short actionable task'),
+      { target: { value: createdTask.title } },
+    )
+    fireEvent.change(
+      within(rail).getByPlaceholderText('What must be accomplished?'),
+      { target: { value: createdTask.objective } },
+    )
+    fireEvent.click(within(rail).getByRole('button', { name: 'Add task' }))
+
+    expect(
+      await within(rail).findByText(/Task 10222222 created/),
+    ).toBeInTheDocument()
+
+    const dock = screen.getByRole('region', { name: 'Bottom Operations Dock' })
+    fireEvent.click(within(dock).getByRole('tab', { name: 'Tasks' }))
+    expect(within(dock).getByText(createdTask.title)).toBeInTheDocument()
+    expect(within(dock).getByText(createdTask.objective)).toBeInTheDocument()
+  })
+
   it('makes Universal Composer create durable planning UI without starting a Run', async () => {
     const project = {
       id: '11111111-1111-4111-8111-111111111111',

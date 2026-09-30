@@ -9,6 +9,9 @@ const OFFICE_WIDTH = 20
 const OFFICE_DEPTH = 14
 const HUB = new THREE.Vector3(0, 0, -1.55)
 const DESK_CLEARANCE = 0.34
+const LIFT_CORE_X = 7.85
+const LIFT_FRAME_Z = -6.77
+const LIFT_LANDING_Z = -5.85
 
 export const ENTRANCE = new THREE.Vector3(0, 0, -6.28)
 export const WAITING = new THREE.Vector3(-4.95, 0, 0.9)
@@ -137,20 +140,20 @@ const ZONE_PLACEMENTS: Record<OfficeZoneKey, StationPlacement[]> = {
     { position: point(0.8, -5.75), yaw: 0 },
   ],
   'coffee-bar': [
-    { position: point(6.25, -3.05), yaw: Math.PI * 0.5 },
-    { position: point(7.0, -2.85), yaw: Math.PI * 0.5 },
+    { position: point(5.55, -3.35), yaw: Math.PI * 0.5 },
+    { position: point(5.55, -2.45), yaw: Math.PI * 0.5 },
   ],
   pantry: [
-    { position: point(6.25, -2.45), yaw: Math.PI },
-    { position: point(7.15, -2.35), yaw: Math.PI },
+    { position: point(6.1, -1.55), yaw: Math.PI },
+    { position: point(7.2, -1.55), yaw: Math.PI },
   ],
   lounge: [
-    { position: point(-7.6, 4.75), yaw: Math.PI * 0.35 },
-    { position: point(-6.4, 4.65), yaw: -Math.PI * 0.35 },
+    { position: point(-6.0, 3.65), yaw: Math.PI * 0.35 },
+    { position: point(-7.35, 3.55), yaw: -Math.PI * 0.35 },
   ],
   'game-corner': [
-    { position: point(6.45, 4.85), yaw: Math.PI * 0.5 },
-    { position: point(7.65, 4.8), yaw: -Math.PI * 0.5 },
+    { position: point(5.55, 4.25), yaw: Math.PI * 0.5 },
+    { position: point(6.25, 5.75), yaw: -Math.PI * 0.5 },
   ],
   'quiet-room': [
     { position: point(-4.15, -2.0), yaw: 0 },
@@ -257,6 +260,358 @@ const DESK_OBSTACLES: Obstacle[] = WORKSTATIONS.map((station) => ({
   halfX: 0.7,
   halfZ: 0.39,
 }))
+
+const WORKSPACE_NAVIGATION_CLEARANCE = 0.3
+const WORKSPACE_NAVIGATION_GRID = 0.5
+const WORKSPACE_NAVIGATION_BOUNDS = {
+  minX: -9.35,
+  maxX: 9.35,
+  minZ: -6.35,
+  maxZ: 6.35,
+}
+
+function obstacle(
+  x: number,
+  z: number,
+  width: number,
+  depth: number,
+): Obstacle {
+  return {
+    center: point(x, z),
+    halfX: width / 2,
+    halfZ: depth / 2,
+  }
+}
+
+const WORKSPACE_NAVIGATION_OBSTACLES: Record<OfficeFloorKey, Obstacle[]> = {
+  commons: [
+    obstacle(-1.9, 1.95, 2.2, 0.78),
+    obstacle(1.9, 0.55, 2.2, 0.78),
+    obstacle(0, 1.25, 1.38, 0.8),
+    obstacle(7.15, -4.1, 4.1, 0.82),
+    obstacle(7.15, -2.4, 2.45, 0.86),
+    obstacle(7.45, 4.5, 2.25, 1.2),
+    obstacle(-7.75, 5.2, 2.2, 0.82),
+    obstacle(-6.2, 4.9, 1.3, 0.82),
+    obstacle(2.6, -5.35, 2.5, 0.78),
+  ],
+  build: [
+    ...DESK_OBSTACLES,
+    obstacle(-4.05, 1.43, 0.18, 4.35),
+    obstacle(4.05, 1.43, 0.18, 4.35),
+    obstacle(-6.75, -3.85, 3.55, 0.88),
+    obstacle(-6.35, 4.6, 2.8, 1.15),
+    obstacle(6.85, -4.25, 2.55, 0.86),
+    obstacle(6.93, 3.7, 0.95, 0.82),
+    obstacle(8.17, 3.7, 0.95, 0.82),
+    obstacle(6.7, 0.25, 0.92, 1.28),
+    obstacle(6.7, 1.45, 0.92, 1.28),
+  ],
+  strategy: [
+    obstacle(-7.25, -3.65, 2.95, 1.3),
+    obstacle(0, 0.4, 4.75, 1.5),
+    obstacle(-7.75, 5.2, 2.2, 0.82),
+    obstacle(-6.2, 4.9, 1.3, 0.82),
+    obstacle(5.6, 4.55, 1.2, 1.2),
+    obstacle(7.5, 4.55, 1.2, 1.2),
+    obstacle(6.7, 0.25, 0.92, 1.28),
+    obstacle(6.7, 1.45, 0.92, 1.28),
+  ],
+}
+
+function navigationPointBlocked(
+  candidate: THREE.Vector3,
+  floor: OfficeFloorKey,
+  padding = WORKSPACE_NAVIGATION_CLEARANCE,
+): boolean {
+  if (
+    candidate.x < WORKSPACE_NAVIGATION_BOUNDS.minX ||
+    candidate.x > WORKSPACE_NAVIGATION_BOUNDS.maxX ||
+    candidate.z < WORKSPACE_NAVIGATION_BOUNDS.minZ ||
+    candidate.z > WORKSPACE_NAVIGATION_BOUNDS.maxZ
+  ) {
+    return true
+  }
+
+  return WORKSPACE_NAVIGATION_OBSTACLES[floor].some((item) => {
+    return (
+      candidate.x >= item.center.x - item.halfX - padding &&
+      candidate.x <= item.center.x + item.halfX + padding &&
+      candidate.z >= item.center.z - item.halfZ - padding &&
+      candidate.z <= item.center.z + item.halfZ + padding
+    )
+  })
+}
+
+function navigationSegmentClear(
+  start: THREE.Vector3,
+  end: THREE.Vector3,
+  floor: OfficeFloorKey,
+  padding = WORKSPACE_NAVIGATION_CLEARANCE,
+): boolean {
+  return !WORKSPACE_NAVIGATION_OBSTACLES[floor].some((item) =>
+    segmentIntersectsObstacle(start, end, item, padding),
+  )
+}
+
+function navigationKey(x: number, z: number): string {
+  return `${x.toFixed(2)}:${z.toFixed(2)}`
+}
+
+function navigationGridPoint(x: number, z: number): THREE.Vector3 {
+  return point(
+    Math.round(x / WORKSPACE_NAVIGATION_GRID) * WORKSPACE_NAVIGATION_GRID,
+    Math.round(z / WORKSPACE_NAVIGATION_GRID) * WORKSPACE_NAVIGATION_GRID,
+  )
+}
+
+function navigationNeighbors(
+  current: THREE.Vector3,
+  floor: OfficeFloorKey,
+): THREE.Vector3[] {
+  const result: THREE.Vector3[] = []
+
+  for (const dx of [-1, 0, 1]) {
+    for (const dz of [-1, 0, 1]) {
+      if (dx === 0 && dz === 0) continue
+
+      const candidate = point(
+        current.x + dx * WORKSPACE_NAVIGATION_GRID,
+        current.z + dz * WORKSPACE_NAVIGATION_GRID,
+      )
+      if (navigationPointBlocked(candidate, floor)) continue
+      if (!navigationSegmentClear(current, candidate, floor)) continue
+      result.push(candidate)
+    }
+  }
+
+  return result
+}
+
+function nearestNavigationPoint(
+  source: THREE.Vector3,
+  floor: OfficeFloorKey,
+): THREE.Vector3 | null {
+  const snapped = navigationGridPoint(source.x, source.z)
+  if (!navigationPointBlocked(snapped, floor)) return snapped
+
+  for (let ring = 1; ring <= 5; ring += 1) {
+    for (let dx = -ring; dx <= ring; dx += 1) {
+      for (let dz = -ring; dz <= ring; dz += 1) {
+        if (Math.max(Math.abs(dx), Math.abs(dz)) !== ring) continue
+        const candidate = point(
+          snapped.x + dx * WORKSPACE_NAVIGATION_GRID,
+          snapped.z + dz * WORKSPACE_NAVIGATION_GRID,
+        )
+        if (!navigationPointBlocked(candidate, floor)) return candidate
+      }
+    }
+  }
+
+  return null
+}
+
+function reconstructNavigationPath(
+  endKey: string,
+  cameFrom: Map<string, string>,
+  nodes: Map<string, THREE.Vector3>,
+): THREE.Vector3[] {
+  const result: THREE.Vector3[] = []
+  let currentKey: string | undefined = endKey
+
+  while (currentKey) {
+    const node = nodes.get(currentKey)
+    if (node) result.push(node.clone())
+    currentKey = cameFrom.get(currentKey)
+  }
+
+  return result.reverse()
+}
+
+function smoothNavigationPath(
+  from: THREE.Vector3,
+  points: THREE.Vector3[],
+  floor: OfficeFloorKey,
+): THREE.Vector3[] {
+  if (points.length <= 1) return points.map((item) => item.clone())
+
+  const result: THREE.Vector3[] = []
+  let anchor = from.clone()
+  let index = 0
+
+  while (index < points.length) {
+    let furthest = -1
+    for (let candidate = points.length - 1; candidate >= index; candidate -= 1) {
+      if (navigationSegmentClear(anchor, points[candidate], floor)) {
+        furthest = candidate
+        break
+      }
+    }
+
+    if (furthest < 0) return []
+
+    const waypoint = points[furthest].clone()
+    result.push(waypoint)
+    anchor = waypoint
+    index = furthest + 1
+  }
+
+  return result
+}
+
+function applyWorkspaceRightHandLane(
+  from: THREE.Vector3,
+  points: THREE.Vector3[],
+  floor: OfficeFloorKey,
+): THREE.Vector3[] {
+  if (points.length === 0) return []
+
+  const laneOffset = 0.3
+
+  if (points.length === 1) {
+    const target = points[0]
+    if (from.distanceTo(target) < 1.2) return [target.clone()]
+
+    const direction = target.clone().sub(from)
+    direction.y = 0
+    if (direction.lengthSq() < 1e-6) return [target.clone()]
+    direction.normalize()
+
+    const right = new THREE.Vector3(direction.z, 0, -direction.x)
+    const midpoint = from
+      .clone()
+      .lerp(target, 0.5)
+      .addScaledVector(right, laneOffset)
+
+    if (
+      !navigationPointBlocked(midpoint, floor) &&
+      navigationSegmentClear(from, midpoint, floor) &&
+      navigationSegmentClear(midpoint, target, floor)
+    ) {
+      return [midpoint, target.clone()]
+    }
+
+    return [target.clone()]
+  }
+
+  const shifted = points.map((item) => item.clone())
+
+  for (let index = 0; index < shifted.length - 1; index += 1) {
+    const previous = index === 0 ? from : shifted[index - 1]
+    const next = shifted[index + 1]
+    const direction = next.clone().sub(previous)
+    direction.y = 0
+    if (direction.lengthSq() < 1e-6) continue
+    direction.normalize()
+
+    const right = new THREE.Vector3(direction.z, 0, -direction.x)
+    const candidate = shifted[index].clone().addScaledVector(right, laneOffset)
+
+    const previousSafe = navigationSegmentClear(previous, candidate, floor)
+    const nextSafe = navigationSegmentClear(candidate, next, floor)
+    if (
+      !navigationPointBlocked(candidate, floor) &&
+      previousSafe &&
+      nextSafe
+    ) {
+      shifted[index].copy(candidate)
+    }
+  }
+
+  return shifted
+}
+
+export function buildWorkspaceOfficePath(
+  from: THREE.Vector3,
+  to: THREE.Vector3,
+  floor: OfficeFloorKey,
+): THREE.Vector3[] {
+  if (from.distanceTo(to) < 0.08) return []
+
+  if (navigationSegmentClear(from, to, floor)) {
+    return applyWorkspaceRightHandLane(from, [to.clone()], floor)
+  }
+
+  const start = nearestNavigationPoint(from, floor)
+  const goal = nearestNavigationPoint(to, floor)
+  if (!start || !goal) return []
+
+  const startKey = navigationKey(start.x, start.z)
+  const goalKey = navigationKey(goal.x, goal.z)
+  const open = new Set<string>([startKey])
+  const nodes = new Map<string, THREE.Vector3>([
+    [startKey, start],
+    [goalKey, goal],
+  ])
+  const cameFrom = new Map<string, string>()
+  const gScore = new Map<string, number>([[startKey, 0]])
+  const fScore = new Map<string, number>([
+    [startKey, start.distanceTo(goal)],
+  ])
+
+  while (open.size > 0) {
+    let currentKey = ''
+    let currentScore = Number.POSITIVE_INFINITY
+    open.forEach((key) => {
+      const score = fScore.get(key) ?? Number.POSITIVE_INFINITY
+      if (score < currentScore) {
+        currentKey = key
+        currentScore = score
+      }
+    })
+    if (!currentKey) break
+    if (currentKey === goalKey) {
+      const raw = reconstructNavigationPath(goalKey, cameFrom, nodes)
+      const withTarget = [
+        ...raw,
+        ...(raw.at(-1)?.distanceTo(to) && raw.at(-1)!.distanceTo(to) > 0.08
+          ? [to.clone()]
+          : []),
+      ]
+      const smoothed = smoothNavigationPath(from, withTarget, floor)
+      if (smoothed.length === 0) return []
+      return applyWorkspaceRightHandLane(from, smoothed, floor)
+    }
+
+    open.delete(currentKey)
+    const current = nodes.get(currentKey)
+    if (!current) continue
+
+    navigationNeighbors(current, floor).forEach((neighbor) => {
+      const key = navigationKey(neighbor.x, neighbor.z)
+      nodes.set(key, neighbor)
+      const tentative =
+        (gScore.get(currentKey) ?? Number.POSITIVE_INFINITY) +
+        current.distanceTo(neighbor)
+
+      if (tentative >= (gScore.get(key) ?? Number.POSITIVE_INFINITY)) return
+
+      cameFrom.set(key, currentKey)
+      gScore.set(key, tentative)
+      fScore.set(key, tentative + neighbor.distanceTo(goal))
+      open.add(key)
+    })
+  }
+
+  // Fail closed: remaining stationary is preferable to crossing furniture.
+  return []
+}
+
+export function officeWorkspacePathHasFurnitureClearance(
+  path: THREE.Vector3[],
+  floor: OfficeFloorKey,
+  padding = WORKSPACE_NAVIGATION_CLEARANCE,
+): boolean {
+  if (path.length < 2) return true
+
+  for (let index = 1; index < path.length; index += 1) {
+    if (!navigationSegmentClear(path[index - 1], path[index], floor, padding)) {
+      return false
+    }
+  }
+
+  return true
+}
 
 function destinationRoute(target: THREE.Vector3): THREE.Vector3[] | null {
   const workstation = nearestWorkstation(target)
@@ -667,32 +1022,35 @@ function createMeetingRoom(parent: THREE.Group): void {
 }
 
 function createPantry(parent: THREE.Group): void {
-  const x = 7.15
-  const z = -4.05
+  const pantry = new THREE.Group()
+  pantry.name = 'office-pantry'
+  pantry.position.set(7.15, 0, -2.75)
 
-  addBox(parent, [4.5, 0.035, 3.7], [x, 0.04, z], 0x6f5a49)
-  addBox(parent, [4.0, 0.86, 0.68], [x, 0.43, z - 1.35], 0x52606a)
-  addBox(parent, [4.1, 0.08, 0.76], [x, 0.9, z - 1.35], 0x8a6246)
-  addBox(parent, [0.86, 1.55, 0.72], [x + 1.45, 0.78, z - 1.25], 0xcbd3d8)
-  addBox(parent, [0.56, 0.68, 0.46], [x - 1.35, 1.23, z - 1.28], 0x1f2933)
-  addCylinder(parent, 0.08, 0.18, [x - 0.55, 1.03, z - 1.15], 0xf0ebe4)
-  addCylinder(parent, 0.08, 0.18, [x - 0.28, 1.03, z - 1.15], 0xf0ebe4)
+  addBox(pantry, [4.5, 0.035, 3.7], [0, 0.04, 0], 0x6f5a49)
+  addBox(pantry, [4.0, 0.86, 0.68], [0, 0.43, -1.35], 0x52606a)
+  addBox(pantry, [4.1, 0.08, 0.76], [0, 0.9, -1.35], 0x8a6246)
+  addBox(pantry, [0.86, 1.55, 0.72], [1.45, 0.78, -1.25], 0xcbd3d8)
+  addBox(pantry, [0.56, 0.68, 0.46], [-1.35, 1.23, -1.28], 0x1f2933)
+  addCylinder(pantry, 0.08, 0.18, [-0.55, 1.03, -1.15], 0xf0ebe4)
+  addCylinder(pantry, 0.08, 0.18, [-0.28, 1.03, -1.15], 0xf0ebe4)
 
-  addBox(parent, [2.35, 0.12, 0.75], [x, 0.82, z + 0.35], 0x8b6748)
+  addBox(pantry, [2.35, 0.12, 0.75], [0, 0.82, 0.35], 0x8b6748)
   for (const dx of [-0.78, 0.78]) {
-    addBox(parent, [0.08, 0.76, 0.08], [x + dx, 0.4, z + 0.35], 0x303943)
+    addBox(pantry, [0.08, 0.76, 0.08], [dx, 0.4, 0.35], 0x303943)
   }
 
   for (const dx of [-0.78, 0, 0.78]) {
-    addCylinder(parent, 0.28, 0.08, [x + dx, 0.58, z + 1.05], 0x40505e)
-    addCylinder(parent, 0.045, 0.58, [x + dx, 0.29, z + 1.05], 0x303943)
+    addCylinder(pantry, 0.28, 0.08, [dx, 0.58, 1.05], 0x40505e)
+    addCylinder(pantry, 0.045, 0.58, [dx, 0.29, 1.05], 0x303943)
   }
 
   for (const dx of [-1.25, 0, 1.25]) {
-    const shade = addCylinder(parent, 0.2, 0.22, [x + dx, 3.12, z + 0.2], 0xd9b36c)
+    const shade = addCylinder(pantry, 0.2, 0.22, [dx, 3.12, 0.2], 0xd9b36c)
     ;(shade.material as THREE.MeshStandardMaterial).emissive.setHex(0x7a5322)
     ;(shade.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.85
   }
+
+  parent.add(pantry)
 }
 
 function createGameRoom(parent: THREE.Group): void {
@@ -924,11 +1282,12 @@ function createOpsRack(parent: THREE.Group): void {
 }
 
 function createRoadmapWall(parent: THREE.Group): void {
-  const x = 4.15
-  const z = -5.88
+  const wall = new THREE.Group()
+  wall.name = 'office-strategy-roadmap-wall'
+  wall.position.set(3.65, 0, -5.88)
 
-  addBox(parent, [4.45, 1.65, 0.08], [x, 1.72, z], 0x394955)
-  const board = addBox(parent, [4.05, 1.28, 0.035], [x, 1.72, z + 0.06], 0x173141)
+  addBox(wall, [4.45, 1.65, 0.08], [0, 1.72, 0], 0x394955)
+  const board = addBox(wall, [4.05, 1.28, 0.035], [0, 1.72, 0.06], 0x173141)
   ;(board.material as THREE.MeshStandardMaterial).emissive.setHex(0x0f2735)
   ;(board.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.38
 
@@ -939,8 +1298,10 @@ function createRoadmapWall(parent: THREE.Group): void {
     [0.72, -0.25, 0x8a674c],
     [1.42, 0.3, 0x4f7781],
   ] as Array<[number, number, number]>) {
-    addBox(parent, [0.52, 0.34, 0.02], [x + dx, 1.72 + dy, z + 0.1], color)
+    addBox(wall, [0.52, 0.34, 0.02], [dx, 1.72 + dy, 0.1], color)
   }
+
+  parent.add(wall)
 }
 
 function createDecisionPods(parent: THREE.Group): void {
@@ -1130,20 +1491,21 @@ function createLiftCore(
   const floorIndex = floor === 'commons' ? 0 : floor === 'build' ? 1 : 2
   const lift = new THREE.Group()
   lift.name = 'office-lift-core'
+  lift.position.set(LIFT_CORE_X, 0, 0)
 
-  addBox(lift, [3.15, 2.75, 0.14], [4.9, 1.42, -6.77], 0x2d3942)
-  addBox(lift, [1.2, 2.2, 0.06], [4.2, 1.12, -6.66], 0x56636b)
-  addBox(lift, [1.2, 2.2, 0.06], [5.6, 1.12, -6.66], 0x56636b)
-  addBox(lift, [0.05, 2.16, 0.075], [4.9, 1.12, -6.61], 0x26333b)
+  addBox(lift, [3.15, 2.75, 0.14], [0, 1.42, LIFT_FRAME_Z], 0x2d3942)
+  addBox(lift, [1.2, 2.2, 0.06], [-0.7, 1.12, -6.66], 0x56636b)
+  addBox(lift, [1.2, 2.2, 0.06], [0.7, 1.12, -6.66], 0x56636b)
+  addBox(lift, [0.05, 2.16, 0.075], [0, 1.12, -6.61], 0x26333b)
 
-  addBox(lift, [0.72, 0.34, 0.08], [4.9, 2.66, -6.6], 0x17252e)
+  addBox(lift, [0.72, 0.34, 0.08], [0, 2.66, -6.6], 0x17252e)
   for (let index = 0; index < 3; index += 1) {
     const active = index === floorIndex
     const lamp = addCylinder(
       lift,
       0.075,
       0.04,
-      [4.7 + index * 0.2, 2.66, -6.52],
+      [-0.2 + index * 0.2, 2.66, -6.52],
       active ? 0x75d5f0 : 0x40515b,
     )
     lamp.rotation.x = Math.PI / 2
@@ -1153,7 +1515,7 @@ function createLiftCore(
     }
   }
 
-  addBox(lift, [2.45, 0.025, 1.35], [4.9, 0.065, -5.85], 0x3c4548)
+  addBox(lift, [2.45, 0.025, 1.35], [0, 0.065, LIFT_LANDING_Z], 0x3c4548)
   parent.add(lift)
 }
 
@@ -1168,8 +1530,8 @@ function createOfficeShell(
   addBox(environment, [0.16, 3.2, 14], [-9.92, 1.56, 0], palette.wall)
   addBox(environment, [0.16, 3.2, 14], [9.92, 1.56, 0], palette.wall)
 
-  addBox(environment, [4.8, 2.72, 0.035], [6.8, 1.5, -6.86], palette.accent)
-  addBox(environment, [3.4, 0.08, 0.04], [6.8, 0.18, -6.81], palette.trim)
+  addBox(environment, [2.3, 2.72, 0.035], [5.0, 1.5, -6.86], palette.accent)
+  addBox(environment, [1.95, 0.08, 0.04], [5.0, 0.18, -6.81], palette.trim)
 
   createWindowWall(environment)
   environment.add(createDoor(new THREE.Vector3(0, 0, -6.9)))
@@ -1248,13 +1610,19 @@ function createBuildWorldCue(
     mode === 'AFTERNOON_FOCUS' ||
     mode === 'WRAP_UP'
   ) {
-    for (const [x, color] of [
-      [-0.55, 0x4f9d78],
-      [0, 0xd09a35],
-      [0.55, 0x4f8ca8],
-    ] as Array<[number, number]>) {
-      addBox(parent, [0.34, 0.03, 0.22], [x, 1.16, -5.86], color)
+    const cue = new THREE.Group()
+    cue.name = 'office-build-focus-cue'
+
+    for (const [x, y, color] of [
+      [-7.35, 1.35, 0x4f9d78],
+      [-6.65, 1.35, 0xd09a35],
+      [-5.95, 1.35, 0x4f8ca8],
+    ] as Array<[number, number, number]>) {
+      const note = addBox(cue, [0.34, 0.22, 0.025], [x, y, -6.68], color)
+      note.name = 'office-build-focus-note'
     }
+
+    parent.add(cue)
   }
 
   if (mode === 'WRAP_UP') {
@@ -1417,7 +1785,7 @@ function createCommonsFloor(
   createCommonsWorldCue(environment, mode)
 
   const pantryLight = new THREE.PointLight(0xffd6a0, 0.82, 7)
-  pantryLight.position.set(7.1, 2.65, -4.0)
+  pantryLight.position.set(7.1, 2.65, -2.8)
   const gameLight = new THREE.PointLight(0x8abbd4, 0.58, 6.5)
   gameLight.position.set(7.0, 2.5, 4.2)
   const loungeLight = new THREE.PointLight(0xffcf9a, 0.46, 6)

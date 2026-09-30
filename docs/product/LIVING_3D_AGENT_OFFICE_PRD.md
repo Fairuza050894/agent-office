@@ -8,7 +8,7 @@ Product surface: `/office`
 
 Agent Office should feel like a small engineering startup with a visible team and a daily office rhythm, not like a dashboard with decorative avatars.
 
-The 3D Office remains the primary visual surface. Universal Composer and the Operations Dock remain below it. The global application sidebar may collapse to maximize the Office, but the Living Office does not add permanent left/right operational rails.
+The 3D Office remains the primary visual surface. Phase 10F moves the Universal Composer into a **contextual, collapsible right rail** and keeps the Operations Dock below the scene. This supersedes the earlier prohibition on right-side operational rails: the rail is not global or permanent application chrome; it is an Office-local object context surface that can collapse to restore scene width.
 
 Core experience:
 
@@ -268,3 +268,38 @@ The foundation is complete when:
 7. Operations Dock and Composer remain unchanged as the factual/action surfaces.
 8. Existing operational Run Office behavior remains backward-compatible.
 9. Tests verify floor definitions, planning-presence truth boundaries, and deterministic ambient scheduling.
+
+
+## Phase 10F amendment — contextual operations
+
+Phase 10F adds one contextual Office-local rail with four views:
+
+```text
+Discussion
+Details
+Files
+Logs
+```
+
+The rail does not create a fourth truth layer. It projects the existing scope:
+
+- Workspace Discussion uses durable ComposerThread / ComposerMessage planning truth.
+- Workspace Details uses registered Project, planning, Task, and latest Run facts.
+- Workspace Files currently means structured PlanningArtifact records only.
+- Workspace Logs uses durable PlanningEvent records.
+- Live / Replay Discussion is an Event projection, not invented agent dialogue.
+- Live / Replay Details uses Run / AgentRun / Executor / Workspace / Finding / Evidence facts.
+- Live / Replay Files uses bounded workspace change summaries and Evidence metadata.
+- Live / Replay Logs uses canonical Event and AuditRecord data.
+
+A Task created from the rail is a real Task aggregate. Creating that Task does
+not create, start, or imply a Run. Planning-to-execution promotion remains a
+separate gate.
+
+Artifact preview/download is not permitted from arbitrary filesystem paths.
+Phase 10F may expose preview/download only after a bounded Artifact content API
+defines ownership, containment, content limits, and safe media handling.
+
+GitHub repository discovery is not represented as connected until a provider
+integration contract exists. Current Project registration still requires a
+validated local Git repository.

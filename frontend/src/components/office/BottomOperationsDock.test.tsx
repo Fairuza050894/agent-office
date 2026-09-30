@@ -16,6 +16,7 @@ import type {
   PlanningArtifact,
   PlanningEvent,
   RequirementCandidate,
+  Task,
 } from '../../api'
 import { BottomOperationsDock } from './BottomOperationsDock'
 
@@ -82,7 +83,41 @@ const PLANNING_EVENT: PlanningEvent = {
   },
 }
 
+
+const TASK: Task = {
+  id: '66666666-6666-4666-8666-666666666666',
+  project_id: THREAD.project_id!,
+  title: 'Expose artifact preview',
+  objective: 'Add a bounded artifact content API and preview surface.',
+  constraints: null,
+  requested_workflow_id: null,
+  requested_executor_id: null,
+  created_at: '2026-09-27T08:04:00Z',
+  updated_at: '2026-09-27T08:04:00Z',
+}
+
 describe('BottomOperationsDock planning controls', () => {
+  it('shows canonical project tasks in the Tasks tab', () => {
+    render(
+      <BottomOperationsDock
+        events={[]}
+        agents={[]}
+        profiles={[]}
+        selectedAgentId={null}
+        onSelectAgent={() => undefined}
+        modeLabel="Workspace"
+        tasks={[TASK]}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Tasks' }))
+
+    expect(screen.getByText(TASK.title)).toBeInTheDocument()
+    expect(screen.getByText(TASK.objective)).toBeInTheDocument()
+    expect(screen.getByText(TASK.id.slice(0, 8))).toBeInTheDocument()
+  })
+
+
   it('renders an actionable decision queue with recommendation and options', () => {
     const onResolve = vi.fn()
 

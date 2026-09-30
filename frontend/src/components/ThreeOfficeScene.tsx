@@ -12,12 +12,14 @@ import {
   setCharacterBehavior,
   setCharacterSelected,
   setCharacterStatus,
+  workspaceCandidateBlockedByPeer,
   type OfficeCharacterSource,
   type RuntimeAgent,
   type StationPlacement,
 } from '../office3d/character'
 import {
   buildOfficePath,
+  buildWorkspaceOfficePath,
   entrancePosition,
   incidentPosition,
   createOfficeEnvironment,
@@ -131,10 +133,13 @@ function stateTarget(
 function moveRuntime(
   runtime: RuntimeAgent,
   target: StationPlacement,
+  workspaceFloor?: OfficeFloorKey,
 ): void {
   runtime.target.copy(target.position)
   runtime.targetYaw = target.yaw
-  runtime.path = buildOfficePath(runtime.root.position, target.position)
+  runtime.path = workspaceFloor
+    ? buildWorkspaceOfficePath(runtime.root.position, target.position, workspaceFloor)
+    : buildOfficePath(runtime.root.position, target.position)
   runtime.moving = runtime.path.length > 0
 }
 
@@ -209,6 +214,7 @@ export function ThreeOfficeScene({
   const motionPausedRef = useRef(motionPaused)
   const modeRef = useRef(mode)
   const selectedAgentIdRef = useRef(selectedAgentId)
+  const workspaceMemberIdsRef = useRef<Set<string>>(new Set())
   const firstSyncRef = useRef(true)
   const [rendererError, setRendererError] = useState<string | null>(() =>
     webGlUnavailable() ? 'WebGL is unavailable in this browser.' : null,
@@ -377,14 +383,45 @@ export function ThreeOfficeScene({
             }
           } else {
             direction.normalize()
-            runtime.root.position.addScaledVector(direction, step)
-            // Live movement is already visually verified. Replay has a
-            // separate 180° presentation-facing correction; station yaw remains
-            // authoritative once movement finishes.
-            runtime.root.rotation.y = officeMovementYaw(
-              direction,
-              modeRef.current === 'replay',
+            const candidate = runtime.root.position
+              .clone()
+              .addScaledVector(direction, step)
+            const isWorkspaceMember = workspaceMemberIdsRef.current.has(
+              runtime.agentId,
             )
+
+            if (
+              isWorkspaceMember &&
+              workspaceCandidateBlockedByPeer(
+                runtime.agentId,
+                candidate,
+                [...current.runtimes.values()]
+                  .filter(
+                    (other) =>
+                      workspaceMemberIdsRef.current.has(other.agentId) &&
+                      other.root.visible,
+                  )
+                  .map((other) => ({
+                    agentId: other.agentId,
+                    position: other.root.position,
+                    moving: other.moving,
+                  })),
+              )
+            ) {
+              needsFrame = true
+            } else {
+              runtime.root.position.copy(candidate)
+              const facing =
+                modeRef.current === 'replay'
+                  ? 'replay'
+                  : isWorkspaceMember
+                    ? 'workspace'
+                    : 'live'
+
+              // Position/path truth is shared. Workspace additionally respects
+              // collision-aware routing and personal-space yielding.
+              runtime.root.rotation.y = officeMovementYaw(direction, facing)
+            }
           }
         }
 
@@ -655,6 +692,9 @@ export function ThreeOfficeScene({
     const visibleWorkspaceMembers = workspaceMembers.filter(
       (member) => member.floor === floor,
     )
+    workspaceMemberIdsRef.current = new Set(
+      visibleWorkspaceMembers.map((member) => member.id),
+    )
     const sceneMembers: SceneMember[] = [
       ...agents.map((agent) => {
         const home = officeRoleHomeLocation(agent.agent_profile_key)
@@ -757,7 +797,11 @@ export function ThreeOfficeScene({
           runtime.pendingStatus = null
           runtime.pendingStatusAt = null
           setCharacterStatus(runtime, member.status)
-          moveRuntime(runtime, target)
+          moveRuntime(
+            runtime,
+            target,
+            workspaceMemberIdsRef.current.has(member.id) ? floor : undefined,
+          )
         }
       }
     })

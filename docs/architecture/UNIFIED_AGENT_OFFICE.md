@@ -98,8 +98,11 @@ Scope transitions preserve as much visual context as possible:
 
 Workspace planning is not duplicated into Live / Replay.
 
-Live / Replay do not carry an inert Universal Composer. Planning is always one
-scope switch away through Workspace.
+Phase 10F introduces one shared contextual rail across scopes, but its content
+changes with the truth source. Workspace Discussion hosts the real Universal
+Composer. Live / Replay Discussion renders canonical Event activity and does
+not instantiate an inert Composer or fabricate agent dialogue. Planning remains
+one scope switch away through Workspace.
 
 ## Navigation hierarchy
 
@@ -180,3 +183,27 @@ Floor detail groups are presentation-only.
 No scene prop, ambient persona, lift, camera transition, or scope navigation may
 create or imply canonical engineering work.
 
+
+
+## Phase 10F contextual-rail contract
+
+The shared rail is presentation infrastructure, like the renderer and Operations
+Dock. It is not an authority for workflow state.
+
+```text
+Workspace
+  Discussion -> ComposerThread / ComposerMessage
+  Details    -> Project / planning / Task / latest Run
+  Files      -> PlanningArtifact records
+  Logs       -> PlanningEvent
+
+Live / Replay
+  Discussion -> canonical Event projection
+  Details    -> Run / AgentRun / Workspace / Finding / Evidence
+  Files      -> WorkspaceChangeSummary + Evidence metadata
+  Logs       -> Event + AuditRecord
+```
+
+Task creation from the rail calls the existing Task API. It does not imply
+execution. Artifact content access and GitHub discovery remain gated until their
+own safe backend contracts exist.

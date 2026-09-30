@@ -314,17 +314,51 @@ export function officeCharacterVariant(profileKey: string): CharacterVariantKey 
   return officeCharacterAppearance(profileKey).variant
 }
 
+export type OfficeMovementFacing = 'live' | 'replay' | 'workspace'
+
 export function officeMovementYaw(
   direction: THREE.Vector3,
-  replay = false,
+  facing: OfficeMovementFacing = 'live',
 ): number {
   const liveYaw = Math.atan2(direction.x, direction.z)
 
-  // Rendered verification shows the operational/live character orientation is
-  // already correct. Historical replay uses the inverse presentation facing
-  // during its entrance sequence, so isolate the 180° correction to replay
-  // rather than changing the verified live movement contract.
-  return replay ? liveYaw + Math.PI : liveYaw
+  // The rigged GLB presentation needs an explicit 180° facing correction in
+  // Historical Replay and Workspace ambient/planning movement. Operational
+  // Live movement remains unchanged because that rendered contract was already
+  // verified separately.
+  return facing === 'live' ? liveYaw : liveYaw + Math.PI
+}
+
+
+export interface WorkspacePeerPosition {
+  agentId: string
+  position: THREE.Vector3
+  moving: boolean
+}
+
+export function workspaceCandidateBlockedByPeer(
+  agentId: string,
+  candidate: THREE.Vector3,
+  peers: WorkspacePeerPosition[],
+): boolean {
+  const softRadius = 0.62
+  const hardRadius = 0.42
+
+  for (const peer of peers) {
+    if (peer.agentId === agentId) continue
+
+    const distance = candidate.distanceTo(peer.position)
+    if (distance < hardRadius) return true
+    if (distance >= softRadius) continue
+
+    if (!peer.moving) return true
+
+    // Deterministic right-of-way: one walker clears the shared crossing while
+    // the other yields, avoiding oscillation or both advancing together.
+    if (agentId.localeCompare(peer.agentId) > 0) return true
+  }
+
+  return false
 }
 
 function loadCharacterAssets(

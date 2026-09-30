@@ -213,25 +213,28 @@ Overview, Tasks, engineering registries, observability, Audit, and Settings
 remain available under **More tools**. This reduces global navigation noise
 without removing capability or stable routes.
 
-Desktop structure:
+Desktop structure from Phase 10F onward:
 
 ```text
 compact command rail
-full-width Three.js Office
-Universal Composer shell
+Three.js Office + contextual operations rail
 collapsible Bottom Operations Dock
 ```
 
-The Bottom Operations Dock holds the compact canonical activity feed and factual
-AgentRun team list. It supports collapsed, normal, and expanded states.
+The contextual rail is Office-local and collapsible. Its views are Discussion,
+Details, Files, and Logs. Selecting a factual AgentRun or Office planning member
+changes the rail context rather than opening a second inspector surface.
 
-Selecting a factual AgentRun opens an on-demand inspector over the scene. Agent
-detail no longer reserves a permanent column.
+The Bottom Operations Dock remains the compact shared surface for canonical
+Tasks, activity, planning queues, and the factual AgentRun/planning team.
 
-The Universal Composer in Phase 9A is an interaction shell only. Project,
-intent, Executor, instruction, and future context controls are visible, but
-Send / Start Run remain disabled until Phase 9 planning/promotion domain support
-is implemented. The shell must not fabricate a response or mutate a repository.
+In Workspace scope, the existing Universal Composer is hosted inside Discussion.
+It continues to use durable planning APIs and must not fabricate role messages.
+Creating a Task from the rail creates Task truth only; Start Run remains governed
+by the planning-to-execution promotion contract.
+
+In Live / Replay, Discussion is a readable Event projection. It is not a channel
+that silently mutates an in-flight AgentRun.
 
 Office workspace maximize mode temporarily covers ordinary application chrome,
 retains an explicit exit control, and exits with Escape. Maximizing changes

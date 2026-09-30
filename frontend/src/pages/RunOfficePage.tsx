@@ -5,15 +5,24 @@ import {
   type AgentEvent,
   type AgentProfile,
   type AgentRun,
+  type AuditRecord,
+  type Evidence,
   type Executor,
+  type Finding,
   type Project,
   type Run,
   type RunStage,
+  type Task,
   type Workspace,
+  type WorkspaceStatusResponse,
 } from '../api'
 import { EmptyState } from '../components/EmptyState'
-import { AgentInspector } from '../components/office/AgentInspector'
 import { BottomOperationsDock } from '../components/office/BottomOperationsDock'
+import {
+  ContextualOperationsRail,
+  TaskQuickCreate,
+  type TaskQuickCreatePayload,
+} from '../components/office/ContextualOperationsRail'
 import { OfficeCommandRail } from '../components/office/OfficeCommandRail'
 import { AgentOfficeScopeSwitcher } from '../components/office/AgentOfficeScopeSwitcher'
 import { OfficeRendererBoundary } from '../components/OfficeRendererBoundary'
@@ -59,7 +68,15 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
   const [events, setEvents] = useState<AgentEvent[]>([])
   const [executors, setExecutors] = useState<Executor[]>([])
   const [profiles, setProfiles] = useState<AgentProfile[]>([])
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [evidence, setEvidence] = useState<Evidence[]>([])
+  const [findings, setFindings] = useState<Finding[]>([])
+  const [auditRecords, setAuditRecords] = useState<AuditRecord[]>([])
+  const [workspaceStatuses, setWorkspaceStatuses] = useState<WorkspaceStatusResponse[]>([])
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null)
+  const [contextCollapsed, setContextCollapsed] = useState(false)
+  const [taskActionBusy, setTaskActionBusy] = useState(false)
+  const [taskActionMessage, setTaskActionMessage] = useState<string | null>(null)
   const [motionPaused, setMotionPaused] = useState(false)
   const [isMaximized, setIsMaximized] = useState(false)
   const [officeMode, setOfficeMode] = useState<'live' | 'replay'>(
@@ -116,6 +133,10 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
         loadedEvents,
         loadedExecutors,
         loadedProfiles,
+        loadedTasks,
+        loadedEvidence,
+        loadedFindings,
+        loadedAudit,
       ] = await Promise.all([
         api.getProject(loadedRun.project_id),
         api.getRunStages(runId),
@@ -124,13 +145,25 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
         api.getRunEvents(runId),
         api.listExecutors(),
         api.listAgentProfiles(),
+        api.listTasks(loadedRun.project_id),
+        api.getRunEvidence(runId),
+        api.getRunFindings(runId),
+        api.getRunAudit(runId),
       ])
+      const loadedWorkspaceStatuses = await Promise.all(
+        loadedWorkspaces.map((workspace) => api.getWorkspaceStatus(workspace.id)),
+      )
 
       setRun(loadedRun)
       setProject(loadedProject)
       setStages(loadedStages)
       setAgents(loadedAgents)
       setWorkspaces(loadedWorkspaces)
+      setTasks(loadedTasks)
+      setEvidence(loadedEvidence)
+      setFindings(loadedFindings.findings)
+      setAuditRecords(loadedAudit)
+      setWorkspaceStatuses(loadedWorkspaceStatuses)
       setEvents(
         loadedEvents.events
           .slice()
@@ -432,12 +465,57 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
     selectedAgent?.workspace_id
       ? workspaceById.get(selectedAgent.workspace_id)
       : undefined
+  const selectedWorkspaceStatus = selectedWorkspace
+    ? workspaceStatuses.find((item) => item.workspace.id === selectedWorkspace.id) ?? null
+    : null
   const selectedStage = selectedAgent
     ? stageByKey.get(selectedAgent.stage_key)
     : undefined
   const selectedEvent = selectedAgent
     ? officeLatestAgentEvent(selectedAgent.id, events)
     : null
+
+  const createFollowUpTask = async (payload: TaskQuickCreatePayload) => {
+    setTaskActionBusy(true)
+    setTaskActionMessage(null)
+    try {
+      const created = await api.createTask(run.project_id, {
+        title: payload.title,
+        objective: payload.objective,
+        requested_executor_id:
+          selectedAgent?.executor_id ??
+          run.resolved_executor_id ??
+          run.requested_executor_id,
+      })
+      setTasks((current) => [
+        created,
+        ...current.filter((task) => task.id !== created.id),
+      ])
+      setTaskActionMessage(
+        `Follow-up Task ${created.id.slice(0, 8)} created. It is not started automatically.`,
+      )
+    } catch (reason) {
+      setTaskActionMessage(
+        reason instanceof Error ? reason.message : 'Unable to create follow-up Task.',
+      )
+    } finally {
+      setTaskActionBusy(false)
+    }
+  }
+
+  const contextualEvents = selectedAgent
+    ? recentSignals.filter((event) => event.agent_run_id === selectedAgent.id)
+    : recentSignals
+  const contextualEvidence = selectedAgent
+    ? evidence.filter((item) => item.agent_run_id === selectedAgent.id)
+    : evidence
+  const contextualFindings = selectedAgent
+    ? findings.filter(
+        (finding) =>
+          finding.reviewer_agent_run_id === selectedAgent.id ||
+          finding.remediation_owner_agent_run_id === selectedAgent.id,
+      )
+    : findings
 
   return (
     <div
@@ -535,47 +613,200 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
         }
       />
 
-      <div className="office-workspace-scene">
-        <OfficeRendererBoundary operationalHref={`/runs/${run.id}`}>
-          <OfficeScene
-            stages={stages}
-            agents={visibleAgents}
-            profiles={profiles}
-            selectedAgentId={selectedAgentId}
-            onSelectAgent={(agentId) => selectOperationalAgent(agentId)}
+      <div
+        className={`office-workspace-scene office-context-layout ${contextCollapsed ? 'context-collapsed' : ''}`}
+      >
+        <div className="office-workspace-stage">
+          <OfficeRendererBoundary operationalHref={`/runs/${run.id}`}>
+            <OfficeScene
+              stages={stages}
+              agents={visibleAgents}
+              profiles={profiles}
+              selectedAgentId={selectedAgentId}
+              onSelectAgent={(agentId) => selectOperationalAgent(agentId)}
+              motionPaused={motionPaused}
+              mode={officeMode}
+              replayNonce={replayNonce}
+              replayStartedAt={replayStartedAt}
+              replayRange={replayRangeSnapshot}
+              showRoster={false}
+              floor={selectedFloor}
+              onFloorChange={(floor) => {
+                initialFloorResolved.current = true
+                setSelectedFloor(floor)
+                setSelectedAgentId(null)
+                navigate(
+                  officeMode === 'replay'
+                    ? `/runs/${run.id}/office?floor=${floor}&mode=replay`
+                    : `/runs/${run.id}/office?floor=${floor}`,
+                )
+              }}
+              operationalFloorCounts={operationalFloorCounts}
+            />
+          </OfficeRendererBoundary>
+        </div>
 
-            motionPaused={motionPaused}
-            mode={officeMode}
-            replayNonce={replayNonce}
-            replayStartedAt={replayStartedAt}
-            replayRange={replayRangeSnapshot}
-            showRoster={false}
-            floor={selectedFloor}
-            onFloorChange={(floor) => {
-              initialFloorResolved.current = true
-              setSelectedFloor(floor)
-              setSelectedAgentId(null)
-              navigate(
-                officeMode === 'replay'
-                  ? `/runs/${run.id}/office?floor=${floor}&mode=replay`
-                  : `/runs/${run.id}/office?floor=${floor}`,
-              )
-            }}
-            operationalFloorCounts={operationalFloorCounts}
-          />
-        </OfficeRendererBoundary>
+        <ContextualOperationsRail
+          eyebrow={selectedAgent ? 'Selected AgentRun' : 'Run context'}
+          title={selectedProfile?.name ?? selectedAgent?.agent_profile_key ?? `Run ${run.id.slice(0, 8)}`}
+          status={
+            selectedAgent
+              ? `${selectedAgent.status} · ${selectedStage?.status ?? selectedAgent.stage_key}`
+              : `${run.status} · ${officeMode === 'replay' ? 'Historical Replay' : 'Live'}`
+          }
+          collapsed={contextCollapsed}
+          onToggleCollapsed={() => setContextCollapsed((current) => !current)}
+          discussion={
+            <div className="office-context-stack">
+              <div className="office-context-callout">
+                <strong>
+                  {selectedAgent ? 'Factual agent activity' : 'Factual Run activity'}
+                </strong>
+                <span>
+                  Live/Replay discussion is projected from canonical Events. Ad-hoc messages do not mutate an in-flight AgentRun.
+                </span>
+              </div>
+              <div className="office-context-discussion">
+                {contextualEvents.length === 0 ? (
+                  <div className="office-context-empty">No canonical Event is available for this context.</div>
+                ) : (
+                  contextualEvents.slice(0, 16).reverse().map((event) => (
+                    <article key={event.id}>
+                      <div>
+                        <strong>
+                          {event.agent_run_id
+                            ? profileByKey.get(
+                                agents.find((agent) => agent.id === event.agent_run_id)?.agent_profile_key ?? '',
+                              )?.name ?? event.source
+                            : event.source}
+                        </strong>
+                        <time dateTime={event.occurred_at}>
+                          {new Date(event.occurred_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </time>
+                      </div>
+                      <p>
+                        {event.event_type.replace(/[._-]+/g, ' ')}
+                        {typeof event.payload.summary === 'string' ? ` · ${event.payload.summary}` : ''}
+                      </p>
+                    </article>
+                  ))
+                )}
+              </div>
+              <TaskQuickCreate
+                busy={taskActionBusy}
+                onCreate={createFollowUpTask}
+                title="Create follow-up task"
+                submitLabel="Add follow-up"
+                note="Creates canonical Task truth without interrupting or rewriting this AgentRun."
+              />
+              {taskActionMessage && (
+                <span className="office-context-feedback" role="status">
+                  {taskActionMessage}
+                </span>
+              )}
+            </div>
+          }
+          details={
+            <div className="office-context-stack">
+              <dl className="office-context-facts">
+                <div><dt>Run</dt><dd>{run.id.slice(0, 8)} · {run.status}</dd></div>
+                <div><dt>Project</dt><dd>{project?.name ?? run.project_id}</dd></div>
+                <div><dt>Task</dt><dd>{run.task_id.slice(0, 8)}</dd></div>
+                <div><dt>AgentRun</dt><dd>{selectedAgent ? selectedAgent.id.slice(0, 8) : 'All agents'}</dd></div>
+                <div><dt>Executor</dt><dd>{selectedExecutor?.name ?? selectedAgent?.executor_id ?? run.resolved_executor_id ?? 'Unavailable'}</dd></div>
+                <div><dt>Workspace</dt><dd>{selectedWorkspace ? `${selectedWorkspace.kind} · ${selectedWorkspace.status}` : 'Unavailable'}</dd></div>
+                <div><dt>Branch</dt><dd>{selectedWorkspace?.git_branch ?? 'Unavailable'}</dd></div>
+                <div><dt>Findings</dt><dd>{contextualFindings.length}</dd></div>
+                <div><dt>Evidence</dt><dd>{contextualEvidence.length}</dd></div>
+              </dl>
+              {selectedEvent && (
+                <div className="office-context-callout">
+                  <strong>Latest factual activity</strong>
+                  <span>{selectedEvent.event_type.replace(/[._-]+/g, ' ')} · {new Date(selectedEvent.occurred_at).toLocaleString()}</span>
+                </div>
+              )}
+            </div>
+          }
+          files={
+            <div className="office-context-stack">
+              {selectedWorkspaceStatus?.change_summary ? (
+                <div className="office-context-file-group">
+                  <div className="office-context-file-summary">
+                    <strong>{selectedWorkspaceStatus.change_summary.files_changed} changed files</strong>
+                    <span>
+                      +{selectedWorkspaceStatus.change_summary.insertions ?? '—'} / -{selectedWorkspaceStatus.change_summary.deletions ?? '—'}
+                    </span>
+                  </div>
+                  {[
+                    ...selectedWorkspaceStatus.change_summary.added_paths.map((path) => ['Added', path] as const),
+                    ...selectedWorkspaceStatus.change_summary.modified_paths.map((path) => ['Modified', path] as const),
+                    ...selectedWorkspaceStatus.change_summary.deleted_paths.map((path) => ['Deleted', path] as const),
+                    ...selectedWorkspaceStatus.change_summary.untracked_paths.map((path) => ['Untracked', path] as const),
+                  ].map(([kind, path]) => (
+                    <article key={`${kind}:${path}`} className="office-context-file">
+                      <div><strong>{path}</strong><span>{kind}</span></div>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <div className="office-context-empty">Workspace change summary unavailable for this context.</div>
+              )}
 
-        {selectedAgent && (
-          <AgentInspector
-            agent={selectedAgent}
-            profile={selectedProfile}
-            executor={selectedExecutor}
-            workspace={selectedWorkspace}
-            stage={selectedStage}
-            latestEvent={selectedEvent}
-            onClose={() => selectOperationalAgent(null)}
-          />
-        )}
+              <div className="office-context-section-title">Evidence</div>
+              {contextualEvidence.length === 0 ? (
+                <div className="office-context-empty">No persisted Evidence exists for this context.</div>
+              ) : (
+                contextualEvidence.map((item) => (
+                  <article key={item.id} className="office-context-file">
+                    <div><strong>{item.summary}</strong><span>{item.kind}</span></div>
+                    <p>{item.status} · {item.id.slice(0, 8)}</p>
+                  </article>
+                ))
+              )}
+              <div className="office-context-callout">
+                <strong>Content access is gated</strong>
+                <span>
+                  Agent Office currently exposes workspace path summaries and Evidence metadata, but no bounded Artifact content/download API. Preview and download stay unavailable rather than reading arbitrary filesystem paths.
+                </span>
+              </div>
+            </div>
+          }
+          logs={
+            <div className="office-context-stack">
+              <div className="office-context-log">
+                {contextualEvents.map((event) => (
+                  <article key={event.id}>
+                    <time dateTime={event.occurred_at}>
+                      {new Date(event.occurred_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </time>
+                    <div>
+                      <strong>{event.source}</strong>
+                      <span>{event.event_type.replace(/[._-]+/g, ' ')}</span>
+                    </div>
+                  </article>
+                ))}
+              </div>
+              {auditRecords.length > 0 && (
+                <>
+                  <div className="office-context-section-title">Audit</div>
+                  <div className="office-context-log">
+                    {auditRecords.slice().reverse().slice(0, 20).map((record) => (
+                      <article key={record.id}>
+                        <time dateTime={record.occurred_at}>
+                          {new Date(record.occurred_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </time>
+                        <div>
+                          <strong>{record.actor_type}</strong>
+                          <span>{record.action} · {record.target_type}</span>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          }
+        />
       </div>
 
       <BottomOperationsDock
@@ -584,6 +815,7 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
         profiles={profiles}
         selectedAgentId={selectedAgentId}
         onSelectAgent={(agentId) => selectOperationalAgent(agentId)}
+        tasks={tasks}
         modeLabel={officeMode === 'replay' ? 'Replay' : 'Live Run'}
         forceCollapsed={isMaximized}
       />
