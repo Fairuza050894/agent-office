@@ -66,7 +66,14 @@ export interface OfficePresenceMember {
   floor: OfficeFloorKey
   zone: OfficeZoneKey
   placementIndex: number
-  truth: 'PLANNING' | 'AMBIENT'
+  truth: 'PLANNING' | 'AMBIENT' | 'WORK'
+  taskId?: string
+  taskTitle?: string
+  runId?: string
+  runStatus?: string
+  agentRunId?: string
+  agentRunStatus?: string
+  stageKey?: string
 }
 
 export interface OfficeAmbientWindow {
@@ -96,6 +103,19 @@ export interface OfficeScheduledEvent {
   priority: number
   maxParticipants?: number
   roleKeys?: string[]
+}
+
+
+export interface OfficeWorkAssignment {
+  taskId: string
+  taskTitle: string
+  runId: string
+  runStatus: string
+  agentRunId: string
+  agentRunStatus: string
+  agentProfileKey: string
+  stageKey: string
+  updatedAt: string
 }
 
 export const OFFICE_FLOORS: OfficeFloorDefinition[] = [
@@ -357,6 +377,14 @@ export function officeBehaviorFor(
       : 'PLANNING_MEETING'
   }
 
+  if (truth === 'WORK') {
+    if (status === 'COFFEE_BREAK') return 'COFFEE_CHAT'
+    if (status === 'LUNCH_BREAK') return 'LUNCH'
+    if (status === 'PRAYER_BREAK') return 'PRAYER_QUIET'
+    if (status === 'WAITING_USER') return 'WAITING_DECISION'
+    return 'DESK_FOCUS'
+  }
+
   switch (status) {
     case 'ARRIVING':
       return 'ARRIVAL'
@@ -486,6 +514,149 @@ export function officeAmbientWindow(
   }
 
   return ambientWindowForWorld(now, timeZone)
+}
+
+function activeWorkAssignment(
+  assignment: OfficeWorkAssignment,
+): boolean {
+  return !['COMPLETED', 'FAILED', 'CANCELLED'].includes(
+    assignment.agentRunStatus.toUpperCase(),
+  )
+}
+
+function workZoneFor(
+  roleKey: string,
+  stageKey: string,
+): { floor: OfficeFloorKey; zone: OfficeZoneKey } {
+  const normalizedStage = stageKey.toLowerCase()
+  if (
+    normalizedStage.includes('discover') ||
+    normalizedStage.includes('plan') ||
+    normalizedStage.includes('architect') ||
+    normalizedStage.includes('design')
+  ) {
+    return {
+      floor: 'strategy',
+      zone: normalizedStage.includes('design')
+        ? 'decision-room'
+        : normalizedStage.includes('architect')
+          ? 'architecture-wall'
+          : 'planning-table',
+    }
+  }
+
+  if (
+    normalizedStage.includes('test') ||
+    normalizedStage.includes('verify') ||
+    normalizedStage.includes('qa')
+  ) {
+    return { floor: 'build', zone: 'qa-bench' }
+  }
+
+  if (
+    normalizedStage.includes('review') ||
+    normalizedStage.includes('security')
+  ) {
+    return { floor: 'build', zone: 'review-wall' }
+  }
+
+  if (
+    normalizedStage.includes('doc') ||
+    normalizedStage.includes('release')
+  ) {
+    return { floor: 'build', zone: 'docs-desk' }
+  }
+
+  return officeRoleHomeLocation(roleKey)
+}
+
+function breakZoneForWork(
+  roleKey: string,
+  worldMode: string,
+  now: Date,
+): { status: OfficePresenceState; zone: OfficeZoneKey } | null {
+  const knownRole = LIVING_OFFICE_CORE_ROLES.includes(
+    roleKey as (typeof LIVING_OFFICE_CORE_ROLES)[number],
+  )
+    ? (roleKey as (typeof LIVING_OFFICE_CORE_ROLES)[number])
+    : null
+
+  if (!knownRole) return null
+
+  if (worldMode === 'LUNCH') {
+    return {
+      status: 'LUNCH_BREAK',
+      zone: pickAmbientZone(knownRole, ROLE_AMBIENT_ZONES[knownRole].lunch, now),
+    }
+  }
+
+  if (worldMode === 'COFFEE_BREAK') {
+    return {
+      status: 'COFFEE_BREAK',
+      zone: pickAmbientZone(knownRole, ROLE_AMBIENT_ZONES[knownRole].coffee, now),
+    }
+  }
+
+  return null
+}
+
+export function workPresenceMembers(
+  assignments: OfficeWorkAssignment[],
+  profiles: AgentProfile[],
+  now = new Date(),
+  timeZone?: string | null,
+): OfficePresenceMember[] {
+  const world = officeWorldContext(now, timeZone)
+  const names = profileByKey(profiles)
+
+  return assignments
+    .filter(activeWorkAssignment)
+    .map((assignment, index) => {
+      const profile = names.get(assignment.agentProfileKey)
+      const home = workZoneFor(
+        assignment.agentProfileKey,
+        assignment.stageKey,
+      )
+      const normalizedAgentStatus = assignment.agentRunStatus.toUpperCase()
+      const canLeaveDesk =
+        normalizedAgentStatus === 'WAITING' ||
+        normalizedAgentStatus === 'BLOCKED' ||
+        normalizedAgentStatus === 'PENDING'
+      const scheduledBreak = canLeaveDesk
+        ? breakZoneForWork(
+            assignment.agentProfileKey,
+            world.mode,
+            now,
+          )
+        : null
+
+      const status: OfficePresenceState = scheduledBreak
+        ? scheduledBreak.status
+        : normalizedAgentStatus === 'BLOCKED'
+          ? 'WAITING_USER'
+          : 'WORKING'
+      const zone = scheduledBreak?.zone ?? home.zone
+      const floor: OfficeFloorKey = scheduledBreak ? 'commons' : home.floor
+
+      return {
+        id: `work:${assignment.agentRunId}`,
+        agent_profile_key: assignment.agentProfileKey,
+        name: profile?.name ?? assignment.agentProfileKey,
+        status,
+        behavior: officeBehaviorFor(status, zone, 'WORK'),
+        floor,
+        zone,
+        placementIndex: index,
+        truth: 'WORK' as const,
+        taskId: assignment.taskId,
+        taskTitle: assignment.taskTitle,
+        runId: assignment.runId,
+        runStatus: assignment.runStatus,
+        agentRunId: assignment.agentRunId,
+        agentRunStatus: assignment.agentRunStatus,
+        stageKey: assignment.stageKey,
+      }
+    })
 }
 
 function profileByKey(profiles: AgentProfile[]): Map<string, AgentProfile> {
@@ -747,25 +918,36 @@ export function livingOfficeMembers(
   now = new Date(),
   scheduledEvents: OfficeScheduledEvent[] = [],
   timeZone?: string | null,
+  workAssignments: OfficeWorkAssignment[] = [],
 ): OfficePresenceMember[] {
   const effectiveTimeZone = timeZone ?? thread?.timezone
+  const work = workPresenceMembers(
+    workAssignments,
+    profiles,
+    now,
+    effectiveTimeZone,
+  )
+  const workRoleKeys = new Set(
+    work.map((member) => member.agent_profile_key),
+  )
   const planning = planningPresenceMembers(
     thread,
     proposal,
     profiles,
     now,
     effectiveTimeZone,
-  )
-  const planningRoleKeys = new Set(
-    planning.map((member) => member.agent_profile_key),
-  )
+  ).filter((member) => !workRoleKeys.has(member.agent_profile_key))
+  const occupiedRoleKeys = new Set([
+    ...workRoleKeys,
+    ...planning.map((member) => member.agent_profile_key),
+  ])
   const ambient = ambientOfficeMembers(
     profiles,
     now,
     scheduledEvents,
-    planningRoleKeys,
+    occupiedRoleKeys,
     effectiveTimeZone,
   )
 
-  return [...planning, ...ambient]
+  return [...work, ...planning, ...ambient]
 }
