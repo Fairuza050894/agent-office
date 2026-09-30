@@ -729,6 +729,12 @@ export function OfficeWorkspacePage() {
   )
   const selectedOfficeMember =
     workspaceMembers.find((member) => member.id === selectedOfficeMemberId) ?? null
+  const selectedFloorHasWork = selectedFloorMembers.some(
+    (member) => member.truth === 'WORK',
+  )
+  const selectedFloorWorkCount = selectedFloorMembers.filter(
+    (member) => member.truth === 'WORK',
+  ).length
   const selectedFloorHasPlanning = selectedFloorMembers.some(
     (member) => member.truth === 'PLANNING',
   )
@@ -758,15 +764,17 @@ export function OfficeWorkspacePage() {
           officeTimeZone,
         ),
     )
-  const officePresenceLabel = selectedFloorHasPlanning
-    ? selectedFloorHasAmbient
-      ? `${activeThread?.status === 'AWAITING_USER' ? 'Waiting for you' : 'Planning'} + ambient`
-      : `${activeThread?.status === 'AWAITING_USER' ? 'Waiting for you' : 'Planning'} presence`
-    : selectedFloorHasAmbient
-      ? ambientPresenceLabel
-      : remotePlanning
-        ? 'Planning remote · office closed'
-        : 'Quiet floor · no presence'
+  const officePresenceLabel = selectedFloorHasWork
+    ? `${selectedFloorWorkCount} working${selectedFloorHasPlanning ? ' + planning' : ''}${selectedFloorHasAmbient ? ' + ambient' : ''}`
+    : selectedFloorHasPlanning
+      ? selectedFloorHasAmbient
+        ? `${activeThread?.status === 'AWAITING_USER' ? 'Waiting for you' : 'Planning'} + ambient`
+        : `${activeThread?.status === 'AWAITING_USER' ? 'Waiting for you' : 'Planning'} presence`
+      : selectedFloorHasAmbient
+        ? ambientPresenceLabel
+        : remotePlanning
+          ? 'Planning remote · office closed'
+          : 'Quiet floor · no presence'
 
   const changeOfficeFloor = (floor: OfficeFloorKey) => {
     setSelectedFloor(floor)
@@ -798,9 +806,11 @@ export function OfficeWorkspacePage() {
         statusLabel={
           isLoading
             ? 'Loading registries'
-            : activeThread
-              ? `${activeThread.status} planning thread`
-              : 'Project workspace'
+            : workAssignments.length > 0
+              ? `${workAssignments.length} active work assignment${workAssignments.length === 1 ? '' : 's'}`
+              : activeThread
+                ? `${activeThread.status} planning thread`
+                : 'Project workspace'
         }
         meta={
           registryError
@@ -866,9 +876,11 @@ export function OfficeWorkspacePage() {
         <ContextualOperationsRail
           eyebrow={
             selectedOfficeMember
-              ? selectedOfficeMember.truth === 'PLANNING'
-                ? 'Planning role'
-                : 'Ambient office presence'
+              ? selectedOfficeMember.truth === 'WORK'
+                ? 'Canonical work presence'
+                : selectedOfficeMember.truth === 'PLANNING'
+                  ? 'Planning role'
+                  : 'Ambient office presence'
               : 'Project workspace'
           }
           title={
@@ -887,6 +899,17 @@ export function OfficeWorkspacePage() {
           onToggleCollapsed={() => setContextCollapsed((current) => !current)}
           discussion={
             <div className="office-context-stack">
+              {selectedOfficeMember &&
+                selectedOfficeMember.truth === 'WORK' &&
+                ['LUNCH', 'COFFEE_BREAK'].includes(officeWorld.mode) &&
+                selectedOfficeMember.status === 'WORKING' && (
+                  <div className="office-context-callout">
+                    <strong>Break window is open, but execution is still active.</strong>
+                    <span>
+                      Agent Office keeps this role at work because the canonical AgentRun has not reached a safe waiting/checkpoint state. No executor pause is being fabricated.
+                    </span>
+                  </div>
+                )}
               {selectedOfficeMember && selectedOfficeMember.truth === 'AMBIENT' && (
                 <div className="office-context-callout">
                   <strong>Ambient presence is not an active agent.</strong>
