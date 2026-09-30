@@ -5,10 +5,12 @@ import { OFFICE_AMBIENT_ZONE_CAPACITY } from './livingOffice'
 import {
   ENTRANCE,
   buildOfficePath,
+  buildWorkspaceOfficePath,
   createOfficeEnvironment,
   incidentPosition,
   officePathHasFurnitureClearance,
   officeRoleStation,
+  officeWorkspacePathHasFurnitureClearance,
   officeZoneCapacity,
   officeZonePlacement,
   waitingPosition,
@@ -56,6 +58,73 @@ describe('office navigation clearance', () => {
       expect(officePathHasFurnitureClearance(waitingPath)).toBe(true)
       expect(officePathHasFurnitureClearance(incidentPath)).toBe(true)
     }
+  })
+
+  it('routes Workspace zone transitions around floor furniture', () => {
+    const cases = [
+      {
+        floor: 'commons' as const,
+        from: officeZonePlacement('coffee-bar', 0).position,
+        to: officeZonePlacement('lounge', 0).position,
+      },
+      {
+        floor: 'commons' as const,
+        from: officeZonePlacement('lounge', 1).position,
+        to: officeZonePlacement('game-corner', 0).position,
+      },
+      {
+        floor: 'build' as const,
+        from: officeZonePlacement('qa-bench', 0).position,
+        to: officeZonePlacement('docs-desk', 0).position,
+      },
+      {
+        floor: 'build' as const,
+        from: officeZonePlacement('engineering-pod', 0).position,
+        to: officeZonePlacement('review-wall', 0).position,
+      },
+      {
+        floor: 'strategy' as const,
+        from: officeZonePlacement('planning-table', 0).position,
+        to: officeZonePlacement('architecture-wall', 0).position,
+      },
+      {
+        floor: 'strategy' as const,
+        from: officeZonePlacement('architecture-wall', 1).position,
+        to: officeZonePlacement('decision-room', 0).position,
+      },
+    ]
+
+    cases.forEach(({ floor, from, to }) => {
+      const route = buildWorkspaceOfficePath(from, to, floor)
+      expect(route.length, `${floor} route should exist`).toBeGreaterThan(0)
+
+      const path = [from, ...route]
+      expect(
+        officeWorkspacePathHasFurnitureClearance(path, floor),
+        `${floor} route should not cross furniture`,
+      ).toBe(true)
+      expect(path.at(-1)!.distanceTo(to)).toBeLessThan(0.08)
+    })
+  })
+
+  it('uses distinct collision-safe Commons anchors around social furniture', () => {
+    const anchors = [
+      officeZonePlacement('coffee-bar', 0).position,
+      officeZonePlacement('coffee-bar', 1).position,
+      officeZonePlacement('pantry', 0).position,
+      officeZonePlacement('pantry', 1).position,
+      officeZonePlacement('lounge', 0).position,
+      officeZonePlacement('lounge', 1).position,
+      officeZonePlacement('game-corner', 0).position,
+      officeZonePlacement('game-corner', 1).position,
+    ]
+
+    const unique = new Set(
+      anchors.map((position) =>
+        `${position.x.toFixed(2)}:${position.z.toFixed(2)}`,
+      ),
+    )
+    expect(unique.size).toBe(anchors.length)
   })
 
   it('provides deterministic multi-slot anchors for living-office zones', () => {
