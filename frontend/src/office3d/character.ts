@@ -330,6 +330,35 @@ export function officeMovementYaw(
 }
 
 
+function stableCharacterHash(value: string): number {
+  let hash = 2166136261
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index)
+    hash = Math.imul(hash, 16777619)
+  }
+  return hash >>> 0
+}
+
+export function workspaceMicroYawOffset(
+  agentId: string,
+  now: number,
+  behavior: OfficeBehaviorKey | null,
+): number {
+  if (behavior === 'PRAYER_QUIET' || behavior === 'OFFLINE') return 0
+
+  const hash = stableCharacterHash(agentId)
+  const periodSeconds = 7 + (hash % 7)
+  const phase = ((hash >>> 5) % 628) / 100
+  const amplitude =
+    behavior === 'DESK_FOCUS'
+      ? 0.075
+      : behavior === 'PLANNING_MEETING'
+        ? 0.11
+        : 0.055
+
+  return Math.sin((now / 1000 / periodSeconds) * Math.PI * 2 + phase) * amplitude
+}
+
 export interface WorkspacePeerPosition {
   agentId: string
   position: THREE.Vector3
