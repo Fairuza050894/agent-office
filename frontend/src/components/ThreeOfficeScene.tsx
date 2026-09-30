@@ -209,6 +209,7 @@ export function ThreeOfficeScene({
   const motionPausedRef = useRef(motionPaused)
   const modeRef = useRef(mode)
   const selectedAgentIdRef = useRef(selectedAgentId)
+  const workspaceMemberIdsRef = useRef<Set<string>>(new Set())
   const firstSyncRef = useRef(true)
   const [rendererError, setRendererError] = useState<string | null>(() =>
     webGlUnavailable() ? 'WebGL is unavailable in this browser.' : null,
@@ -378,13 +379,17 @@ export function ThreeOfficeScene({
           } else {
             direction.normalize()
             runtime.root.position.addScaledVector(direction, step)
-            // Live movement is already visually verified. Replay has a
-            // separate 180° presentation-facing correction; station yaw remains
-            // authoritative once movement finishes.
-            runtime.root.rotation.y = officeMovementYaw(
-              direction,
-              modeRef.current === 'replay',
-            )
+            const facing =
+              modeRef.current === 'replay'
+                ? 'replay'
+                : workspaceMemberIdsRef.current.has(runtime.agentId)
+                  ? 'workspace'
+                  : 'live'
+
+            // Position/path truth is shared. Only presentation-facing differs:
+            // Operational Live stays unchanged; Replay and Workspace apply the
+            // rig-facing correction verified in rendered review.
+            runtime.root.rotation.y = officeMovementYaw(direction, facing)
           }
         }
 
@@ -654,6 +659,9 @@ export function ThreeOfficeScene({
     )
     const visibleWorkspaceMembers = workspaceMembers.filter(
       (member) => member.floor === floor,
+    )
+    workspaceMemberIdsRef.current = new Set(
+      visibleWorkspaceMembers.map((member) => member.id),
     )
     const sceneMembers: SceneMember[] = [
       ...agents.map((agent) => {
