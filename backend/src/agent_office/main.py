@@ -44,6 +44,7 @@ from agent_office.infrastructure.executors import (
     CodexExecutor,
     ExecutorRegistry,
     ReferenceExecutor,
+    ReferenceScenario,
     RegisteredExecutor,
 )
 from agent_office.infrastructure.git import GitRepositoryInspector, GitWorktreeManager
@@ -184,7 +185,9 @@ def create_app(
     )
 
     if executor_registry is None:
-        reference_executor = ReferenceExecutor()
+        reference_executor = ReferenceExecutor(
+            scenario=ReferenceScenario(resolved_settings.reference_scenario),
+        )
         registered = [
             RegisteredExecutor(
                 descriptor=reference_executor.descriptor(),
