@@ -228,6 +228,7 @@ interface CharacterAssets {
 }
 
 interface RiggedPresentation {
+  pivot: THREE.Group
   model: THREE.Group
   mixer: THREE.AnimationMixer
   actions: Map<string, THREE.AnimationAction>
@@ -321,15 +322,14 @@ export function officeMovementYaw(
   direction: THREE.Vector3,
   facing: OfficeMovementFacing = 'live',
 ): number {
-  const liveYaw = Math.atan2(direction.x, direction.z)
+  const forwardYaw = Math.atan2(direction.x, direction.z)
 
-  // The rigged GLB presentation needs an explicit 180° facing correction in
-  // Historical Replay and Workspace ambient/planning movement. Operational
-  // Live movement remains unchanged because that rendered contract was already
-  // verified separately.
-  return facing === 'live' ? liveYaw : liveYaw + Math.PI
+  // The GLB itself is normalized once with MODEL_YAW_OFFSET. Workspace must
+  // therefore use the same root-facing contract as Live. Applying another PI
+  // in Workspace double-corrects the rig and makes it visually walk backward.
+  // Replay keeps its separately verified historical presentation correction.
+  return facing === 'replay' ? forwardYaw + Math.PI : forwardYaw
 }
-
 
 function stableCharacterHash(value: string): number {
   let hash = 2166136261
@@ -340,24 +340,116 @@ function stableCharacterHash(value: string): number {
   return hash >>> 0
 }
 
-export function workspaceMicroYawOffset(
+export interface WorkspaceIdlePose {
+  lookYaw: number
+  leanZ: number
+  lateralX: number
+  liftY: number
+  breathScale: number
+}
+
+const NEUTRAL_WORKSPACE_IDLE_POSE: WorkspaceIdlePose = {
+  lookYaw: 0,
+  leanZ: 0,
+  lateralX: 0,
+  liftY: 0,
+  breathScale: 1,
+}
+
+function smoothUnit(value: number): number {
+  const clamped = Math.max(0, Math.min(1, value))
+  return clamped * clamped * (3 - 2 * clamped)
+}
+
+function smoothPulse(
+  phase: number,
+  start: number,
+  peak: number,
+  end: number,
+): number {
+  if (phase <= start || phase >= end) return 0
+  if (phase <= peak) {
+    return smoothUnit((phase - start) / (peak - start))
+  }
+  return 1 - smoothUnit((phase - peak) / (end - peak))
+}
+
+export function workspaceIdlePose(
   agentId: string,
   now: number,
   behavior: OfficeBehaviorKey | null,
-): number {
-  if (behavior === 'PRAYER_QUIET' || behavior === 'OFFLINE') return 0
+): WorkspaceIdlePose {
+  if (behavior === 'PRAYER_QUIET' || behavior === 'OFFLINE') {
+    return NEUTRAL_WORKSPACE_IDLE_POSE
+  }
 
   const hash = stableCharacterHash(agentId)
-  const periodSeconds = 7 + (hash % 7)
-  const phase = ((hash >>> 5) % 628) / 100
-  const amplitude =
+  const cycleSeconds = 22 + (hash % 9)
+  const offsetSeconds = ((hash >>> 5) % 1000) / 1000 * cycleSeconds
+  const phase =
+    ((now / 1000 + offsetSeconds) % cycleSeconds) / cycleSeconds
+  const intensity =
     behavior === 'DESK_FOCUS'
-      ? 0.075
+      ? 0.72
       : behavior === 'PLANNING_MEETING'
-        ? 0.11
-        : 0.055
+        ? 0.86
+        : behavior === 'WORK_WAITING'
+          ? 1
+          : 0.9
 
-  return Math.sin((now / 1000 / periodSeconds) * Math.PI * 2 + phase) * amplitude
+  // A readable but still professional standing-idle sequence:
+  // breathe -> shift left -> look left -> settle -> look right -> shift right.
+  const shiftLeft = smoothPulse(phase, 0.05, 0.15, 0.28)
+  const lookLeft = smoothPulse(phase, 0.24, 0.34, 0.46)
+  const lookRight = smoothPulse(phase, 0.49, 0.61, 0.74)
+  const shiftRight = smoothPulse(phase, 0.7, 0.82, 0.96)
+  const breath =
+    0.5 + 0.5 * Math.sin(phase * Math.PI * 4 + ((hash >>> 9) % 16) * 0.17)
+
+  const side = (hash & 1) === 0 ? 1 : -1
+  return {
+    lookYaw:
+      side * (lookRight - lookLeft) * 0.27 * intensity,
+    leanZ:
+      side * (shiftLeft - shiftRight) * 0.038 * intensity,
+    lateralX:
+      side * (shiftRight - shiftLeft) * 0.045 * intensity,
+    liftY: (breath - 0.5) * 0.018 * intensity,
+    breathScale: 1 + breath * 0.006 * intensity,
+  }
+}
+
+export function applyWorkspaceIdlePresentation(
+  runtime: RuntimeAgent,
+  now: number,
+  enabled: boolean,
+): boolean {
+  const pose = enabled
+    ? workspaceIdlePose(runtime.agentId, now, runtime.behavior)
+    : NEUTRAL_WORKSPACE_IDLE_POSE
+
+  if (runtime.rigged) {
+    const pivot = runtime.rigged.pivot
+    pivot.position.set(pose.lateralX, pose.liftY, 0)
+    pivot.rotation.set(0, pose.lookYaw, pose.leanZ)
+    pivot.scale.set(1, pose.breathScale, 1)
+  } else if (!runtime.moving) {
+    runtime.fallback.position.x = pose.lateralX
+    runtime.fallback.position.y = pose.liftY
+    runtime.fallback.rotation.y = pose.lookYaw
+    runtime.fallback.rotation.z = pose.leanZ
+    runtime.fallback.scale.set(
+      0.88,
+      0.88 * pose.breathScale,
+      0.88,
+    )
+  }
+
+  return (
+    enabled &&
+    runtime.behavior !== 'PRAYER_QUIET' &&
+    runtime.behavior !== 'OFFLINE'
+  )
 }
 
 export interface WorkspacePeerPosition {
@@ -639,6 +731,9 @@ async function attachRiggedPresentation(
     const model = cloneSkinned(assets.source) as THREE.Group
     model.name = `agent-office-${variantKey}-character`
     model.rotation.y = MODEL_YAW_OFFSET
+    const pivot = new THREE.Group()
+    pivot.name = `agent-office-${variantKey}-presentation`
+    pivot.add(model)
     model.scale.setScalar(variant.scale * appearance.scale)
 
     const ownedMaterials: THREE.Material[] = []
@@ -686,8 +781,9 @@ async function attachRiggedPresentation(
       actions.set(name, action)
     })
 
-    runtime.root.add(model)
+    runtime.root.add(pivot)
     runtime.rigged = {
+      pivot,
       model,
       mixer,
       actions,
@@ -900,7 +996,7 @@ export function disposeCharacter(runtime: RuntimeAgent): void {
     runtime.rigged.mixer.stopAllAction()
     runtime.rigged.mixer.uncacheRoot(runtime.rigged.model)
     runtime.rigged.ownedMaterials.forEach((material) => material.dispose())
-    runtime.root.remove(runtime.rigged.model)
+    runtime.root.remove(runtime.rigged.pivot)
   }
 
   runtime.fallback.traverse((object) => {
