@@ -149,3 +149,22 @@ ordinary repository files as RAG context merely because they exist.
 - no chain-of-thought exposure
 - Live / Replay remain canonical operational scopes
 - Workspace collision and facing fixes remain intact
+
+
+## Local verification executor mode
+
+The production composition keeps `ReferenceScenario.SUCCESS` as its default.
+For local rendered verification only, the operator may explicitly start the
+backend with:
+
+```text
+AGENT_OFFICE_REFERENCE_SCENARIO=WAITING
+```
+
+Only `SUCCESS` and `WAITING` are accepted through runtime settings. This
+bounded switch exists to retain canonical non-terminal AgentRuns long enough to
+inspect the Workspace workday projection. It does not expose arbitrary failure
+scenarios as runtime product configuration.
+
+The corresponding helper script uses only public HTTP APIs and requires an
+already registered Project.
