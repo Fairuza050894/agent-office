@@ -189,6 +189,28 @@ function officeFetch(agentRuns: AgentRun[] = [AGENT]) {
     if (url === `/api/runs/${RUN.id}/stages`) return jsonResponse([STAGE])
     if (url === `/api/runs/${RUN.id}/agents`) return jsonResponse(agentRuns)
     if (url === `/api/runs/${RUN.id}/workspaces`) return jsonResponse([WORKSPACE])
+    if (url === `/api/workspaces/${WORKSPACE.id}/status`) {
+      return jsonResponse({
+        workspace: WORKSPACE,
+        change_summary: {
+          base_revision: 'abc123',
+          current_revision: 'def456',
+          files_changed: 1,
+          insertions: 4,
+          deletions: 1,
+          added_paths: [],
+          modified_paths: ['src/example.py'],
+          deleted_paths: [],
+          untracked_paths: [],
+        },
+      })
+    }
+    if (url === `/api/projects/${PROJECT.id}/tasks`) return jsonResponse([TASK])
+    if (url === `/api/runs/${RUN.id}/evidence`) return jsonResponse([])
+    if (url === `/api/runs/${RUN.id}/findings`) {
+      return jsonResponse({ run_id: RUN.id, findings: [], open_blockers: 0 })
+    }
+    if (url === `/api/runs/${RUN.id}/audit`) return jsonResponse([])
     if (url === `/api/runs/${RUN.id}/events`) {
       return jsonResponse({ events: [AGENT_EVENT, TEST_EVENT], next_cursor: null })
     }
@@ -215,7 +237,7 @@ describe('Agent Office operational scopes', () => {
     expect(officeAgentState('COMPLETED')).toEqual({ key: 'completed', label: 'Completed' })
   })
 
-  it('renders a full-width office with bottom operations dock and on-demand inspector', async () => {
+  it('renders the contextual operations rail and binds it to selected AgentRun truth', async () => {
     vi.stubGlobal('fetch', officeFetch())
     render(<App initialPath={`/runs/${RUN.id}/office`} />)
 
@@ -230,9 +252,11 @@ describe('Agent Office operational scopes', () => {
       name: 'Agent Office operational 3D projection',
     })
     expect(projection.querySelectorAll('.office-agent-button')).toHaveLength(0)
-    expect(
-      screen.queryByRole('complementary', { name: 'Live office sidebar' }),
-    ).not.toBeInTheDocument()
+
+    const contextRail = screen.getByRole('complementary', {
+      name: 'Contextual Operations Rail',
+    })
+    expect(within(contextRail).getByText(/Run 33333333/)).toBeInTheDocument()
 
     const team = within(dock).getByRole('region', { name: 'Active team' })
     const agentButton = within(team).getByRole('button', {
@@ -251,26 +275,30 @@ describe('Agent Office operational scopes', () => {
     expect(
       screen.getByRole('button', { name: 'Live' }),
     ).toHaveAttribute('aria-pressed', 'true')
-    expect(
-      screen.getByRole('button', { name: /L2.*Build/i }),
-    ).toHaveAttribute('aria-pressed', 'true')
 
     fireEvent.click(agentButton)
 
-    const detail = screen.getByRole('complementary', {
-      name: 'Selected AgentRun details',
-    })
-    expect(within(detail).getAllByText('Backend Developer').length).toBeGreaterThan(0)
-    expect(within(detail).getByText('RUNNING · attempt 1')).toBeInTheDocument()
-    expect(within(detail).getByText('Reference Executor · 1')).toBeInTheDocument()
-    expect(within(detail).getByText('IMPLEMENTATION · RUNNING')).toBeInTheDocument()
-    expect(within(detail).getByText('GIT_WORKTREE · ao/office')).toBeInTheDocument()
-    expect(within(detail).getByText(/Agent started/)).toBeInTheDocument()
+    expect(within(contextRail).getByText('Backend Developer')).toBeInTheDocument()
+    fireEvent.click(within(contextRail).getByRole('tab', { name: 'Details' }))
 
-    fireEvent.click(within(detail).getByRole('button', { name: 'Close AgentRun inspector' }))
+    expect(within(contextRail).getByText('Reference Executor')).toBeInTheDocument()
+    expect(within(contextRail).getByText('GIT_WORKTREE · READY')).toBeInTheDocument()
+    expect(within(contextRail).getByText('ao/office')).toBeInTheDocument()
+
+    fireEvent.click(within(contextRail).getByRole('tab', { name: 'Files' }))
+    expect(within(contextRail).getByText('src/example.py')).toBeInTheDocument()
+    expect(within(contextRail).getByText('Content access is gated')).toBeInTheDocument()
+
+    fireEvent.click(
+      within(contextRail).getByRole('button', {
+        name: 'Collapse contextual operations',
+      }),
+    )
     expect(
-      screen.queryByRole('complementary', { name: 'Selected AgentRun details' }),
-    ).not.toBeInTheDocument()
+      within(contextRail).getByRole('button', {
+        name: 'Open contextual operations',
+      }),
+    ).toBeInTheDocument()
   })
 
   it('preserves floor continuity when opening Historical Replay', async () => {
