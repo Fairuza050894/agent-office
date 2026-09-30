@@ -12,6 +12,7 @@ import {
   setCharacterBehavior,
   setCharacterSelected,
   setCharacterStatus,
+  workspaceCandidateBlockedByPeer,
   type OfficeCharacterSource,
   type RuntimeAgent,
   type StationPlacement,
@@ -140,33 +141,6 @@ function moveRuntime(
     ? buildWorkspaceOfficePath(runtime.root.position, target.position, workspaceFloor)
     : buildOfficePath(runtime.root.position, target.position)
   runtime.moving = runtime.path.length > 0
-}
-
-function workspacePeerBlocksMovement(
-  engine: Engine,
-  runtime: RuntimeAgent,
-  candidate: THREE.Vector3,
-  workspaceMemberIds: Set<string>,
-): boolean {
-  const softRadius = 0.62
-  const hardRadius = 0.42
-
-  for (const other of engine.runtimes.values()) {
-    if (other === runtime || !workspaceMemberIds.has(other.agentId)) continue
-    if (!other.root.visible) continue
-
-    const candidateDistance = candidate.distanceTo(other.root.position)
-    if (candidateDistance < hardRadius) return true
-    if (candidateDistance >= softRadius) continue
-
-    if (!other.moving) return true
-
-    // Deterministic right-of-way avoids both characters advancing into the
-    // same crossing while still allowing one to clear the shared aisle.
-    if (runtime.agentId.localeCompare(other.agentId) > 0) return true
-  }
-
-  return false
 }
 
 function webGlUnavailable(): boolean {
@@ -418,11 +392,20 @@ export function ThreeOfficeScene({
 
             if (
               isWorkspaceMember &&
-              workspacePeerBlocksMovement(
-                current,
-                runtime,
+              workspaceCandidateBlockedByPeer(
+                runtime.agentId,
                 candidate,
-                workspaceMemberIdsRef.current,
+                [...current.runtimes.values()]
+                  .filter(
+                    (other) =>
+                      workspaceMemberIdsRef.current.has(other.agentId) &&
+                      other.root.visible,
+                  )
+                  .map((other) => ({
+                    agentId: other.agentId,
+                    position: other.root.position,
+                    moving: other.moving,
+                  })),
               )
             ) {
               needsFrame = true
