@@ -329,6 +329,38 @@ export function officeMovementYaw(
   return facing === 'live' ? liveYaw : liveYaw + Math.PI
 }
 
+
+export interface WorkspacePeerPosition {
+  agentId: string
+  position: THREE.Vector3
+  moving: boolean
+}
+
+export function workspaceCandidateBlockedByPeer(
+  agentId: string,
+  candidate: THREE.Vector3,
+  peers: WorkspacePeerPosition[],
+): boolean {
+  const softRadius = 0.62
+  const hardRadius = 0.42
+
+  for (const peer of peers) {
+    if (peer.agentId === agentId) continue
+
+    const distance = candidate.distanceTo(peer.position)
+    if (distance < hardRadius) return true
+    if (distance >= softRadius) continue
+
+    if (!peer.moving) return true
+
+    // Deterministic right-of-way: one walker clears the shared crossing while
+    // the other yields, avoiding oscillation or both advancing together.
+    if (agentId.localeCompare(peer.agentId) > 0) return true
+  }
+
+  return false
+}
+
 function loadCharacterAssets(
   variantKey: CharacterVariantKey,
 ): Promise<CharacterAssets> {
