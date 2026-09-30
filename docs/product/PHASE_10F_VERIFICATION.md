@@ -125,3 +125,15 @@ Keep the PR Draft until:
 - rendered Live/Replay review passes
 - no movement regression is observed
 - branch is current with main
+
+
+## Rendered polish checkpoint
+
+Workspace visual review additionally requires:
+
+- floor navigation occupies its own contained row and never overlaps the Context Rail;
+- the shared lift core remains in one consistent building-edge location on all floors;
+- Commons pantry does not intersect or visually block the lift landing;
+- Strategy roadmap / presentation surfaces do not cover the lift core;
+- Build sprint notes are mounted vertically to the board with no floating-paper props;
+- rear wall accent surfaces remain clear of both the window wall and lift core.
