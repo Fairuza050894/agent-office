@@ -477,9 +477,11 @@ export function OfficeScene({
             <div>
               <dt>Truth</dt>
               <dd>
-                {selectedWorkspaceMember.truth === 'PLANNING'
-                  ? 'Planning truth'
-                  : 'Ambient presentation'}
+                {selectedWorkspaceMember.truth === 'WORK'
+                  ? 'Canonical Run / AgentRun work'
+                  : selectedWorkspaceMember.truth === 'PLANNING'
+                    ? 'Planning truth'
+                    : 'Ambient presentation'}
               </dd>
             </div>
           </dl>
