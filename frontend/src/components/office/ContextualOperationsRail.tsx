@@ -122,7 +122,7 @@ export function TaskQuickCreate({
   submitLabel = 'Add task',
   note,
 }: {
-  onCreate: (payload: TaskQuickCreatePayload) => Promise<void> | void
+  onCreate: (payload: TaskQuickCreatePayload) => Promise<unknown> | unknown
   busy?: boolean
   title?: string
   submitLabel?: string
