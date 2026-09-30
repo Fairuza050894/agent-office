@@ -137,3 +137,4 @@ Workspace visual review additionally requires:
 - Strategy roadmap / presentation surfaces do not cover the lift core;
 - Build sprint notes are mounted vertically to the board with no floating-paper props;
 - rear wall accent surfaces remain clear of both the window wall and lift core.
+- Workspace ambient/planning characters face the direction of travel when moving between zones; Operational Live remains unchanged and Historical Replay retains its verified correction.
