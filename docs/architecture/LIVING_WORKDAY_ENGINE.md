@@ -168,3 +168,22 @@ scenarios as runtime product configuration.
 
 The corresponding helper script uses only public HTTP APIs and requires an
 already registered Project.
+
+
+## Character presentation axis
+
+Character GLBs are normalized once at the model layer. Workspace and
+Operational Live therefore share the same root movement-facing calculation.
+Workspace must not add a second 180-degree correction.
+
+Historical Replay retains its separately verified presentation correction.
+
+## Living idle presentation
+
+Workspace idle initiative is intentionally richer than a small continuous sway.
+A deterministic long-cycle pose system creates readable but professional
+standing behavior: weight transfer, slow breath, and left/right environmental
+looks.
+
+The procedural pose is applied to a presentation pivot above the animated GLB.
+It never mutates canonical station, path, Task, Run, or AgentRun truth.
