@@ -7,6 +7,7 @@ import {
   officeMovementYaw,
   shouldShowOfficeNameplate,
   workspaceCandidateBlockedByPeer,
+  workspaceMicroYawOffset,
 } from './character'
 
 const CORE_ROLES = [
@@ -73,6 +74,31 @@ describe('officeCharacterAppearance', () => {
         officeMovementYaw(new THREE.Vector3(0, 0, -1), 'live'),
       ),
     ).toBeCloseTo(Math.PI)
+  })
+
+  it('gives Workspace idle behavior a subtle deterministic motion envelope', () => {
+    const first = workspaceMicroYawOffset(
+      'agent-a',
+      10_000,
+      'DESK_FOCUS',
+    )
+    const repeated = workspaceMicroYawOffset(
+      'agent-a',
+      10_000,
+      'DESK_FOCUS',
+    )
+    const later = workspaceMicroYawOffset(
+      'agent-a',
+      14_000,
+      'DESK_FOCUS',
+    )
+
+    expect(repeated).toBe(first)
+    expect(Math.abs(first)).toBeLessThanOrEqual(0.075)
+    expect(later).not.toBe(first)
+    expect(
+      workspaceMicroYawOffset('agent-a', 10_000, 'PRAYER_QUIET'),
+    ).toBe(0)
   })
 
   it('enforces hard personal space and deterministic right-of-way for Workspace walkers', () => {
