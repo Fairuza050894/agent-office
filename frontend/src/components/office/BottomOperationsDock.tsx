@@ -14,12 +14,14 @@ import type {
   PlanningArtifact,
   PlanningEvent,
   RequirementCandidate,
+  Task,
   TeamProposal,
 } from '../../api'
 import { officeAgentState } from '../../officeProjection'
 
 export type DockState = 'collapsed' | 'normal' | 'expanded'
 type DockTab =
+  | 'tasks'
   | 'activity'
   | 'notes'
   | 'requirements'
@@ -34,6 +36,7 @@ export interface BottomOperationsDockProps {
   selectedAgentId: string | null
   onSelectAgent: (agentId: string) => void
   modeLabel: string
+  tasks?: Task[]
   defaultState?: DockState
   forceCollapsed?: boolean
   planningThread?: ComposerThread | null
@@ -65,6 +68,7 @@ const EVENT_LABELS: Record<string, string> = {
 }
 
 const TAB_LABELS: Record<DockTab, string> = {
+  tasks: 'Tasks',
   activity: 'Activity',
   notes: 'Notes',
   requirements: 'Requirements',
@@ -363,6 +367,31 @@ function RequirementList({
   )
 }
 
+function TaskList({ tasks }: { tasks: Task[] }) {
+  if (tasks.length === 0) {
+    return (
+      <div className="office-dock-empty">
+        No canonical Task exists in this Project yet.
+      </div>
+    )
+  }
+
+  return (
+    <>
+      {tasks.map((task) => (
+        <article key={task.id} className="office-dock-task">
+          <div>
+            <strong>{task.title}</strong>
+            <span>{task.id.slice(0, 8)}</span>
+          </div>
+          <p>{task.objective}</p>
+          {task.constraints && <small>{task.constraints}</small>}
+        </article>
+      ))}
+    </>
+  )
+}
+
 function PlanningActivity({ events }: { events: PlanningEvent[] }) {
   if (events.length === 0) {
     return (
@@ -407,6 +436,7 @@ export function BottomOperationsDock({
   selectedAgentId,
   onSelectAgent,
   modeLabel,
+  tasks = [],
   defaultState = 'normal',
   forceCollapsed = false,
   planningThread = null,
@@ -450,8 +480,8 @@ export function BottomOperationsDock({
     .slice(0, renderedState === 'expanded' ? 40 : 12)
 
   const tabs: DockTab[] = planningThread
-    ? ['notes', 'requirements', 'questions', 'risks', 'deferred', 'activity']
-    : ['activity']
+    ? ['tasks', 'notes', 'requirements', 'questions', 'risks', 'deferred', 'activity']
+    : ['tasks', 'activity']
 
   const visiblePlanningArtifacts = planningArtifactsForTab(activeTab, artifactList)
 
@@ -597,7 +627,9 @@ export function BottomOperationsDock({
             )}
           </div>
           <div className="office-dock-scroll" key={activeTab}>
-            {activeTab === 'activity' ? (
+            {activeTab === 'tasks' ? (
+              <TaskList tasks={tasks} />
+            ) : activeTab === 'activity' ? (
               planningThread ? (
                 <PlanningActivity events={planningEvents} />
               ) : recent.length === 0 ? (
