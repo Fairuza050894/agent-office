@@ -677,7 +677,21 @@ Do not rewrite history.
 
 Before reporting completion, run the verification required by the phase.
 
-Typically include:
+For full repository verification, use the canonical entry point:
+
+```bash
+./scripts/verify.sh
+```
+
+It covers the repository-standard backend, frontend, and Git hygiene gates.
+For a narrowly scoped change, run only the checks relevant to the actual
+implementation stack and record the exact commands and results.
+
+A GitHub Actions conclusion is evidence only when jobs actually execute steps.
+If a workflow ends before runner assignment (`steps: null` / no runner), record
+that as an infrastructure hold rather than a code/test failure or a green gate.
+
+Typical evidence includes:
 
 ```text
 backend tests
@@ -688,8 +702,6 @@ build
 git diff --check
 git status --short
 ```
-
-Run only checks relevant to the actual implementation stack.
 
 ---
 
