@@ -345,10 +345,12 @@ export function OfficeWorkspacePage() {
     executors[0]?.id ??
     null
 
-  const createWorkspaceTask = async (payload: TaskQuickCreatePayload) => {
+  const createWorkspaceTask = async (
+    payload: TaskQuickCreatePayload,
+  ): Promise<Task | null> => {
     if (!selectedProjectId) {
       setTaskActionMessage('Select a Project before creating a Task.')
-      return
+      return null
     }
 
     setTaskActionBusy(true)
@@ -365,10 +367,12 @@ export function OfficeWorkspacePage() {
         ...current.filter((task) => task.id !== created.id),
       ])
       setTaskActionMessage(`Task ${created.id.slice(0, 8)} created. Execution is still gated by the canonical Run workflow.`)
+      return created
     } catch (reason) {
       setTaskActionMessage(
         reason instanceof Error ? reason.message : 'Unable to create Task.',
       )
+      return null
     } finally {
       setTaskActionBusy(false)
     }
@@ -395,12 +399,12 @@ export function OfficeWorkspacePage() {
       .filter((value): value is string => Boolean(value))
       .join(' · ')
 
-    await createWorkspaceTask({
+    const created = await createWorkspaceTask({
       title,
       objective,
     })
 
-    if (acceptance) {
+    if (created && acceptance) {
       setTaskActionMessage(
         `Task created from ${approved.length} approved requirement${approved.length === 1 ? '' : 's'}. Acceptance: ${acceptance}`,
       )
