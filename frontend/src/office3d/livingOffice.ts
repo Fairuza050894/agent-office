@@ -577,7 +577,7 @@ function breakZoneForWork(
   roleKey: string,
   worldMode: string,
   now: Date,
-): { status: OfficePresenceState; zone: OfficeZoneKey } | null {
+): { status: OfficePresenceState; floor: OfficeFloorKey; zone: OfficeZoneKey } | null {
   const knownRole = LIVING_OFFICE_CORE_ROLES.includes(
     roleKey as (typeof LIVING_OFFICE_CORE_ROLES)[number],
   )
@@ -589,6 +589,7 @@ function breakZoneForWork(
   if (worldMode === 'LUNCH') {
     return {
       status: 'LUNCH_BREAK',
+      floor: 'commons',
       zone: pickAmbientZone(knownRole, ROLE_AMBIENT_ZONES[knownRole].lunch, now),
     }
   }
@@ -596,6 +597,7 @@ function breakZoneForWork(
   if (worldMode === 'COFFEE_BREAK') {
     return {
       status: 'COFFEE_BREAK',
+      floor: 'commons',
       zone: pickAmbientZone(knownRole, ROLE_AMBIENT_ZONES[knownRole].coffee, now),
     }
   }
@@ -608,8 +610,10 @@ export function workPresenceMembers(
   profiles: AgentProfile[],
   now = new Date(),
   timeZone?: string | null,
+  scheduledEvents: OfficeScheduledEvent[] = [],
 ): OfficePresenceMember[] {
   const world = officeWorldContext(now, timeZone)
+  const scheduled = activeScheduledEvent(now, scheduledEvents)
   const names = profileByKey(profiles)
 
   return assignments
@@ -625,13 +629,26 @@ export function workPresenceMembers(
         normalizedAgentStatus === 'WAITING' ||
         normalizedAgentStatus === 'BLOCKED' ||
         normalizedAgentStatus === 'PENDING'
-      const scheduledBreak = canLeaveDesk
+      const providerBreak =
+        canLeaveDesk &&
+        scheduled &&
+        ['LUNCH_BREAK', 'COFFEE_BREAK', 'PRAYER_BREAK', 'SOCIAL_BREAK'].includes(
+          scheduled.presence,
+        )
+          ? {
+              status: scheduled.presence,
+              floor: scheduled.floor,
+              zone: scheduled.zone,
+            }
+          : null
+      const worldBreak = canLeaveDesk
         ? breakZoneForWork(
             assignment.agentProfileKey,
             world.mode,
             now,
           )
         : null
+      const scheduledBreak = providerBreak ?? worldBreak
 
       const status: OfficePresenceState = scheduledBreak
         ? scheduledBreak.status
@@ -639,7 +656,7 @@ export function workPresenceMembers(
           ? 'WAITING_USER'
           : 'WORKING'
       const zone = scheduledBreak?.zone ?? home.zone
-      const floor: OfficeFloorKey = scheduledBreak ? 'commons' : home.floor
+      const floor: OfficeFloorKey = scheduledBreak?.floor ?? home.floor
 
       return {
         id: `work:${assignment.agentRunId}`,
@@ -929,6 +946,7 @@ export function livingOfficeMembers(
     profiles,
     now,
     effectiveTimeZone,
+    scheduledEvents,
   )
   const workRoleKeys = new Set(
     work.map((member) => member.agent_profile_key),
