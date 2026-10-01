@@ -11,8 +11,9 @@ Agent Office is one persistent product experience, not separate "Workspace" and
 The application has three truth scopes:
 
 ```text
-WORKSPACE
-  planning + ambient Office world
+PLANNING
+  internal key: workspace
+  planning + ambient Office world + canonical work projection when present
 
 LIVE
   canonical Run / AgentRun projection
@@ -32,7 +33,7 @@ Routes are deep-link entry points, not separate products:
 
 ```text
 /office
-  -> Agent Office · Workspace
+  -> Agent Office · Planning
 
 /runs/:runId/office
   -> Agent Office · Live
@@ -96,7 +97,7 @@ Scope transitions preserve as much visual context as possible:
 - shared lift location
 - command rail hierarchy
 
-Workspace planning is not duplicated into Live / Replay.
+Planning records are not duplicated into Live / Replay.
 
 Phase 10F introduces one shared contextual rail across scopes, but its content
 changes with the truth source. Workspace Discussion hosts the real Universal
@@ -167,7 +168,7 @@ Floor detail groups are presentation-only.
 
 ## Interaction rules
 
-- Workspace / Live / Replay are visible in one scope switcher.
+- Planning / Live / Replay are visible in one scope switcher.
 - Unavailable scopes are visibly disabled.
 - floor switching is presentation-only.
 - selected floor survives scope changes through route state.
@@ -191,7 +192,7 @@ The shared rail is presentation infrastructure, like the renderer and Operations
 Dock. It is not an authority for workflow state.
 
 ```text
-Workspace
+Planning (internal scope key: workspace)
   Discussion -> ComposerThread / ComposerMessage
   Details    -> Project / planning / Task / latest Run
   Files      -> PlanningArtifact records
@@ -207,3 +208,29 @@ Live / Replay
 Task creation from the rail calls the existing Task API. It does not imply
 execution. Artifact content access and GitHub discovery remain gated until their
 own safe backend contracts exist.
+
+
+## Phase 10H-1 display vocabulary override
+
+For visible product vocabulary, the former `Workspace` scope label is now
+**Planning**.
+
+This is a presentation rename only:
+
+```text
+visible Planning scope
+  != canonical Workspace domain
+
+internal AgentOfficeScope key
+  = workspace
+
+canonical Workspace
+  = isolated execution workspace / Git worktree
+```
+
+The Planning scope preserves the Phase 10G precedence model and may project
+canonical Task / Run / AgentRun WORK presence in addition to durable planning
+and ambient presentation.
+
+The detailed UI contract is
+`docs/ux/OFFICE_SHIFT_RULER_DIRECTION.md`.
