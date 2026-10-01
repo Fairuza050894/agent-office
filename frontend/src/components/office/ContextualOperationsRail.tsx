@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 
 export type ContextRailTab = 'discussion' | 'details' | 'files' | 'logs'
 
@@ -113,72 +113,5 @@ export function ContextualOperationsRail({
         {content[renderedActiveTab]}
       </div>
     </aside>
-  )
-}
-
-export interface TaskQuickCreatePayload {
-  title: string
-  objective: string
-}
-
-export function TaskQuickCreate({
-  onCreate,
-  busy = false,
-  title = 'Create task',
-  submitLabel = 'Add task',
-  note,
-}: {
-  onCreate: (payload: TaskQuickCreatePayload) => Promise<unknown> | unknown
-  busy?: boolean
-  title?: string
-  submitLabel?: string
-  note?: string
-}) {
-  const [taskTitle, setTaskTitle] = useState('')
-  const [objective, setObjective] = useState('')
-
-  const submit = async (event: FormEvent) => {
-    event.preventDefault()
-    const cleanTitle = taskTitle.trim()
-    const cleanObjective = objective.trim()
-    if (!cleanTitle || !cleanObjective || busy) return
-    await onCreate({ title: cleanTitle, objective: cleanObjective })
-    setTaskTitle('')
-    setObjective('')
-  }
-
-  return (
-    <form className="office-context-task-create" onSubmit={(event) => void submit(event)}>
-      <div>
-        <strong>{title}</strong>
-        {note && <span>{note}</span>}
-      </div>
-      <label>
-        <span>Title</span>
-        <input
-          value={taskTitle}
-          disabled={busy}
-          onChange={(event) => setTaskTitle(event.target.value)}
-          placeholder="Short actionable task"
-        />
-      </label>
-      <label>
-        <span>Objective</span>
-        <textarea
-          value={objective}
-          disabled={busy}
-          onChange={(event) => setObjective(event.target.value)}
-          placeholder="What must be accomplished?"
-          rows={3}
-        />
-      </label>
-      <button
-        type="submit"
-        className="btn btn-secondary btn-sm"
-        disabled={busy || !taskTitle.trim() || !objective.trim()}
-      >
-        {busy ? 'Creating…' : submitLabel}
-      </button>
-    </form>
   )
 }
