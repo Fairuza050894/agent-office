@@ -810,7 +810,7 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
         profiles={profiles}
         selectedAgentId={selectedAgentId}
         onSelectAgent={(agentId) => selectOperationalAgent(agentId)}
-        tasks={tasks}
+        tasks={tasks.filter((task) => task.id === run.task_id)}
         runs={[run]}
         modeLabel={officeMode === 'replay' ? 'Replay' : 'Live Run'}
         forceCollapsed={isMaximized}
