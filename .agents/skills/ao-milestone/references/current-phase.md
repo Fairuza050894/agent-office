@@ -20,7 +20,7 @@ Canonical full verification:
 branch: polish/office-3d-experience
 pr: #25
 scope: post-10H-1 Office 3D experience polish
-status: DRAFT / RENDERED REVIEW REMEDIATION
+status: DRAFT / FRONTEND RE-VERIFICATION PENDING
 ```
 
 ## Why this polish exists
@@ -33,7 +33,7 @@ recorded three non-blocking follow-ups that materially affect the product feel:
 - the merged milestone/docs still contain stale pre-merge status and older
   Workspace-facing wording.
 
-This branch fixes those follow-ups without starting Phase 10H-2 early. The first rendered review passed desktop readability but exposed a narrow-screen layout defect, now under remediation.
+This branch fixes those follow-ups without starting Phase 10H-2 early. Rendered review now passes desktop, tablet, selected-agent focus, and 390px mobile containment; only targeted frontend re-verification remains.
 
 ## Scope
 
