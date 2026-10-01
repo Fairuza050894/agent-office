@@ -62,6 +62,26 @@ describe('ContextualOperationsRail', () => {
     })
   })
 
+  it('hides optional views when canonical data is unavailable', () => {
+    render(
+      <ContextualOperationsRail
+        eyebrow="Planning"
+        title="Agent Office"
+        collapsed={false}
+        onToggleCollapsed={() => undefined}
+        discussion={<div>Discussion remains available</div>}
+        details={null}
+        files={null}
+        logs={null}
+      />,
+    )
+
+    expect(screen.getByRole('tab', { name: 'Discussion' })).toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: 'Details' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: 'Files' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: 'Logs' })).not.toBeInTheDocument()
+  })
+
   it('renders a compact reopen control when collapsed', () => {
     const onToggle = vi.fn()
 
