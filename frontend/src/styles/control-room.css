@@ -4275,6 +4275,13 @@ button.office-scope-link {
   color: var(--ao-text-strong);
 }
 
+.office-structure-v2 .office-action-menu > div {
+  border-color: var(--ao-border);
+  border-radius: var(--ao-radius-sm);
+  background: var(--ao-canvas-raised);
+  box-shadow: none;
+}
+
 .office-structure-v2 .office-scope-switcher {
   height: 28px;
   gap: 12px;
