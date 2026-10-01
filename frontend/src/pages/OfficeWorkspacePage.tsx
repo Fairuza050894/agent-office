@@ -162,44 +162,48 @@ export function OfficeWorkspacePage() {
   useEffect(() => {
     let active = true
 
-    Promise.all([
+    Promise.allSettled([
       api.listProjects(),
       api.listExecutors(),
       api.listAgentProfiles(),
-    ])
-      .then(([loadedProjects, loadedExecutors, loadedProfiles]) => {
-        if (!active) return
-        const requestedProject = requestedProjectId
-          ? loadedProjects.find(
-              (project) =>
-                project.id === requestedProjectId &&
-                project.status === 'ACTIVE',
-            )
-          : undefined
-        const initialProjectId =
-          requestedProject?.id ??
-          loadedProjects.find((project) => project.status === 'ACTIVE')?.id ??
-          loadedProjects[0]?.id ??
-          ''
+    ]).then(([projectResult, executorResult, profileResult]) => {
+      if (!active) return
 
-        setProjects(loadedProjects)
-        setExecutors(loadedExecutors)
-        setProfiles(loadedProfiles)
-        setSelectedProjectId(initialProjectId)
-        setIsRestoringThread(Boolean(initialProjectId))
-        setRegistryError(null)
-      })
-      .catch((reason) => {
-        if (!active) return
-        setRegistryError(
-          reason instanceof Error
-            ? reason.message
-            : 'Office workspace registries are unavailable.',
-        )
-      })
-      .finally(() => {
-        if (active) setIsLoading(false)
-      })
+      const loadedProjects =
+        projectResult.status === 'fulfilled' ? projectResult.value : []
+      const loadedExecutors =
+        executorResult.status === 'fulfilled' ? executorResult.value : []
+      const loadedProfiles =
+        profileResult.status === 'fulfilled' ? profileResult.value : []
+      const failedRegistries = [
+        projectResult.status === 'rejected' ? 'Projects unavailable' : null,
+        executorResult.status === 'rejected' ? 'Executors unavailable' : null,
+        profileResult.status === 'rejected' ? 'Agent profiles unavailable' : null,
+      ].filter((label): label is string => label !== null)
+
+      const requestedProject = requestedProjectId
+        ? loadedProjects.find(
+            (project) =>
+              project.id === requestedProjectId &&
+              project.status === 'ACTIVE',
+          )
+        : undefined
+      const initialProjectId =
+        requestedProject?.id ??
+        loadedProjects.find((project) => project.status === 'ACTIVE')?.id ??
+        loadedProjects[0]?.id ??
+        ''
+
+      setProjects(loadedProjects)
+      setExecutors(loadedExecutors)
+      setProfiles(loadedProfiles)
+      setSelectedProjectId(initialProjectId)
+      setIsRestoringThread(Boolean(initialProjectId))
+      setRegistryError(
+        failedRegistries.length > 0 ? failedRegistries.join(' · ') : null,
+      )
+      setIsLoading(false)
+    })
 
     return () => {
       active = false
@@ -824,7 +828,7 @@ export function OfficeWorkspacePage() {
         }
         meta={
           registryError
-            ? 'Registry degraded'
+            ? `Registry degraded · ${registryError}`
             : `${projects.length} Project${projects.length === 1 ? '' : 's'}`
         }
         actions={
@@ -960,7 +964,7 @@ export function OfficeWorkspacePage() {
                   selectedOfficeMember?.truth === 'PLANNING'
                     ? `Role focus · ${selectedOfficeMember.name}`
                     : registryError
-                      ? 'Registry data is degraded; planning may be unavailable.'
+                      ? `Registry degraded: ${registryError}. Available registries remain usable.`
                       : selectedProject
                         ? `${selectedProject.repository.name} · ${selectedProject.default_branch}`
                         : 'Register a Project before repository-scoped work.'
