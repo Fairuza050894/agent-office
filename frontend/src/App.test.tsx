@@ -169,15 +169,16 @@ describe('Agent Office operational shell', () => {
 
     render(<App initialPath="/office" />)
 
-    const composer = await screen.findByRole('region', {
+    await screen.findByRole('region', {
       name: 'Universal Composer',
     })
     await waitFor(() => {
-      expect(within(composer).getByLabelText('Composer project')).toHaveValue(
-        project.id,
-      )
+      expect(screen.getByLabelText('Composer project')).toHaveValue(project.id)
     })
 
+    const composer = screen.getByRole('region', {
+      name: 'Universal Composer',
+    })
     expect(
       screen.getByText(/Registry degraded · Executors unavailable/),
     ).toBeInTheDocument()
