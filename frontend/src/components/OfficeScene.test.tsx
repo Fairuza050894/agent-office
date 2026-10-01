@@ -146,7 +146,7 @@ describe('OfficeScene workspace presence', () => {
     expect(inspector).toHaveTextContent('Commons · game corner')
     expect(inspector).toHaveTextContent('Ambient presentation')
     expect(
-      screen.getByText('Live office view · No active run selected'),
+      screen.getByText('Planning office view · No canonical work active'),
     ).toBeInTheDocument()
 
     fireEvent.click(
@@ -186,7 +186,7 @@ describe('OfficeScene workspace presence', () => {
     expect(inspector).toHaveTextContent('Canonical Run / AgentRun work')
     expect(inspector).not.toHaveTextContent('Ambient presentation')
     expect(
-      screen.getByText('Live office view · Canonical work active'),
+      screen.getByText('Planning office view · Canonical work active'),
     ).toBeInTheDocument()
   })
 
@@ -290,9 +290,9 @@ describe('OfficeScene workspace presence', () => {
       />,
     )
 
-    expect(screen.getByText('Office Workspace')).toBeInTheDocument()
+    expect(screen.getByText('Planning Office')).toBeInTheDocument()
     expect(
-      screen.getByText('Live office view · No active run selected'),
+      screen.getByText('Planning office view · No canonical work active'),
     ).toBeInTheDocument()
     expect(screen.getByText('Controls')).toBeInTheDocument()
     expect(
@@ -370,7 +370,7 @@ describe('OfficeScene workspace presence', () => {
       />,
     )
 
-    const scene = screen.getByLabelText('Office workspace 3D environment')
+    const scene = screen.getByLabelText('Planning office 3D environment')
     const renderer = screen.getByRole('button', { name: 'Mock 3D member' })
 
     fireEvent.keyDown(scene, { key: '3' })
