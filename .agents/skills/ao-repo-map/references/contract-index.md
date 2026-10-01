@@ -64,6 +64,8 @@ This index is navigation only. The referenced specifications remain authoritativ
 
 - Phase 5 acceptance → `docs/product/MVP_ACCEPTANCE.md` §§85–100
 - information architecture → `docs/ux/INFORMATION_ARCHITECTURE.md` (use heading lookup for the requested screen/view)
+- current Agent Office Planning / Shift Ruler direction → `docs/ux/OFFICE_SHIFT_RULER_DIRECTION.md`
+- Office 3D projection behavior → `docs/ux/OFFICE_VIEW.md`
 
 ## Phase 4C focused reading set
 
