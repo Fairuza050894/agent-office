@@ -122,41 +122,6 @@ export function UniversalComposerShell({
         </div>
       )}
 
-      <div className="office-composer-body">
-        <label className="sr-only" htmlFor="office-universal-composer">
-          Ask Agent Office
-        </label>
-        <textarea
-          id="office-universal-composer"
-          className="office-composer-input"
-          value={instruction}
-          disabled={isSubmitting || isThreadLoading}
-          onChange={(event) => setInstruction(event.target.value)}
-          onKeyDown={(event) => {
-            if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
-              event.preventDefault()
-              void submit()
-            }
-          }}
-          placeholder="Ask, plan, brainstorm, or describe what you want to continue in this project..."
-        />
-        <div className="office-composer-actions">
-          <button
-            type="button"
-            className="btn btn-primary btn-sm"
-            disabled={!canSend}
-            title={
-              intent === 'RUN'
-                ? 'Review RUN intent and planning scope. This does not start execution.'
-                : undefined
-            }
-            onClick={() => void submit()}
-          >
-            {submitLabel}
-          </button>
-        </div>
-      </div>
-
       <details className="office-composer-context" open={!selectedProjectId}>
         <summary>
           <span>Context</span>
@@ -247,6 +212,41 @@ export function UniversalComposerShell({
           {contextLabel && <span className="office-composer-note">{contextLabel}</span>}
         </div>
       </details>
+
+      <div className="office-composer-body">
+        <label className="sr-only" htmlFor="office-universal-composer">
+          Ask Agent Office
+        </label>
+        <textarea
+          id="office-universal-composer"
+          className="office-composer-input"
+          value={instruction}
+          disabled={isSubmitting || isThreadLoading}
+          onChange={(event) => setInstruction(event.target.value)}
+          onKeyDown={(event) => {
+            if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+              event.preventDefault()
+              void submit()
+            }
+          }}
+          placeholder="Ask, plan, brainstorm, or describe what you want to continue in this project..."
+        />
+        <div className="office-composer-actions">
+          <button
+            type="button"
+            className="btn btn-primary btn-sm"
+            disabled={!canSend}
+            title={
+              intent === 'RUN'
+                ? 'Review RUN intent and planning scope. This does not start execution.'
+                : undefined
+            }
+            onClick={() => void submit()}
+          >
+            {submitLabel}
+          </button>
+        </div>
+      </div>
 
       {error ? (
         <span className="office-composer-error" role="alert">
