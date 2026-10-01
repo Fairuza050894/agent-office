@@ -46,7 +46,7 @@ export function AgentOfficeScopeSwitcher({
         className={`office-scope-link ${activeScope === 'workspace' ? 'active' : ''}`}
         aria-current={activeScope === 'workspace' ? 'page' : undefined}
       >
-        Workspace
+        Planning
       </Link>
 
       {activeScope === 'workspace' ? (

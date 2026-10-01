@@ -249,7 +249,7 @@ export function OfficeScene({
       onKeyDown={handleSceneKeyDown}
       aria-label={
         presentation === 'workspace'
-          ? 'Office workspace 3D environment'
+          ? 'Planning office 3D environment'
           : 'Agent Office operational 3D projection'
       }
     >
@@ -262,11 +262,11 @@ export function OfficeScene({
           <>
             <div className="office-scene-context">
               <div className="office-scene-title-group">
-                <strong>Office Workspace</strong>
+                <strong>Planning Office</strong>
                 <span>
                   {workspaceHasCanonicalWork
-                    ? 'Live office view · Canonical work active'
-                    : 'Live office view · No active run selected'}
+                    ? 'Planning office view · Canonical work active'
+                    : 'Planning office view · No canonical work active'}
                 </span>
               </div>
               <SceneControls

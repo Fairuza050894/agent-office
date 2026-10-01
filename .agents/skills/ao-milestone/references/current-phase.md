@@ -3,9 +3,9 @@
 ## Current checkpoint
 
 ```text
-main@7a941d2
-Phase 10G merged
-PR #21 Living SDLC / AIDLC Workday Engine merged
+main@795b588
+Phase 10H0 merged
+PR #23 Baseline Truth Hardening merged
 ```
 
 Canonical full verification:
@@ -17,47 +17,62 @@ Canonical full verification:
 ## Current work
 
 ```text
-branch: phase-10h0-timezone-baseline-hardening
-phase: Phase 10H0 — Baseline Truth Hardening
+branch: phase-10h1-office-structure
+phase: Phase 10H-1 — Vocabulary & Structure
 status: IMPLEMENTED / DRAFT VERIFICATION
 ```
 
-## Why Phase 10H0 exists
+## Owner-approved override
 
-The owner-provided /office Shift Ruler specification requires the frontend
-baseline to be timezone-hermetic and requires backend health / registry
-degradation to remain truthful before structural UI work begins.
+The latest Office direction is now:
 
-## Implemented
+```text
+docs/ux/OFFICE_SHIFT_RULER_DIRECTION.md
+```
 
-- explicit timezone fixture for the evening living-office planning test;
-- Header /health polling every 12 seconds;
-- health check age in the Header;
-- later failed health check downgrades previous connected state;
-- Office registry bootstrap uses Promise.allSettled;
-- successful registries remain usable if one registry fails;
-- degraded registry copy identifies the failed source;
-- regression coverage for health polling and partial registry failure.
+It supersedes older /office presentation wording when they conflict, while
+preserving canonical workflow, Run / AgentRun, Workspace-worktree, Evidence,
+Finding, and replay truth contracts.
 
-## Deferred to later, separate PRs
+## Phase 10H-1 scope
 
-### Phase 10H-1 — vocabulary and structure
+Implemented:
 
-No vocabulary/layout changes belong in this baseline PR.
+- visible scope vocabulary is Planning / Live / Replay;
+- internal scope key `workspace` remains compatible;
+- generic navigation grouping no longer uses Workspace as a UI category;
+- scope navigation is underlined text rather than segmented boxes;
+- top rail and contextual Docket are flatter and denser;
+- optional Details / Files / Logs tabs render only when canonical source data exists;
+- Planning Composer puts durable history/context before the input, leaving the
+  input/action at the bottom of Discussion;
+- permanent inline Task creation is removed;
+- `+ Task` opens the existing CreateTaskModal;
+- Planning Operations Dock defaults open;
+- Tasks view exposes factual Task / latest Run / state relationships;
+- Phase 10G canonical WORK projection is retained alongside PLANNING and AMBIENT
+  truth layers.
+
+## Explicitly deferred
 
 ### Phase 10H-2 — read-only Shift Ruler
 
-No Shift Ruler belongs in this baseline PR.
+No ruler implementation belongs in this PR.
 
 ### Phase 10H-3 — truth lines
 
-No truth-line styling belongs in this baseline PR.
+No WORK / PLANNING / AMBIENT line styling belongs in this PR.
+
+### Replay ruler scrubbing
+
+Requires an explicit later go/no-go after read-only ruler verification.
 
 ## Safety invariants
 
-- no fake execution
-- no fake stage history
-- no backend/schema changes
-- no auto merge
-- no force push
-- Live / Replay truth boundaries unchanged
+- no fake execution;
+- no fake RunStage duration;
+- no backend/schema changes;
+- no auto merge;
+- no force push;
+- internal Workspace worktree semantics unchanged;
+- Live / Replay truth boundaries unchanged.

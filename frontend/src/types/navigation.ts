@@ -22,7 +22,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Office',
     path: '/office',
     section: 'WORK',
-    description: 'Office-first command workspace for project-scoped work and operational monitoring.',
+    description: 'Office-first planning and operational control surface for project-scoped work.',
   },
   {
     id: 'overview',

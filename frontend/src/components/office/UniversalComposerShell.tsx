@@ -62,6 +62,13 @@ export function UniversalComposerShell({
     activeThread?.executor_id ?? selectedExecutorId ?? '',
   )
 
+  const selectedProjectName =
+    projects.find((project) => project.id === selectedProjectId)?.name ??
+    'No Project'
+  const selectedExecutorName =
+    executors.find((executor) => executor.id === executorId)?.name ??
+    'No executor'
+
   const canSend =
     Boolean(onSubmit) &&
     !isSubmitting &&
@@ -78,6 +85,14 @@ export function UniversalComposerShell({
     })
     setInstruction('')
   }
+
+  const submitLabel = isThreadLoading
+    ? 'Restoring…'
+    : isSubmitting
+      ? 'Preparing…'
+      : intent === 'RUN'
+        ? 'Review run'
+        : 'Send'
 
   return (
     <section className="office-composer" aria-label="Universal Composer">
@@ -107,87 +122,96 @@ export function UniversalComposerShell({
         </div>
       )}
 
-      <div className="office-composer-context">
-        <select
-          className="office-composer-select"
-          aria-label="Composer project"
-          value={selectedProjectId}
-          disabled={
-            projectLocked || projects.length === 0 || isSubmitting || isThreadLoading
-          }
-          onChange={(event) => onProjectChange?.(event.target.value)}
-        >
-          {projects.length === 0 ? (
-            <option value="">No registered Project</option>
-          ) : (
-            projects.map((project) => (
-              <option key={project.id} value={project.id}>
-                {project.name}
+      <details className="office-composer-context" open={!selectedProjectId}>
+        <summary>
+          <span>Context</span>
+          <strong>{selectedProjectName}</strong>
+          <span>{activeThread ? `Thread ${activeThread.id.slice(0, 8)}` : 'New thread'}</span>
+          <span>{intent}</span>
+          <span>{selectedExecutorName}</span>
+        </summary>
+        <div className="office-composer-context-controls">
+          <select
+            className="office-composer-select"
+            aria-label="Composer project"
+            value={selectedProjectId}
+            disabled={
+              projectLocked || projects.length === 0 || isSubmitting || isThreadLoading
+            }
+            onChange={(event) => onProjectChange?.(event.target.value)}
+          >
+            {projects.length === 0 ? (
+              <option value="">No registered Project</option>
+            ) : (
+              projects.map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.name}
+                </option>
+              ))
+            )}
+          </select>
+
+          <select
+            className="office-composer-select"
+            aria-label="Composer planning history"
+            value={selectedThreadId}
+            disabled={
+              !selectedProjectId ||
+              threads.length === 0 ||
+              isSubmitting ||
+              isThreadLoading
+            }
+            onChange={(event) => onThreadChange?.(event.target.value)}
+          >
+            <option value="">New planning thread</option>
+            {threads.map((thread) => (
+              <option key={thread.id} value={thread.id}>
+                {thread.title ?? `Thread ${thread.id.slice(0, 8)}`} · {thread.status}
               </option>
-            ))
-          )}
-        </select>
+            ))}
+          </select>
 
-        <select
-          className="office-composer-select"
-          aria-label="Composer planning history"
-          value={selectedThreadId}
-          disabled={
-            !selectedProjectId ||
-            threads.length === 0 ||
-            isSubmitting ||
-            isThreadLoading
-          }
-          onChange={(event) => onThreadChange?.(event.target.value)}
-        >
-          <option value="">New planning thread</option>
-          {threads.map((thread) => (
-            <option key={thread.id} value={thread.id}>
-              {thread.title ?? `Thread ${thread.id.slice(0, 8)}`} · {thread.status}
-            </option>
-          ))}
-        </select>
+          <select
+            className="office-composer-select"
+            aria-label="Composer intent"
+            value={intent}
+            disabled={isSubmitting || isThreadLoading}
+            onChange={(event) => setIntent(event.target.value as ComposerIntent)}
+          >
+            <option value="AUTO">AUTO</option>
+            <option value="ASK">ASK</option>
+            <option value="PLAN">PLAN</option>
+            <option value="BRAINSTORM">BRAINSTORM</option>
+            <option value="RUN">RUN</option>
+          </select>
 
-        <select
-          className="office-composer-select"
-          aria-label="Composer intent"
-          value={intent}
-          disabled={isSubmitting || isThreadLoading}
-          onChange={(event) => setIntent(event.target.value as ComposerIntent)}
-        >
-          <option value="AUTO">AUTO</option>
-          <option value="ASK">ASK</option>
-          <option value="PLAN">PLAN</option>
-          <option value="BRAINSTORM">BRAINSTORM</option>
-          <option value="RUN">RUN</option>
-        </select>
+          <select
+            className="office-composer-select"
+            aria-label="Composer executor"
+            value={executorId}
+            disabled={executors.length === 0 || isSubmitting || isThreadLoading}
+            onChange={(event) => setExecutorId(event.target.value)}
+          >
+            {executors.length === 0 && <option value="">No executor</option>}
+            {executors.map((executor) => (
+              <option key={executor.id} value={executor.id}>
+                {executor.name}
+              </option>
+            ))}
+          </select>
 
-        <select
-          className="office-composer-select"
-          aria-label="Composer executor"
-          value={executorId}
-          disabled={executors.length === 0 || isSubmitting || isThreadLoading}
-          onChange={(event) => setExecutorId(event.target.value)}
-        >
-          {executors.length === 0 && <option value="">No executor</option>}
-          {executors.map((executor) => (
-            <option key={executor.id} value={executor.id}>
-              {executor.name}
-            </option>
-          ))}
-        </select>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            disabled
+            title="Bounded context attachment is unavailable until a safe content contract exists."
+          >
+            + Context
+          </button>
 
-        <button
-          type="button"
-          className="btn btn-secondary btn-sm"
-          disabled
-          title="Bounded file/evidence context attachment arrives with the Phase 9D context resolver."
-        >
-          + Context
-        </button>
-
-        {contextLabel && <span className="office-composer-note">{contextLabel}</span>}
-      </div>
+          {contextLabel && <span className="office-composer-note">{contextLabel}</span>}
+        </div>
+      </details>
 
       <div className="office-composer-body">
         <label className="sr-only" htmlFor="office-universal-composer">
@@ -210,19 +234,16 @@ export function UniversalComposerShell({
         <div className="office-composer-actions">
           <button
             type="button"
-            className="btn btn-secondary btn-sm"
+            className="btn btn-primary btn-sm"
             disabled={!canSend}
+            title={
+              intent === 'RUN'
+                ? 'Review RUN intent and planning scope. This does not start execution.'
+                : undefined
+            }
             onClick={() => void submit()}
           >
-            {isThreadLoading ? 'Restoring…' : isSubmitting ? 'Preparing…' : 'Send'}
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary btn-sm"
-            disabled
-            title="Starting repository-changing execution remains blocked until Phase 9E promotion."
-          >
-            Start Run
+            {submitLabel}
           </button>
         </div>
       </div>
@@ -233,7 +254,7 @@ export function UniversalComposerShell({
         </span>
       ) : (
         <span className="office-composer-note">
-          Stored planning threads can be reopened for decisions and history. New prompts start a fresh deterministic planning turn unless an unprepared OPEN thread is being recovered.
+          Planning remains durable. RUN intent is reviewed before any explicit execution promotion.
         </span>
       )}
     </section>

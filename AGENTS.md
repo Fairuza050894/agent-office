@@ -42,6 +42,9 @@ security-sensitive work
 frontend/UX work
 → docs/ux/INFORMATION_ARCHITECTURE.md
 → .agents/skills/ao-ui-quality/SKILL.md
+
+Office / Planning / Shift Ruler work
+→ docs/ux/OFFICE_SHIFT_RULER_DIRECTION.md
 ```
 
 Read the full document only when the task genuinely spans the whole contract or targeted sections are insufficient.

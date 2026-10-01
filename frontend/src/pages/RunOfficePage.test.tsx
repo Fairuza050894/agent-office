@@ -267,7 +267,7 @@ describe('Agent Office operational scopes', () => {
       screen.queryByRole('region', { name: 'Universal Composer' }),
     ).not.toBeInTheDocument()
     expect(
-      screen.getByRole('link', { name: 'Workspace' }),
+      screen.getByRole('link', { name: 'Planning' }),
     ).toHaveAttribute(
       'href',
       `/office?project=${PROJECT.id}&floor=build`,
@@ -324,7 +324,7 @@ describe('Agent Office operational scopes', () => {
       screen.getByRole('button', { name: 'Replay' }),
     ).toHaveAttribute('aria-pressed', 'true')
     expect(
-      screen.getByRole('link', { name: 'Workspace' }),
+      screen.getByRole('link', { name: 'Planning' }),
     ).toHaveAttribute(
       'href',
       `/office?project=${PROJECT.id}&floor=strategy`,

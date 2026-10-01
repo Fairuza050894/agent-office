@@ -10,8 +10,9 @@ into different truth scopes; they are not separate virtual offices.
 ```text
 Agent Office
   |
-  +-- Workspace
-  |     planning + ambient + office-world context
+  +-- Planning
+  |     internal scope key: workspace
+  |     planning + ambient + canonical work projection
   |
   +-- Live Run
   |     canonical Run / AgentRun truth
@@ -27,16 +28,21 @@ Entry routes remain:
 /runs/:runId/office
 ```
 
-`/office` enters the Workspace scope. `/runs/:runId/office` deep-links the
-same Agent Office experience into the selected Run. From there the user may
-switch between Workspace, Live Run, and Replay without adopting a second office
-mental model.
+`/office` enters the visible **Planning** scope while retaining the internal
+`workspace` scope key for route/code compatibility. `/runs/:runId/office`
+deep-links the same Agent Office experience into the selected Run. From there
+the user may switch between Planning, Live Run, and Replay without adopting a
+second office mental model. The canonical Git `Workspace` domain keeps its
+existing isolated-worktree meaning.
 
 The 3D environment, floor vocabulary, camera model, character runtime, and
 interaction grammar are shared. Truth sources are not merged:
 
-- Workspace planning presence comes from durable planning records.
-- Workspace ambience is explicitly presentation-only.
+- Planning presence comes from durable planning records.
+- Planning ambience is explicitly presentation-only.
+- Planning may also project canonical WORK presence from Task / Run / AgentRun
+  truth established by Phase 10G; that layer remains distinct from planning and
+  ambience.
 - Live Run presence comes from canonical Run / AgentRun state.
 - Historical Replay comes from persisted factual timestamps/events.
 
@@ -286,8 +292,8 @@ The Phase 9A visual gate adds the following presentation rules:
 - Run Office View uses `Live run` / `Historical replay` language instead of
   conflating SSE connectivity with Run state
 - backend event connectivity is reported separately as an event-stream state
-- `/office` starts with the Operations Dock collapsed because no factual Run is
-  selected
+- `/office` starts with the Operations Dock open in normal state from Phase
+  10H-1 onward; Maximize may still force it compact as presentation-only state
 - maximize mode forces the dock into its compact state so command rail, Office,
   composer, and dock fit in one viewport
 - Runs registry and Run detail surfaces use the same dark control-room visual
@@ -297,3 +303,32 @@ The Phase 9A visual gate adds the following presentation rules:
 
 These are presentation changes only. They do not alter canonical Run, AgentRun,
 Event, replay, or Workspace semantics.
+
+
+## Phase 10H-1 vocabulary and structure override
+
+The owner-approved `docs/ux/OFFICE_SHIFT_RULER_DIRECTION.md` is the latest
+presentation contract for the shared Agent Office shell.
+
+Visible scope vocabulary is:
+
+```text
+Planning
+Live
+Replay
+```
+
+The internal `workspace` scope key remains compatible and the canonical
+`Workspace` domain still means an isolated execution workspace/worktree.
+
+Phase 10H-1 also establishes:
+
+- underlined text scope navigation rather than segmented cards;
+- compact Docket tabs that exist only when canonical source data exists;
+- Composer input after planning history/context, at the bottom of Discussion;
+- `+ Task` through the existing CreateTaskModal rather than a permanent form;
+- Planning Operations Dock open by default;
+- no Shift Ruler or truth-line implementation in this phase.
+
+Phase 10G canonical WORK projection remains valid inside Planning and must not
+be removed merely to match an older planning+ambient-only mock.

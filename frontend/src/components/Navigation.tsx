@@ -76,7 +76,7 @@ export function Navigation({
 
         <nav className="sidebar-nav" aria-label="Primary Navigation">
           <div className="nav-section">
-            <div className="nav-section-title">Workspace</div>
+            <div className="nav-section-title">Core</div>
             <ul className="nav-list">
               {coreItems.map((item) => (
                 <li key={item.id} className="nav-item">

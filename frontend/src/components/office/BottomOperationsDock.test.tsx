@@ -105,7 +105,7 @@ describe('BottomOperationsDock planning controls', () => {
         profiles={[]}
         selectedAgentId={null}
         onSelectAgent={() => undefined}
-        modeLabel="Workspace"
+        modeLabel="Planning"
         tasks={[TASK]}
       />,
     )
@@ -114,7 +114,8 @@ describe('BottomOperationsDock planning controls', () => {
 
     expect(screen.getByText(TASK.title)).toBeInTheDocument()
     expect(screen.getByText(TASK.objective)).toBeInTheDocument()
-    expect(screen.getByText(TASK.id.slice(0, 8))).toBeInTheDocument()
+    expect(screen.getByText('No run yet')).toBeInTheDocument()
+    expect(screen.getByText('No run')).toBeInTheDocument()
   })
 
 

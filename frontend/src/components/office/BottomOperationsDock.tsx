@@ -14,6 +14,7 @@ import type {
   PlanningArtifact,
   PlanningEvent,
   RequirementCandidate,
+  Run,
   Task,
   TeamProposal,
 } from '../../api'
@@ -37,6 +38,7 @@ export interface BottomOperationsDockProps {
   onSelectAgent: (agentId: string) => void
   modeLabel: string
   tasks?: Task[]
+  runs?: Run[]
   defaultState?: DockState
   forceCollapsed?: boolean
   planningThread?: ComposerThread | null
@@ -367,7 +369,7 @@ function RequirementList({
   )
 }
 
-function TaskList({ tasks }: { tasks: Task[] }) {
+function TaskList({ tasks, runs }: { tasks: Task[]; runs: Run[] }) {
   if (tasks.length === 0) {
     return (
       <div className="office-dock-empty">
@@ -376,19 +378,45 @@ function TaskList({ tasks }: { tasks: Task[] }) {
     )
   }
 
+  const latestRunByTask = new Map<string, Run>()
+  for (const run of runs) {
+    const current = latestRunByTask.get(run.task_id)
+    if (!current || run.updated_at.localeCompare(current.updated_at) > 0) {
+      latestRunByTask.set(run.task_id, run)
+    }
+  }
+
   return (
-    <>
-      {tasks.map((task) => (
-        <article key={task.id} className="office-dock-task">
-          <div>
-            <strong>{task.title}</strong>
-            <span>{task.id.slice(0, 8)}</span>
-          </div>
-          <p>{task.objective}</p>
-          {task.constraints && <small>{task.constraints}</small>}
-        </article>
-      ))}
-    </>
+    <div className="office-dock-task-table-wrap">
+      <table className="office-dock-task-table">
+        <thead>
+          <tr>
+            <th>Task</th>
+            <th>Run</th>
+            <th>State</th>
+          </tr>
+        </thead>
+        <tbody>
+          {tasks.map((task) => {
+            const run = latestRunByTask.get(task.id)
+            return (
+              <tr key={task.id}>
+                <td>
+                  <strong>{task.title}</strong>
+                  <small>{task.objective}</small>
+                </td>
+                <td>
+                  <code>{run ? run.id.slice(0, 8) : 'No run yet'}</code>
+                </td>
+                <td>
+                  <span>{run?.status ?? 'No run'}</span>
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
   )
 }
 
@@ -437,6 +465,7 @@ export function BottomOperationsDock({
   onSelectAgent,
   modeLabel,
   tasks = [],
+  runs = [],
   defaultState = 'normal',
   forceCollapsed = false,
   planningThread = null,
@@ -628,7 +657,7 @@ export function BottomOperationsDock({
           </div>
           <div className="office-dock-scroll" key={activeTab}>
             {activeTab === 'tasks' ? (
-              <TaskList tasks={tasks} />
+              <TaskList tasks={tasks} runs={runs} />
             ) : activeTab === 'activity' ? (
               planningThread ? (
                 <PlanningActivity events={planningEvents} />

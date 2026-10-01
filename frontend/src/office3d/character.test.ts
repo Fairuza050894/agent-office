@@ -48,12 +48,14 @@ describe('officeCharacterAppearance', () => {
     expect(shouldShowOfficeNameplate('COMPLETED', true)).toBe(true)
   })
 
-  it('uses one normalized forward axis for Live and Workspace while preserving Replay correction', () => {
+  it('faces Office walkers along travel while preserving Live and Replay conventions', () => {
     const directions = [
       new THREE.Vector3(0, 0, 1),
       new THREE.Vector3(0, 0, -1),
       new THREE.Vector3(1, 0, 0),
       new THREE.Vector3(-1, 0, 0),
+      new THREE.Vector3(1, 0, 1).normalize(),
+      new THREE.Vector3(-1, 0, -1).normalize(),
     ]
 
     directions.forEach((direction) => {
@@ -61,18 +63,18 @@ describe('officeCharacterAppearance', () => {
       const replayYaw = officeMovementYaw(direction, 'replay')
       const workspaceYaw = officeMovementYaw(direction, 'workspace')
 
-      expect(workspaceYaw).toBeCloseTo(liveYaw)
+      expect(liveYaw).toBeCloseTo(Math.atan2(direction.x, direction.z))
       expect(replayYaw - liveYaw).toBeCloseTo(Math.PI)
-    })
+      expect(workspaceYaw).toBeCloseTo(replayYaw)
 
-    expect(
-      officeMovementYaw(new THREE.Vector3(0, 0, 1), 'workspace'),
-    ).toBeCloseTo(0)
-    expect(
-      Math.abs(
-        officeMovementYaw(new THREE.Vector3(0, 0, -1), 'workspace'),
-      ),
-    ).toBeCloseTo(Math.PI)
+      // Office presentation forward is -Z after its model yaw offset.
+      // Test the resulting direction, rather than only comparing mode angles.
+      const visibleForward = new THREE.Vector3(0, 0, -1).applyAxisAngle(
+        new THREE.Vector3(0, 1, 0),
+        workspaceYaw,
+      )
+      expect(visibleForward.dot(direction)).toBeCloseTo(1)
+    })
   })
 
   it('gives Workspace idle a deterministic Sims-like posture cycle', () => {

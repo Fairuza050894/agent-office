@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 
 export type ContextRailTab = 'discussion' | 'details' | 'files' | 'logs'
 
@@ -7,9 +7,9 @@ export interface ContextualOperationsRailProps {
   eyebrow: string
   status?: string | null
   discussion: ReactNode
-  details: ReactNode
-  files: ReactNode
-  logs: ReactNode
+  details?: ReactNode | null
+  files?: ReactNode | null
+  logs?: ReactNode | null
   collapsed: boolean
   onToggleCollapsed: () => void
 }
@@ -34,12 +34,18 @@ export function ContextualOperationsRail({
 }: ContextualOperationsRailProps) {
   const [activeTab, setActiveTab] = useState<ContextRailTab>('discussion')
 
-  const content: Record<ContextRailTab, ReactNode> = {
+  const content: Record<ContextRailTab, ReactNode | null | undefined> = {
     discussion,
     details,
     files,
     logs,
   }
+  const availableTabs = (Object.keys(TAB_LABELS) as ContextRailTab[]).filter(
+    (tab) => tab === 'discussion' || content[tab] !== null && content[tab] !== undefined,
+  )
+  const renderedActiveTab = availableTabs.includes(activeTab)
+    ? activeTab
+    : 'discussion'
 
   if (collapsed) {
     return (
@@ -85,13 +91,13 @@ export function ContextualOperationsRail({
         role="tablist"
         aria-label="Contextual operations views"
       >
-        {(Object.keys(TAB_LABELS) as ContextRailTab[]).map((tab) => (
+        {availableTabs.map((tab) => (
           <button
             key={tab}
             type="button"
             role="tab"
-            aria-selected={activeTab === tab}
-            className={activeTab === tab ? 'active' : ''}
+            aria-selected={renderedActiveTab === tab}
+            className={renderedActiveTab === tab ? 'active' : ''}
             onClick={() => setActiveTab(tab)}
           >
             {TAB_LABELS[tab]}
@@ -102,77 +108,10 @@ export function ContextualOperationsRail({
       <div
         className="office-context-body"
         role="tabpanel"
-        aria-label={TAB_LABELS[activeTab]}
+        aria-label={TAB_LABELS[renderedActiveTab]}
       >
-        {content[activeTab]}
+        {content[renderedActiveTab]}
       </div>
     </aside>
-  )
-}
-
-export interface TaskQuickCreatePayload {
-  title: string
-  objective: string
-}
-
-export function TaskQuickCreate({
-  onCreate,
-  busy = false,
-  title = 'Create task',
-  submitLabel = 'Add task',
-  note,
-}: {
-  onCreate: (payload: TaskQuickCreatePayload) => Promise<unknown> | unknown
-  busy?: boolean
-  title?: string
-  submitLabel?: string
-  note?: string
-}) {
-  const [taskTitle, setTaskTitle] = useState('')
-  const [objective, setObjective] = useState('')
-
-  const submit = async (event: FormEvent) => {
-    event.preventDefault()
-    const cleanTitle = taskTitle.trim()
-    const cleanObjective = objective.trim()
-    if (!cleanTitle || !cleanObjective || busy) return
-    await onCreate({ title: cleanTitle, objective: cleanObjective })
-    setTaskTitle('')
-    setObjective('')
-  }
-
-  return (
-    <form className="office-context-task-create" onSubmit={(event) => void submit(event)}>
-      <div>
-        <strong>{title}</strong>
-        {note && <span>{note}</span>}
-      </div>
-      <label>
-        <span>Title</span>
-        <input
-          value={taskTitle}
-          disabled={busy}
-          onChange={(event) => setTaskTitle(event.target.value)}
-          placeholder="Short actionable task"
-        />
-      </label>
-      <label>
-        <span>Objective</span>
-        <textarea
-          value={objective}
-          disabled={busy}
-          onChange={(event) => setObjective(event.target.value)}
-          placeholder="What must be accomplished?"
-          rows={3}
-        />
-      </label>
-      <button
-        type="submit"
-        className="btn btn-secondary btn-sm"
-        disabled={busy || !taskTitle.trim() || !objective.trim()}
-      >
-        {busy ? 'Creating…' : submitLabel}
-      </button>
-    </form>
   )
 }
