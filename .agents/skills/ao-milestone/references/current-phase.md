@@ -18,8 +18,9 @@ Canonical full verification:
 
 ```text
 branch: polish/office-3d-experience
+pr: #25
 scope: post-10H-1 Office 3D experience polish
-status: IMPLEMENTED / VERIFICATION PENDING
+status: DRAFT / VERIFICATION PENDING
 ```
 
 ## Why this polish exists
