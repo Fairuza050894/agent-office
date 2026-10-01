@@ -516,7 +516,6 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
       <OfficeCommandRail
         title="Agent Office"
         projectName={project?.name ?? run.project_id}
-        modeLabel={officeMode === 'replay' ? 'Replay' : 'Live'}
         statusLabel={run.status}
         meta={`${agents.length} AgentRun${agents.length === 1 ? '' : 's'} · ${stages.length} stage${stages.length === 1 ? '' : 's'}`}
         actions={
