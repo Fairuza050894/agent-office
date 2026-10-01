@@ -3,9 +3,9 @@
 ## Current checkpoint
 
 ```text
-main@795b588
-Phase 10H0 merged
-PR #23 Baseline Truth Hardening merged
+main@a0b3505
+Phase 10H-1 merged
+PR #24 Vocabulary & Structure merged
 ```
 
 Canonical full verification:
@@ -17,62 +17,53 @@ Canonical full verification:
 ## Current work
 
 ```text
-branch: phase-10h1-office-structure
-phase: Phase 10H-1 — Vocabulary & Structure
-status: IMPLEMENTED / DRAFT VERIFICATION
+branch: polish/office-3d-experience
+scope: post-10H-1 Office 3D experience polish
+status: IMPLEMENTED / VERIFICATION PENDING
 ```
 
-## Owner-approved override
+## Why this polish exists
 
-The latest Office direction is now:
+The Phase 10H-1 structure is merged and accepted, but the final responsive review
+recorded three non-blocking follow-ups that materially affect the product feel:
 
-```text
-docs/ux/OFFICE_SHIFT_RULER_DIRECTION.md
-```
+- night-scene readability is too low;
+- the narrow-screen Office world HUD is vertically expensive;
+- the merged milestone/docs still contain stale pre-merge status and older
+  Workspace-facing wording.
 
-It supersedes older /office presentation wording when they conflict, while
-preserving canonical workflow, Run / AgentRun, Workspace-worktree, Evidence,
-Finding, and replay truth contracts.
+This branch fixes those follow-ups without starting Phase 10H-2 early.
 
-## Phase 10H-1 scope
+## Scope
 
-Implemented:
-
-- visible scope vocabulary is Planning / Live / Replay;
-- internal scope key `workspace` remains compatible;
-- generic navigation grouping no longer uses Workspace as a UI category;
-- scope navigation is underlined text rather than segmented boxes;
-- top rail and contextual Docket are flatter and denser;
-- optional Details / Files / Logs tabs render only when canonical source data exists;
-- Planning Composer puts durable history/context before the input, leaving the
-  input/action at the bottom of Discussion;
-- permanent inline Task creation is removed;
-- `+ Task` opens the existing CreateTaskModal;
-- Planning Operations Dock defaults open;
-- Tasks view exposes factual Task / latest Run / state relationships;
-- Phase 10G canonical WORK projection is retained alongside PLANNING and AMBIENT
-  truth layers.
+- improve night lighting readability while keeping night visually dimmer than day;
+- allow a closer 3D camera distance and a longer selected-agent focus linger;
+- compact the mobile Office world HUD into a horizontal status rail;
+- flatten the selected-member inspector to the current Office visual language;
+- reconcile milestone and Office documentation with merged Phase 10H-1 truth.
 
 ## Explicitly deferred
 
 ### Phase 10H-2 — read-only Shift Ruler
 
-No ruler implementation belongs in this PR.
+Still a separate phase and PR.
 
 ### Phase 10H-3 — truth lines
 
-No WORK / PLANNING / AMBIENT line styling belongs in this PR.
+Still a separate phase and PR.
 
 ### Replay ruler scrubbing
 
-Requires an explicit later go/no-go after read-only ruler verification.
+Still requires a later explicit go/no-go after the read-only ruler and truth-line
+phases are verified.
 
 ## Safety invariants
 
 - no fake execution;
-- no fake RunStage duration;
+- no fake stage duration or progress;
 - no backend/schema changes;
+- no new dependency;
 - no auto merge;
 - no force push;
 - internal Workspace worktree semantics unchanged;
-- Live / Replay truth boundaries unchanged.
+- Planning / Live / Replay truth boundaries unchanged.
