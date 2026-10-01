@@ -830,11 +830,7 @@ export function OfficeWorkspacePage() {
       <OfficeCommandRail
         title="Agent Office"
         projectName={selectedProject?.name ?? 'No Project selected'}
-        modeLabel={
-          planningMode
-            ? `Planning · ${planningMode}`
-            : 'Planning'
-        }
+        modeLabel={planningMode ?? undefined}
         statusLabel={
           isLoading
             ? 'Loading registries'
