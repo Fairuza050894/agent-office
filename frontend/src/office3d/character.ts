@@ -324,11 +324,10 @@ export function officeMovementYaw(
 ): number {
   const forwardYaw = Math.atan2(direction.x, direction.z)
 
-  // The GLB itself is normalized once with MODEL_YAW_OFFSET. Workspace must
-  // therefore use the same root-facing contract as Live. Applying another PI
-  // in Workspace double-corrects the rig and makes it visually walk backward.
-  // Replay keeps its separately verified historical presentation correction.
-  return facing === 'replay' ? forwardYaw + Math.PI : forwardYaw
+  // Office walkers need the same presentation-facing correction as Replay.
+  // Keep Live's existing convention: changing the model offset globally would
+  // also rotate stationary characters and the already-verified Run view.
+  return facing === 'live' ? forwardYaw : forwardYaw + Math.PI
 }
 
 function stableCharacterHash(value: string): number {
