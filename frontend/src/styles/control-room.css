@@ -4634,3 +4634,158 @@ button.office-scope-link {
     writing-mode: horizontal-tb;
   }
 }
+
+
+/* Post-10H-1 — 3D Office readability and narrow-screen polish */
+
+.office-structure-v2 .office-member-inspector {
+  border-color: var(--ao-border);
+  border-radius: var(--ao-radius-sm);
+  background: var(--ao-canvas-raised);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.office-structure-v2 .office-member-inspector-head {
+  border-bottom-color: var(--ao-border);
+}
+
+.office-structure-v2 .office-member-inspector-head button {
+  border-color: var(--ao-border);
+  border-radius: var(--ao-radius-sm);
+  background: transparent;
+}
+
+@media (max-width: 560px) {
+  .office-structure-v2 .office-scene-heading-workspace {
+    gap: 5px;
+    padding: 6px 7px 7px;
+  }
+
+  .office-structure-v2 .office-scene-heading-workspace .office-world-hud {
+    display: flex;
+    width: 100%;
+    max-width: 100%;
+    gap: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 2px;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+  }
+
+  .office-structure-v2 .office-scene-heading-workspace .office-world-clock-card,
+  .office-structure-v2 .office-scene-heading-workspace .office-world-stat {
+    min-width: 112px;
+    min-height: 38px;
+    flex: 0 0 112px;
+    padding: 4px 7px;
+    border-right: 1px solid var(--ao-border);
+  }
+
+  .office-structure-v2 .office-scene-heading-workspace .office-world-next {
+    min-width: 148px;
+    flex-basis: 148px;
+  }
+
+  .office-structure-v2 .office-scene-heading-workspace .office-world-clock-card > small,
+  .office-structure-v2 .office-scene-heading-workspace .office-world-stat > small {
+    max-width: 100%;
+  }
+}
+
+
+/* Post-10H-1 rendered review — keep the 3D stage dominant on tablet/mobile. */
+
+@media (max-width: 1080px) {
+  .office-structure-v2 .office-context-layout,
+  .office-structure-v2 .office-context-layout.context-collapsed {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .office-structure-v2 .office-context-rail {
+    max-height: 320px;
+  }
+
+  .office-structure-v2 .office-context-rail.is-collapsed {
+    min-height: 34px;
+  }
+
+  .office-structure-v2 .office-context-rail-expand {
+    min-height: 34px;
+    writing-mode: horizontal-tb;
+  }
+}
+
+@media (max-width: 560px) {
+  .office-shell-focus .app-main {
+    min-width: 0;
+    padding: 12px 10px 28px;
+    overflow-x: hidden;
+  }
+
+  .office-structure-v2,
+  .office-structure-v2 .office-context-layout,
+  .office-structure-v2 .office-workspace-stage,
+  .office-structure-v2 .office-renderer {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .office-structure-v2 .office-command-context {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .office-structure-v2 .office-command-actions {
+    width: 100%;
+    min-width: 0;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+  }
+
+  .office-structure-v2 .office-scene-heading-workspace {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .office-structure-v2 .office-scene-heading-workspace .office-world-hud {
+    min-width: 0;
+    flex-direction: row;
+    align-items: stretch;
+    flex-wrap: nowrap;
+  }
+
+  .office-structure-v2 .office-scene-heading-workspace .office-world-clock-card,
+  .office-structure-v2 .office-scene-heading-workspace .office-world-stat {
+    min-width: 96px;
+    flex: 0 0 96px;
+  }
+
+  .office-structure-v2 .office-scene-heading-workspace .office-world-next {
+    min-width: 128px;
+    flex-basis: 128px;
+  }
+
+  .office-structure-v2 .office-scene-navigation-workspace,
+  .office-structure-v2 .office-floor-switcher-workspace {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .office-structure-v2 .office-three-host {
+    height: clamp(300px, 72vh, 380px);
+    min-height: 300px;
+  }
+
+  .office-structure-v2 .office-context-rail {
+    max-height: 300px;
+  }
+}

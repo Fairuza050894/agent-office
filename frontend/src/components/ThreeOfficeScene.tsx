@@ -857,7 +857,7 @@ export function ThreeOfficeScene({
       if (runtime) {
         engine.cameraTransition = null
         engine.focusTarget = runtime.root.position.clone()
-        engine.focusUntil = performance.now() + 850
+        engine.focusUntil = performance.now() + 1300
         startLoop()
       }
     }

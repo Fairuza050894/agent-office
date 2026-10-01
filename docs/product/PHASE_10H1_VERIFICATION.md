@@ -1,7 +1,9 @@
 # Phase 10H-1 Verification — Vocabulary & Structure
 
-Status: IMPLEMENTED / DRAFT VERIFICATION  
+Status: MERGED / ACCEPTED  
 Base: `main@795b588`  
+Final branch head: `725c448`  
+Merge commit: `a0b3505`  
 Branch: `phase-10h1-office-structure`
 
 ## Purpose
@@ -134,9 +136,9 @@ Review hierarchy, density, 3D dominance, Docket width, composer ordering,
 conditional tabs, Dock default state, modal task flow, responsive behavior, and
 absence of card/gradient/shadow regression.
 
-## Merge gate
+## Merge record
 
-The PR remains Draft until:
+PR #24 passed its scoped automated and rendered acceptance gates before the owner merged it. The recorded gate was:
 
 1. targeted frontend tests pass;
 2. canonical `./scripts/verify.sh` passes;
@@ -144,4 +146,4 @@ The PR remains Draft until:
 4. rendered review passes;
 5. working tree is clean.
 
-Merge remains manual.
+Merge was completed manually by the owner on 2026-10-01. Post-merge visual/readability polish is tracked separately and does not reopen Phase 10H-1 architecture.
