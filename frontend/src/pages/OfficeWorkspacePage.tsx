@@ -229,7 +229,6 @@ export function OfficeWorkspacePage() {
           loadedTasks.map((task) => api.listRuns(task.id)),
         )
         const allRuns = runGroups.flat()
-        setProjectRuns(allRuns)
         const activeRuns = allRuns.filter(
           (run) =>
             !['COMPLETED', 'FAILED', 'CANCELLED'].includes(
@@ -278,6 +277,7 @@ export function OfficeWorkspacePage() {
         )
 
         setTasks(loadedTasks)
+        setProjectRuns(allRuns)
         setWorkAssignments(assignments)
         const latest =
           allRuns
