@@ -198,7 +198,7 @@ Primary routes:
 /runs/:runId/office
 ```
 
-`/office` is the project-aware **Workspace scope**. It may render planning
+`/office` is the project-aware **Planning scope** (internal key: `workspace`). It may render planning
 and clearly labelled ambient presence without factual AgentRuns.
 
 `/runs/:runId/office` is a backward-compatible **Run-scoped entry point** into
@@ -234,7 +234,7 @@ changes the rail context rather than opening a second inspector surface.
 The Bottom Operations Dock remains the compact shared surface for canonical
 Tasks, activity, planning queues, and the factual AgentRun/planning team.
 
-In Workspace scope, the existing Universal Composer is hosted inside Discussion.
+In Planning scope, the existing Universal Composer is hosted inside Discussion.
 It continues to use durable planning APIs and must not fabricate role messages.
 Creating a Task from the rail creates Task truth only; Start Run remains governed
 by the planning-to-execution promotion contract.
