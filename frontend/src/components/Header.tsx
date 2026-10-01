@@ -30,6 +30,10 @@ export function Header({
   const [status, setStatus] = useState<
     'checking' | 'connected' | 'disconnected'
   >(initialStatus ?? 'checking')
+  const [lastCheckedAt, setLastCheckedAt] = useState<number | null>(
+    initialStatus === undefined ? null : Date.now(),
+  )
+  const [clockNow, setClockNow] = useState(() => Date.now())
 
   const checkHealth = useCallback(async () => {
     setStatus('checking')
@@ -39,6 +43,10 @@ export function Header({
       setStatus(response.status === 'ok' ? 'connected' : 'disconnected')
     } catch {
       setStatus('disconnected')
+    } finally {
+      const checkedAt = Date.now()
+      setLastCheckedAt(checkedAt)
+      setClockNow(checkedAt)
     }
   }, [])
 
@@ -49,27 +57,44 @@ export function Header({
 
     let active = true
 
-    api
-      .getHealth()
-      .then((response) => {
+    const pollHealth = async (showChecking: boolean) => {
+      if (showChecking && active) setStatus('checking')
+
+      try {
+        const response = await api.getHealth()
         if (active) {
-          setStatus(
-            response.status === 'ok'
-              ? 'connected'
-              : 'disconnected',
-          )
+          setStatus(response.status === 'ok' ? 'connected' : 'disconnected')
         }
-      })
-      .catch(() => {
+      } catch {
+        if (active) setStatus('disconnected')
+      } finally {
         if (active) {
-          setStatus('disconnected')
+          const checkedAt = Date.now()
+          setLastCheckedAt(checkedAt)
+          setClockNow(checkedAt)
         }
-      })
+      }
+    }
+
+    void pollHealth(true)
+    const healthTimer = window.setInterval(() => {
+      void pollHealth(false)
+    }, 12_000)
+    const ageTimer = window.setInterval(() => {
+      setClockNow(Date.now())
+    }, 1_000)
 
     return () => {
       active = false
+      window.clearInterval(healthTimer)
+      window.clearInterval(ageTimer)
     }
   }, [initialStatus])
+
+  const checkedAgeSeconds =
+    lastCheckedAt === null
+      ? null
+      : Math.max(0, Math.floor((clockNow - lastCheckedAt) / 1_000))
 
   const statusText =
     status === 'connected'
@@ -118,7 +143,11 @@ export function Header({
             aria-hidden="true"
           />
           <span className="status-text">{statusText}</span>
-          <span className="status-subtext">/health</span>
+          <span className="status-subtext">
+            {checkedAgeSeconds === null
+              ? '/health'
+              : `checked ${checkedAgeSeconds}s ago`}
+          </span>
 
           {status === 'disconnected' && (
             <button
