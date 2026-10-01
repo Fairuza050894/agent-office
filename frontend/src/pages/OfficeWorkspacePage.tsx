@@ -978,6 +978,18 @@ export function OfficeWorkspacePage() {
                 messages={messages}
                 error={composerError}
               />
+            </div>
+          }
+          details={
+            <div className="office-context-stack">
+              <dl className="office-context-facts">
+                <div><dt>Project</dt><dd>{selectedProject?.name ?? 'Unavailable'}</dd></div>
+                <div><dt>Repository</dt><dd>{selectedProject?.repository.name ?? 'Unavailable'}</dd></div>
+                <div><dt>Branch</dt><dd>{selectedProject?.default_branch ?? 'Unavailable'}</dd></div>
+                <div><dt>Thread</dt><dd>{activeThread ? activeThread.id.slice(0, 8) : 'None'}</dd></div>
+                <div><dt>Tasks</dt><dd>{tasks.length}</dd></div>
+                <div><dt>Latest Run</dt><dd>{latestProjectRun ? `${latestProjectRun.id.slice(0, 8)} · ${latestProjectRun.status}` : 'None'}</dd></div>
+              </dl>
               <TaskQuickCreate
                 busy={taskActionBusy}
                 onCreate={createWorkspaceTask}
@@ -999,18 +1011,6 @@ export function OfficeWorkspacePage() {
                   {taskActionMessage}
                 </span>
               )}
-            </div>
-          }
-          details={
-            <div className="office-context-stack">
-              <dl className="office-context-facts">
-                <div><dt>Project</dt><dd>{selectedProject?.name ?? 'Unavailable'}</dd></div>
-                <div><dt>Repository</dt><dd>{selectedProject?.repository.name ?? 'Unavailable'}</dd></div>
-                <div><dt>Branch</dt><dd>{selectedProject?.default_branch ?? 'Unavailable'}</dd></div>
-                <div><dt>Thread</dt><dd>{activeThread ? activeThread.id.slice(0, 8) : 'None'}</dd></div>
-                <div><dt>Tasks</dt><dd>{tasks.length}</dd></div>
-                <div><dt>Latest Run</dt><dd>{latestProjectRun ? `${latestProjectRun.id.slice(0, 8)} · ${latestProjectRun.status}` : 'None'}</dd></div>
-              </dl>
               {selectedOfficeMember && (
                 <div className="office-context-callout">
                   <strong>{selectedOfficeMember.name}</strong>
