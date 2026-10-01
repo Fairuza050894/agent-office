@@ -24,6 +24,7 @@ import {
   type TaskQuickCreatePayload,
 } from '../components/office/ContextualOperationsRail'
 import { OfficeCommandRail } from '../components/office/OfficeCommandRail'
+import { OfficeShiftRuler } from '../components/office/OfficeShiftRuler'
 import { AgentOfficeScopeSwitcher } from '../components/office/AgentOfficeScopeSwitcher'
 import {
   UniversalComposerShell,
@@ -117,6 +118,7 @@ export function OfficeWorkspacePage() {
   >(null)
   const [registryError, setRegistryError] = useState<string | null>(null)
   const [latestProjectRun, setLatestProjectRun] = useState<Run | null>(null)
+  const [projectRuns, setProjectRuns] = useState<Run[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
   const [workAssignments, setWorkAssignments] = useState<OfficeWorkAssignment[]>([])
   const [taskActionBusy, setTaskActionBusy] = useState(false)
@@ -267,12 +269,14 @@ export function OfficeWorkspacePage() {
                 agentRunStatus: agent.status,
                 agentProfileKey: agent.agent_profile_key,
                 stageKey: agent.stage_key,
+                startedAt: agent.started_at ?? agent.created_at,
                 updatedAt: agent.updated_at,
               }))
           },
         )
 
         setTasks(loadedTasks)
+        setProjectRuns(allRuns)
         setWorkAssignments(assignments)
         const latest =
           allRuns
@@ -284,6 +288,7 @@ export function OfficeWorkspacePage() {
       } catch {
         if (active) {
           setTasks([])
+          setProjectRuns([])
           setWorkAssignments([])
           setLatestProjectRun(null)
         }
@@ -497,6 +502,7 @@ export function OfficeWorkspacePage() {
     setComposerError(null)
     setTaskActionMessage(null)
     setTasks([])
+    setProjectRuns([])
     setWorkAssignments([])
     setLatestProjectRun(null)
   }
@@ -803,7 +809,7 @@ export function OfficeWorkspacePage() {
 
   return (
     <div
-      className={`page-view office-workspace ${isMaximized ? 'office-maximized' : ''}`}
+      className={`page-view office-workspace office-control-plane-v2 ${isMaximized ? 'office-maximized' : ''}`}
     >
       <OfficeCommandRail
         title="Agent Office"
@@ -1065,6 +1071,14 @@ export function OfficeWorkspacePage() {
         />
       </div>
 
+      <OfficeShiftRuler
+        tasks={tasks}
+        runs={projectRuns}
+        assignments={workAssignments}
+        timeZone={officeTimeZone}
+        now={officeClockNow}
+      />
+
       <BottomOperationsDock
         key={activeThread?.id ?? 'idle-workspace'}
         events={[]}
@@ -1078,7 +1092,7 @@ export function OfficeWorkspacePage() {
             ? `${planningMode} · ${activeThread.status}`
             : 'Workspace'
         }
-        defaultState={activeThread ? 'normal' : 'collapsed'}
+        defaultState="collapsed"
         forceCollapsed={isMaximized}
         planningThread={activeThread}
         planningTeam={planningTeam}
