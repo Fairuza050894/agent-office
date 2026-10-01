@@ -188,6 +188,8 @@ describe('Agent Office operational shell', () => {
       expect(within(rail).getByLabelText('Composer project')).toHaveValue(project.id)
     })
 
+    fireEvent.click(within(rail).getByRole('tab', { name: 'Details' }))
+
     fireEvent.change(
       within(rail).getByPlaceholderText('Short actionable task'),
       { target: { value: createdTask.title } },
@@ -446,6 +448,7 @@ describe('Agent Office operational shell', () => {
     const operationsDock = screen.getByRole('region', {
       name: 'Bottom Operations Dock',
     })
+    fireEvent.click(within(operationsDock).getByRole('button', { name: 'Open' }))
     const resizeHandle = within(operationsDock).getByRole('separator', {
       name: 'Resize Operations Dock',
     })
