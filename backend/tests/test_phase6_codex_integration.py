@@ -18,6 +18,11 @@ from agent_office.infrastructure.executors.codex import CODEX_EXECUTOR_ID
 from agent_office.main import create_app
 
 
+# Test-harness scheduling tolerance for the deterministic fake Codex subprocess.
+# This does not alter production executor defaults or fail-closed semantics.
+_FAKE_CODEX_TIMEOUT_SECONDS = 5.0
+
+
 def _git(repo: Path, *args: str) -> str:
     completed = subprocess.run(
         ["git", *args],
@@ -98,9 +103,9 @@ def test_codex_run_is_bound_to_an_isolated_workspace_and_canonical_state(
             database_path=data_root / "agent-office.sqlite",
             codex_enabled=True,
             codex_cli_path=str(executable),
-            codex_probe_timeout_seconds=1.0,
-            codex_start_timeout_seconds=1.0,
-            codex_cancel_timeout_seconds=1.0,
+            codex_probe_timeout_seconds=_FAKE_CODEX_TIMEOUT_SECONDS,
+            codex_start_timeout_seconds=_FAKE_CODEX_TIMEOUT_SECONDS,
+            codex_cancel_timeout_seconds=_FAKE_CODEX_TIMEOUT_SECONDS,
         )
     )
 
