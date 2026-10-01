@@ -59,7 +59,7 @@ describe('Agent Office operational shell', () => {
     render(<App initialPath="/settings" />)
 
     const nav = screen.getByRole('navigation', { name: 'Primary Navigation' })
-    expect(within(nav).getByText('Workspace')).toBeInTheDocument()
+    expect(within(nav).getByText('Work')).toBeInTheDocument()
     const moreToolsSummary = within(nav).getByText('More tools')
     expect(moreToolsSummary).toBeInTheDocument()
     expect(moreToolsSummary.closest('details')).toHaveAttribute('open')
@@ -119,14 +119,18 @@ describe('Agent Office operational shell', () => {
     expect(screen.getByRole('region', { name: 'Universal Composer' })).toBeInTheDocument()
     expect(
       screen.getByRole('region', { name: 'Bottom Operations Dock' }),
-    ).toHaveClass('dock-collapsed')
+    ).toHaveClass('dock-normal')
     expect(screen.getByRole('button', { name: /L1.*Commons/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /L2.*Build/i })).toBeInTheDocument()
     const strategyFloor = screen.getByRole('button', { name: /L3.*Strategy/i })
     expect(strategyFloor).toBeInTheDocument()
     expect(strategyFloor).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Start Run' })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: 'Start Run' })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Planning' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
   })
 
   it('keeps successful Office registries usable when one registry fails', async () => {
@@ -187,7 +191,7 @@ describe('Agent Office operational shell', () => {
     ).toBeInTheDocument()
   })
 
-  it('creates canonical project tasks from the Workspace context rail and projects them into the Dock', async () => {
+  it('creates canonical project tasks from the Planning task action and projects them into the Dock', async () => {
     const project = {
       id: '10111111-1111-4111-8111-111111111111',
       name: 'Context Project',
@@ -246,15 +250,15 @@ describe('Agent Office operational shell', () => {
       expect(within(rail).getByLabelText('Composer project')).toHaveValue(project.id)
     })
 
-    fireEvent.change(
-      within(rail).getByPlaceholderText('Short actionable task'),
-      { target: { value: createdTask.title } },
-    )
-    fireEvent.change(
-      within(rail).getByPlaceholderText('What must be accomplished?'),
-      { target: { value: createdTask.objective } },
-    )
-    fireEvent.click(within(rail).getByRole('button', { name: 'Add task' }))
+    fireEvent.click(screen.getByRole('button', { name: '+ Task' }))
+    const dialog = screen.getByRole('dialog', { name: 'Create Task' })
+    fireEvent.change(within(dialog).getByLabelText(/Task Title/), {
+      target: { value: createdTask.title },
+    })
+    fireEvent.change(within(dialog).getByLabelText(/Objective/), {
+      target: { value: createdTask.objective },
+    })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Create Task' }))
 
     expect(
       await within(rail).findByText(/Task 10222222 created/),
@@ -497,7 +501,7 @@ describe('Agent Office operational shell', () => {
     expect(within(planningTeam).getByText('qa-engineer')).toBeInTheDocument()
     expect(within(planningTeam).getByText('EXCLUDED')).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: 'Deferred' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Start Run' })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: 'Start Run' })).not.toBeInTheDocument()
     expect(
       screen.getByText('Not inspected yet · Phase 9D read-only context'),
     ).toBeInTheDocument()
@@ -652,7 +656,7 @@ describe('Agent Office operational shell', () => {
     expect(
       await screen.findByRole('region', { name: 'Planning team proposal' }),
     ).toHaveTextContent('ACCEPTED')
-    expect(screen.getByRole('button', { name: 'Start Run' })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: 'Start Run' })).not.toBeInTheDocument()
   })
 
   it('renders backend-derived Overview empty states without fake KPIs', async () => {
