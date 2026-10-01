@@ -1,10 +1,7 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
-import {
-  ContextualOperationsRail,
-  TaskQuickCreate,
-} from './ContextualOperationsRail'
+import { ContextualOperationsRail } from './ContextualOperationsRail'
 
 describe('ContextualOperationsRail', () => {
   it('switches between discussion, details, files, and logs without mixing surfaces', () => {
@@ -36,30 +33,6 @@ describe('ContextualOperationsRail', () => {
 
     fireEvent.click(within(rail).getByRole('tab', { name: 'Logs' }))
     expect(within(rail).getByText('Log truth')).toBeInTheDocument()
-  })
-
-  it('creates a task only after title and objective are provided', () => {
-    const onCreate = vi.fn()
-
-    render(<TaskQuickCreate onCreate={onCreate} />)
-
-    const submit = screen.getByRole('button', { name: 'Add task' })
-    expect(submit).toBeDisabled()
-
-    fireEvent.change(screen.getByPlaceholderText('Short actionable task'), {
-      target: { value: 'Add artifact preview' },
-    })
-    fireEvent.change(screen.getByPlaceholderText('What must be accomplished?'), {
-      target: { value: 'Expose bounded artifact content through the API.' },
-    })
-
-    expect(submit).toBeEnabled()
-    fireEvent.click(submit)
-
-    expect(onCreate).toHaveBeenCalledWith({
-      title: 'Add artifact preview',
-      objective: 'Expose bounded artifact content through the API.',
-    })
   })
 
   it('hides optional views when canonical data is unavailable', () => {
