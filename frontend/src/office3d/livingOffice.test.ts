@@ -477,10 +477,10 @@ describe('living office model', () => {
   })
 
   it('keeps non-planning roles as ambient presence during a fresh evening planning session', () => {
-    const now = new Date(2026, 8, 28, 19, 0)
+    const now = new Date('2026-09-28T19:00:00+07:00')
     const freshThread = {
       ...thread,
-      updated_at: new Date(2026, 8, 28, 18, 50).toISOString(),
+      updated_at: '2026-09-28T18:50:00+07:00',
     }
     const members = livingOfficeMembers(
       freshThread,
