@@ -6,6 +6,7 @@ import {
   type AgentProfile,
   type AgentRun,
   type AuditRecord,
+  type CreateTaskRequest,
   type Evidence,
   type Executor,
   type Finding,
@@ -18,13 +19,10 @@ import {
 } from '../api'
 import { EmptyState } from '../components/EmptyState'
 import { BottomOperationsDock } from '../components/office/BottomOperationsDock'
-import {
-  ContextualOperationsRail,
-  TaskQuickCreate,
-  type TaskQuickCreatePayload,
-} from '../components/office/ContextualOperationsRail'
+import { ContextualOperationsRail } from '../components/office/ContextualOperationsRail'
 import { OfficeCommandRail } from '../components/office/OfficeCommandRail'
 import { AgentOfficeScopeSwitcher } from '../components/office/AgentOfficeScopeSwitcher'
+import { CreateTaskModal } from '../components/CreateTaskModal'
 import { OfficeRendererBoundary } from '../components/OfficeRendererBoundary'
 import { OfficeScene } from '../components/OfficeScene'
 import {
@@ -75,8 +73,8 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
   const [workspaceStatuses, setWorkspaceStatuses] = useState<WorkspaceStatusResponse[]>([])
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null)
   const [contextCollapsed, setContextCollapsed] = useState(false)
-  const [taskActionBusy, setTaskActionBusy] = useState(false)
   const [taskActionMessage, setTaskActionMessage] = useState<string | null>(null)
+  const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false)
   const [motionPaused, setMotionPaused] = useState(false)
   const [isMaximized, setIsMaximized] = useState(false)
   const [officeMode, setOfficeMode] = useState<'live' | 'replay'>(
@@ -475,32 +473,26 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
     ? officeLatestAgentEvent(selectedAgent.id, events)
     : null
 
-  const createFollowUpTask = async (payload: TaskQuickCreatePayload) => {
-    setTaskActionBusy(true)
-    setTaskActionMessage(null)
-    try {
-      const created = await api.createTask(run.project_id, {
-        title: payload.title,
-        objective: payload.objective,
-        requested_executor_id:
-          selectedAgent?.executor_id ??
-          run.resolved_executor_id ??
-          run.requested_executor_id,
-      })
-      setTasks((current) => [
-        created,
-        ...current.filter((task) => task.id !== created.id),
-      ])
-      setTaskActionMessage(
-        `Follow-up Task ${created.id.slice(0, 8)} created. It is not started automatically.`,
-      )
-    } catch (reason) {
-      setTaskActionMessage(
-        reason instanceof Error ? reason.message : 'Unable to create follow-up Task.',
-      )
-    } finally {
-      setTaskActionBusy(false)
-    }
+  const createFollowUpTask = async (
+    projectId: string,
+    data: CreateTaskRequest,
+  ): Promise<Task> => {
+    const created = await api.createTask(projectId, {
+      ...data,
+      requested_executor_id:
+        data.requested_executor_id ??
+        selectedAgent?.executor_id ??
+        run.resolved_executor_id ??
+        run.requested_executor_id,
+    })
+    setTasks((current) => [
+      created,
+      ...current.filter((task) => task.id !== created.id),
+    ])
+    setTaskActionMessage(
+      `Follow-up Task ${created.id.slice(0, 8)} created. It is not started automatically.`,
+    )
+    return created
   }
 
   const contextualEvents = selectedAgent
@@ -569,6 +561,13 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
                     ? 'Manual refresh'
                     : 'Events disconnected'}
             </span>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => setIsCreateTaskOpen(true)}
+            >
+              + Task
+            </button>
             <details className="office-action-menu">
               <summary>Run controls</summary>
               <div>
@@ -692,13 +691,6 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
                   ))
                 )}
               </div>
-              <TaskQuickCreate
-                busy={taskActionBusy}
-                onCreate={createFollowUpTask}
-                title="Create follow-up task"
-                submitLabel="Add follow-up"
-                note="Creates canonical Task truth without interrupting or rewriting this AgentRun."
-              />
               {taskActionMessage && (
                 <span className="office-context-feedback" role="status">
                   {taskActionMessage}
@@ -728,6 +720,7 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
             </div>
           }
           files={
+            selectedWorkspaceStatus?.change_summary || contextualEvidence.length > 0 ? (
             <div className="office-context-stack">
               {selectedWorkspaceStatus?.change_summary ? (
                 <div className="office-context-file-group">
@@ -770,8 +763,10 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
                 </span>
               </div>
             </div>
+            ) : null
           }
           logs={
+            contextualEvents.length > 0 || auditRecords.length > 0 ? (
             <div className="office-context-stack">
               <div className="office-context-log">
                 {contextualEvents.map((event) => (
@@ -805,6 +800,7 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
                 </>
               )}
             </div>
+            ) : null
           }
         />
       </div>
@@ -816,12 +812,25 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
         selectedAgentId={selectedAgentId}
         onSelectAgent={(agentId) => selectOperationalAgent(agentId)}
         tasks={tasks}
+        runs={[run]}
         modeLabel={officeMode === 'replay' ? 'Replay' : 'Live Run'}
         forceCollapsed={isMaximized}
       />
 
+      {isCreateTaskOpen && (
+        <CreateTaskModal
+          key={`run-office-create-task-${run.project_id}`}
+          isOpen
+          projects={project ? [project] : []}
+          initialProjectId={run.project_id}
+          onClose={() => setIsCreateTaskOpen(false)}
+          onCreate={createFollowUpTask}
+          onSuccess={() => setIsCreateTaskOpen(false)}
+        />
+      )}
+
       <p className="office-workspace-note">
-        Agent Office is showing the canonical Run scope. Workspace, Live Run,
+        Agent Office is showing the canonical Run scope. Planning, Live Run,
         and Replay share one 3D office experience while preserving different
         truth sources. Run detail remains authoritative for execution controls,
         Findings, Evidence, approvals, and integration state.
