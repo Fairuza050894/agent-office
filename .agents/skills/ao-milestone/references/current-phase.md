@@ -3,9 +3,9 @@
 ## Current checkpoint
 
 ```text
-main@c8e9c58
-Phase 10F merged
-PR #20 contextual operations + spatial/collision hardening merged
+main@7a941d2
+Phase 10G merged
+PR #21 Living SDLC / AIDLC Workday Engine merged
 ```
 
 Canonical full verification:
@@ -20,44 +20,45 @@ That is infrastructure evidence only.
 ## Current work
 
 ```text
-branch: phase-10g-living-workday-engine
-phase: Phase 10G — Living SDLC / AIDLC Workday Engine
-status: IMPLEMENTED / DRAFT REVIEW
+branch: phase-10h-office-control-plane-simplification
+phase: Phase 10H-A — Office Control Plane Simplification
+status: IMPLEMENTED / DRAFT VISUAL REVIEW
 ```
 
-## Phase 10G truth model
+## Phase 10H-A visual direction
+
+- keep the living Three.js Office as the primary product surface;
+- reduce card density and repeated chrome;
+- compact Office-world status into one inline strip;
+- keep floor switching visible but quieter;
+- narrow and flatten the contextual rail;
+- move workday comprehension to a bottom Shift ruler;
+- default the legacy Operations Dock collapsed in Workspace.
+
+## Shift ruler truth model
+
+The first Shift ruler visualizes only facts that already exist:
 
 ```text
-WORK
-  Task + Run + AgentRun
-    ↓ precedence
-PLANNING
-  ComposerThread + TeamProposal
-    ↓ precedence
-AMBIENT
-  presentation-only office schedule
+Task
+  -> latest Run
+      -> factual Run started/completed/current window
+      -> current AgentRun stage/status
 ```
 
-## Implemented now
+Current stage/status is a present-state label only. It is not backfilled as
+fabricated historical stage duration.
 
-- active AgentRun creates canonical WORK presence in Workspace;
-- stage maps work to Strategy / Build functional areas;
-- active work suppresses duplicate planning/ambient role projection;
-- work projection refreshes every 15 seconds;
-- RUNNING work never fakes lunch/coffee/prayer pause;
-- WAITING/BLOCKED/PENDING work may use break zones;
-- provider break windows can support prayer/quiet presence without hard-coded
-  prayer times;
-- ambient relocation cadence reduced from ten minutes to three minutes;
-- stationary Workspace characters receive subtle deterministic micro-motion;
-- Phase 10F collision/facing safeguards remain active.
+## Still deferred
 
-## Deferred safely
+### Historical stage timing
+
+Stage-by-stage bars require factual `RunStage.started_at/completed_at` loading.
 
 ### Checkpointable WorkSession
 
-Real executor pause/resume is not implemented yet. It requires an explicit
-backend checkpoint contract.
+Real executor pause/resume still requires an explicit backend checkpoint
+contract.
 
 ### RAG retrieval provenance
 
@@ -66,6 +67,7 @@ No Context Used label is emitted until retrieval provenance exists.
 ## Safety invariants
 
 - no fake execution
+- no fake stage history
 - no fake pause
 - no fake RAG
 - no chain-of-thought exposure
