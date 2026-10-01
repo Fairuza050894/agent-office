@@ -4757,6 +4757,8 @@ button.office-scope-link {
 
   .office-structure-v2 .office-scene-heading-workspace .office-world-hud {
     min-width: 0;
+    flex-direction: row;
+    align-items: stretch;
     flex-wrap: nowrap;
   }
 
