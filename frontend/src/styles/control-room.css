@@ -4214,3 +4214,416 @@ button.office-scope-link {
     grid-column: 1;
   }
 }
+
+
+/* Phase 10H-1 — owner-approved /office vocabulary and structure */
+
+.office-structure-v2 {
+  gap: 7px;
+}
+
+.office-structure-v2 .office-command-rail {
+  min-height: 38px;
+  padding: 0 2px 5px;
+  border: 0;
+  border-bottom: 1px solid var(--ao-border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.office-structure-v2 .office-command-context {
+  gap: 8px;
+}
+
+.office-structure-v2 .office-command-title {
+  font-size: .78rem;
+}
+
+.office-structure-v2 .office-command-project {
+  color: var(--ao-text);
+}
+
+.office-structure-v2 .office-mode-indicator {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ao-text-muted);
+}
+
+.office-structure-v2 .office-command-actions {
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+
+.office-structure-v2 .office-command-actions .btn,
+.office-structure-v2 .office-action-menu > summary {
+  min-height: 26px;
+  height: 26px;
+  border-color: var(--ao-border);
+  border-radius: var(--ao-radius-sm);
+  background: transparent;
+  color: var(--ao-text-muted);
+  box-shadow: none;
+}
+
+.office-structure-v2 .office-command-actions .btn:hover:not(:disabled),
+.office-structure-v2 .office-action-menu > summary:hover,
+.office-structure-v2 .office-action-menu > summary:focus-visible {
+  border-color: var(--ao-border-strong);
+  background: var(--ao-surface);
+  color: var(--ao-text-strong);
+}
+
+.office-structure-v2 .office-scope-switcher {
+  height: 28px;
+  gap: 12px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.office-structure-v2 .office-scope-link {
+  position: relative;
+  height: 28px;
+  padding: 0 1px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ao-text-muted);
+  font-size: .58rem;
+  line-height: 26px;
+}
+
+.office-structure-v2 .office-scope-link:hover,
+.office-structure-v2 .office-scope-link:focus-visible {
+  background: transparent;
+  color: var(--ao-text-strong);
+}
+
+.office-structure-v2 .office-scope-link.active,
+.office-structure-v2 .office-scope-link[aria-pressed='true'] {
+  border-bottom-color: var(--ao-live);
+  background: transparent;
+  color: var(--ao-text-strong);
+  box-shadow: none;
+}
+
+.office-structure-v2 .office-scope-link.disabled,
+.office-structure-v2 .office-scope-link[aria-disabled='true'] {
+  color: var(--ao-text-faint);
+}
+
+.office-structure-v2 .office-context-layout {
+  grid-template-columns: minmax(0, 1fr) minmax(292px, 320px);
+  gap: 6px;
+}
+
+.office-structure-v2 .office-context-layout.context-collapsed {
+  grid-template-columns: minmax(0, 1fr) 36px;
+}
+
+.office-structure-v2 .office-context-rail {
+  border: 1px solid var(--ao-border);
+  border-radius: var(--ao-radius-sm);
+  background: var(--ao-canvas-raised);
+  box-shadow: none;
+}
+
+.office-structure-v2 .office-context-rail-header {
+  min-height: 44px;
+  padding: 7px 8px 6px;
+  border-bottom-color: var(--ao-border);
+  background: transparent;
+}
+
+.office-structure-v2 .office-context-rail-header span,
+.office-structure-v2 .office-context-rail-header small {
+  color: var(--ao-text-faint);
+}
+
+.office-structure-v2 .office-context-rail-header strong {
+  color: var(--ao-text-strong);
+}
+
+.office-structure-v2 .office-context-rail-collapse,
+.office-structure-v2 .office-context-rail-expand {
+  border-color: var(--ao-border);
+  border-radius: var(--ao-radius-sm);
+  background: transparent;
+  color: var(--ao-text-muted);
+}
+
+.office-structure-v2 .office-context-tabs {
+  display: flex;
+  gap: 12px;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--ao-border);
+  background: transparent;
+}
+
+.office-structure-v2 .office-context-tabs button {
+  width: auto;
+  padding: 7px 0 6px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--ao-text-faint);
+}
+
+.office-structure-v2 .office-context-tabs button:last-child {
+  border-right: 0;
+}
+
+.office-structure-v2 .office-context-tabs button.active {
+  border-bottom-color: var(--ao-live);
+  background: transparent;
+  color: var(--ao-text);
+}
+
+.office-structure-v2 .office-context-body {
+  padding: 7px 8px 8px;
+}
+
+.office-structure-v2 .office-context-stack {
+  gap: 6px;
+}
+
+.office-structure-v2 .office-context-callout,
+.office-structure-v2 .office-context-feedback,
+.office-structure-v2 .office-context-empty {
+  padding: 6px 7px;
+  border: 0;
+  border-left: 2px solid var(--ao-border-strong);
+  border-radius: 0;
+  background: transparent;
+}
+
+.office-structure-v2 .office-context-feedback {
+  border-left-color: var(--ao-live);
+}
+
+.office-structure-v2 .office-composer {
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.office-structure-v2 .office-composer-thread {
+  gap: 4px;
+  padding: 6px 0;
+  border: 0;
+  border-bottom: 1px solid var(--ao-border);
+  border-radius: 0;
+  background: transparent;
+}
+
+.office-structure-v2 .office-composer-message {
+  padding: 4px 0 4px 6px;
+  background: transparent;
+}
+
+.office-structure-v2 .office-composer-context {
+  display: block;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--ao-border);
+  border-radius: 0;
+  background: transparent;
+}
+
+.office-structure-v2 .office-composer-context > summary {
+  display: flex;
+  min-height: 28px;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  color: var(--ao-text-faint);
+  font-family: var(--ao-mono);
+  font-size: .46rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.office-structure-v2 .office-composer-context > summary::-webkit-details-marker {
+  display: none;
+}
+
+.office-structure-v2 .office-composer-context > summary > strong {
+  overflow: hidden;
+  color: var(--ao-text-muted);
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.office-structure-v2 .office-composer-context-controls {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 0 6px;
+  flex-wrap: wrap;
+}
+
+.office-structure-v2 .office-composer-select {
+  border-color: var(--ao-border);
+  border-radius: var(--ao-radius-sm);
+  background: var(--ao-surface);
+}
+
+.office-structure-v2 .office-composer-input {
+  min-height: 54px;
+  max-height: 110px;
+  border-color: var(--ao-border);
+  border-radius: var(--ao-radius-sm);
+  background: var(--ao-surface);
+}
+
+.office-structure-v2 .office-composer-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.office-structure-v2 .office-composer > .office-composer-note {
+  display: block;
+  color: var(--ao-text-faint);
+  font-size: .46rem;
+}
+
+.office-structure-v2 .office-world-clock-card,
+.office-structure-v2 .office-world-stat {
+  min-height: 34px;
+  padding: 3px 7px;
+  border: 0;
+  border-right: 1px solid var(--ao-border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.office-structure-v2 .office-world-clock-card:last-child,
+.office-structure-v2 .office-world-stat:last-child {
+  border-right: 0;
+}
+
+.office-structure-v2 .office-operations-dock {
+  border-color: var(--ao-border);
+  border-radius: var(--ao-radius-sm);
+  background: var(--ao-canvas-raised);
+  box-shadow: none;
+}
+
+.office-structure-v2 .office-operations-dock.dock-normal {
+  height: 184px;
+}
+
+.office-structure-v2 .office-dock-header,
+.office-structure-v2 .office-dock-panel-heading {
+  border-bottom-color: var(--ao-border);
+}
+
+.office-structure-v2 .office-dock-task-table-wrap {
+  min-width: 0;
+  overflow: auto;
+}
+
+.office-structure-v2 .office-dock-task-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.office-structure-v2 .office-dock-task-table th,
+.office-structure-v2 .office-dock-task-table td {
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--ao-line-soft);
+  text-align: left;
+  vertical-align: top;
+}
+
+.office-structure-v2 .office-dock-task-table th {
+  color: var(--ao-text-faint);
+  font-family: var(--ao-mono);
+  font-size: .43rem;
+  font-weight: 650;
+}
+
+.office-structure-v2 .office-dock-task-table th:first-child,
+.office-structure-v2 .office-dock-task-table td:first-child {
+  width: 58%;
+}
+
+.office-structure-v2 .office-dock-task-table strong,
+.office-structure-v2 .office-dock-task-table small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.office-structure-v2 .office-dock-task-table strong {
+  color: var(--ao-text);
+  font-size: .52rem;
+}
+
+.office-structure-v2 .office-dock-task-table small {
+  margin-top: 2px;
+  color: var(--ao-text-faint);
+  font-size: .45rem;
+}
+
+.office-structure-v2 .office-dock-task-table code,
+.office-structure-v2 .office-dock-task-table td:last-child {
+  color: var(--ao-text-muted);
+  font-family: var(--ao-mono);
+  font-size: .46rem;
+}
+
+.office-structure-v2 .modal-dialog {
+  border-color: var(--ao-border);
+  border-radius: var(--ao-radius-sm);
+  background: var(--ao-canvas-raised);
+  box-shadow: none;
+}
+
+.office-structure-v2 .modal-footer {
+  background: transparent;
+}
+
+@media (max-width: 1180px) {
+  .office-structure-v2 .office-command-rail {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .office-structure-v2 .office-command-actions {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .office-structure-v2 .office-context-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(276px, 304px);
+  }
+}
+
+@media (max-width: 900px) {
+  .office-structure-v2 .office-context-layout,
+  .office-structure-v2 .office-context-layout.context-collapsed {
+    grid-template-columns: 1fr;
+  }
+
+  .office-structure-v2 .office-context-rail.is-collapsed {
+    min-height: 34px;
+  }
+
+  .office-structure-v2 .office-context-rail-expand {
+    min-height: 34px;
+    writing-mode: horizontal-tb;
+  }
+}
