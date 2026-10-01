@@ -825,7 +825,7 @@ export function OfficeWorkspacePage() {
 
   return (
     <div
-      className={`page-view office-workspace ${isMaximized ? 'office-maximized' : ''}`}
+      className={`page-view office-workspace office-structure-v2 ${isMaximized ? 'office-maximized' : ''}`}
     >
       <OfficeCommandRail
         title="Agent Office"
