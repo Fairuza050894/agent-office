@@ -7,6 +7,7 @@ import {
   type ComposerMessage,
   type ComposerPreparation,
   type ComposerThread,
+  type CreateTaskRequest,
   type Executor,
   type IntentResolution,
   type PlanningArtifact,
@@ -18,17 +19,14 @@ import {
   type TeamProposal,
 } from '../api'
 import { BottomOperationsDock } from '../components/office/BottomOperationsDock'
-import {
-  ContextualOperationsRail,
-  TaskQuickCreate,
-  type TaskQuickCreatePayload,
-} from '../components/office/ContextualOperationsRail'
+import { ContextualOperationsRail } from '../components/office/ContextualOperationsRail'
 import { OfficeCommandRail } from '../components/office/OfficeCommandRail'
 import { AgentOfficeScopeSwitcher } from '../components/office/AgentOfficeScopeSwitcher'
 import {
   UniversalComposerShell,
   type ComposerSubmitPayload,
 } from '../components/office/UniversalComposerShell'
+import { CreateTaskModal } from '../components/CreateTaskModal'
 import { OfficeRendererBoundary } from '../components/OfficeRendererBoundary'
 import { OfficeScene } from '../components/OfficeScene'
 import { useRouter } from '../router/useRouter'
@@ -117,10 +115,12 @@ export function OfficeWorkspacePage() {
   >(null)
   const [registryError, setRegistryError] = useState<string | null>(null)
   const [latestProjectRun, setLatestProjectRun] = useState<Run | null>(null)
+  const [projectRuns, setProjectRuns] = useState<Run[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
   const [workAssignments, setWorkAssignments] = useState<OfficeWorkAssignment[]>([])
   const [taskActionBusy, setTaskActionBusy] = useState(false)
   const [taskActionMessage, setTaskActionMessage] = useState<string | null>(null)
+  const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false)
   const [contextCollapsed, setContextCollapsed] = useState(false)
 
   const [planningThreads, setPlanningThreads] = useState<ComposerThread[]>([])
@@ -229,6 +229,7 @@ export function OfficeWorkspacePage() {
           loadedTasks.map((task) => api.listRuns(task.id)),
         )
         const allRuns = runGroups.flat()
+        setProjectRuns(allRuns)
         const activeRuns = allRuns.filter(
           (run) =>
             !['COMPLETED', 'FAILED', 'CANCELLED'].includes(
@@ -288,6 +289,7 @@ export function OfficeWorkspacePage() {
       } catch {
         if (active) {
           setTasks([])
+          setProjectRuns([])
           setWorkAssignments([])
           setLatestProjectRun(null)
         }
@@ -410,7 +412,7 @@ export function OfficeWorkspacePage() {
     null
 
   const createWorkspaceTask = async (
-    payload: TaskQuickCreatePayload,
+    payload: { title: string; objective: string },
   ): Promise<Task | null> => {
     if (!selectedProjectId) {
       setTaskActionMessage('Select a Project before creating a Task.')
@@ -440,6 +442,21 @@ export function OfficeWorkspacePage() {
     } finally {
       setTaskActionBusy(false)
     }
+  }
+
+  const createTaskFromModal = async (
+    projectId: string,
+    data: CreateTaskRequest,
+  ): Promise<Task> => {
+    const created = await api.createTask(projectId, data)
+    setTasks((current) => [
+      created,
+      ...current.filter((task) => task.id !== created.id),
+    ])
+    setTaskActionMessage(
+      `Task ${created.id.slice(0, 8)} created. Execution remains gated by canonical Run promotion.`,
+    )
+    return created
   }
 
   const createTaskFromApprovedRequirements = async () => {
@@ -501,6 +518,7 @@ export function OfficeWorkspacePage() {
     setComposerError(null)
     setTaskActionMessage(null)
     setTasks([])
+    setProjectRuns([])
     setWorkAssignments([])
     setLatestProjectRun(null)
   }
@@ -814,8 +832,8 @@ export function OfficeWorkspacePage() {
         projectName={selectedProject?.name ?? 'No Project selected'}
         modeLabel={
           planningMode
-            ? `Workspace · ${planningMode}`
-            : 'Workspace'
+            ? `Planning · ${planningMode}`
+            : 'Planning'
         }
         statusLabel={
           isLoading
@@ -824,7 +842,7 @@ export function OfficeWorkspacePage() {
               ? `${workAssignments.length} active work assignment${workAssignments.length === 1 ? '' : 's'}`
               : activeThread
                 ? `${activeThread.status} planning thread`
-                : 'Project workspace'
+                : 'Planning workspace'
         }
         meta={
           registryError
@@ -847,6 +865,14 @@ export function OfficeWorkspacePage() {
                 Run {latestProjectRun.id.slice(0, 8)} · {latestProjectRun.status}
               </span>
             )}
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => setIsCreateTaskOpen(true)}
+              disabled={projects.length === 0}
+            >
+              + Task
+            </button>
             <button
               type="button"
               className="btn btn-secondary btn-sm"
@@ -895,7 +921,7 @@ export function OfficeWorkspacePage() {
                 : selectedOfficeMember.truth === 'PLANNING'
                   ? 'Planning role'
                   : 'Ambient office presence'
-              : 'Project workspace'
+              : 'Planning workspace'
           }
           title={
             selectedOfficeMember?.name ??
@@ -976,12 +1002,6 @@ export function OfficeWorkspacePage() {
                 messages={messages}
                 error={composerError}
               />
-              <TaskQuickCreate
-                busy={taskActionBusy}
-                onCreate={createWorkspaceTask}
-                title="Add project task"
-                note="Creates canonical Task truth. It does not bypass execution promotion."
-              />
               {planningRequirements.some((requirement) => requirement.status === 'APPROVED') && (
                 <button
                   type="button"
@@ -1000,6 +1020,7 @@ export function OfficeWorkspacePage() {
             </div>
           }
           details={
+            selectedProject || selectedOfficeMember || activeThread || tasks.length > 0 || latestProjectRun ? (
             <div className="office-context-stack">
               <dl className="office-context-facts">
                 <div><dt>Project</dt><dd>{selectedProject?.name ?? 'Unavailable'}</dd></div>
@@ -1023,8 +1044,10 @@ export function OfficeWorkspacePage() {
                 </div>
               )}
             </div>
+            ) : null
           }
           files={
+            planningArtifacts.length > 0 ? (
             <div className="office-context-stack">
               {planningArtifacts.length === 0 ? (
                 <div className="office-context-empty">No planning artifact exists in this thread.</div>
@@ -1043,8 +1066,10 @@ export function OfficeWorkspacePage() {
                 </span>
               </div>
             </div>
+            ) : null
           }
           logs={
+            planningEvents.length > 0 ? (
             <div className="office-context-log">
               {planningEvents.length === 0 ? (
                 <div className="office-context-empty">No durable PlanningEvent is available.</div>
@@ -1065,6 +1090,7 @@ export function OfficeWorkspacePage() {
                   ))
               )}
             </div>
+            ) : null
           }
         />
       </div>
@@ -1077,12 +1103,13 @@ export function OfficeWorkspacePage() {
         selectedAgentId={null}
         onSelectAgent={() => undefined}
         tasks={tasks}
+        runs={projectRuns}
         modeLabel={
           activeThread && planningMode
             ? `${planningMode} · ${activeThread.status}`
-            : 'Workspace'
+            : 'Planning'
         }
-        defaultState={activeThread ? 'normal' : 'collapsed'}
+        defaultState="normal"
         forceCollapsed={isMaximized}
         planningThread={activeThread}
         planningTeam={planningTeam}
@@ -1105,9 +1132,21 @@ export function OfficeWorkspacePage() {
         planningActionBusy={planningActionBusy}
       />
 
+      {isCreateTaskOpen && (
+        <CreateTaskModal
+          key={`office-create-task-${selectedProjectId || 'all'}`}
+          isOpen
+          projects={projects}
+          initialProjectId={selectedProjectId}
+          onClose={() => setIsCreateTaskOpen(false)}
+          onCreate={createTaskFromModal}
+          onSuccess={() => setIsCreateTaskOpen(false)}
+        />
+      )}
+
       <p className="office-workspace-note">
         {workAssignments.length > 0
-          ? 'Workspace is projecting canonical Task / Run / AgentRun work. Planning and ambient presence remain separate truth layers.'
+          ? 'Planning scope is projecting canonical Task / Run / AgentRun work alongside separate planning and ambient truth layers.'
           : 'Composer planning is durable and separate from operational Run truth. Implementation roles remain inactive until approved requirements pass the later execution-promotion gate.'}
       </p>
     </div>
