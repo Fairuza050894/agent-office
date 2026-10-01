@@ -7,9 +7,9 @@ export interface ContextualOperationsRailProps {
   eyebrow: string
   status?: string | null
   discussion: ReactNode
-  details: ReactNode
-  files: ReactNode
-  logs: ReactNode
+  details?: ReactNode | null
+  files?: ReactNode | null
+  logs?: ReactNode | null
   collapsed: boolean
   onToggleCollapsed: () => void
 }
@@ -34,12 +34,18 @@ export function ContextualOperationsRail({
 }: ContextualOperationsRailProps) {
   const [activeTab, setActiveTab] = useState<ContextRailTab>('discussion')
 
-  const content: Record<ContextRailTab, ReactNode> = {
+  const content: Record<ContextRailTab, ReactNode | null | undefined> = {
     discussion,
     details,
     files,
     logs,
   }
+  const availableTabs = (Object.keys(TAB_LABELS) as ContextRailTab[]).filter(
+    (tab) => tab === 'discussion' || content[tab] !== null && content[tab] !== undefined,
+  )
+  const renderedActiveTab = availableTabs.includes(activeTab)
+    ? activeTab
+    : 'discussion'
 
   if (collapsed) {
     return (
@@ -85,13 +91,13 @@ export function ContextualOperationsRail({
         role="tablist"
         aria-label="Contextual operations views"
       >
-        {(Object.keys(TAB_LABELS) as ContextRailTab[]).map((tab) => (
+        {availableTabs.map((tab) => (
           <button
             key={tab}
             type="button"
             role="tab"
-            aria-selected={activeTab === tab}
-            className={activeTab === tab ? 'active' : ''}
+            aria-selected={renderedActiveTab === tab}
+            className={renderedActiveTab === tab ? 'active' : ''}
             onClick={() => setActiveTab(tab)}
           >
             {TAB_LABELS[tab]}
@@ -102,9 +108,9 @@ export function ContextualOperationsRail({
       <div
         className="office-context-body"
         role="tabpanel"
-        aria-label={TAB_LABELS[activeTab]}
+        aria-label={TAB_LABELS[renderedActiveTab]}
       >
-        {content[activeTab]}
+        {content[renderedActiveTab]}
       </div>
     </aside>
   )
