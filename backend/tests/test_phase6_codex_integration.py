@@ -17,7 +17,6 @@ from agent_office.config import Settings
 from agent_office.infrastructure.executors.codex import CODEX_EXECUTOR_ID
 from agent_office.main import create_app
 
-
 # Test-harness scheduling tolerance for the deterministic fake Codex subprocess.
 # This does not alter production executor defaults or fail-closed semantics.
 _FAKE_CODEX_TIMEOUT_SECONDS = 5.0
