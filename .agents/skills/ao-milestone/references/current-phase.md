@@ -3,7 +3,7 @@
 ## Current checkpoint
 
 ```text
-main@a0b3505
+main@72bdd59
 Phase 10H-1 merged
 PR #24 Vocabulary & Structure merged
 ```
@@ -20,7 +20,7 @@ Canonical full verification:
 branch: polish/office-3d-experience
 pr: #25
 scope: post-10H-1 Office 3D experience polish
-status: DRAFT / VERIFICATION PENDING
+status: DRAFT / FINAL VERIFICATION PENDING
 ```
 
 ## Why this polish exists
