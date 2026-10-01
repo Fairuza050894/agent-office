@@ -146,6 +146,7 @@ export interface OfficeWorkAssignment {
   agentRunStatus: string
   agentProfileKey: string
   stageKey: string
+  startedAt?: string | null
   updatedAt: string
 }
 
