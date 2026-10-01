@@ -514,7 +514,7 @@ export function ThreeOfficeScene({
       controls.enablePan = true
       controls.enableRotate = true
       controls.screenSpacePanning = true
-      controls.minDistance = 7
+      controls.minDistance = 8.5
       controls.maxDistance = 30
       controls.minPolarAngle = Math.PI * 0.16
       controls.maxPolarAngle = Math.PI * 0.48
