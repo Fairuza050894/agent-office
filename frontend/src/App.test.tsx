@@ -114,7 +114,7 @@ describe('Agent Office operational shell', () => {
       await screen.findByRole('heading', { level: 1, name: 'Agent Office' }),
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('region', { name: 'Office workspace 3D environment' }),
+      screen.getByRole('region', { name: 'Planning office 3D environment' }),
     ).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Universal Composer' })).toBeInTheDocument()
     expect(
