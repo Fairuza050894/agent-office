@@ -82,8 +82,8 @@ describe('OfficeShiftRuler', () => {
     expect(
       screen.getByRole('region', { name: 'Office shift ruler' }),
     ).toBeInTheDocument()
-    expect(screen.getByText('Room combination')).toBeInTheDocument()
-    expect(screen.getByText('Landing templates')).toBeInTheDocument()
+    expect(screen.getAllByText('Room combination')).toHaveLength(2)
+    expect(screen.getAllByText('Landing templates')).toHaveLength(2)
     expect(screen.getByText(/Run run-1234 · DISCOVERY/)).toBeInTheDocument()
     expect(screen.getAllByText('Waiting').length).toBeGreaterThan(0)
     expect(screen.getByText('No Run yet')).toBeInTheDocument()
