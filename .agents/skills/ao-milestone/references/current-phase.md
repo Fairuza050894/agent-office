@@ -3,9 +3,9 @@
 ## Current checkpoint
 
 ```text
-main@c8e9c58
-Phase 10F merged
-PR #20 contextual operations + spatial/collision hardening merged
+main@7a941d2
+Phase 10G merged
+PR #21 Living SDLC / AIDLC Workday Engine merged
 ```
 
 Canonical full verification:
@@ -14,61 +14,50 @@ Canonical full verification:
 ./scripts/verify.sh
 ```
 
-GitHub-hosted jobs may still end before runner assignment with `steps: null`.
-That is infrastructure evidence only.
-
 ## Current work
 
 ```text
-branch: phase-10g-living-workday-engine
-phase: Phase 10G — Living SDLC / AIDLC Workday Engine
-status: IMPLEMENTED / DRAFT REVIEW
+branch: phase-10h0-timezone-baseline-hardening
+phase: Phase 10H0 — Baseline Truth Hardening
+status: IMPLEMENTED / DRAFT VERIFICATION
 ```
 
-## Phase 10G truth model
+## Why Phase 10H0 exists
 
-```text
-WORK
-  Task + Run + AgentRun
-    ↓ precedence
-PLANNING
-  ComposerThread + TeamProposal
-    ↓ precedence
-AMBIENT
-  presentation-only office schedule
-```
+The owner-provided /office Shift Ruler specification requires the frontend
+baseline to be timezone-hermetic and requires backend health / registry
+degradation to remain truthful before structural UI work begins.
 
-## Implemented now
+## Implemented
 
-- active AgentRun creates canonical WORK presence in Workspace;
-- stage maps work to Strategy / Build functional areas;
-- active work suppresses duplicate planning/ambient role projection;
-- work projection refreshes every 15 seconds;
-- RUNNING work never fakes lunch/coffee/prayer pause;
-- WAITING/BLOCKED/PENDING work may use break zones;
-- provider break windows can support prayer/quiet presence without hard-coded
-  prayer times;
-- ambient relocation cadence reduced from ten minutes to three minutes;
-- stationary Workspace characters receive subtle deterministic micro-motion;
-- Phase 10F collision/facing safeguards remain active.
+- explicit timezone fixture for the evening living-office planning test;
+- Header /health polling every 12 seconds;
+- health check age in the Header;
+- later failed health check downgrades previous connected state;
+- Office registry bootstrap uses Promise.allSettled;
+- successful registries remain usable if one registry fails;
+- degraded registry copy identifies the failed source;
+- regression coverage for health polling and partial registry failure.
 
-## Deferred safely
+## Deferred to later, separate PRs
 
-### Checkpointable WorkSession
+### Phase 10H-1 — vocabulary and structure
 
-Real executor pause/resume is not implemented yet. It requires an explicit
-backend checkpoint contract.
+No vocabulary/layout changes belong in this baseline PR.
 
-### RAG retrieval provenance
+### Phase 10H-2 — read-only Shift Ruler
 
-No Context Used label is emitted until retrieval provenance exists.
+No Shift Ruler belongs in this baseline PR.
+
+### Phase 10H-3 — truth lines
+
+No truth-line styling belongs in this baseline PR.
 
 ## Safety invariants
 
 - no fake execution
-- no fake pause
-- no fake RAG
-- no chain-of-thought exposure
-- no auto commit / merge
+- no fake stage history
+- no backend/schema changes
+- no auto merge
 - no force push
-- Live / Replay truth boundaries remain intact
+- Live / Replay truth boundaries unchanged

@@ -129,6 +129,64 @@ describe('Agent Office operational shell', () => {
     expect(screen.getByRole('button', { name: 'Start Run' })).toBeDisabled()
   })
 
+  it('keeps successful Office registries usable when one registry fails', async () => {
+    const project = {
+      id: '10000000-0000-4000-8000-000000000001',
+      name: 'Partial Registry Project',
+      repository: { name: 'partial-registry-project' },
+      default_branch: 'main',
+      preferred_executor_id: null,
+      default_workflow_id: null,
+      status: 'ACTIVE',
+      created_at: '2026-10-01T03:00:00Z',
+      updated_at: '2026-10-01T03:00:00Z',
+      archived_at: null,
+    }
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url =
+          typeof input === 'string'
+            ? input
+            : input instanceof URL
+              ? input.toString()
+              : input.url
+
+        if (url === '/api/projects') return jsonResponse([project])
+        if (url === '/api/executors') {
+          throw new Error('executor registry unavailable')
+        }
+        if (url === '/api/agent-profiles') return jsonResponse([])
+        if (url === `/api/projects/${project.id}/tasks`) return jsonResponse([])
+        if (url === `/api/projects/${project.id}/composer/threads`) {
+          return jsonResponse([])
+        }
+
+        throw new Error(`Unexpected fetch call in partial registry test: GET ${url}`)
+      }),
+    )
+
+    render(<App initialPath="/office" />)
+
+    await screen.findByRole('region', {
+      name: 'Universal Composer',
+    })
+    await waitFor(() => {
+      expect(screen.getByLabelText('Composer project')).toHaveValue(project.id)
+    })
+
+    const composer = screen.getByRole('region', {
+      name: 'Universal Composer',
+    })
+    expect(
+      screen.getByText(/Registry degraded · Executors unavailable/),
+    ).toBeInTheDocument()
+    expect(
+      within(composer).getByText(/Executors unavailable/),
+    ).toBeInTheDocument()
+  })
+
   it('creates canonical project tasks from the Workspace context rail and projects them into the Dock', async () => {
     const project = {
       id: '10111111-1111-4111-8111-111111111111',
