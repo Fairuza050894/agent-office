@@ -30,10 +30,8 @@ export function Header({
   const [status, setStatus] = useState<
     'checking' | 'connected' | 'disconnected'
   >(initialStatus ?? 'checking')
-  const [lastCheckedAt, setLastCheckedAt] = useState<number | null>(
-    initialStatus === undefined ? null : Date.now(),
-  )
-  const [clockNow, setClockNow] = useState(() => Date.now())
+  const [lastCheckedAt, setLastCheckedAt] = useState<number | null>(null)
+  const [clockNow, setClockNow] = useState(0)
 
   const checkHealth = useCallback(async () => {
     setStatus('checking')
