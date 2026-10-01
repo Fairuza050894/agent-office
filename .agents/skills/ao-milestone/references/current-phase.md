@@ -38,7 +38,7 @@ This branch fixes those follow-ups without starting Phase 10H-2 early.
 ## Scope
 
 - improve night lighting readability while keeping night visually dimmer than day;
-- allow a closer 3D camera distance and a longer selected-agent focus linger;
+- keep the existing camera distance boundary and extend selected-agent focus linger;
 - compact the mobile Office world HUD into a horizontal status rail;
 - flatten the selected-member inspector to the current Office visual language;
 - reconcile milestone and Office documentation with merged Phase 10H-1 truth.
