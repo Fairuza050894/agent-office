@@ -514,7 +514,7 @@ export function ThreeOfficeScene({
       controls.enablePan = true
       controls.enableRotate = true
       controls.screenSpacePanning = true
-      controls.minDistance = 8.5
+      controls.minDistance = 7
       controls.maxDistance = 30
       controls.minPolarAngle = Math.PI * 0.16
       controls.maxPolarAngle = Math.PI * 0.48
@@ -857,7 +857,7 @@ export function ThreeOfficeScene({
       if (runtime) {
         engine.cameraTransition = null
         engine.focusTarget = runtime.root.position.clone()
-        engine.focusUntil = performance.now() + 850
+        engine.focusUntil = performance.now() + 1300
         startLoop()
       }
     }
