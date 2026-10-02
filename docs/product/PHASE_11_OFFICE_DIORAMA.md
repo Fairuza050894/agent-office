@@ -19,7 +19,7 @@ V0 is the prerequisite for later Diorama visual work.
 The existing Office route accepts these query parameters in development:
 
 ```text
-/office?floor=build&fixture=diorama&debugTime=2026-10-05T11:00:00.000Z
+/office?floor=build&fixture=diorama&debugTime=2026-10-05T04:00:00.000Z
 ```
 
 Rules:
