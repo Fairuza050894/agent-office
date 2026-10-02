@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -104,6 +104,14 @@ async function fetchAsset(asset) {
 }
 
 await mkdir(outputRoot, { recursive: true })
+
+const expectedFiles = new Set(assets.map((asset) => asset.filename))
+for (const filename of await readdir(outputRoot)) {
+  if (!expectedFiles.has(filename)) {
+    await rm(resolve(outputRoot, filename), { recursive: true, force: true })
+    console.log(`removed stale office pilot asset: ${filename}`)
+  }
+}
 
 try {
   for (const asset of assets) await fetchAsset(asset)
