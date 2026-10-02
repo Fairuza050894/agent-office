@@ -116,3 +116,19 @@ export function officeCameraView(
     FLOOR_CAMERA_VIEWS[floor][0]
   )
 }
+
+
+export interface OfficeRendererViewport {
+  width: number
+  height: number
+}
+
+export function officeRendererViewport(
+  width: number,
+  height: number,
+): OfficeRendererViewport {
+  return {
+    width: Math.max(1, Math.round(width)),
+    height: Math.max(1, Math.round(height)),
+  }
+}
