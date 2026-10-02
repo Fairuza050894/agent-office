@@ -116,12 +116,8 @@ export function OfficeWorkspacePage() {
       requestedFloor ??
       officeAmbientWindow(new Date(), [], localTimezone()).floor,
   )
-  const [officeNow, setOfficeNow] = useState(
-    () => dioramaDebug?.now ?? new Date(),
-  )
-  const [officeClockNow, setOfficeClockNow] = useState(
-    () => dioramaDebug?.now ?? new Date(),
-  )
+  const [officeNow, setOfficeNow] = useState(() => new Date())
+  const [officeClockNow, setOfficeClockNow] = useState(() => new Date())
   const [selectedOfficeMemberId, setSelectedOfficeMemberId] = useState<
     string | null
   >(null)
@@ -156,12 +152,6 @@ export function OfficeWorkspacePage() {
   }, [requestedFloor])
 
   useEffect(() => {
-    if (dioramaDebug) {
-      setOfficeNow(dioramaDebug.now)
-      setOfficeClockNow(dioramaDebug.now)
-      return
-    }
-
     let lastMinute = Math.floor(Date.now() / 60_000)
     const timer = window.setInterval(() => {
       const now = new Date()
@@ -175,7 +165,7 @@ export function OfficeWorkspacePage() {
     }, 1_000)
 
     return () => window.clearInterval(timer)
-  }, [dioramaDebug])
+  }, [])
 
   useEffect(() => {
     let active = true
@@ -749,11 +739,13 @@ export function OfficeWorkspacePage() {
 
   const planningMode =
     resolution?.resolved_intent ?? activeThread?.resolved_intent ?? null
+  const effectiveOfficeNow = dioramaDebug?.now ?? officeNow
+  const effectiveOfficeClockNow = dioramaDebug?.now ?? officeClockNow
   const officeTimeZone =
     dioramaDebug?.timeZone ?? activeThread?.timezone ?? localTimezone()
   const officeWorld = useMemo(
-    () => officeWorldContext(officeClockNow, officeTimeZone),
-    [officeClockNow, officeTimeZone],
+    () => officeWorldContext(effectiveOfficeClockNow, officeTimeZone),
+    [effectiveOfficeClockNow, officeTimeZone],
   )
   const workspaceMembers = useMemo(
     () =>
@@ -762,7 +754,7 @@ export function OfficeWorkspacePage() {
         activeThread,
         planningTeam,
         profiles,
-        officeNow,
+        effectiveOfficeNow,
         [],
         officeTimeZone,
         workAssignments,
@@ -770,7 +762,7 @@ export function OfficeWorkspacePage() {
     [
       activeThread,
       dioramaDebug,
-      officeNow,
+      effectiveOfficeNow,
       officeTimeZone,
       planningTeam,
       profiles,
@@ -813,7 +805,7 @@ export function OfficeWorkspacePage() {
       activeThread &&
         isPlanningPresenceFresh(
           activeThread.updated_at,
-          officeClockNow,
+          effectiveOfficeClockNow,
           officeTimeZone,
         ),
     )
