@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import * as THREE from 'three'
 
+import { OFFICE_MAX_ACCENT_LIGHTS } from './lighting'
 import { OFFICE_AMBIENT_ZONE_CAPACITY } from './livingOffice'
 import {
   ENTRANCE,
@@ -176,6 +177,32 @@ describe('office navigation clearance', () => {
     createOfficeEnvironment(night, [], [], 'commons', 'NIGHT_QUIET')
 
     expect(arrival.children.length).toBeGreaterThan(night.children.length)
+  })
+
+  it('keeps floor-specific point lights within the V1 accent budget', () => {
+    const cases = [
+      ['commons', 'CORE_WORK'],
+      ['commons', 'NIGHT_QUIET'],
+      ['build', 'CORE_WORK'],
+      ['build', 'NIGHT_QUIET'],
+      ['strategy', 'CORE_WORK'],
+      ['strategy', 'LATE_EVENING'],
+    ] as const
+
+    for (const [floor, mode] of cases) {
+      const environment = new THREE.Group()
+      createOfficeEnvironment(environment, [], [], floor, mode)
+
+      let pointLights = 0
+      environment.traverse((object) => {
+        if (object instanceof THREE.PointLight) pointLights += 1
+      })
+
+      expect(
+        pointLights,
+        `${floor}/${mode} should stay within the accent-light budget`,
+      ).toBeLessThanOrEqual(OFFICE_MAX_ACCENT_LIGHTS)
+    }
   })
 
   it('keeps each floor detail vocabulary isolated', () => {
