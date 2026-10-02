@@ -7,6 +7,7 @@ import {
 } from 'react'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
 
 import {
   animateCharacter,
@@ -45,6 +46,7 @@ export interface R3FOfficeSceneProps {
   officeHour: number
   officeMode: OfficeModeKey | null
   dioramaPilot?: OfficeDioramaPilotMode
+  labelsVisible: boolean
 }
 
 interface RendererInfo {
@@ -192,6 +194,41 @@ function CameraRig({
   return null
 }
 
+function LabelLayer({ visible }: { visible: boolean }) {
+  const { camera, gl, scene, size } = useThree()
+  const rendererRef = useRef<CSS2DRenderer | null>(null)
+
+  useEffect(() => {
+    const host = gl.domElement.parentElement
+    if (!host) return
+
+    const labels = new CSS2DRenderer()
+    labels.domElement.className = 'office-three-label-layer'
+    labels.domElement.setAttribute('aria-hidden', 'true')
+    labels.domElement.style.display = visible ? '' : 'none'
+    host.appendChild(labels.domElement)
+    rendererRef.current = labels
+
+    return () => {
+      labels.domElement.remove()
+      rendererRef.current = null
+    }
+  }, [gl])
+
+  useEffect(() => {
+    const labels = rendererRef.current
+    if (!labels) return
+    labels.setSize(size.width, size.height)
+    labels.domElement.style.display = visible ? '' : 'none'
+  }, [size.height, size.width, visible])
+
+  useFrame(() => {
+    rendererRef.current?.render(scene, camera)
+  })
+
+  return null
+}
+
 function RendererEvidence() {
   const { gl, scene } = useThree()
 
@@ -213,6 +250,7 @@ function SceneContents({
   officeHour,
   officeMode,
   dioramaPilot,
+  labelsVisible,
 }: R3FOfficeSceneProps) {
   const { gl, invalidate } = useThree()
   const environment = useMemo(() => new THREE.Group(), [])
@@ -419,6 +457,7 @@ function SceneContents({
         selectedAgentId={selectedAgentId}
         runtimes={runtimesRef}
       />
+      <LabelLayer visible={labelsVisible} />
       <RendererEvidence />
     </>
   )
