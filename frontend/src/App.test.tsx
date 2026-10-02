@@ -133,6 +133,21 @@ describe('Agent Office operational shell', () => {
     )
   })
 
+  it('labels the development-only Office Diorama fixture as simulated', async () => {
+    render(
+      <App
+        initialPath="/office?floor=build&fixture=diorama&debugTime=2026-10-05T04%3A00%3A00.000Z"
+      />,
+    )
+
+    expect(await screen.findByText('Simulated')).toBeInTheDocument()
+    expect(screen.getByText('Office Diorama fixture')).toBeInTheDocument()
+    expect(screen.getByText('10 simulated ambient roles')).toBeInTheDocument()
+
+    const buildFloor = screen.getByRole('button', { name: /L2.*Build/i })
+    expect(buildFloor).toHaveAttribute('aria-pressed', 'true')
+  })
+
   it('keeps successful Office registries usable when one registry fails', async () => {
     const project = {
       id: '10000000-0000-4000-8000-000000000001',
