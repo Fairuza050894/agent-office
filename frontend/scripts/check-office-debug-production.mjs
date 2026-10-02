@@ -13,9 +13,13 @@ const markers = [
   '__AGENT_OFFICE_DIARAMA_PILOT__',
   'office-pilot/kenney',
   'Kenney kit pilot',
-  'R3F pilot',
-  'data-office-renderer="r3f"',
+  'R3F renderer pilot',
   'office-renderer-pilot-shots',
+]
+
+const requiredProductionMarkers = [
+  'data-office-renderer="r3f"',
+  'R3F Planning Office 3D scene',
 ]
 
 async function filesUnder(directory) {
@@ -36,11 +40,24 @@ async function filesUnder(directory) {
 
 const files = await filesUnder(distRoot)
 const failures = []
+const observedProductionMarkers = new Set()
 
 for (const file of files) {
   const content = await readFile(file, 'utf8')
   for (const marker of markers) {
     if (content.includes(marker)) failures.push({ file, marker })
+  }
+  for (const marker of requiredProductionMarkers) {
+    if (content.includes(marker)) observedProductionMarkers.add(marker)
+  }
+}
+
+for (const marker of requiredProductionMarkers) {
+  if (!observedProductionMarkers.has(marker)) {
+    failures.push({
+      file: distRoot,
+      marker: `required production R3F marker missing: ${marker}`,
+    })
   }
 }
 
@@ -118,5 +135,5 @@ if (failures.length > 0) {
   }
   process.exitCode = 1
 } else {
-  console.log('Production bundle contains no Diorama debug/pilot leakage and includes verified Office furniture assets.')
+  console.log('Production bundle contains no Diorama debug/pilot leakage, includes verified Office furniture assets, and contains the production R3F Planning renderer.')
 }
