@@ -16,7 +16,8 @@
     "prebuild": "npm run office:assets",
     "preoffice:shots": "npm run office:assets",
     "office:shots": "node scripts/capture-office-shots.mjs",
-    "office:shots:install": "playwright install chromium"
+    "office:shots:install": "playwright install chromium",
+    "office:debug:prod-check": "node scripts/check-office-debug-production.mjs"
   },
   "dependencies": {
     "react": "^19.2.8",
