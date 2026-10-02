@@ -24,6 +24,7 @@ Canonical full verification:
 
 ```text
 branch: phase-12-r3f-renderer-pilot
+pr: #33
 scope: Phase 12 — R3F renderer pilot
 status: IMPLEMENTING / DRAFT VERIFICATION
 ```
