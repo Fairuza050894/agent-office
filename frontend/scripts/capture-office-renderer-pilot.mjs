@@ -178,70 +178,112 @@ function maxRendererInfo(samples) {
   }
 }
 
-async function waitForRendererSettled(page, requestedRenderer) {
-  let readySamples = []
-  let lastEvidence = null
+async function readRendererEvidence(page) {
+  return page.evaluate(() => ({
+    renderer:
+      window.__AGENT_OFFICE_DIARAMA__?.renderer ?? 'three',
+    rendererInfo:
+      window.__AGENT_OFFICE_DIARAMA__?.rendererInfo ?? null,
+    characterReadiness:
+      window.__AGENT_OFFICE_DIARAMA__?.characterReadiness ?? null,
+    pilot:
+      window.__AGENT_OFFICE_DIARAMA_PILOT__ ?? null,
+  }))
+}
 
-  for (let attempt = 1; attempt <= 48; attempt += 1) {
-    const evidence = await page.evaluate(() => ({
-      renderer:
-        window.__AGENT_OFFICE_DIARAMA__?.renderer ?? 'three',
-      rendererInfo:
-        window.__AGENT_OFFICE_DIARAMA__?.rendererInfo ?? null,
-      characterReadiness:
-        window.__AGENT_OFFICE_DIARAMA__?.characterReadiness ?? null,
-      pilot:
-        window.__AGENT_OFFICE_DIARAMA_PILOT__ ?? null,
-    }))
+function rendererPresentationReady(evidence, requestedRenderer) {
+  const rendererMatches =
+    requestedRenderer === 'r3f'
+      ? evidence.renderer === 'r3f'
+      : evidence.renderer === 'three'
 
-    lastEvidence = evidence
+  const pilot = evidence.pilot
+  const kitReady =
+    pilot?.mode === 'kit' &&
+    pilot.ready === true &&
+    !pilot.error &&
+    pilot.sourceAssetCount === 5 &&
+    pilot.instanceCount >= 40 &&
+    Boolean(pilot.bounds)
 
-    const rendererMatches =
-      requestedRenderer === 'r3f'
-        ? evidence.renderer === 'r3f'
-        : evidence.renderer === 'three'
+  const characters = evidence.characterReadiness
+  const charactersReady =
+    characters &&
+    characters.expected > 0 &&
+    characters.rigged === characters.expected &&
+    characters.fallback === 0
 
-    const pilot = evidence.pilot
-    const kitReady =
-      pilot?.mode === 'kit' &&
-      pilot.ready === true &&
-      !pilot.error &&
-      pilot.sourceAssetCount === 5 &&
-      pilot.instanceCount >= 40 &&
-      Boolean(pilot.bounds)
-
-    const characters = evidence.characterReadiness
-    const charactersReady =
-      characters &&
-      characters.expected > 0 &&
-      characters.rigged === characters.expected &&
-      characters.fallback === 0
-
-    if (
-      rendererMatches &&
+  return Boolean(
+    rendererMatches &&
       evidence.rendererInfo &&
       kitReady &&
-      charactersReady
-    ) {
-      readySamples.push(evidence)
+      charactersReady,
+  )
+}
 
-      if (readySamples.length >= 4) {
-        const rendererSamples = readySamples.map(
-          (sample) => sample.rendererInfo,
-        )
-        return {
-          ...evidence,
-          rendererInfo: maxRendererInfo(rendererSamples),
-          rendererSamples,
-        }
-      }
-    } else {
-      readySamples = []
+async function waitForRendererSettled(page, requestedRenderer) {
+  await page.waitForFunction(
+    (rendererMode) => {
+      const evidence = window.__AGENT_OFFICE_DIARAMA__
+      const pilot = window.__AGENT_OFFICE_DIARAMA_PILOT__
+      if (!evidence?.ready || !evidence.rendererInfo) return false
 
-      if (pilot?.error) {
-        throw new Error(
-          `Kit load failed while settling ${requestedRenderer}: ${pilot.error}`,
-        )
+      const rendererMatches =
+        rendererMode === 'r3f'
+          ? evidence.renderer === 'r3f'
+          : evidence.renderer === 'three'
+      const kitReady =
+        pilot?.mode === 'kit' &&
+        pilot.ready === true &&
+        !pilot.error &&
+        pilot.sourceAssetCount === 5 &&
+        pilot.instanceCount >= 40 &&
+        Boolean(pilot.bounds)
+      const characters = evidence.characterReadiness
+      const charactersReady =
+        characters &&
+        characters.expected > 0 &&
+        characters.rigged === characters.expected &&
+        characters.fallback === 0
+
+      return Boolean(rendererMatches && kitReady && charactersReady)
+    },
+    requestedRenderer,
+    { timeout: 30_000 },
+  )
+
+  const samples = []
+  let lastEvidence = null
+
+  // Readiness and renderer sampling are deliberately separate phases.
+  // Once the presentation is complete, keep up to four conservative GPU
+  // samples. A transient remount restarts only this sampling window.
+  for (let attempt = 1; attempt <= 20; attempt += 1) {
+    const evidence = await readRendererEvidence(page)
+    lastEvidence = evidence
+
+    if (evidence.pilot?.error) {
+      throw new Error(
+        `Kit load failed while sampling ${requestedRenderer}: ${evidence.pilot.error}`,
+      )
+    }
+
+    if (!rendererPresentationReady(evidence, requestedRenderer)) {
+      samples.length = 0
+      await page.waitForTimeout(250)
+      continue
+    }
+
+    samples.push(evidence)
+
+    if (samples.length >= 4) {
+      const rendererSamples = samples.map(
+        (sample) => sample.rendererInfo,
+      )
+      return {
+        ...evidence,
+        rendererInfo: maxRendererInfo(rendererSamples),
+        rendererSamples,
       }
     }
 
@@ -249,7 +291,7 @@ async function waitForRendererSettled(page, requestedRenderer) {
   }
 
   throw new Error(
-    `Renderer presentation did not become fully ready for ${requestedRenderer}. Last evidence: ${JSON.stringify(lastEvidence)}`,
+    `Renderer became presentation-ready but did not remain sampleable for ${requestedRenderer}. Last evidence: ${JSON.stringify(lastEvidence)}`,
   )
 }
 
