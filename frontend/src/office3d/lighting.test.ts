@@ -29,10 +29,10 @@ describe('officeLightingForHour', () => {
   })
 
   it('uses one key-light profile without a second global fill channel', () => {
-    const day = officeLightingForHour(12) as Record<string, unknown>
+    const day = officeLightingForHour(12)
 
-    expect(day).not.toHaveProperty('fillColor')
-    expect(day).not.toHaveProperty('fillIntensity')
+    expect('fillColor' in day).toBe(false)
+    expect('fillIntensity' in day).toBe(false)
   })
 
   it('normalizes out-of-range hours deterministically', () => {
