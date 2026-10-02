@@ -504,13 +504,13 @@ export function R3FOfficeScene(props: R3FOfficeSceneProps) {
           gl.domElement.classList.add('office-three-canvas')
           gl.domElement.setAttribute(
             'aria-label',
-            'R3F pilot 3D office scene',
+            'R3F Planning Office 3D scene',
           )
           gl.domElement.tabIndex = 0
         }}
         fallback={
           <div className="office-three-fallback">
-            R3F pilot WebGL unavailable
+            R3F Planning Office WebGL unavailable
           </div>
         }
         onPointerMissed={() => {
