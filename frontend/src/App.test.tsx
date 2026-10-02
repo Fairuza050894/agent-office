@@ -148,6 +148,18 @@ describe('Agent Office operational shell', () => {
     expect(buildFloor).toHaveAttribute('aria-pressed', 'true')
   })
 
+  it('labels the development-only Kenney asset candidate as a kit pilot', async () => {
+    render(
+      <App
+        initialPath="/office?floor=build&fixture=diorama&pilot=kit&debugTime=2026-10-05T04%3A00%3A00.000Z"
+      />,
+    )
+
+    expect(await screen.findByText('Simulated')).toBeInTheDocument()
+    expect(screen.getByText(/Kenney kit pilot/)).toBeInTheDocument()
+    expect(screen.getByText('SIMULATED · KIT PILOT')).toBeInTheDocument()
+  })
+
   it('keeps successful Office registries usable when one registry fails', async () => {
     const project = {
       id: '10000000-0000-4000-8000-000000000001',
