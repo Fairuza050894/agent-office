@@ -431,11 +431,20 @@ function SceneContents(props: R3FOfficeSceneProps) {
     startedAt: null,
   })
   const agentsRef = useRef(agents)
-  agentsRef.current = agents
   const stagesRef = useRef(stages)
-  stagesRef.current = stages
   const workspaceMembersRef = useRef(workspaceMembers)
-  workspaceMembersRef.current = workspaceMembers
+
+  useEffect(() => {
+    agentsRef.current = agents
+  }, [agents])
+
+  useEffect(() => {
+    stagesRef.current = stages
+  }, [stages])
+
+  useEffect(() => {
+    workspaceMembersRef.current = workspaceMembers
+  }, [workspaceMembers])
 
   const sceneMembers = useMemo(
     () =>
@@ -448,7 +457,11 @@ function SceneContents(props: R3FOfficeSceneProps) {
     [agents, floor, profiles, workspaceMembers],
   )
   const sceneMembersRef = useRef(sceneMembers)
-  sceneMembersRef.current = sceneMembers
+
+  useEffect(() => {
+    sceneMembersRef.current = sceneMembers
+  }, [sceneMembers])
+
   const structureKey = useMemo(
     () =>
       sceneMembers
