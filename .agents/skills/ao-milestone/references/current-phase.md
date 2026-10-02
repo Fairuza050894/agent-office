@@ -23,7 +23,7 @@ Canonical full verification:
 branch: phase-11-office-diorama-v1
 pr: #30
 scope: Phase 11 / Office Diorama V1 — camera + lighting simplification
-status: IMPLEMENTED / AUTOMATED VERIFIED / RENDERED REVIEW PENDING
+status: ACCEPTED / READY FOR REVIEW
 ```
 
 ## V0 baseline
@@ -109,3 +109,19 @@ Shift Ruler and truth lines remain separate.
 - Office remains supplemental to HTML operational truth;
 - no auto merge;
 - no force push.
+
+
+## V1 acceptance record
+
+```text
+automated verification: PASS
+GitHub Actions verify: PASS
+24-shot renderer/light budgets: PASS
+rendered Build day/night desktop: PASS
+rendered Build day/night mobile: PASS
+camera policy: ACCEPTED
+lighting policy: ACCEPTED
+verification document: docs/product/PHASE_11_V1_VERIFICATION.md
+```
+
+Merge remains manual.
