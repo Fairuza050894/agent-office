@@ -29,6 +29,7 @@ import {
   waitingPosition,
 } from '../office3d/environment'
 import type { OfficeDioramaPilotMode } from '../office3d/dioramaDebug'
+import { officeFurniturePolicy } from '../office3d/furniturePolicy'
 import {
   officeRoleHomeLocation,
   type OfficeFloorKey,
@@ -277,7 +278,7 @@ export function ThreeOfficeScene({
   labelsVisible = true,
   officeHour = new Date().getHours(),
   officeMode = null,
-  dioramaPilot = 'primitive',
+  dioramaPilot,
 }: ThreeOfficeSceneProps) {
   const hostRef = useRef<HTMLDivElement>(null)
   const engineRef = useRef<Engine | null>(null)
@@ -804,8 +805,7 @@ export function ThreeOfficeScene({
     ]
     const pilotGeneration = pilotGenerationRef.current + 1
     pilotGenerationRef.current = pilotGeneration
-    const kitPilotEnabled =
-      import.meta.env.DEV && floor === 'build' && dioramaPilot === 'kit'
+    const furniture = officeFurniturePolicy(floor, dioramaPilot)
 
     const stations = createOfficeEnvironment(
       engine.environment,
@@ -813,13 +813,17 @@ export function ThreeOfficeScene({
       sceneMembers,
       floor,
       officeMode,
-      kitPilotEnabled ? 'kit' : 'primitive',
+      furniture.initialPresentation,
     )
 
-    if (import.meta.env.DEV && typeof window !== 'undefined') {
+    if (
+      import.meta.env.DEV &&
+      dioramaPilot &&
+      typeof window !== 'undefined'
+    ) {
       ;(window as OfficeDioramaWindow).__AGENT_OFFICE_DIARAMA_PILOT__ = {
-        mode: kitPilotEnabled ? 'kit' : 'primitive',
-        ready: !kitPilotEnabled,
+        mode: dioramaPilot,
+        ready: dioramaPilot === 'primitive',
         sourceAssetCount: 0,
         instanceCount: 0,
       }
@@ -913,10 +917,10 @@ export function ThreeOfficeScene({
     firstSyncRef.current = false
     renderEngine(engine)
 
-    if (kitPilotEnabled) {
-      void import('../office3d/dioramaPilot')
-        .then(({ mountEngineeringPodPilot }) =>
-          mountEngineeringPodPilot(engine.environment),
+    if (furniture.loadKit) {
+      void import('../office3d/officeFurnitureKit')
+        .then(({ mountEngineeringPodFurnitureKit }) =>
+          mountEngineeringPodFurnitureKit(engine.environment),
         )
         .then((mount) => {
           if (
@@ -928,12 +932,28 @@ export function ThreeOfficeScene({
             return
           }
 
-          ;(window as OfficeDioramaWindow).__AGENT_OFFICE_DIARAMA_PILOT__ = {
-            mode: 'kit',
-            ready: true,
-            sourceAssetCount: mount.sourceAssetCount,
-            instanceCount: mount.instanceCount,
-            bounds: mount.bounds,
+          if (furniture.keepPrimitiveFallbackUntilReady) {
+            const primitive = engine.environment.getObjectByName(
+              'office-engineering-pod-primitive',
+            )
+            if (primitive?.parent) {
+              primitive.parent.remove(primitive)
+              disposeObject(primitive)
+            }
+          }
+
+          if (
+            import.meta.env.DEV &&
+            dioramaPilot === 'kit' &&
+            typeof window !== 'undefined'
+          ) {
+            ;(window as OfficeDioramaWindow).__AGENT_OFFICE_DIARAMA_PILOT__ = {
+              mode: 'kit',
+              ready: true,
+              sourceAssetCount: mount.sourceAssetCount,
+              instanceCount: mount.instanceCount,
+              bounds: mount.bounds,
+            }
           }
           renderEngine(engine)
         })
@@ -947,14 +967,26 @@ export function ThreeOfficeScene({
 
           const message =
             error instanceof Error ? error.message : String(error)
-          ;(window as OfficeDioramaWindow).__AGENT_OFFICE_DIARAMA_PILOT__ = {
-            mode: 'kit',
-            ready: false,
-            sourceAssetCount: 0,
-            instanceCount: 0,
-            error: message,
+          if (
+            import.meta.env.DEV &&
+            dioramaPilot === 'kit' &&
+            typeof window !== 'undefined'
+          ) {
+            ;(window as OfficeDioramaWindow).__AGENT_OFFICE_DIARAMA_PILOT__ = {
+              mode: 'kit',
+              ready: false,
+              sourceAssetCount: 0,
+              instanceCount: 0,
+              error: message,
+            }
           }
-          console.error('Office Diorama kit pilot failed:', error)
+
+          console.error(
+            furniture.keepPrimitiveFallbackUntilReady
+              ? 'Office furniture kit failed; primitive fallback retained:'
+              : 'Office Diorama kit candidate failed:',
+            error,
+          )
         })
     }
 
