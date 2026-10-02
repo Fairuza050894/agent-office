@@ -22,6 +22,7 @@ Canonical full verification:
 
 ```text
 branch: phase-11-office-diorama-v2-pilot
+pr: #31
 scope: Phase 11 / Office Diorama V2 — engineering-pod asset pilot
 status: IMPLEMENTED / DRAFT VERIFICATION
 ```
