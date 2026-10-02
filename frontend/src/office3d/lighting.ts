@@ -1,5 +1,7 @@
 export type OfficeLightingKey = 'morning' | 'day' | 'evening' | 'night'
 
+export const OFFICE_MAX_ACCENT_LIGHTS = 3
+
 export interface OfficeLightingProfile {
   key: OfficeLightingKey
   label: string
@@ -9,8 +11,6 @@ export interface OfficeLightingProfile {
   hemisphereIntensity: number
   keyColor: number
   keyIntensity: number
-  fillColor: number
-  fillIntensity: number
   exposure: number
 }
 
@@ -20,11 +20,9 @@ const MORNING: OfficeLightingProfile = {
   background: 0x15202a,
   hemisphereSky: 0xe7f2fb,
   hemisphereGround: 0x1e2933,
-  hemisphereIntensity: 2.05,
+  hemisphereIntensity: 2.0,
   keyColor: 0xffe8bf,
-  keyIntensity: 2.55,
-  fillColor: 0xa6c9e3,
-  fillIntensity: 0.72,
+  keyIntensity: 2.5,
   exposure: 1.04,
 }
 
@@ -34,11 +32,9 @@ const DAY: OfficeLightingProfile = {
   background: 0x111820,
   hemisphereSky: 0xdce9f4,
   hemisphereGround: 0x1a232d,
-  hemisphereIntensity: 2,
+  hemisphereIntensity: 2.1,
   keyColor: 0xfff0d2,
-  keyIntensity: 2.8,
-  fillColor: 0x8fb8dc,
-  fillIntensity: 0.8,
+  keyIntensity: 2.65,
   exposure: 1.05,
 }
 
@@ -48,26 +44,22 @@ const EVENING: OfficeLightingProfile = {
   background: 0x101820,
   hemisphereSky: 0xd7dde4,
   hemisphereGround: 0x211c1a,
-  hemisphereIntensity: 1.58,
+  hemisphereIntensity: 1.75,
   keyColor: 0xffc98f,
-  keyIntensity: 2.2,
-  fillColor: 0x7396b6,
-  fillIntensity: 0.55,
-  exposure: 0.98,
+  keyIntensity: 2.15,
+  exposure: 1.0,
 }
 
 const NIGHT: OfficeLightingProfile = {
   key: 'night',
   label: 'Night office',
   background: 0x0d151d,
-  hemisphereSky: 0x9eb3c6,
+  hemisphereSky: 0xa8bdcf,
   hemisphereGround: 0x1a2026,
-  hemisphereIntensity: 1.32,
+  hemisphereIntensity: 1.55,
   keyColor: 0xffc985,
-  keyIntensity: 1.88,
-  fillColor: 0x668eae,
-  fillIntensity: 0.52,
-  exposure: 0.96,
+  keyIntensity: 1.85,
+  exposure: 0.99,
 }
 
 export function officeLightingForHour(hour: number): OfficeLightingProfile {
