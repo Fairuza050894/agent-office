@@ -39,7 +39,7 @@ Zoom is bounded to:
 
 ```text
 minimum distance: 9.5
-maximum distance: 22
+maximum distance: 24
 ```
 
 The existing three semantic presets per floor remain.
