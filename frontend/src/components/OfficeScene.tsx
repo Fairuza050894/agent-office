@@ -57,6 +57,8 @@ export interface OfficeSceneProps {
   dioramaRenderer?: OfficeDioramaRendererMode
 }
 
+const EMPTY_WORKSPACE_MEMBERS: OfficePresenceMember[] = []
+
 function profileName(
   agent: AgentRun,
   profiles: Map<string, AgentProfile>,
@@ -155,7 +157,7 @@ export function OfficeScene({
   showRoster = true,
   presentation = 'operational',
   floor = 'build',
-  workspaceMembers = [],
+  workspaceMembers = EMPTY_WORKSPACE_MEMBERS,
   onFloorChange,
   officeHour,
   worldContext = null,
