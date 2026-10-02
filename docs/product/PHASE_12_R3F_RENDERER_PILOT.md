@@ -1,6 +1,6 @@
 # Phase 12 — R3F Renderer Pilot
 
-Status: IMPLEMENTING / Draft verification
+Status: RENDERED A/B ACCEPTED / FINAL VERIFICATION PENDING
 
 ## Goal
 
@@ -102,21 +102,43 @@ artifacts/office-renderer-pilot-shots/
   renderer-info.json
 ```
 
-Both renderers must remain within the accepted Build ceilings:
+The historical V2 ceilings were invalid for the completed Phase 12 scene:
+they were captured before fully-rigged character presentation and before the
+mobile Three.js frustum used the actual responsive host height.
 
-### Desktop
+After fixing both measurement defects, the owner-reviewed Phase 12 evidence is:
 
-```text
-calls      <= 276
-triangles  <= 33,304
-```
-
-### Mobile
+### Desktop fully-rigged baseline
 
 ```text
-calls      <= 225
-triangles  <= 25,320
+day    Three = R3F = 158 calls / 34,656 triangles
+night  Three = R3F = 155 calls / 34,620 triangles
 ```
+
+Accepted regression ceilings:
+
+```text
+calls      <= 170
+triangles  <= 35,500
+```
+
+### Mobile fully-rigged + correct-frustum baseline
+
+```text
+day    Three = R3F = 134 calls / 34,212 triangles
+night  Three = R3F = 131 calls / 34,176 triangles
+```
+
+Accepted regression ceilings:
+
+```text
+calls      <= 145
+triangles  <= 35,000
+```
+
+These ceilings intentionally keep a small regression margin rather than
+preserving the much looser historical call ceilings or the stale triangle
+ceilings.
 
 The V1 light contract remains:
 
@@ -173,3 +195,50 @@ NO-GO  → retain imperative Three.js and keep modular boundaries
 ```
 
 No full renderer migration occurs inside this PR.
+
+
+## Rendered A/B decision
+
+Owner-reviewed deterministic evidence completed all eight captures:
+
+```text
+Three.js / R3F
+× day / night
+× 1440 / 390
+```
+
+Observed result:
+
+```text
+desktop day    exact renderer parity
+desktop night  exact renderer parity
+mobile day     exact renderer parity after Three.js aspect fix
+mobile night   exact renderer parity after Three.js aspect fix
+```
+
+All captures had:
+
+```text
+4/4 visible characters rigged
+fallback = 0
+Kenney kit ready = true
+source assets = 5
+instances = 80
+valid kit bounds
+4 total lights
+```
+
+The earlier mobile discrepancy was traced to the imperative Three.js renderer
+inflating its internal responsive height to 480px while the actual CSS host was
+about 380px. That narrower frustum artificially reduced visible geometry. Phase
+12 corrected the renderer to use the real host dimensions.
+
+Decision:
+
+```text
+GO — R3F is approved for a separate, broader renderer-migration checkpoint.
+```
+
+This GO does **not** migrate production rendering in Phase 12. Production remains
+on the current Three.js renderer until a later checkpoint covers Live/Replay,
+interaction parity, bundle impact, failure fallback, and final owner acceptance.
