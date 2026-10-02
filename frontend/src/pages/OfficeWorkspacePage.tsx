@@ -43,6 +43,10 @@ import {
   isPlanningPresenceFresh,
   officeWorldContext,
 } from '../office3d/officeWorld'
+import {
+  appendOfficeDioramaDebugParams,
+  officeDioramaDebugConfig,
+} from '../office3d/dioramaDebug'
 
 function localTimezone(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
@@ -88,6 +92,10 @@ async function loadPlanningSnapshot(thread: ComposerThread) {
 
 export function OfficeWorkspacePage() {
   const { currentSearch, navigate } = useRouter()
+  const dioramaDebug = useMemo(
+    () => officeDioramaDebugConfig(currentSearch),
+    [currentSearch],
+  )
   const requestedProjectId = useMemo(
     () => new URLSearchParams(currentSearch).get('project'),
     [currentSearch],
@@ -108,8 +116,12 @@ export function OfficeWorkspacePage() {
       requestedFloor ??
       officeAmbientWindow(new Date(), [], localTimezone()).floor,
   )
-  const [officeNow, setOfficeNow] = useState(() => new Date())
-  const [officeClockNow, setOfficeClockNow] = useState(() => new Date())
+  const [officeNow, setOfficeNow] = useState(
+    () => dioramaDebug?.now ?? new Date(),
+  )
+  const [officeClockNow, setOfficeClockNow] = useState(
+    () => dioramaDebug?.now ?? new Date(),
+  )
   const [selectedOfficeMemberId, setSelectedOfficeMemberId] = useState<
     string | null
   >(null)
@@ -144,6 +156,12 @@ export function OfficeWorkspacePage() {
   }, [requestedFloor])
 
   useEffect(() => {
+    if (dioramaDebug) {
+      setOfficeNow(dioramaDebug.now)
+      setOfficeClockNow(dioramaDebug.now)
+      return
+    }
+
     let lastMinute = Math.floor(Date.now() / 60_000)
     const timer = window.setInterval(() => {
       const now = new Date()
@@ -157,7 +175,7 @@ export function OfficeWorkspacePage() {
     }, 1_000)
 
     return () => window.clearInterval(timer)
-  }, [])
+  }, [dioramaDebug])
 
   useEffect(() => {
     let active = true
@@ -731,13 +749,15 @@ export function OfficeWorkspacePage() {
 
   const planningMode =
     resolution?.resolved_intent ?? activeThread?.resolved_intent ?? null
-  const officeTimeZone = activeThread?.timezone ?? localTimezone()
+  const officeTimeZone =
+    dioramaDebug?.timeZone ?? activeThread?.timezone ?? localTimezone()
   const officeWorld = useMemo(
     () => officeWorldContext(officeClockNow, officeTimeZone),
     [officeClockNow, officeTimeZone],
   )
   const workspaceMembers = useMemo(
     () =>
+      dioramaDebug?.members ??
       livingOfficeMembers(
         activeThread,
         planningTeam,
@@ -749,6 +769,7 @@ export function OfficeWorkspacePage() {
       ),
     [
       activeThread,
+      dioramaDebug,
       officeNow,
       officeTimeZone,
       planningTeam,
@@ -814,6 +835,7 @@ export function OfficeWorkspacePage() {
     const params = new URLSearchParams()
     if (selectedProjectId) params.set('project', selectedProjectId)
     params.set('floor', floor)
+    appendOfficeDioramaDebugParams(params, dioramaDebug)
     navigate(`/office?${params.toString()}`)
   }
 
@@ -827,23 +849,42 @@ export function OfficeWorkspacePage() {
     <div
       className={`page-view office-workspace office-structure-v2 ${isMaximized ? 'office-maximized' : ''}`}
     >
+      {dioramaDebug && import.meta.env.DEV && (
+        <div
+          className="office-diorama-debug-banner"
+          data-office-diorama-debug="simulated"
+          role="status"
+        >
+          <strong>Simulated</strong>
+          <span>
+            Development-only Diorama fixture · frozen {officeWorld.clockLabel} · {officeWorld.timeZoneLabel}
+          </span>
+        </div>
+      )}
+
       <OfficeCommandRail
         title="Agent Office"
-        projectName={selectedProject?.name ?? 'No Project selected'}
-        modeLabel={planningMode ?? undefined}
+        projectName={
+          dioramaDebug ? 'Office Diorama fixture' : selectedProject?.name ?? 'No Project selected'
+        }
+        modeLabel={dioramaDebug ? 'SIMULATED' : planningMode ?? undefined}
         statusLabel={
-          isLoading
-            ? 'Loading registries'
-            : workAssignments.length > 0
+          dioramaDebug
+            ? `${workspaceMembers.length} simulated ambient roles`
+            : isLoading
+              ? 'Loading registries'
+              : workAssignments.length > 0
               ? `${workAssignments.length} active work assignment${workAssignments.length === 1 ? '' : 's'}`
               : activeThread
                 ? `${activeThread.status} planning thread`
                 : 'Planning workspace'
         }
         meta={
-          registryError
-            ? `Registry degraded · ${registryError}`
-            : `${projects.length} Project${projects.length === 1 ? '' : 's'}`
+          dioramaDebug
+            ? 'Development-only visual evidence'
+            : registryError
+              ? `Registry degraded · ${registryError}`
+              : `${projects.length} Project${projects.length === 1 ? '' : 's'}`
         }
         actions={
           <>
@@ -891,7 +932,7 @@ export function OfficeWorkspacePage() {
               profiles={profiles}
               selectedAgentId={selectedOfficeMemberId}
               onSelectAgent={selectOfficeMember}
-              motionPaused={false}
+              motionPaused={Boolean(dioramaDebug)}
               mode="live"
               replayNonce={0}
               replayStartedAt={null}
