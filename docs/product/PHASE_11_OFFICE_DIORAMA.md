@@ -157,3 +157,45 @@ behavior is included in V0.
 - no change to Task / Run / AgentRun / Event / Replay contracts;
 - no binary asset-policy change;
 - Office remains supplemental to ordinary HTML operational surfaces.
+
+## V0 recorded baseline
+
+Owner-machine capture produced the complete 24-image matrix and
+`renderer-info.json`.
+
+The Build floor is the Phase 11 hero baseline:
+
+| viewport | lighting | draw calls | triangles | geometries | textures |
+| --- | --- | ---: | ---: | ---: | ---: |
+| 1440 × 1000 | day | 276 | 33,304 | 274 | 41 |
+| 1440 × 1000 | night | 273 | 33,268 | 271 | 41 |
+| 390 × 844 | day | 225 | 25,320 | 273 | 41 |
+| 390 × 844 | night | 222 | 25,284 | 270 | 41 |
+
+Across all 24 captures:
+
+- draw calls range from 131 to 276;
+- triangles range from 24,626 to 33,304;
+- geometries range from 189 to 274;
+- textures range from 31 to 41;
+- points remain 0 and line count remains 28.
+
+These numbers are the V0 comparison baseline for later Diorama phases. They are
+not performance targets by themselves.
+
+### Rendered findings
+
+The deterministic review confirms:
+
+- desktop Build composition is stable and readable;
+- 390px Build remains contained and keeps the scene visible;
+- day/night differentiation is real and deterministic;
+- night remains legible enough for the baseline, but depth and local contrast
+  are intentionally deferred to V1;
+- the primitive-heavy environment remains visibly less polished than the
+  character rigs, validating the later V2 asset-pilot direction;
+- no clipping or layout regression blocks V0 acceptance.
+
+V0 is therefore accepted as a measurement/evidence milestone. It does not claim
+that the current visual environment is the final Diorama quality target.
+
