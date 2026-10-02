@@ -20,8 +20,9 @@ Canonical full verification:
 
 ```text
 branch: phase-11-office-diorama-v0
+pr: #29
 scope: Phase 11 / Office Diorama V0 — deterministic visual harness
-status: IMPLEMENTING / DRAFT VERIFICATION
+status: IMPLEMENTED / DRAFT VERIFICATION
 ```
 
 ## Why this phase exists
