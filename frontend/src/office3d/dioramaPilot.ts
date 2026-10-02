@@ -163,8 +163,8 @@ function addInstancedAsset(
 
   template.parts.forEach((part, partIndex) => {
     const mesh = new THREE.InstancedMesh(
-      part.geometry,
-      part.material,
+      part.geometry.clone(),
+      cloneMaterial(part.material),
       placements.length,
     )
     mesh.name = `office-engineering-pod-kit-${key}-${partIndex}`
