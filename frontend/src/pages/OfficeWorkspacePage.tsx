@@ -950,7 +950,7 @@ export function OfficeWorkspacePage() {
               officeHour={Math.floor(officeWorld.localMinuteOfDay / 60)}
               worldContext={officeWorld}
               totalPresence={workspaceMembers.length}
-              dioramaPilot={dioramaDebug?.pilot ?? 'primitive'}
+              dioramaPilot={dioramaDebug?.pilot}
             />
           </OfficeRendererBoundary>
         </div>
