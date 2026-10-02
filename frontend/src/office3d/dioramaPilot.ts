@@ -23,17 +23,23 @@ interface PilotAssetDefinition {
 interface PilotAssetPart {
   geometry: THREE.BufferGeometry
   material: THREE.Material | THREE.Material[]
-  matrix: THREE.Matrix4
 }
 
 interface PilotAssetTemplate {
   parts: PilotAssetPart[]
 }
 
+export interface EngineeringPodPilotBounds {
+  min: [number, number, number]
+  max: [number, number, number]
+  size: [number, number, number]
+}
+
 export interface EngineeringPodPilotMount {
   group: THREE.Group
   sourceAssetCount: number
   instanceCount: number
+  bounds: EngineeringPodPilotBounds
 }
 
 const ASSET_ROOT = '/assets/office-pilot/kenney'
@@ -121,10 +127,16 @@ async function loadTemplate(key: PilotAssetKey): Promise<PilotAssetTemplate> {
     gltf.scene.traverse((object) => {
       if (!(object instanceof THREE.Mesh)) return
 
+      const geometry = object.geometry.clone()
+      geometry.applyMatrix4(
+        normalize.clone().multiply(object.matrixWorld),
+      )
+      geometry.computeBoundingBox()
+      geometry.computeBoundingSphere()
+
       parts.push({
-        geometry: object.geometry.clone(),
+        geometry,
         material: cloneMaterial(object.material),
-        matrix: normalize.clone().multiply(object.matrixWorld),
       })
     })
 
@@ -173,8 +185,7 @@ function addInstancedAsset(
     mesh.instanceMatrix.setUsage(THREE.StaticDrawUsage)
 
     placements.forEach((placement, index) => {
-      const matrix = placementMatrix(placement).multiply(part.matrix)
-      mesh.setMatrixAt(index, matrix)
+      mesh.setMatrixAt(index, placementMatrix(placement))
     })
 
     mesh.instanceMatrix.needsUpdate = true
@@ -221,9 +232,56 @@ export async function mountEngineeringPodPilot(
   })
 
   parent.add(group)
+  group.updateMatrixWorld(true)
+
+  const bounds = new THREE.Box3().setFromObject(group)
+  if (bounds.isEmpty()) {
+    parent.remove(group)
+    disposeObjectTree(group)
+    throw new Error('Engineering pod pilot has empty mounted bounds')
+  }
+
+  const size = bounds.getSize(new THREE.Vector3())
+  const min = bounds.min
+  const max = bounds.max
+  const plausible =
+    min.x >= -5 &&
+    max.x <= 5 &&
+    min.z >= -1.5 &&
+    max.z <= 4.4 &&
+    min.y >= -0.15 &&
+    max.y <= 2.4 &&
+    size.x >= 5 &&
+    size.z >= 2 &&
+    size.y >= 0.4
+
+  if (!plausible) {
+    parent.remove(group)
+    disposeObjectTree(group)
+    throw new Error(
+      `Engineering pod pilot mounted outside expected bounds: min=${min.toArray().join(',')} max=${max.toArray().join(',')}`,
+    )
+  }
+
   return {
     group,
     sourceAssetCount: OFFICE_DIORAMA_PILOT_ASSET_COUNT,
     instanceCount,
+    bounds: {
+      min: min.toArray() as [number, number, number],
+      max: max.toArray() as [number, number, number],
+      size: size.toArray() as [number, number, number],
+    },
   }
+}
+
+function disposeObjectTree(group: THREE.Object3D): void {
+  group.traverse((object) => {
+    if (!(object instanceof THREE.Mesh)) return
+    object.geometry.dispose()
+    const materials = Array.isArray(object.material)
+      ? object.material
+      : [object.material]
+    materials.forEach((material) => material.dispose())
+  })
 }
