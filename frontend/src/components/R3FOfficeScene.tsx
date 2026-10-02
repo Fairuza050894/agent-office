@@ -94,7 +94,7 @@ function publishRendererInfo(
   scene: THREE.Scene,
   runtimes: Map<string, RuntimeAgent>,
 ): void {
-  if (typeof window === 'undefined') return
+  if (!import.meta.env.DEV || typeof window === 'undefined') return
 
   const params = new URLSearchParams(window.location.search)
   if (
