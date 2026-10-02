@@ -40,6 +40,7 @@ import { officeLightingForHour } from '../office3d/lighting'
 import {
   OFFICE_CAMERA_CONTROL_POLICY,
   officeCameraView,
+  officeRendererViewport,
   type OfficeCameraViewKey,
 } from '../office3d/camera'
 import type { OfficeModeKey } from '../office3d/officeWorld'
@@ -104,7 +105,13 @@ interface OfficeDioramaRendererInfo {
 type OfficeDioramaWindow = Window & {
   __AGENT_OFFICE_DIARAMA__?: {
     ready: boolean
+    renderer?: 'three' | 'r3f'
     rendererInfo: OfficeDioramaRendererInfo
+    characterReadiness: {
+      expected: number
+      rigged: number
+      fallback: number
+    }
   }
   __AGENT_OFFICE_DIARAMA_PILOT__?: {
     mode: OfficeDioramaPilotMode
@@ -196,6 +203,10 @@ function publishDioramaRendererInfo(engine: Engine): void {
   if (params.get('fixture') !== 'diorama') return
 
   const info = engine.renderer.info
+  const expectedCharacters = engine.runtimes.size
+  const riggedCharacters = [...engine.runtimes.values()].filter(
+    (runtime) => runtime.rigged !== null,
+  ).length
   const lights = {
     total: 0,
     hemisphere: 0,
@@ -212,6 +223,12 @@ function publishDioramaRendererInfo(engine: Engine): void {
 
   ;(window as OfficeDioramaWindow).__AGENT_OFFICE_DIARAMA__ = {
     ready: true,
+    renderer: 'three',
+    characterReadiness: {
+      expected: expectedCharacters,
+      rigged: riggedCharacters,
+      fallback: expectedCharacters - riggedCharacters,
+    },
     rendererInfo: {
       calls: info.render.calls,
       triangles: info.render.triangles,
@@ -634,8 +651,10 @@ export function ThreeOfficeScene({
       const render = () => renderEngine(engine!)
       const resize = () => {
         if (!host.isConnected || !engine) return
-        const width = Math.max(host.clientWidth, 320)
-        const height = Math.max(host.clientHeight, 480)
+        const { width, height } = officeRendererViewport(
+          host.clientWidth,
+          host.clientHeight,
+        )
         camera.aspect = width / height
         camera.updateProjectionMatrix()
         renderer.setSize(width, height, false)

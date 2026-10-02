@@ -22,7 +22,9 @@
     "office:pilot-clean": "node scripts/clean-office-pilot-assets.mjs",
     "preoffice:pilot-shots": "npm run office:assets && npm run office:furniture-assets",
     "office:pilot-shots": "node scripts/capture-office-shots.mjs --pilot",
-    "office:furniture-assets": "node scripts/fetch-office-furniture-assets.mjs"
+    "office:furniture-assets": "node scripts/fetch-office-furniture-assets.mjs",
+    "preoffice:renderer-shots": "npm run office:assets && npm run office:furniture-assets",
+    "office:renderer-shots": "node scripts/capture-office-renderer-pilot.mjs"
   },
   "dependencies": {
     "react": "^19.2.8",
@@ -47,6 +49,7 @@
     "vite": "^8.3.0",
     "vitest": "^5.0.0",
     "@types/three": "^0.181.0",
-    "playwright": "^1.63.0"
+    "playwright": "^1.63.0",
+    "@react-three/fiber": "9.8.1"
   }
 }

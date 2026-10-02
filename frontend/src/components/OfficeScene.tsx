@@ -1,4 +1,10 @@
-import { useMemo, useState, type KeyboardEvent } from 'react'
+import {
+  lazy,
+  Suspense,
+  useMemo,
+  useState,
+  type KeyboardEvent,
+} from 'react'
 
 import type { AgentProfile, AgentRun, RunStage } from '../api'
 import {
@@ -14,9 +20,17 @@ import {
   type OfficeFloorKey,
   type OfficePresenceMember,
 } from '../office3d/livingOffice'
-import type { OfficeDioramaPilotMode } from '../office3d/dioramaDebug'
+import type {
+  OfficeDioramaPilotMode,
+  OfficeDioramaRendererMode,
+} from '../office3d/dioramaDebug'
 import { officeAgentState } from '../officeProjection'
 import { ThreeOfficeScene } from './ThreeOfficeScene'
+
+const R3FOfficeScene =
+  import.meta.env.DEV
+    ? lazy(() => import('./R3FOfficeScene'))
+    : null
 
 export interface OfficeSceneProps {
   stages: RunStage[]
@@ -40,7 +54,10 @@ export interface OfficeSceneProps {
   totalPresence?: number
   operationalFloorCounts?: Record<OfficeFloorKey, number>
   dioramaPilot?: OfficeDioramaPilotMode
+  dioramaRenderer?: OfficeDioramaRendererMode
 }
+
+const EMPTY_WORKSPACE_MEMBERS: OfficePresenceMember[] = []
 
 function profileName(
   agent: AgentRun,
@@ -140,13 +157,14 @@ export function OfficeScene({
   showRoster = true,
   presentation = 'operational',
   floor = 'build',
-  workspaceMembers = [],
+  workspaceMembers = EMPTY_WORKSPACE_MEMBERS,
   onFloorChange,
   officeHour,
   worldContext = null,
   totalPresence = 0,
   operationalFloorCounts,
   dioramaPilot,
+  dioramaRenderer = 'three',
 }: OfficeSceneProps) {
   const profileByKey = useMemo(
     () => new Map(profiles.map((profile) => [profile.key, profile])),
@@ -412,26 +430,52 @@ export function OfficeScene({
         )}
       </div>
 
-      <ThreeOfficeScene
-        stages={stages}
-        agents={agents}
-        profiles={profiles}
-        selectedAgentId={selectedAgentId}
-        onSelectAgent={onSelectAgent}
-        motionPaused={motionPaused}
-        mode={mode}
-        replayNonce={replayNonce}
-        replayStartedAt={replayStartedAt}
-        replayRange={replayRange}
-        floor={floor}
-        workspaceMembers={workspaceMembers}
-        cameraResetNonce={cameraResetNonce}
-        cameraView={cameraView}
-        labelsVisible={labelsVisible}
-        officeHour={officeHour}
-        officeMode={worldContext?.mode ?? null}
-        dioramaPilot={dioramaPilot}
-      />
+      {import.meta.env.DEV &&
+      dioramaRenderer === 'r3f' &&
+      R3FOfficeScene ? (
+        <Suspense
+          fallback={
+            <div className="office-three-host office-three-fallback">
+              Loading R3F renderer pilot…
+            </div>
+          }
+        >
+          <R3FOfficeScene
+            selectedAgentId={selectedAgentId}
+            onSelectAgent={onSelectAgent}
+            motionPaused={motionPaused}
+            floor={floor}
+            workspaceMembers={workspaceMembers}
+            cameraResetNonce={cameraResetNonce}
+            cameraView={cameraView}
+            officeHour={officeHour ?? new Date().getHours()}
+            officeMode={worldContext?.mode ?? null}
+            dioramaPilot={dioramaPilot}
+            labelsVisible={labelsVisible}
+          />
+        </Suspense>
+      ) : (
+        <ThreeOfficeScene
+          stages={stages}
+          agents={agents}
+          profiles={profiles}
+          selectedAgentId={selectedAgentId}
+          onSelectAgent={onSelectAgent}
+          motionPaused={motionPaused}
+          mode={mode}
+          replayNonce={replayNonce}
+          replayStartedAt={replayStartedAt}
+          replayRange={replayRange}
+          floor={floor}
+          workspaceMembers={workspaceMembers}
+          cameraResetNonce={cameraResetNonce}
+          cameraView={cameraView}
+          labelsVisible={labelsVisible}
+          officeHour={officeHour}
+          officeMode={worldContext?.mode ?? null}
+          dioramaPilot={dioramaPilot}
+        />
+      )}
 
       {floorTransition && (
         <div

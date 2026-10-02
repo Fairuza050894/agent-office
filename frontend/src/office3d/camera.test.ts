@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { OFFICE_CAMERA_CONTROL_POLICY, officeCameraView, officeCameraViews } from './camera'
+import {
+  OFFICE_CAMERA_CONTROL_POLICY,
+  officeCameraView,
+  officeCameraViews,
+  officeRendererViewport,
+} from './camera'
 
 describe('office camera presets', () => {
   it('exposes three keyboard-addressable views for every floor', () => {
@@ -62,6 +67,21 @@ describe('office camera presets', () => {
     expect(commons.position).not.toEqual(build.position)
     expect(strategy.position).not.toEqual(build.position)
     expect(commons.target).not.toEqual(build.target)
+  })
+
+  it('keeps renderer aspect tied to the actual responsive host size', () => {
+    expect(officeRendererViewport(370, 380)).toEqual({
+      width: 370,
+      height: 380,
+    })
+    expect(officeRendererViewport(1024, 612.4)).toEqual({
+      width: 1024,
+      height: 612,
+    })
+    expect(officeRendererViewport(0, 0)).toEqual({
+      width: 1,
+      height: 1,
+    })
   })
 
   it('keeps every preset within a bounded office camera envelope', () => {

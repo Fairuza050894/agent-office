@@ -25,18 +25,39 @@ describe('Office Diorama development fixture', () => {
     expect(config?.debugTime).toBe('2026-10-05T11:30:00.000Z')
     expect(config?.timeZone).toBe('Asia/Jakarta')
     expect(config?.pilot).toBe('primitive')
+    expect(config?.renderer).toBe('three')
     expect(config?.members).toHaveLength(10)
     expect(new Set(config?.members.map((member) => member.floor))).toEqual(
       new Set(['commons', 'build', 'strategy']),
     )
-    expect(config?.members.every((member) => member.truth === 'AMBIENT')).toBe(true)
-    expect(config?.members.every((member) => member.name.startsWith('Simulated '))).toBe(true)
+    expect(
+      config?.members.every((member) => member.truth === 'AMBIENT'),
+    ).toBe(true)
+    expect(
+      config?.members.every((member) => member.name.startsWith('Simulated ')),
+    ).toBe(true)
+  })
+
+  it('enables the R3F renderer only when explicitly requested', () => {
+    expect(
+      officeDioramaDebugConfig(
+        '?fixture=diorama&renderer=r3f&debugTime=2026-10-05T04:00:00.000Z',
+        true,
+      )?.renderer,
+    ).toBe('r3f')
+
+    expect(
+      officeDioramaDebugConfig(
+        '?fixture=diorama&renderer=unknown&debugTime=2026-10-05T04:00:00.000Z',
+        true,
+      )?.renderer,
+    ).toBe('three')
   })
 
   it('enables the Kenney pilot only when explicitly requested', () => {
     expect(
       officeDioramaDebugConfig(
-        '?fixture=diorama&pilot=kit&debugTime=2026-10-05T04:00:00.000Z',
+        '?fixture=diorama&pilot=kit&renderer=r3f&debugTime=2026-10-05T04:00:00.000Z',
         true,
       )?.pilot,
     ).toBe('kit')
@@ -60,7 +81,7 @@ describe('Office Diorama development fixture', () => {
 
   it('preserves fixture and frozen time while changing Office floor', () => {
     const config = officeDioramaDebugConfig(
-      '?fixture=diorama&pilot=kit&debugTime=2026-10-05T04:00:00.000Z',
+      '?fixture=diorama&pilot=kit&renderer=r3f&debugTime=2026-10-05T04:00:00.000Z',
       true,
     )
     const params = appendOfficeDioramaDebugParams(
@@ -72,5 +93,6 @@ describe('Office Diorama development fixture', () => {
     expect(params.get('fixture')).toBe('diorama')
     expect(params.get('debugTime')).toBe('2026-10-05T04:00:00.000Z')
     expect(params.get('pilot')).toBe('kit')
+    expect(params.get('renderer')).toBe('r3f')
   })
 })

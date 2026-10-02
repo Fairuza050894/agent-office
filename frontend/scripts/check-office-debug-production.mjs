@@ -13,6 +13,9 @@ const markers = [
   '__AGENT_OFFICE_DIARAMA_PILOT__',
   'office-pilot/kenney',
   'Kenney kit pilot',
+  'R3F pilot',
+  'data-office-renderer="r3f"',
+  'office-renderer-pilot-shots',
 ]
 
 async function filesUnder(directory) {

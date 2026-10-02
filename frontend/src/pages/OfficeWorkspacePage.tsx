@@ -15,6 +15,7 @@ import {
   type Project,
   type RequirementCandidate,
   type Run,
+  type RunStage,
   type Task,
   type TeamProposal,
 } from '../api'
@@ -44,6 +45,9 @@ import {
   officeWorldContext,
 } from '../office3d/officeWorld'
 import { officeDioramaDebugConfig } from '../office3d/dioramaDebug'
+
+const EMPTY_OFFICE_STAGES: RunStage[] = []
+const EMPTY_OFFICE_AGENT_RUNS: AgentRun[] = []
 
 function localTimezone(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
@@ -831,6 +835,7 @@ export function OfficeWorkspacePage() {
       params.set('fixture', dioramaDebug.fixture)
       params.set('debugTime', dioramaDebug.debugTime)
       params.set('pilot', dioramaDebug.pilot)
+      params.set('renderer', dioramaDebug.renderer)
     }
     navigate(`/office?${params.toString()}`)
   }
@@ -853,7 +858,7 @@ export function OfficeWorkspacePage() {
         >
           <strong>Simulated</strong>
           <span>
-            Development-only Diorama fixture · {dioramaDebug.pilot === 'kit' ? 'Kenney kit pilot' : 'primitive control'} · frozen {officeWorld.clockLabel} · {officeWorld.timeZoneLabel}
+            Development-only Diorama fixture · {dioramaDebug.renderer === 'r3f' ? 'R3F renderer pilot' : 'Three.js control'} · {dioramaDebug.pilot === 'kit' ? 'Kenney kit' : 'primitive control'} · frozen {officeWorld.clockLabel} · {officeWorld.timeZoneLabel}
           </span>
         </div>
       )}
@@ -867,9 +872,7 @@ export function OfficeWorkspacePage() {
         }
         modeLabel={
           import.meta.env.DEV && dioramaDebug
-            ? dioramaDebug.pilot === 'kit'
-              ? 'SIMULATED · KIT PILOT'
-              : 'SIMULATED · PRIMITIVE'
+            ? `SIMULATED · ${dioramaDebug.renderer === 'r3f' ? 'R3F' : 'THREE'} · ${dioramaDebug.pilot === 'kit' ? 'KIT' : 'PRIMITIVE'}`
             : planningMode ?? undefined
         }
         statusLabel={
@@ -931,8 +934,8 @@ export function OfficeWorkspacePage() {
         <div className="office-workspace-stage">
           <OfficeRendererBoundary operationalHref="/overview">
             <OfficeScene
-              stages={[]}
-              agents={[]}
+              stages={EMPTY_OFFICE_STAGES}
+              agents={EMPTY_OFFICE_AGENT_RUNS}
               profiles={profiles}
               selectedAgentId={selectedOfficeMemberId}
               onSelectAgent={selectOfficeMember}
@@ -951,6 +954,7 @@ export function OfficeWorkspacePage() {
               worldContext={officeWorld}
               totalPresence={workspaceMembers.length}
               dioramaPilot={dioramaDebug?.pilot}
+              dioramaRenderer={dioramaDebug?.renderer}
             />
           </OfficeRendererBoundary>
         </div>

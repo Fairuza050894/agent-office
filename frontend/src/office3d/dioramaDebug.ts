@@ -5,6 +5,7 @@ export const OFFICE_DIORAMA_TIME_ZONE = 'Asia/Jakarta'
 export const OFFICE_DIORAMA_DEFAULT_TIME = '2026-10-05T04:00:00.000Z'
 
 export type OfficeDioramaPilotMode = 'primitive' | 'kit'
+export type OfficeDioramaRendererMode = 'three' | 'r3f'
 
 export interface OfficeDioramaDebugConfig {
   fixture: typeof OFFICE_DIORAMA_FIXTURE_KEY
@@ -12,6 +13,7 @@ export interface OfficeDioramaDebugConfig {
   debugTime: string
   timeZone: string
   pilot: OfficeDioramaPilotMode
+  renderer: OfficeDioramaRendererMode
   members: OfficePresenceMember[]
 }
 
@@ -147,12 +149,15 @@ export function officeDioramaDebugConfig(
   const now = parseTime(params.get('debugTime'))
   const pilot: OfficeDioramaPilotMode =
     params.get('pilot') === 'kit' ? 'kit' : 'primitive'
+  const renderer: OfficeDioramaRendererMode =
+    params.get('renderer') === 'r3f' ? 'r3f' : 'three'
   return {
     fixture: OFFICE_DIORAMA_FIXTURE_KEY,
     now,
     debugTime: now.toISOString(),
     timeZone: OFFICE_DIORAMA_TIME_ZONE,
     pilot,
+    renderer,
     members: MEMBERS.map((member) => ({ ...member })),
   }
 }
@@ -166,5 +171,6 @@ export function appendOfficeDioramaDebugParams(
   params.set('fixture', config.fixture)
   params.set('debugTime', config.debugTime)
   params.set('pilot', config.pilot)
+  params.set('renderer', config.renderer)
   return params
 }

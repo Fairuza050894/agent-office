@@ -452,3 +452,23 @@ The user-provided R3F mockup informs modular renderer boundaries, reduced-motion
 awareness, and future declarative scene work. V3 itself remains on the existing
 Three.js renderer; R3F migration and post-processing remain separate measured
 experiments.
+
+
+## Phase 12 R3F renderer pilot
+
+Phase 12 adds a development-only renderer selector to the deterministic Diorama
+fixture:
+
+```text
+renderer=three
+renderer=r3f
+```
+
+Production/default Office remains on the existing imperative Three.js renderer.
+
+The R3F pilot reuses the same environment placement, accepted Build furniture,
+character runtime, camera presets, and lighting profiles. It does not own
+workflow state and does not migrate Live/Replay in this phase.
+
+No post-processing stack is enabled. The purpose is to compare renderer
+architecture and evidence first, before any full migration decision.

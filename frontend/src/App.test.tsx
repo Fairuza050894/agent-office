@@ -156,8 +156,10 @@ describe('Agent Office operational shell', () => {
     )
 
     expect(await screen.findByText('Simulated')).toBeInTheDocument()
-    expect(screen.getByText(/Kenney kit pilot/)).toBeInTheDocument()
-    expect(screen.getByText('SIMULATED · KIT PILOT')).toBeInTheDocument()
+    expect(
+      screen.getByText(/Three\.js control.*Kenney kit/),
+    ).toBeInTheDocument()
+    expect(screen.getByText('SIMULATED · THREE · KIT')).toBeInTheDocument()
   })
 
   it('keeps successful Office registries usable when one registry fails', async () => {
