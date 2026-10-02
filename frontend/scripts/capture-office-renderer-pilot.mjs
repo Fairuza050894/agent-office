@@ -88,12 +88,13 @@ async function configureApiMocks(page) {
   )
 }
 
-async function waitForKit(page) {
+async function waitForKitSnapshot(page) {
   const handle = await page.waitForFunction(() => {
     const pilot = window.__AGENT_OFFICE_DIARAMA_PILOT__
     if (!pilot || pilot.mode !== 'kit' || (!pilot.ready && !pilot.error)) {
       return false
     }
+
     return {
       ready: pilot.ready,
       error: pilot.error ?? null,
@@ -104,19 +105,64 @@ async function waitForKit(page) {
   })
 
   try {
-    const state = await handle.jsonValue()
-    if (state.error) {
-      throw new Error(`Kit load failed: ${state.error}`)
-    }
-    if (!state.ready || state.sourceAssetCount !== 5 || state.instanceCount < 40) {
-      throw new Error(
-        `Kit did not reach the expected ready state: ${JSON.stringify(state)}`,
-      )
-    }
-    return state
+    return await handle.jsonValue()
   } finally {
     await handle.dispose()
   }
+}
+
+function assertKitState(state) {
+  if (!state) return false
+  if (state.error) throw new Error(`Kit load failed: ${state.error}`)
+  if (!state.ready) return false
+  if (state.sourceAssetCount !== 5 || state.instanceCount < 40) {
+    throw new Error(
+      `Kit did not mount the expected furniture: ${JSON.stringify(state)}`,
+    )
+  }
+  if (!state.bounds) {
+    throw new Error('Kit renderer pilot is missing mounted bounds evidence.')
+  }
+  return true
+}
+
+async function waitForKit(page) {
+  let lastObserved = null
+
+  for (let attempt = 1; attempt <= 8; attempt += 1) {
+    const candidate = await waitForKitSnapshot(page)
+    lastObserved = candidate
+    if (!assertKitState(candidate)) continue
+
+    await page.waitForTimeout(500)
+    const confirmed = await page.evaluate(() => {
+      const pilot = window.__AGENT_OFFICE_DIARAMA_PILOT__
+      if (
+        !pilot ||
+        pilot.mode !== 'kit' ||
+        !pilot.ready ||
+        pilot.error
+      ) {
+        return null
+      }
+
+      return {
+        ready: pilot.ready,
+        error: pilot.error ?? null,
+        sourceAssetCount: pilot.sourceAssetCount,
+        instanceCount: pilot.instanceCount,
+        bounds: pilot.bounds ?? null,
+      }
+    })
+
+    if (!confirmed) continue
+    lastObserved = confirmed
+    if (assertKitState(confirmed)) return confirmed
+  }
+
+  throw new Error(
+    `Kit did not remain ready after 8 settle attempts. Last observed state: ${JSON.stringify(lastObserved)}`,
+  )
 }
 
 function assertRendererBudget(capture) {
