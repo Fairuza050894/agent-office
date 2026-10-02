@@ -388,3 +388,37 @@ Lighting:
 
 The deterministic V0 harness now enforces both renderer-budget and light-count
 gates for V1.
+
+
+## Phase 11 V2 engineering-pod asset pilot
+
+V2 adds a development-only A/B presentation for the Build engineering pod.
+
+```text
+pilot=primitive  accepted control
+pilot=kit        Kenney CC0 candidate
+```
+
+Both modes retain identical:
+
+- Agent/Run truth;
+- agent stations;
+- navigation obstacles;
+- camera;
+- lighting;
+- floor shell.
+
+Only the engineering-pod furniture presentation changes.
+
+The candidate uses Kenney Furniture Kit GLBs through deterministic verified
+transport and renders repeated static props with `THREE.InstancedMesh`.
+
+The pilot does not change production Office behavior. Production builds remove
+pilot binaries before bundling and must pass the production debug/pilot guard.
+
+The V2 kit is Blender-compatible source material, but V2 does not require a
+Blender runtime or commit a Blender-authored binary. If the owner approves the
+A/B result, a later rollout phase may use Blender for mesh/material
+consolidation and optimization before production adoption.
+
+R3F and Unity remain outside V2.
