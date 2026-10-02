@@ -58,6 +58,12 @@ jobs:
         run: npm run lint
       - name: Build
         run: npm run build
+      - name: Production Office guard
+        run: npm run office:debug:prod-check
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Production R3F Planning smoke
+        run: npm run office:production-r3f-smoke
 
   repository:
     runs-on: ubuntu-latest
