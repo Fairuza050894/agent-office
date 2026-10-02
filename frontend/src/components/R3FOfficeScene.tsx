@@ -719,8 +719,12 @@ function SceneContents(props: R3FOfficeSceneProps) {
     structureKey,
   ])
 
-  useFrame(() => {
+  useFrame((_state, frameDelta) => {
     const now = performance.now()
+    const delta = Math.min(
+      0.05,
+      Math.max(0.001, frameDelta),
+    )
     let needsFrame = false
     const runtimes = runtimesRef.current
     const replay = replayRef.current
@@ -787,7 +791,7 @@ function SceneContents(props: R3FOfficeSceneProps) {
         const waypoint = runtime.path[0]
         const direction = waypoint.clone().sub(runtime.root.position)
         const distance = direction.length()
-        const step = 2.15 / 60
+        const step = 2.15 * delta
 
         if (distance <= step) {
           runtime.root.position.copy(waypoint)
