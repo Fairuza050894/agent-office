@@ -55,3 +55,34 @@ All models use their own embedded skeleton and animation clips.
 The Quaternius models are authored facing the opposite direction from Agent
 Office's +Z movement convention, so the visual model receives a fixed local
 180-degree yaw while the RuntimeAgent root remains aligned to factual movement.
+
+
+## Phase 11 V2 engineering-pod pilot assets
+
+The V2 development-only engineering-pod pilot uses a subset of the Kenney
+Furniture Kit.
+
+Authoritative source:
+
+- creator: Kenney
+- asset page: https://kenney.nl/assets/furniture-kit
+- license: Creative Commons CC0 1.0
+
+Deterministic transport mirror:
+
+- repository: `Hidencod/tge-assets`
+- commit: `1f7dee9076ee848773f08fd632ab4e4e73357777`
+
+The transport mirror catalog records the Furniture Kit as Kenney / CC0 and
+provides self-contained GLB files.
+
+| Pilot file | Source path | Expected bytes | Git blob SHA |
+| --- | --- | ---: | --- |
+| `desk.glb` | `packs/furniture-kit/desk.glb` | 15048 | `8ca187070cd666239ab1d93dda2e98105f7de776` |
+| `chairmoderncushion.glb` | `packs/furniture-kit/chairmoderncushion.glb` | 7376 | `a6c18d94ec17231807043b0fb18e766b020ec81e` |
+| `computerscreen.glb` | `packs/furniture-kit/computerscreen.glb` | 6404 | `c509093d35ee40bb6791dde9ad8e9de4bc3348dd` |
+| `computerkeyboard.glb` | `packs/furniture-kit/computerkeyboard.glb` | 3476 | `77e5b4fc0d2d4c748173068f8ec325497f3c9011` |
+| `computermouse.glb` | `packs/furniture-kit/computermouse.glb` | 5868 | `333b20fad5121354f165ca7f77b6f2e777691bbb` |
+
+These pilot binaries are not committed. They are fetched only for the V2
+development harness, ignored by Git, and removed before production builds.

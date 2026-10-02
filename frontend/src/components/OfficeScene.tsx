@@ -14,6 +14,7 @@ import {
   type OfficeFloorKey,
   type OfficePresenceMember,
 } from '../office3d/livingOffice'
+import type { OfficeDioramaPilotMode } from '../office3d/dioramaDebug'
 import { officeAgentState } from '../officeProjection'
 import { ThreeOfficeScene } from './ThreeOfficeScene'
 
@@ -38,6 +39,7 @@ export interface OfficeSceneProps {
   worldContext?: OfficeWorldContext | null
   totalPresence?: number
   operationalFloorCounts?: Record<OfficeFloorKey, number>
+  dioramaPilot?: OfficeDioramaPilotMode
 }
 
 function profileName(
@@ -144,6 +146,7 @@ export function OfficeScene({
   worldContext = null,
   totalPresence = 0,
   operationalFloorCounts,
+  dioramaPilot = 'primitive',
 }: OfficeSceneProps) {
   const profileByKey = useMemo(
     () => new Map(profiles.map((profile) => [profile.key, profile])),
@@ -427,6 +430,7 @@ export function OfficeScene({
         labelsVisible={labelsVisible}
         officeHour={officeHour}
         officeMode={worldContext?.mode ?? null}
+        dioramaPilot={dioramaPilot}
       />
 
       {floorTransition && (
