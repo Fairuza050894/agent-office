@@ -449,6 +449,7 @@ export function OfficeScene({
             officeHour={officeHour ?? new Date().getHours()}
             officeMode={worldContext?.mode ?? null}
             dioramaPilot={dioramaPilot}
+            labelsVisible={labelsVisible}
           />
         </Suspense>
       ) : (
