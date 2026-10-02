@@ -830,6 +830,7 @@ export function OfficeWorkspacePage() {
     if (import.meta.env.DEV && dioramaDebug) {
       params.set('fixture', dioramaDebug.fixture)
       params.set('debugTime', dioramaDebug.debugTime)
+      params.set('pilot', dioramaDebug.pilot)
     }
     navigate(`/office?${params.toString()}`)
   }
@@ -852,7 +853,7 @@ export function OfficeWorkspacePage() {
         >
           <strong>Simulated</strong>
           <span>
-            Development-only Diorama fixture · frozen {officeWorld.clockLabel} · {officeWorld.timeZoneLabel}
+            Development-only Diorama fixture · {dioramaDebug.pilot === 'kit' ? 'Kenney kit pilot' : 'primitive control'} · frozen {officeWorld.clockLabel} · {officeWorld.timeZoneLabel}
           </span>
         </div>
       )}
@@ -865,7 +866,11 @@ export function OfficeWorkspacePage() {
             : selectedProject?.name ?? 'No Project selected'
         }
         modeLabel={
-          import.meta.env.DEV && dioramaDebug ? 'SIMULATED' : planningMode ?? undefined
+          import.meta.env.DEV && dioramaDebug
+            ? dioramaDebug.pilot === 'kit'
+              ? 'SIMULATED · KIT PILOT'
+              : 'SIMULATED · PRIMITIVE'
+            : planningMode ?? undefined
         }
         statusLabel={
           import.meta.env.DEV && dioramaDebug
@@ -945,6 +950,7 @@ export function OfficeWorkspacePage() {
               officeHour={Math.floor(officeWorld.localMinuteOfDay / 60)}
               worldContext={officeWorld}
               totalPresence={workspaceMembers.length}
+              dioramaPilot={dioramaDebug?.pilot ?? 'primitive'}
             />
           </OfficeRendererBoundary>
         </div>
