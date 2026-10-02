@@ -90,6 +90,12 @@ interface OfficeDioramaRendererInfo {
   lines: number
   geometries: number
   textures: number
+  lights: {
+    total: number
+    hemisphere: number
+    directional: number
+    point: number
+  }
 }
 
 type OfficeDioramaWindow = Window & {
@@ -175,6 +181,20 @@ function publishDioramaRendererInfo(engine: Engine): void {
   if (params.get('fixture') !== 'diorama') return
 
   const info = engine.renderer.info
+  const lights = {
+    total: 0,
+    hemisphere: 0,
+    directional: 0,
+    point: 0,
+  }
+  engine.scene.traverse((object) => {
+    if (!(object instanceof THREE.Light)) return
+    lights.total += 1
+    if (object instanceof THREE.HemisphereLight) lights.hemisphere += 1
+    if (object instanceof THREE.DirectionalLight) lights.directional += 1
+    if (object instanceof THREE.PointLight) lights.point += 1
+  })
+
   ;(window as OfficeDioramaWindow).__AGENT_OFFICE_DIARAMA__ = {
     ready: true,
     rendererInfo: {
@@ -184,6 +204,7 @@ function publishDioramaRendererInfo(engine: Engine): void {
       lines: info.render.lines,
       geometries: info.memory.geometries,
       textures: info.memory.textures,
+      lights,
     },
   }
 }
