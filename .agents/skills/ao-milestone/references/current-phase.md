@@ -73,3 +73,17 @@ Tracked separately in Issue #28; not a runtime dependency of Agent Office.
 - Office View remains supplemental to HTML operational truth;
 - no auto merge;
 - no force push.
+
+
+## V0 acceptance record
+
+```text
+automated verification: PASS
+rendered baseline review: PASS
+capture matrix: 24 / 24
+renderer baseline: recorded
+production debug-marker guard: PASS
+verification document: docs/product/PHASE_11_V0_VERIFICATION.md
+```
+
+Merge remains manual.
