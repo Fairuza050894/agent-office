@@ -151,22 +151,38 @@ async function configureApiMocks(page) {
   )
 }
 
-async function waitForPilot(page, variant) {
-  await page.waitForFunction(
+async function waitForPilotSnapshot(page, variant) {
+  const handle = await page.waitForFunction(
     (requestedVariant) => {
       const pilot = window.__AGENT_OFFICE_DIARAMA_PILOT__
-      return Boolean(
-        pilot &&
-          pilot.mode === requestedVariant &&
-          (pilot.ready || pilot.error),
-      )
+      if (
+        !pilot ||
+        pilot.mode !== requestedVariant ||
+        (!pilot.ready && !pilot.error)
+      ) {
+        return false
+      }
+
+      return {
+        mode: pilot.mode,
+        ready: pilot.ready,
+        sourceAssetCount: pilot.sourceAssetCount,
+        instanceCount: pilot.instanceCount,
+        bounds: pilot.bounds ?? null,
+        error: pilot.error ?? null,
+      }
     },
     variant,
   )
 
-  const pilot = await page.evaluate(
-    () => window.__AGENT_OFFICE_DIARAMA_PILOT__ ?? null,
-  )
+  try {
+    return await handle.jsonValue()
+  } finally {
+    await handle.dispose()
+  }
+}
+
+function assertPilotState(pilot, variant) {
   if (!pilot) {
     throw new Error(`Pilot state missing for ${variant} capture.`)
   }
@@ -174,9 +190,7 @@ async function waitForPilot(page, variant) {
     throw new Error(`Pilot ${variant} failed: ${pilot.error}`)
   }
   if (!pilot.ready || pilot.mode !== variant) {
-    throw new Error(
-      `Pilot ${variant} did not reach the expected ready state.`,
-    )
+    return false
   }
 
   if (
@@ -215,7 +229,56 @@ async function waitForPilot(page, variant) {
     }
   }
 
-  return pilot
+  return true
+}
+
+async function waitForPilot(page, variant) {
+  let lastObserved = null
+
+  for (let attempt = 1; attempt <= 8; attempt += 1) {
+    const candidate = await waitForPilotSnapshot(page, variant)
+    lastObserved = candidate
+    if (!assertPilotState(candidate, variant)) continue
+
+    // React registry/context updates can remount the Office environment shortly
+    // after the first ready signal. Require the same pilot generation to remain
+    // ready across a short settle window before taking renderer evidence.
+    await page.waitForTimeout(500)
+
+    const confirmed = await page.evaluate((requestedVariant) => {
+      const pilot = window.__AGENT_OFFICE_DIARAMA_PILOT__
+      if (
+        !pilot ||
+        pilot.mode !== requestedVariant ||
+        !pilot.ready ||
+        pilot.error
+      ) {
+        return null
+      }
+
+      return {
+        mode: pilot.mode,
+        ready: pilot.ready,
+        sourceAssetCount: pilot.sourceAssetCount,
+        instanceCount: pilot.instanceCount,
+        bounds: pilot.bounds ?? null,
+        error: pilot.error ?? null,
+      }
+    }, variant)
+
+    if (!confirmed) {
+      continue
+    }
+
+    lastObserved = confirmed
+    if (assertPilotState(confirmed, variant)) {
+      return confirmed
+    }
+  }
+
+  throw new Error(
+    `Pilot ${variant} did not remain ready after 8 settle attempts. Last observed state: ${JSON.stringify(lastObserved)}`,
+  )
 }
 
 async function capture() {
