@@ -422,3 +422,33 @@ A/B result, a later rollout phase may use Blender for mesh/material
 consolidation and optimization before production adoption.
 
 R3F and Unity remain outside V2.
+
+
+## Phase 11 V3 Build-floor furniture rollout
+
+V3 promotes the accepted V2 engineering-pod kit into the ordinary Build floor.
+
+Ordinary Build rendering now uses a resilient swap:
+
+```text
+primitive pod fallback
+→ verified Kenney kit load
+→ bounds validation
+→ remove primitive furniture
+```
+
+A failed asset load leaves the primitive pod visible; it does not affect
+AgentRun truth or operational controls.
+
+The deterministic Diorama fixture retains explicit `pilot=primitive` and
+`pilot=kit` modes for visual regression.
+
+Raw Kenney materials are normalized into the Build palette through the
+renderer-neutral `officeFurnitureKit.ts` module. An optional Blender helper
+mirrors the same palette for later baked-asset optimization, but Blender is not
+a runtime dependency.
+
+The user-provided R3F mockup informs modular renderer boundaries, reduced-motion
+awareness, and future declarative scene work. V3 itself remains on the existing
+Three.js renderer; R3F migration and post-processing remain separate measured
+experiments.
