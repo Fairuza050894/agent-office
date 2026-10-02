@@ -25,6 +25,17 @@ interface Workstation {
   route: THREE.Vector3[]
 }
 
+export type EngineeringPodPresentation = 'primitive' | 'kit'
+
+export interface EngineeringPodPilotPlacement {
+  index: number
+  desk: StationPlacement
+  chair: StationPlacement
+  screen: StationPlacement
+  keyboard: StationPlacement
+  mouse: StationPlacement
+}
+
 export interface OfficeEnvironmentMember {
   id: string
   agent_profile_key: string
@@ -1386,27 +1397,102 @@ function createWoodFloor(parent: THREE.Group): void {
   parent.add(new THREE.LineSegments(geometry, lineMaterial))
 }
 
-function createWorkArea(parent: THREE.Group): void {
-  const rug = addBox(parent, [8.7, 0.025, 5.65], [0, 0.055, 1.5], 0x62584f)
+function createWorkArea(
+  parent: THREE.Group,
+  presentation: EngineeringPodPresentation = 'primitive',
+): void {
+  const area = new THREE.Group()
+  area.name = 'office-engineering-pod'
+
+  const rug = addBox(area, [8.7, 0.025, 5.65], [0, 0.055, 1.5], 0x62584f)
   rug.receiveShadow = true
 
-  WORKSTATIONS.forEach((workstation, index) => {
-    parent.add(createStandingDesk(workstation.desk, workstation.yaw))
+  if (presentation === 'primitive') {
+    const primitive = new THREE.Group()
+    primitive.name = 'office-engineering-pod-primitive'
 
+    WORKSTATIONS.forEach((workstation, index) => {
+      primitive.add(createStandingDesk(workstation.desk, workstation.yaw))
+
+      const chairOffset = workstation.yaw === 0 ? 0.6 : -0.6
+      const chair = createDeskChair(
+        point(
+          workstation.desk.x + (index % 2 === 0 ? -0.64 : 0.64),
+          workstation.desk.z + chairOffset,
+        ),
+        workstation.yaw,
+      )
+      chair.scale.setScalar(0.78)
+      primitive.add(chair)
+    })
+
+    area.add(primitive)
+  }
+
+  addBox(area, [0.08, 1.25, 4.3], [-4.05, 0.66, 1.43], 0x536a78)
+  addBox(area, [0.08, 1.25, 4.3], [4.05, 0.66, 1.43], 0x536a78)
+  parent.add(area)
+}
+
+function engineeringPodOffset(
+  origin: THREE.Vector3,
+  yaw: number,
+  x: number,
+  y: number,
+  z: number,
+): THREE.Vector3 {
+  const offset = new THREE.Vector3(x, y, z)
+  offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw)
+  return origin.clone().add(offset)
+}
+
+export function engineeringPodPilotPlacements(): EngineeringPodPilotPlacement[] {
+  return WORKSTATIONS.map((workstation, index) => {
     const chairOffset = workstation.yaw === 0 ? 0.6 : -0.6
-    const chair = createDeskChair(
-      point(
-        workstation.desk.x + (index % 2 === 0 ? -0.64 : 0.64),
-        workstation.desk.z + chairOffset,
-      ),
-      workstation.yaw,
-    )
-    chair.scale.setScalar(0.78)
-    parent.add(chair)
-  })
+    const chairX = workstation.desk.x + (index % 2 === 0 ? -0.64 : 0.64)
 
-  addBox(parent, [0.08, 1.25, 4.3], [-4.05, 0.66, 1.43], 0x536a78)
-  addBox(parent, [0.08, 1.25, 4.3], [4.05, 0.66, 1.43], 0x536a78)
+    return {
+      index,
+      desk: {
+        position: workstation.desk.clone(),
+        yaw: workstation.yaw,
+      },
+      chair: {
+        position: new THREE.Vector3(chairX, 0, workstation.desk.z + chairOffset),
+        yaw: workstation.yaw,
+      },
+      screen: {
+        position: engineeringPodOffset(
+          workstation.desk,
+          workstation.yaw,
+          0,
+          0.99,
+          0.1,
+        ),
+        yaw: workstation.yaw,
+      },
+      keyboard: {
+        position: engineeringPodOffset(
+          workstation.desk,
+          workstation.yaw,
+          -0.04,
+          1.0,
+          -0.2,
+        ),
+        yaw: workstation.yaw,
+      },
+      mouse: {
+        position: engineeringPodOffset(
+          workstation.desk,
+          workstation.yaw,
+          0.38,
+          1.0,
+          -0.18,
+        ),
+        yaw: workstation.yaw,
+      },
+    }
+  })
 }
 
 function roleWorkstation(
@@ -1771,8 +1857,9 @@ function createCommonsFloor(
 function createBuildFloor(
   environment: THREE.Group,
   mode: OfficeModeKey | null,
+  engineeringPodPresentation: EngineeringPodPresentation,
 ): void {
-  createWorkArea(environment)
+  createWorkArea(environment, engineeringPodPresentation)
   createReviewWall(environment)
   createQaLab(environment)
   createPairingIsland(environment)
@@ -1814,13 +1901,14 @@ export function createOfficeEnvironment(
   members: OfficeEnvironmentMember[],
   floor: OfficeFloorKey = 'build',
   officeMode: OfficeModeKey | null = null,
+  engineeringPodPresentation: EngineeringPodPresentation = 'primitive',
 ): Map<string, StationPlacement> {
   clearGroup(environment)
   createOfficeShell(environment, floor)
 
   if (floor === 'commons') createCommonsFloor(environment, officeMode)
   else if (floor === 'strategy') createStrategyFloor(environment, officeMode)
-  else createBuildFloor(environment, officeMode)
+  else createBuildFloor(environment, officeMode, engineeringPodPresentation)
 
   environment.add(createPlant(point(-4.65, -1.7), 0.9))
   environment.add(createPlant(point(4.65, -1.7), 0.9))
