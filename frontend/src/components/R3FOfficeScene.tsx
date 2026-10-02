@@ -431,6 +431,10 @@ function SceneContents(props: R3FOfficeSceneProps) {
   })
   const agentsRef = useRef(agents)
   agentsRef.current = agents
+  const stagesRef = useRef(stages)
+  stagesRef.current = stages
+  const workspaceMembersRef = useRef(workspaceMembers)
+  workspaceMembersRef.current = workspaceMembers
 
   const sceneMembers = useMemo(
     () =>
@@ -470,7 +474,8 @@ function SceneContents(props: R3FOfficeSceneProps) {
     const generation = generationRef.current + 1
     generationRef.current = generation
     const members = sceneMembersRef.current
-    const visibleWorkspaceMembers = workspaceMembers.filter(
+    const currentStages = stagesRef.current
+    const visibleWorkspaceMembers = workspaceMembersRef.current.filter(
       (member) => member.floor === floor,
     )
     workspaceMemberIdsRef.current = new Set(
@@ -480,7 +485,7 @@ function SceneContents(props: R3FOfficeSceneProps) {
     const furniture = officeFurniturePolicy(floor, dioramaPilot)
     const stations = createOfficeEnvironment(
       environment,
-      stages,
+      currentStages,
       members,
       floor,
       officeMode,
@@ -492,7 +497,7 @@ function SceneContents(props: R3FOfficeSceneProps) {
       const station = stationForMember(
         member,
         memberIndex,
-        stages,
+        currentStages,
         stations,
       )
       const runtime = createCharacterRuntime(
