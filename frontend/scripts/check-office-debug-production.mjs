@@ -109,7 +109,7 @@ for (const [filename, expectedSize, expectedSha] of expectedFurniture) {
 }
 
 if (failures.length > 0) {
-  console.error('Diorama debug/pilot content leaked into the production bundle:')
+  console.error('Production Office verification failed:')
   for (const failure of failures) {
     console.error(`- ${path.relative(distRoot, failure.file)}: ${failure.marker}`)
   }
