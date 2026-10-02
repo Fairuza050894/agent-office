@@ -181,6 +181,14 @@ async function capture() {
       }
     }
 
+    const expectedCaptureCount =
+      floors.length * lightingWindows.length * viewports.length
+    if (captures.length !== expectedCaptureCount) {
+      throw new Error(
+        `Expected ${expectedCaptureCount} Office captures, received ${captures.length}.`,
+      )
+    }
+
     const baseline = {
       schemaVersion: 1,
       fixture: 'diorama',
