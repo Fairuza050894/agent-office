@@ -3,9 +3,11 @@
 ## Current checkpoint
 
 ```text
-main@72bdd59
+main@880e544
 Phase 10H-1 merged
 PR #24 Vocabulary & Structure merged
+PR #25 Office 3D experience polish merged
+PR #27 Phase 6 Codex test hardening merged
 ```
 
 Canonical full verification:
@@ -17,54 +19,56 @@ Canonical full verification:
 ## Current work
 
 ```text
-branch: polish/office-3d-experience
-pr: #25
-scope: post-10H-1 Office 3D experience polish
-status: DRAFT / FRONTEND RE-VERIFICATION PENDING
+branch: phase-11-office-diorama-v0
+scope: Phase 11 / Office Diorama V0 — deterministic visual harness
+status: IMPLEMENTING / DRAFT VERIFICATION
 ```
 
-## Why this polish exists
+## Why this phase exists
 
-The Phase 10H-1 structure is merged and accepted, but the final responsive review
-recorded three non-blocking follow-ups that materially affect the product feel:
+The Office renderer is now stable enough for directed visual work, but prior visual
+iterations depended on manual screenshots and hand-tuned values without a deterministic
+capture loop.
 
-- night-scene readability is too low;
-- the narrow-screen Office world HUD is vertically expensive;
-- the merged milestone/docs still contain stale pre-merge status and older
-  Workspace-facing wording.
-
-This branch fixes those follow-ups without starting Phase 10H-2 early. Rendered review now passes desktop, tablet, selected-agent focus, and 390px mobile containment; only targeted frontend re-verification remains.
+Phase 11 V0 creates the visual evidence harness before any asset-kit, lighting-model,
+camera-policy, or furniture rollout work.
 
 ## Scope
 
-- improve night lighting readability while keeping night visually dimmer than day;
-- keep the existing camera distance boundary and extend selected-agent focus linger;
-- compact the mobile Office world HUD into a horizontal status rail;
-- flatten the selected-member inspector to the current Office visual language;
-- reconcile milestone and Office documentation with merged Phase 10H-1 truth.
+- add Playwright as a measured frontend dev dependency for screenshot verification;
+- add a development-only deterministic Office Diorama fixture on the existing `/office` route;
+- label the fixture `Simulated` and keep it unavailable in production behavior;
+- freeze time through an explicit debug query parameter;
+- keep the fixture cast deterministic and presentation-only;
+- add `npm run office:shots` to capture 3 floors × 4 lighting windows × 2 widths;
+- write screenshots and renderer metrics to ignored `artifacts/office-shots/`;
+- record draw calls, triangles, geometries, textures, and viewport metadata as the V0 baseline.
 
 ## Explicitly deferred
 
-### Phase 10H-2 — read-only Shift Ruler
+### Phase 11 V1 — camera and light simplification
 
-Still a separate phase and PR.
+No camera-control or lighting-architecture rewrite in V0.
 
-### Phase 10H-3 — truth lines
+### Phase 11 V2 — pilot asset kit
 
-Still a separate phase and PR.
+No new furniture/model kit and no asset-policy ADR in V0.
 
-### Replay ruler scrubbing
+### Phase 10H-2 / 10H-3
 
-Still requires a later explicit go/no-go after the read-only ruler and truth-line
-phases are verified.
+Shift Ruler and truth lines remain separate phases and are not modified here.
+
+### Obsidian knowledge cockpit
+
+Tracked separately in Issue #28; not a runtime dependency of Agent Office.
 
 ## Safety invariants
 
-- no fake execution;
-- no fake stage duration or progress;
-- no backend/schema changes;
-- no new dependency;
+- debug fixture is development-only and visibly labeled `Simulated`;
+- no canonical Task / Run / AgentRun / Event state is fabricated;
+- no backend/schema contract changes;
+- no asset-policy changes;
+- no fake execution/progress/dialogue;
+- Office View remains supplemental to HTML operational truth;
 - no auto merge;
-- no force push;
-- internal Workspace worktree semantics unchanged;
-- Planning / Live / Replay truth boundaries unchanged.
+- no force push.
