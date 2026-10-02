@@ -18,7 +18,7 @@ const markers = [
 ]
 
 const requiredProductionMarkers = [
-  'data-office-renderer="r3f"',
+  'office-three-host-r3f',
   'R3F Planning Office 3D scene',
 ]
 
