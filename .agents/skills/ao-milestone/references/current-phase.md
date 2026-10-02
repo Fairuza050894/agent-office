@@ -24,7 +24,7 @@ Canonical full verification:
 branch: phase-11-office-diorama-v2-pilot
 pr: #31
 scope: Phase 11 / Office Diorama V2 — engineering-pod asset pilot
-status: IMPLEMENTED / RE-VERIFICATION PENDING
+status: IMPLEMENTED / RENDER FIX RE-VERIFICATION PENDING
 ```
 
 ## V2 decision boundary
@@ -117,3 +117,18 @@ Commons and Strategy are unchanged.
 - no binary GLB commit;
 - no auto merge;
 - no force push.
+
+
+## V2 rendered pilot finding
+
+Owner-rendered `kit-day-1440` showed an empty engineering pod while the
+primitive control remained correct.
+
+This is a V2 NO-GO until corrected.
+
+Remediation:
+- bake normalized GLB transforms into geometry before instancing;
+- expose mounted pilot bounds;
+- fail the A/B harness on empty or implausible pilot bounds.
+
+The pilot A/B matrix must be rerun before acceptance.
