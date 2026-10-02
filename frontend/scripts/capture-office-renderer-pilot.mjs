@@ -165,33 +165,47 @@ async function waitForKit(page) {
   )
 }
 
-function assertRendererBudget(capture) {
+function rendererBudgetViolations(capture) {
   const ceiling = buildCeilings[String(capture.viewport.width)]
-  if (!ceiling) throw new Error(`No renderer ceiling for ${capture.file}`)
+  if (!ceiling) {
+    return [`No renderer ceiling for ${capture.file}`]
+  }
 
+  const violations = []
   if (capture.renderer.calls > ceiling.calls) {
-    throw new Error(
-      `Renderer pilot call budget exceeded for ${capture.file}: ${capture.renderer.calls} > ${ceiling.calls}`,
+    violations.push(
+      `calls=${capture.renderer.calls} > ${ceiling.calls}`,
     )
   }
   if (capture.renderer.triangles > ceiling.triangles) {
-    throw new Error(
-      `Renderer pilot triangle budget exceeded for ${capture.file}: ${capture.renderer.triangles} > ${ceiling.triangles}`,
+    violations.push(
+      `triangles=${capture.renderer.triangles} > ${ceiling.triangles}`,
     )
   }
 
   const lights = capture.renderer.lights
-  if (
-    !lights ||
-    lights.hemisphere !== 1 ||
-    lights.directional !== 1 ||
-    lights.point > 3 ||
-    lights.total > 5
-  ) {
-    throw new Error(
-      `Renderer pilot light contract failed for ${capture.file}: ${JSON.stringify(lights)}`,
-    )
+  if (!lights) {
+    violations.push('light metrics missing')
+  } else {
+    if (lights.hemisphere !== 1) {
+      violations.push(
+        `hemisphere lights=${lights.hemisphere} > expected 1`,
+      )
+    }
+    if (lights.directional !== 1) {
+      violations.push(
+        `directional lights=${lights.directional} > expected 1`,
+      )
+    }
+    if (lights.point > 3) {
+      violations.push(`point lights=${lights.point} > 3`)
+    }
+    if (lights.total > 5) {
+      violations.push(`total lights=${lights.total} > 5`)
+    }
   }
+
+  return violations
 }
 
 async function capture() {
@@ -307,7 +321,7 @@ async function capture() {
             renderer: evidence.rendererInfo,
             pilotState: evidence.pilot,
           }
-          assertRendererBudget(record)
+          record.budgetViolations = rendererBudgetViolations(record)
           captures.push(record)
 
           await context.close()
@@ -322,14 +336,27 @@ async function capture() {
       )
     }
 
+    const budgetFailures = captures.flatMap((capture) =>
+      capture.budgetViolations.map((violation) => ({
+        file: capture.file,
+        rendererMode: capture.rendererMode,
+        violation,
+      })),
+    )
+
     const payload = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       fixture: 'diorama',
       mode: 'renderer-ab',
       floor: 'build',
       furniture: 'kit',
       timeZone: 'Asia/Jakarta',
       captureCount: captures.length,
+      budgetStatus: {
+        passed: budgetFailures.length === 0,
+        violationCount: budgetFailures.length,
+        violations: budgetFailures,
+      },
       captures,
     }
     await writeFile(
@@ -339,12 +366,29 @@ async function capture() {
     )
 
     process.stdout.write(
-      'R3F renderer pilot complete: 8 PNG files + renderer-info.json\n',
+      'R3F renderer pilot capture complete: 8 PNG files + renderer-info.json\n',
     )
+    process.stdout.write(`Artifacts: ${outputRoot}\n`)
+
+    if (budgetFailures.length > 0) {
+      process.stderr.write(
+        `Renderer comparison completed with ${budgetFailures.length} budget violation(s):\n`,
+      )
+      for (const failure of budgetFailures) {
+        process.stderr.write(
+          `- ${failure.file}: ${failure.violation}\n`,
+        )
+      }
+      process.stderr.write(
+        'Evidence was retained for full Three.js vs R3F review; accepted ceilings were not changed.\n',
+      )
+      process.exitCode = 1
+      return
+    }
+
     process.stdout.write(
       'Three.js and R3F captures both passed the accepted Build call/triangle/light ceilings.\n',
     )
-    process.stdout.write(`Artifacts: ${outputRoot}\n`)
   } catch (error) {
     if (serverLog.trim()) {
       process.stderr.write(
