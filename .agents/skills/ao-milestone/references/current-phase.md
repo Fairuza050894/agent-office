@@ -3,7 +3,7 @@
 ## Current checkpoint
 
 ```text
-main@3076465
+main@478572a
 Phase 10H-1 merged
 PR #24 Vocabulary & Structure merged
 PR #25 Office 3D experience polish merged
@@ -11,6 +11,7 @@ PR #27 Phase 6 Codex test hardening merged
 PR #29 Office Diorama V0 merged
 PR #30 Office Diorama V1 merged
 PR #31 Office Diorama V2 asset pilot merged
+PR #32 Office Diorama V3 Build rollout merged
 ```
 
 Canonical full verification:
@@ -22,65 +23,50 @@ Canonical full verification:
 ## Current work
 
 ```text
-branch: phase-11-office-diorama-v3-build-rollout
-pr: #32
-scope: Phase 11 / Office Diorama V3 — Build floor rollout
-status: IMPLEMENTED / VERIFICATION IN PROGRESS
+branch: phase-12-r3f-renderer-pilot
+scope: Phase 12 — R3F renderer pilot
+status: IMPLEMENTING / DRAFT VERIFICATION
 ```
 
-## V3 authority
+## Phase 12 authority
 
 Read:
 
 ```text
-docs/product/PHASE_11_V3_BUILD_ROLLOUT.md
+docs/product/PHASE_12_R3F_RENDERER_PILOT.md
 docs/architecture/ADR-0004-office-renderer-evolution.md
-docs/product/PHASE_11_V2_VERIFICATION.md
-docs/ux/OFFICE_VIEW.md
 docs/ux/OFFICE_R3F_REFERENCE_REVIEW.md
+docs/ux/OFFICE_VIEW.md
 ```
 
-## V3 scope
+## Scope
 
-- promote the accepted V2 Kenney subset into ordinary Build Office;
-- retain primitive furniture until the production kit is mounted and validated;
-- preserve explicit primitive/kit Diorama A/B modes;
-- fetch/verify production furniture during dev/build without committing GLBs;
-- normalize raw Kenney materials into the Build visual language;
-- keep static repeated furniture instanced;
-- add a Blender-compatible offline material-normalization helper;
-- isolate furniture policy/assets so a later R3F pilot does not own workflow
-  truth;
-- preserve camera, navigation, character, lighting, and truth contracts.
+- add React Three Fiber as a pilot-only renderer dependency;
+- preserve current Three.js renderer as production/default;
+- add deterministic `renderer=three|r3f` fixture selection;
+- reuse existing floor, furniture, character, camera, and lighting contracts;
+- add Three-vs-R3F screenshot/renderer evidence;
+- keep V1/V2 performance and lighting ceilings;
+- keep pilot code out of production output.
 
-## V3 reference lessons
+## Explicitly deferred
 
-The user-provided R3F mockup is a reference implementation only.
-
-Adopted lessons:
-
-- modular scene boundaries;
-- damped/focused interaction direction;
-- reduced-motion awareness;
-- 3D + text-complete operational UI;
-- measured rather than decorative rendering effects.
-
-Not adopted in V3:
-
-- sample/hard-coded Run/Event/timeline state;
-- R3F runtime dependency;
-- post-processing stack;
-- Unity.
+- Live/Replay R3F migration;
+- full production renderer replacement;
+- Drei dependency;
+- AO/Bloom/SMAA/Vignette/post-processing;
+- physics;
+- Unity;
+- Shift Ruler;
+- operational workflow UX changes from the later reference screenshots.
 
 ## Safety invariants
 
-- no canonical Task / Run / AgentRun / Event changes;
-- no fake execution/progress/dialogue;
+- no Task / Run / AgentRun / Event truth changes;
+- no fake progress/dialogue/activity;
 - no backend/schema changes;
-- no new light-budget allowance;
-- production asset failure retains primitive presentation fallback;
-- asset license/source/provenance remains explicit;
-- no binary GLB commit;
+- production remains Three.js;
+- no increase to accepted light budget;
 - no auto merge;
 - no force push.
 
@@ -93,14 +79,10 @@ npm run typecheck
 npm run lint
 npm run build
 npm run office:debug:prod-check
-npm run office:shots
-npm run office:pilot-shots
+npm run office:renderer-shots
 
 cd ..
-python3 -m py_compile tools/blender/normalize_office_furniture.py
 ./scripts/verify.sh
 git diff --check
 git status --short
 ```
-
-Rendered desktop/mobile day/night review is required before V3 acceptance.
