@@ -188,6 +188,33 @@ async function waitForPilot(page, variant) {
     )
   }
 
+  if (variant === 'kit') {
+    const bounds = pilot.bounds
+    if (!bounds) {
+      throw new Error('Kit pilot mounted without spatial bounds evidence.')
+    }
+
+    const [width, height, depth] = bounds.size
+    const [minX, minY, minZ] = bounds.min
+    const [maxX, maxY, maxZ] = bounds.max
+    const plausible =
+      minX >= -5 &&
+      maxX <= 5 &&
+      minZ >= -1.5 &&
+      maxZ <= 4.4 &&
+      minY >= -0.15 &&
+      maxY <= 2.4 &&
+      width >= 5 &&
+      depth >= 2 &&
+      height >= 0.4
+
+    if (!plausible) {
+      throw new Error(
+        `Kit pilot bounds are not plausible: min=${bounds.min.join(',')} max=${bounds.max.join(',')} size=${bounds.size.join(',')}.`,
+      )
+    }
+  }
+
   return pilot
 }
 
