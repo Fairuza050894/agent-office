@@ -257,11 +257,12 @@ function CameraRig({
     controls.screenSpacePanning = false
     controls.minDistance = OFFICE_CAMERA_CONTROL_POLICY.minDistance
     controls.maxDistance = OFFICE_CAMERA_CONTROL_POLICY.maxDistance
-    controls.addEventListener('change', invalidate)
+    const handleChange = () => invalidate()
+    controls.addEventListener('change', handleChange)
     controlsRef.current = controls
 
     return () => {
-      controls.removeEventListener('change', invalidate)
+      controls.removeEventListener('change', handleChange)
       controls.dispose()
       controlsRef.current = null
     }
