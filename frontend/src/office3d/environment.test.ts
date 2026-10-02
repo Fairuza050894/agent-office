@@ -8,6 +8,7 @@ import {
   buildOfficePath,
   buildWorkspaceOfficePath,
   createOfficeEnvironment,
+  engineeringPodPilotPlacements,
   incidentPosition,
   officePathHasFurnitureClearance,
   officeRoleStation,
@@ -177,6 +178,81 @@ describe('office navigation clearance', () => {
     createOfficeEnvironment(night, [], [], 'commons', 'NIGHT_QUIET')
 
     expect(arrival.children.length).toBeGreaterThan(night.children.length)
+  })
+
+  it('keeps primitive and kit engineering-pod modes on identical agent stations', () => {
+    const members = [
+      {
+        id: 'backend',
+        agent_profile_key: 'backend-developer',
+        zone: 'engineering-pod' as const,
+        placementIndex: 0,
+      },
+      {
+        id: 'frontend',
+        agent_profile_key: 'frontend-developer',
+        zone: 'engineering-pod' as const,
+        placementIndex: 1,
+      },
+    ]
+
+    const primitive = new THREE.Group()
+    const kit = new THREE.Group()
+    const primitiveStations = createOfficeEnvironment(
+      primitive,
+      [],
+      members,
+      'build',
+      'CORE_WORK',
+      'primitive',
+    )
+    const kitStations = createOfficeEnvironment(
+      kit,
+      [],
+      members,
+      'build',
+      'CORE_WORK',
+      'kit',
+    )
+
+    expect(
+      primitive.getObjectByName('office-engineering-pod-primitive'),
+    ).toBeTruthy()
+    expect(
+      kit.getObjectByName('office-engineering-pod-primitive'),
+    ).toBeUndefined()
+
+    for (const member of members) {
+      const control = primitiveStations.get(member.id)!
+      const candidate = kitStations.get(member.id)!
+
+      expect(candidate.position.toArray()).toEqual(control.position.toArray())
+      expect(candidate.yaw).toBe(control.yaw)
+    }
+  })
+
+  it('exposes eight deterministic pilot placements without changing pod navigation geometry', () => {
+    const placements = engineeringPodPilotPlacements()
+
+    expect(placements).toHaveLength(8)
+    expect(
+      new Set(
+        placements.map(
+          (entry) =>
+            `${entry.desk.position.x.toFixed(2)}:${entry.desk.position.z.toFixed(2)}`,
+        ),
+      ).size,
+    ).toBe(8)
+
+    placements.forEach((entry) => {
+      const station = officeZonePlacement('engineering-pod', entry.index)
+      expect(
+        officeWorkspacePathHasFurnitureClearance(
+          [station.position, ...buildWorkspaceOfficePath(station.position, ENTRANCE, 'build')],
+          'build',
+        ),
+      ).toBe(true)
+    })
   })
 
   it('keeps floor-specific point lights within the V1 accent budget', () => {
