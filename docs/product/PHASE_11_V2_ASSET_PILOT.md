@@ -143,3 +143,22 @@ Rendered review:
 Owner then chooses V2 GO or NO-GO.
 
 No V3 rollout starts before that decision.
+
+## First local gate finding
+
+The first owner-machine A/B run rejected the original `chairdesk.glb` candidate
+on the 390px day capture because it rendered 30,640 triangles against the
+25,320 accepted mobile ceiling.
+
+The gate is intentionally unchanged. V2 responds by reducing asset complexity,
+not by raising the budget.
+
+The revised candidate uses Kenney `chairmoderncushion.glb` instead:
+
+```text
+chairdesk.glb            39,016 bytes  rejected for V2 pilot
+chairmoderncushion.glb    7,376 bytes  current candidate
+```
+
+All eight chair placements remain present and agent/navigation spatial truth is
+unchanged. The A/B matrix must be rerun after this revision.
