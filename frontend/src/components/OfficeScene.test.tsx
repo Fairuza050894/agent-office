@@ -23,6 +23,33 @@ vi.mock('./ThreeOfficeScene', () => ({
       data-office-mode={officeMode ?? ''}
       data-camera-view={cameraView ?? ''}
       data-labels-visible={String(labelsVisible ?? true)}
+      data-renderer="three"
+      onClick={() => onSelectAgent('ambient:backend-engineer')}
+    >
+      member
+    </button>
+  ),
+}))
+
+vi.mock('./R3FOfficeScene', () => ({
+  default: ({
+    onSelectAgent,
+    officeMode,
+    cameraView,
+    labelsVisible,
+  }: {
+    onSelectAgent: (agentId: string) => void
+    officeMode?: string | null
+    cameraView?: string
+    labelsVisible?: boolean
+  }) => (
+    <button
+      type="button"
+      aria-label="Mock 3D member"
+      data-office-mode={officeMode ?? ''}
+      data-camera-view={cameraView ?? ''}
+      data-labels-visible={String(labelsVisible ?? true)}
+      data-renderer="r3f"
       onClick={() => onSelectAgent('ambient:backend-engineer')}
     >
       member
@@ -89,6 +116,9 @@ describe('OfficeScene operational scope', () => {
     expect(screen.getAllByText('Strategy').length).toBeGreaterThan(0)
     expect(screen.getByText('Historical Run / AgentRun replay')).toBeInTheDocument()
     expect(
+      screen.getByRole('button', { name: 'Mock 3D member' }),
+    ).toHaveAttribute('data-renderer', 'three')
+    expect(
       screen.getByLabelText('Agent Office operational 3D projection'),
     ).toBeInTheDocument()
     fireEvent.click(screen.getByText('Controls'))
@@ -154,6 +184,9 @@ describe('OfficeScene workspace presence', () => {
     expect(
       screen.getByText('Planning office view · No canonical work active'),
     ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Mock 3D member' }),
+    ).toHaveAttribute('data-renderer', 'r3f')
 
     fireEvent.click(
       screen.getByRole('button', { name: 'Close office member inspector' }),
