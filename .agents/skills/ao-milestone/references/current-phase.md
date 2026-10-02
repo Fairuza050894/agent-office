@@ -24,7 +24,7 @@ Canonical full verification:
 branch: phase-11-office-diorama-v2-pilot
 pr: #31
 scope: Phase 11 / Office Diorama V2 — engineering-pod asset pilot
-status: IMPLEMENTED / RENDER FIX RE-VERIFICATION PENDING
+status: IMPLEMENTED / PILOT HARNESS RE-VERIFICATION PENDING
 ```
 
 ## V2 decision boundary
@@ -132,3 +132,25 @@ Remediation:
 - fail the A/B harness on empty or implausible pilot bounds.
 
 The pilot A/B matrix must be rerun before acceptance.
+
+
+## V2 pilot harness finding
+
+The owner-run pilot capture exposed a readiness race:
+
+```text
+Pilot kit did not reach the expected ready state.
+```
+
+The candidate kit itself rendered correctly after the transform-bake fix, but
+the Playwright harness could observe `ready=true` and then read a transient
+`ready=false` after a React environment remount.
+
+Remediation:
+- snapshot the ready/error pilot state atomically from `waitForFunction`;
+- require the same requested variant to remain ready across a 500ms settle
+  window;
+- retry up to eight transient remounts;
+- retain asset-count and mounted-bounds validation before capture.
+
+The 8-shot pilot A/B matrix must be rerun before V2 acceptance.
