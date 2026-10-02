@@ -169,7 +169,7 @@ function webGlUnavailable(): boolean {
 }
 
 function publishDioramaRendererInfo(engine: Engine): void {
-  if (!import.meta.env.DEV || typeof window === 'undefined') return
+  if (typeof window === 'undefined') return
 
   const params = new URLSearchParams(window.location.search)
   if (params.get('fixture') !== 'diorama') return
@@ -191,7 +191,7 @@ function publishDioramaRendererInfo(engine: Engine): void {
 function renderEngine(engine: Engine): void {
   engine.renderer.render(engine.scene, engine.camera)
   engine.labels.render(engine.scene, engine.camera)
-  publishDioramaRendererInfo(engine)
+  if (import.meta.env.DEV) publishDioramaRendererInfo(engine)
 }
 
 function applyOfficeLighting(engine: Engine, hour: number): void {
