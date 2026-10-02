@@ -4789,3 +4789,33 @@ button.office-scope-link {
     max-height: 300px;
   }
 }
+
+
+/* Phase 11 V0 — development-only Diorama evidence label. */
+
+.office-diorama-debug-banner {
+  display: flex;
+  min-height: 28px;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 2px 5px;
+  border-bottom: 1px solid var(--ao-border);
+  color: var(--ao-text-faint);
+  font-family: var(--ao-mono);
+  font-size: .48rem;
+}
+
+.office-diorama-debug-banner strong {
+  color: var(--ao-waiting);
+  font-size: .5rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 560px) {
+  .office-diorama-debug-banner {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
+  }
+}
