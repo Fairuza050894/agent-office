@@ -261,6 +261,15 @@ export function OfficeScene({
 
   const activeFloor =
     OFFICE_FLOORS.find((candidate) => candidate.key === floor) ?? OFFICE_FLOORS[0]
+  const planningUsesR3f =
+    presentation === 'workspace' &&
+    (!import.meta.env.DEV ||
+      !dioramaPilot ||
+      dioramaRenderer === 'r3f')
+  const liveUsesR3f =
+    presentation === 'operational' && mode === 'live'
+  const usesR3f = planningUsesR3f || liveUsesR3f
+  const r3fScope = presentation === 'workspace' ? 'planning' : 'live'
 
   return (
     <section
@@ -428,12 +437,9 @@ export function OfficeScene({
         )}
       </div>
 
-      {presentation === 'workspace' &&
-      (!import.meta.env.DEV ||
-        !dioramaPilot ||
-        dioramaRenderer === 'r3f') ? (
+      {usesR3f ? (
         <OfficeRendererBoundary
-          resetKey={`${floor}:${cameraView}`}
+          resetKey={`${presentation}:${mode}:${floor}:${cameraView}`}
           fallback={
             <ThreeOfficeScene
               stages={stages}
@@ -460,11 +466,15 @@ export function OfficeScene({
           <Suspense
             fallback={
               <div className="office-three-host office-three-fallback">
-                Loading Planning Office renderer…
+                Loading {r3fScope === 'live' ? 'Live' : 'Planning'} Office renderer…
               </div>
             }
           >
             <R3FOfficeScene
+              stages={stages}
+              agents={agents}
+              profiles={profiles}
+              scope={r3fScope}
               selectedAgentId={selectedAgentId}
               onSelectAgent={onSelectAgent}
               motionPaused={motionPaused}

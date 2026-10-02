@@ -145,6 +145,34 @@ describe('OfficeScene operational scope', () => {
     fireEvent.click(buildFloor)
     expect(onFloorChange).toHaveBeenCalledWith('build')
   })
+
+  it('uses R3F for live canonical Run projection while Replay remains on Three.js', async () => {
+    render(
+      <OfficeScene
+        stages={[]}
+        agents={[]}
+        profiles={[]}
+        selectedAgentId={null}
+        onSelectAgent={vi.fn()}
+        motionPaused={false}
+        mode="live"
+        replayNonce={0}
+        replayStartedAt={null}
+        replayRange={null}
+        showRoster={false}
+        presentation="operational"
+        floor="build"
+        operationalFloorCounts={{ commons: 0, build: 1, strategy: 0 }}
+      />,
+    )
+
+    expect(
+      screen.getByText('Live canonical Run / AgentRun projection'),
+    ).toBeInTheDocument()
+    expect(
+      await screen.findByRole('button', { name: 'Mock 3D member' }),
+    ).toHaveAttribute('data-renderer', 'r3f')
+  })
 })
 
 describe('OfficeScene workspace presence', () => {
