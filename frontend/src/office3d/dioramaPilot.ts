@@ -44,7 +44,7 @@ const ASSETS: Record<PilotAssetKey, PilotAssetDefinition> = {
     target: new THREE.Vector3(1.45, 0.98, 0.72),
   },
   chair: {
-    filename: 'chairdesk.glb',
+    filename: 'chairmoderncushion.glb',
     target: new THREE.Vector3(0.58, 0.95, 0.58),
   },
   screen: {
