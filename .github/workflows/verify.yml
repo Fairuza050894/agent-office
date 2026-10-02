@@ -79,6 +79,8 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Three-to-R3F renderer parity
         run: npm run office:renderer-shots
+      - name: Production R3F Planning Live Replay smoke
+        run: npm run office:r3f-production-smoke
 
   repository:
     runs-on: ubuntu-latest
