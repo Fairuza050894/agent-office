@@ -82,13 +82,20 @@ def normalize_materials(asset: str) -> None:
                 None,
             )
             if principled is not None:
-                principled.inputs["Emission Color"].default_value = (
-                    0.008,
-                    0.064,
-                    0.109,
-                    1.0,
+                emission_color = (
+                    principled.inputs.get("Emission Color")
+                    or principled.inputs.get("Emission")
                 )
-                principled.inputs["Emission Strength"].default_value = 0.42
+                emission_strength = principled.inputs.get("Emission Strength")
+                if emission_color is not None:
+                    emission_color.default_value = (
+                        0.008,
+                        0.064,
+                        0.109,
+                        1.0,
+                    )
+                if emission_strength is not None:
+                    emission_strength.default_value = 0.42
 
 
 def main() -> None:
@@ -116,7 +123,7 @@ def main() -> None:
             scale=True,
         )
 
-    bpy.ops.outliner.orphans_purge(do_recursive=True)
+    bpy.data.orphans_purge(do_recursive=True)
     bpy.ops.export_scene.gltf(
         filepath=str(target),
         export_format="GLB",
