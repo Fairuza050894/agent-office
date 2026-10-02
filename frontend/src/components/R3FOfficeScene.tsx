@@ -69,6 +69,11 @@ type DioramaWindow = Window & {
     ready: boolean
     renderer?: 'three' | 'r3f'
     rendererInfo: RendererInfo
+    characterReadiness: {
+      expected: number
+      rigged: number
+      fallback: number
+    }
   }
   __AGENT_OFFICE_DIARAMA_PILOT__?: {
     mode: OfficeDioramaPilotMode
@@ -87,6 +92,7 @@ type DioramaWindow = Window & {
 function publishRendererInfo(
   gl: THREE.WebGLRenderer,
   scene: THREE.Scene,
+  runtimes: Map<string, RuntimeAgent>,
 ): void {
   if (typeof window === 'undefined') return
 
@@ -113,9 +119,18 @@ function publishRendererInfo(
   })
 
   const info = gl.info
+  const expectedCharacters = runtimes.size
+  const riggedCharacters = [...runtimes.values()].filter(
+    (runtime) => runtime.rigged !== null,
+  ).length
   ;(window as DioramaWindow).__AGENT_OFFICE_DIARAMA__ = {
     ready: true,
     renderer: 'r3f',
+    characterReadiness: {
+      expected: expectedCharacters,
+      rigged: riggedCharacters,
+      fallback: expectedCharacters - riggedCharacters,
+    },
     rendererInfo: {
       calls: info.render.calls,
       triangles: info.render.triangles,
@@ -228,11 +243,15 @@ function LabelLayer({ visible }: { visible: boolean }) {
   return null
 }
 
-function RendererEvidence() {
+function RendererEvidence({
+  runtimes,
+}: {
+  runtimes: MutableRefObject<Map<string, RuntimeAgent>>
+}) {
   const { gl, scene } = useThree()
 
   useFrame(() => {
-    publishRendererInfo(gl, scene)
+    publishRendererInfo(gl, scene, runtimes.current)
   })
 
   return null
@@ -449,7 +468,7 @@ function SceneContents({
         runtimes={runtimesRef}
       />
       <LabelLayer visible={labelsVisible} />
-      <RendererEvidence />
+      <RendererEvidence runtimes={runtimesRef} />
     </>
   )
 }
