@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { officeLightingForHour } from './lighting'
+import {
+  OFFICE_MAX_ACCENT_LIGHTS,
+  officeLightingForHour,
+} from './lighting'
 
 describe('officeLightingForHour', () => {
   it('uses readable morning, day, evening, and night profiles', () => {
@@ -10,16 +13,26 @@ describe('officeLightingForHour', () => {
     expect(officeLightingForHour(23).key).toBe('night')
   })
 
+  it('keeps the accent-light budget intentionally small', () => {
+    expect(OFFICE_MAX_ACCENT_LIGHTS).toBe(3)
+  })
+
   it('keeps night readable without flattening the day and night distinction', () => {
     const day = officeLightingForHour(12)
     const night = officeLightingForHour(23)
 
-    expect(night.hemisphereIntensity).toBeGreaterThanOrEqual(1.2)
-    expect(night.fillIntensity).toBeGreaterThanOrEqual(0.45)
-    expect(night.exposure).toBeGreaterThanOrEqual(0.94)
+    expect(night.hemisphereIntensity).toBeGreaterThanOrEqual(1.5)
+    expect(night.exposure).toBeGreaterThanOrEqual(0.98)
     expect(night.hemisphereIntensity).toBeLessThan(day.hemisphereIntensity)
     expect(night.keyIntensity).toBeLessThan(day.keyIntensity)
     expect(night.exposure).toBeLessThan(day.exposure)
+  })
+
+  it('uses one key-light profile without a second global fill channel', () => {
+    const day = officeLightingForHour(12) as Record<string, unknown>
+
+    expect(day).not.toHaveProperty('fillColor')
+    expect(day).not.toHaveProperty('fillIntensity')
   })
 
   it('normalizes out-of-range hours deterministically', () => {
