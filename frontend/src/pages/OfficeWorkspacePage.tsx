@@ -15,6 +15,7 @@ import {
   type Project,
   type RequirementCandidate,
   type Run,
+  type RunStage,
   type Task,
   type TeamProposal,
 } from '../api'
@@ -44,6 +45,9 @@ import {
   officeWorldContext,
 } from '../office3d/officeWorld'
 import { officeDioramaDebugConfig } from '../office3d/dioramaDebug'
+
+const EMPTY_OFFICE_STAGES: RunStage[] = []
+const EMPTY_OFFICE_AGENT_RUNS: AgentRun[] = []
 
 function localTimezone(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
@@ -930,8 +934,8 @@ export function OfficeWorkspacePage() {
         <div className="office-workspace-stage">
           <OfficeRendererBoundary operationalHref="/overview">
             <OfficeScene
-              stages={[]}
-              agents={[]}
+              stages={EMPTY_OFFICE_STAGES}
+              agents={EMPTY_OFFICE_AGENT_RUNS}
               profiles={profiles}
               selectedAgentId={selectedOfficeMemberId}
               onSelectAgent={selectOfficeMember}
