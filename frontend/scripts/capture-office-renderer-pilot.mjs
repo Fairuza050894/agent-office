@@ -341,6 +341,57 @@ function rendererBudgetViolations(capture) {
   return violations
 }
 
+function rendererParityViolations(captures) {
+  const violations = []
+
+  for (const viewport of viewports) {
+    for (const lighting of lightingWindows) {
+      const pair = captures.filter(
+        (capture) =>
+          capture.viewport.width === viewport.width &&
+          capture.lighting === lighting.key,
+      )
+      const three = pair.find(
+        (capture) => capture.rendererMode === 'three',
+      )
+      const r3f = pair.find(
+        (capture) => capture.rendererMode === 'r3f',
+      )
+
+      if (!three || !r3f) {
+        violations.push(
+          `missing pair for ${lighting.key}/${viewport.key}`,
+        )
+        continue
+      }
+
+      for (const metric of [
+        'calls',
+        'triangles',
+        'geometries',
+        'textures',
+      ]) {
+        if (three.renderer[metric] !== r3f.renderer[metric]) {
+          violations.push(
+            `${lighting.key}/${viewport.key} ${metric}: Three=${three.renderer[metric]} R3F=${r3f.renderer[metric]}`,
+          )
+        }
+      }
+
+      if (
+        JSON.stringify(three.renderer.lights) !==
+        JSON.stringify(r3f.renderer.lights)
+      ) {
+        violations.push(
+          `${lighting.key}/${viewport.key} lights differ`,
+        )
+      }
+    }
+  }
+
+  return violations
+}
+
 async function capture() {
   await rm(outputRoot, { recursive: true, force: true })
   await mkdir(outputRoot, { recursive: true })
@@ -463,6 +514,7 @@ async function capture() {
         violation,
       })),
     )
+    const parityFailures = rendererParityViolations(captures)
 
     const payload = {
       schemaVersion: 2,
@@ -477,6 +529,11 @@ async function capture() {
         violationCount: budgetFailures.length,
         violations: budgetFailures,
       },
+      parityStatus: {
+        passed: parityFailures.length === 0,
+        violationCount: parityFailures.length,
+        violations: parityFailures,
+      },
       captures,
     }
     await writeFile(
@@ -490,24 +547,34 @@ async function capture() {
     )
     process.stdout.write(`Artifacts: ${outputRoot}\n`)
 
-    if (budgetFailures.length > 0) {
-      process.stderr.write(
-        `Renderer comparison completed with ${budgetFailures.length} budget violation(s):\n`,
-      )
-      for (const failure of budgetFailures) {
+    if (budgetFailures.length > 0 || parityFailures.length > 0) {
+      if (budgetFailures.length > 0) {
         process.stderr.write(
-          `- ${failure.file}: ${failure.violation}\n`,
+          `Renderer comparison completed with ${budgetFailures.length} budget violation(s):\n`,
         )
+        for (const failure of budgetFailures) {
+          process.stderr.write(
+            `- ${failure.file}: ${failure.violation}\n`,
+          )
+        }
+      }
+      if (parityFailures.length > 0) {
+        process.stderr.write(
+          `Renderer comparison completed with ${parityFailures.length} parity violation(s):\n`,
+        )
+        for (const failure of parityFailures) {
+          process.stderr.write(`- ${failure}\n`)
+        }
       }
       process.stderr.write(
-        'Evidence was retained for full Three.js vs R3F review; accepted ceilings were not changed.\n',
+        'Evidence was retained; accepted budgets and parity requirements were not weakened.\n',
       )
       process.exitCode = 1
       return
     }
 
     process.stdout.write(
-      'Three.js and R3F captures both passed the accepted Build call/triangle/light ceilings.\n',
+      'Three.js and R3F captures passed the accepted Build budgets and exact renderer parity gate.\n',
     )
   } catch (error) {
     if (serverLog.trim()) {
