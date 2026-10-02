@@ -104,7 +104,13 @@ interface OfficeDioramaRendererInfo {
 type OfficeDioramaWindow = Window & {
   __AGENT_OFFICE_DIARAMA__?: {
     ready: boolean
+    renderer?: 'three' | 'r3f'
     rendererInfo: OfficeDioramaRendererInfo
+    characterReadiness: {
+      expected: number
+      rigged: number
+      fallback: number
+    }
   }
   __AGENT_OFFICE_DIARAMA_PILOT__?: {
     mode: OfficeDioramaPilotMode
@@ -196,6 +202,10 @@ function publishDioramaRendererInfo(engine: Engine): void {
   if (params.get('fixture') !== 'diorama') return
 
   const info = engine.renderer.info
+  const expectedCharacters = engine.runtimes.size
+  const riggedCharacters = [...engine.runtimes.values()].filter(
+    (runtime) => runtime.rigged !== null,
+  ).length
   const lights = {
     total: 0,
     hemisphere: 0,
@@ -212,6 +222,12 @@ function publishDioramaRendererInfo(engine: Engine): void {
 
   ;(window as OfficeDioramaWindow).__AGENT_OFFICE_DIARAMA__ = {
     ready: true,
+    renderer: 'three',
+    characterReadiness: {
+      expected: expectedCharacters,
+      rigged: riggedCharacters,
+      fallback: expectedCharacters - riggedCharacters,
+    },
     rendererInfo: {
       calls: info.render.calls,
       triangles: info.render.triangles,
