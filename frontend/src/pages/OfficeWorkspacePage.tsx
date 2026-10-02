@@ -854,7 +854,7 @@ export function OfficeWorkspacePage() {
     >
       {dioramaDebug && import.meta.env.DEV && (
         <div
-          className="office-diorama-debug-banner"
+          className="office-workspace-note office-live-state"
           data-office-diorama-debug="simulated"
           role="status"
         >
