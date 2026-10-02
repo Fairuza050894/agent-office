@@ -43,10 +43,7 @@ import {
   isPlanningPresenceFresh,
   officeWorldContext,
 } from '../office3d/officeWorld'
-import {
-  appendOfficeDioramaDebugParams,
-  officeDioramaDebugConfig,
-} from '../office3d/dioramaDebug'
+import { officeDioramaDebugConfig } from '../office3d/dioramaDebug'
 
 function localTimezone(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
@@ -93,7 +90,10 @@ async function loadPlanningSnapshot(thread: ComposerThread) {
 export function OfficeWorkspacePage() {
   const { currentSearch, navigate } = useRouter()
   const dioramaDebug = useMemo(
-    () => officeDioramaDebugConfig(currentSearch),
+    () =>
+      import.meta.env.DEV
+        ? officeDioramaDebugConfig(currentSearch, true)
+        : null,
     [currentSearch],
   )
   const requestedProjectId = useMemo(
@@ -835,7 +835,10 @@ export function OfficeWorkspacePage() {
     const params = new URLSearchParams()
     if (selectedProjectId) params.set('project', selectedProjectId)
     params.set('floor', floor)
-    appendOfficeDioramaDebugParams(params, dioramaDebug)
+    if (import.meta.env.DEV && dioramaDebug) {
+      params.set('fixture', dioramaDebug.fixture)
+      params.set('debugTime', dioramaDebug.debugTime)
+    }
     navigate(`/office?${params.toString()}`)
   }
 
