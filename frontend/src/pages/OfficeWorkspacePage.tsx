@@ -852,7 +852,7 @@ export function OfficeWorkspacePage() {
     <div
       className={`page-view office-workspace office-structure-v2 ${isMaximized ? 'office-maximized' : ''}`}
     >
-      {dioramaDebug && import.meta.env.DEV && (
+      {import.meta.env.DEV && dioramaDebug && (
         <div
           className="office-workspace-note office-live-state"
           data-office-diorama-debug="simulated"
@@ -868,11 +868,15 @@ export function OfficeWorkspacePage() {
       <OfficeCommandRail
         title="Agent Office"
         projectName={
-          dioramaDebug ? 'Office Diorama fixture' : selectedProject?.name ?? 'No Project selected'
+          import.meta.env.DEV && dioramaDebug
+            ? 'Office Diorama fixture'
+            : selectedProject?.name ?? 'No Project selected'
         }
-        modeLabel={dioramaDebug ? 'SIMULATED' : planningMode ?? undefined}
+        modeLabel={
+          import.meta.env.DEV && dioramaDebug ? 'SIMULATED' : planningMode ?? undefined
+        }
         statusLabel={
-          dioramaDebug
+          import.meta.env.DEV && dioramaDebug
             ? `${workspaceMembers.length} simulated ambient roles`
             : isLoading
               ? 'Loading registries'
@@ -883,7 +887,7 @@ export function OfficeWorkspacePage() {
                 : 'Planning workspace'
         }
         meta={
-          dioramaDebug
+          import.meta.env.DEV && dioramaDebug
             ? 'Development-only visual evidence'
             : registryError
               ? `Registry degraded · ${registryError}`
