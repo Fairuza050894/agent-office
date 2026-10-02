@@ -854,7 +854,7 @@ export function OfficeWorkspacePage() {
         >
           <strong>Simulated</strong>
           <span>
-            Development-only Diorama fixture · {dioramaDebug.pilot === 'kit' ? 'Kenney kit pilot' : 'primitive control'} · frozen {officeWorld.clockLabel} · {officeWorld.timeZoneLabel}
+            Development-only Diorama fixture · {dioramaDebug.renderer === 'r3f' ? 'R3F renderer pilot' : 'Three.js control'} · {dioramaDebug.pilot === 'kit' ? 'Kenney kit' : 'primitive control'} · frozen {officeWorld.clockLabel} · {officeWorld.timeZoneLabel}
           </span>
         </div>
       )}
@@ -868,9 +868,7 @@ export function OfficeWorkspacePage() {
         }
         modeLabel={
           import.meta.env.DEV && dioramaDebug
-            ? dioramaDebug.pilot === 'kit'
-              ? 'SIMULATED · KIT PILOT'
-              : 'SIMULATED · PRIMITIVE'
+            ? `SIMULATED · ${dioramaDebug.renderer === 'r3f' ? 'R3F' : 'THREE'} · ${dioramaDebug.pilot === 'kit' ? 'KIT' : 'PRIMITIVE'}`
             : planningMode ?? undefined
         }
         statusLabel={
