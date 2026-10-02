@@ -25,12 +25,10 @@ import type {
   OfficeDioramaRendererMode,
 } from '../office3d/dioramaDebug'
 import { officeAgentState } from '../officeProjection'
+import { OfficeRendererBoundary } from './office/OfficeRendererBoundary'
 import { ThreeOfficeScene } from './ThreeOfficeScene'
 
-const R3FOfficeScene =
-  import.meta.env.DEV
-    ? lazy(() => import('./R3FOfficeScene'))
-    : null
+const R3FOfficeScene = lazy(() => import('./R3FOfficeScene'))
 
 export interface OfficeSceneProps {
   stages: RunStage[]
@@ -430,30 +428,57 @@ export function OfficeScene({
         )}
       </div>
 
-      {import.meta.env.DEV &&
-      dioramaRenderer === 'r3f' &&
-      R3FOfficeScene ? (
-        <Suspense
+      {presentation === 'workspace' &&
+      (!import.meta.env.DEV ||
+        !dioramaPilot ||
+        dioramaRenderer === 'r3f') ? (
+        <OfficeRendererBoundary
+          resetKey={`${floor}:${cameraView}`}
           fallback={
-            <div className="office-three-host office-three-fallback">
-              Loading R3F renderer pilot…
-            </div>
+            <ThreeOfficeScene
+              stages={stages}
+              agents={agents}
+              profiles={profiles}
+              selectedAgentId={selectedAgentId}
+              onSelectAgent={onSelectAgent}
+              motionPaused={motionPaused}
+              mode={mode}
+              replayNonce={replayNonce}
+              replayStartedAt={replayStartedAt}
+              replayRange={replayRange}
+              floor={floor}
+              workspaceMembers={workspaceMembers}
+              cameraResetNonce={cameraResetNonce}
+              cameraView={cameraView}
+              labelsVisible={labelsVisible}
+              officeHour={officeHour}
+              officeMode={worldContext?.mode ?? null}
+              dioramaPilot={dioramaPilot}
+            />
           }
         >
-          <R3FOfficeScene
-            selectedAgentId={selectedAgentId}
-            onSelectAgent={onSelectAgent}
-            motionPaused={motionPaused}
-            floor={floor}
-            workspaceMembers={workspaceMembers}
-            cameraResetNonce={cameraResetNonce}
-            cameraView={cameraView}
-            officeHour={officeHour ?? new Date().getHours()}
-            officeMode={worldContext?.mode ?? null}
-            dioramaPilot={dioramaPilot}
-            labelsVisible={labelsVisible}
-          />
-        </Suspense>
+          <Suspense
+            fallback={
+              <div className="office-three-host office-three-fallback">
+                Loading Planning Office renderer…
+              </div>
+            }
+          >
+            <R3FOfficeScene
+              selectedAgentId={selectedAgentId}
+              onSelectAgent={onSelectAgent}
+              motionPaused={motionPaused}
+              floor={floor}
+              workspaceMembers={workspaceMembers}
+              cameraResetNonce={cameraResetNonce}
+              cameraView={cameraView}
+              officeHour={officeHour ?? new Date().getHours()}
+              officeMode={worldContext?.mode ?? null}
+              dioramaPilot={dioramaPilot}
+              labelsVisible={labelsVisible}
+            />
+          </Suspense>
+        </OfficeRendererBoundary>
       ) : (
         <ThreeOfficeScene
           stages={stages}
