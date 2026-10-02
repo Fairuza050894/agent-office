@@ -110,6 +110,11 @@ type OfficeDioramaWindow = Window & {
     ready: boolean
     sourceAssetCount: number
     instanceCount: number
+    bounds?: {
+      min: [number, number, number]
+      max: [number, number, number]
+      size: [number, number, number]
+    }
     error?: string
   }
 }
@@ -928,6 +933,7 @@ export function ThreeOfficeScene({
             ready: true,
             sourceAssetCount: mount.sourceAssetCount,
             instanceCount: mount.instanceCount,
+            bounds: mount.bounds,
           }
           renderEngine(engine)
         })
