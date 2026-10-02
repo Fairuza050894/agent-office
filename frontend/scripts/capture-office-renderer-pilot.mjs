@@ -170,7 +170,7 @@ async function waitForRendererSettled(page, requestedRenderer) {
   let stableSamples = 0
   let lastEvidence = null
 
-  for (let attempt = 1; attempt <= 20; attempt += 1) {
+  for (let attempt = 1; attempt <= 32; attempt += 1) {
     const evidence = await page.evaluate(() => ({
       renderer:
         window.__AGENT_OFFICE_DIARAMA__?.renderer ?? 'three',
@@ -180,19 +180,32 @@ async function waitForRendererSettled(page, requestedRenderer) {
         window.__AGENT_OFFICE_DIARAMA_PILOT__ ?? null,
     }))
 
+    lastEvidence = evidence
+
     const rendererMatches =
       requestedRenderer === 'r3f'
         ? evidence.renderer === 'r3f'
         : evidence.renderer !== 'r3f'
 
-    if (rendererMatches && evidence.rendererInfo) {
-      lastEvidence = evidence
+    const pilot = evidence.pilot
+    const kitReady =
+      pilot?.mode === 'kit' &&
+      pilot.ready === true &&
+      !pilot.error &&
+      pilot.sourceAssetCount === 5 &&
+      pilot.instanceCount >= 40 &&
+      Boolean(pilot.bounds)
+
+    if (rendererMatches && evidence.rendererInfo && kitReady) {
       const info = evidence.rendererInfo
       const key = [
         info.calls,
         info.triangles,
         info.geometries,
         info.textures,
+        pilot.instanceCount,
+        pilot.bounds?.min?.join(',') ?? '',
+        pilot.bounds?.max?.join(',') ?? '',
       ].join(':')
 
       if (key === previousKey) {
@@ -206,15 +219,24 @@ async function waitForRendererSettled(page, requestedRenderer) {
         return evidence
       }
     } else {
+      // Environment/context refreshes can briefly reset the pilot state after
+      // the first ready signal. Never accept renderer metrics from that
+      // transient generation; wait until kit + metrics are jointly stable.
       previousKey = null
       stableSamples = 0
+
+      if (pilot?.error) {
+        throw new Error(
+          `Kit load failed while settling ${requestedRenderer}: ${pilot.error}`,
+        )
+      }
     }
 
     await page.waitForTimeout(250)
   }
 
   throw new Error(
-    `Renderer metrics did not stabilize for ${requestedRenderer}. Last evidence: ${JSON.stringify(lastEvidence)}`,
+    `Kit and renderer metrics did not become jointly stable for ${requestedRenderer}. Last evidence: ${JSON.stringify(lastEvidence)}`,
   )
 }
 
