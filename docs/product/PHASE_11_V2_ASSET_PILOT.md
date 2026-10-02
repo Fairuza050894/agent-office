@@ -162,3 +162,22 @@ chairmoderncushion.glb    7,376 bytes  current candidate
 
 All eight chair placements remain present and agent/navigation spatial truth is
 unchanged. The A/B matrix must be rerun after this revision.
+
+## Rendered pilot finding
+
+The first owner-rendered `kit-day-1440` candidate showed the engineering pod
+visually empty even though the fixture was in `KIT PILOT` mode. The control
+primitive render remained correct.
+
+This is a V2 NO-GO condition. The pilot may not be accepted on performance
+metrics alone when the candidate furniture is not visibly present.
+
+The GLB mount path now:
+
+1. bakes each source mesh's normalized world transform into its geometry;
+2. instances only the baked geometry at workstation placements;
+3. computes the mounted engineering-pod world bounds;
+4. rejects empty, implausible, below-floor, or out-of-zone bounds;
+5. exposes those bounds to the screenshot harness as acceptance evidence.
+
+The A/B capture must be rerun after this correction.
