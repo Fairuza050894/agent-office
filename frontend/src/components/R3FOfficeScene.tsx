@@ -463,7 +463,8 @@ export function R3FOfficeScene(props: R3FOfficeSceneProps) {
       data-office-renderer="r3f"
     >
       <Canvas
-        className="office-three-canvas"
+        className="office-r3f-canvas-shell"
+        style={{ width: '100%', height: '100%' }}
         shadows
         dpr={[1, 1.7]}
         camera={{
@@ -481,6 +482,7 @@ export function R3FOfficeScene(props: R3FOfficeSceneProps) {
           toneMappingExposure: lighting.exposure,
         }}
         onCreated={({ gl }) => {
+          gl.domElement.classList.add('office-three-canvas')
           gl.domElement.setAttribute(
             'aria-label',
             'R3F pilot 3D office scene',
