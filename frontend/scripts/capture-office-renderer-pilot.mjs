@@ -165,17 +165,31 @@ async function waitForKit(page) {
   )
 }
 
+function maxRendererInfo(samples) {
+  const first = samples[0]
+  return {
+    ...first,
+    calls: Math.max(...samples.map((sample) => sample.calls)),
+    triangles: Math.max(...samples.map((sample) => sample.triangles)),
+    points: Math.max(...samples.map((sample) => sample.points)),
+    lines: Math.max(...samples.map((sample) => sample.lines)),
+    geometries: Math.max(...samples.map((sample) => sample.geometries)),
+    textures: Math.max(...samples.map((sample) => sample.textures)),
+  }
+}
+
 async function waitForRendererSettled(page, requestedRenderer) {
-  let previousKey = null
-  let stableSamples = 0
+  let readySamples = []
   let lastEvidence = null
 
-  for (let attempt = 1; attempt <= 32; attempt += 1) {
+  for (let attempt = 1; attempt <= 48; attempt += 1) {
     const evidence = await page.evaluate(() => ({
       renderer:
         window.__AGENT_OFFICE_DIARAMA__?.renderer ?? 'three',
       rendererInfo:
         window.__AGENT_OFFICE_DIARAMA__?.rendererInfo ?? null,
+      characterReadiness:
+        window.__AGENT_OFFICE_DIARAMA__?.characterReadiness ?? null,
       pilot:
         window.__AGENT_OFFICE_DIARAMA_PILOT__ ?? null,
     }))
@@ -185,7 +199,7 @@ async function waitForRendererSettled(page, requestedRenderer) {
     const rendererMatches =
       requestedRenderer === 'r3f'
         ? evidence.renderer === 'r3f'
-        : evidence.renderer !== 'r3f'
+        : evidence.renderer === 'three'
 
     const pilot = evidence.pilot
     const kitReady =
@@ -196,34 +210,33 @@ async function waitForRendererSettled(page, requestedRenderer) {
       pilot.instanceCount >= 40 &&
       Boolean(pilot.bounds)
 
-    if (rendererMatches && evidence.rendererInfo && kitReady) {
-      const info = evidence.rendererInfo
-      const key = [
-        info.calls,
-        info.triangles,
-        info.geometries,
-        info.textures,
-        pilot.instanceCount,
-        pilot.bounds?.min?.join(',') ?? '',
-        pilot.bounds?.max?.join(',') ?? '',
-      ].join(':')
+    const characters = evidence.characterReadiness
+    const charactersReady =
+      characters &&
+      characters.expected > 0 &&
+      characters.rigged === characters.expected &&
+      characters.fallback === 0
 
-      if (key === previousKey) {
-        stableSamples += 1
-      } else {
-        previousKey = key
-        stableSamples = 1
-      }
+    if (
+      rendererMatches &&
+      evidence.rendererInfo &&
+      kitReady &&
+      charactersReady
+    ) {
+      readySamples.push(evidence)
 
-      if (stableSamples >= 3) {
-        return evidence
+      if (readySamples.length >= 4) {
+        const rendererSamples = readySamples.map(
+          (sample) => sample.rendererInfo,
+        )
+        return {
+          ...evidence,
+          rendererInfo: maxRendererInfo(rendererSamples),
+          rendererSamples,
+        }
       }
     } else {
-      // Environment/context refreshes can briefly reset the pilot state after
-      // the first ready signal. Never accept renderer metrics from that
-      // transient generation; wait until kit + metrics are jointly stable.
-      previousKey = null
-      stableSamples = 0
+      readySamples = []
 
       if (pilot?.error) {
         throw new Error(
@@ -236,7 +249,7 @@ async function waitForRendererSettled(page, requestedRenderer) {
   }
 
   throw new Error(
-    `Kit and renderer metrics did not become jointly stable for ${requestedRenderer}. Last evidence: ${JSON.stringify(lastEvidence)}`,
+    `Renderer presentation did not become fully ready for ${requestedRenderer}. Last evidence: ${JSON.stringify(lastEvidence)}`,
   )
 }
 
@@ -379,6 +392,8 @@ async function capture() {
               deviceScaleFactor: 1,
             },
             renderer: evidence.rendererInfo,
+            rendererSamples: evidence.rendererSamples,
+            characterReadiness: evidence.characterReadiness,
             pilotState: evidence.pilot,
           }
           record.budgetViolations = rendererBudgetViolations(record)
