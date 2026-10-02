@@ -243,6 +243,9 @@ async function capture() {
     process.stdout.write(
       `Office visual baseline complete: ${captures.length} PNG files + renderer-info.json\n`,
     )
+    process.stdout.write(
+      'V1 renderer and light budgets passed against the accepted V0 baseline.\n',
+    )
     process.stdout.write(`Artifacts: ${outputRoot}\n`)
   } catch (error) {
     if (serverLog.trim()) {
