@@ -103,7 +103,15 @@ async function run() {
   let browser
   try {
     await waitForServer(server)
-    browser = await chromium.launch({ headless: true })
+    browser = await chromium.launch({
+      headless: true,
+      args: [
+        '--use-gl=angle',
+        '--use-angle=swiftshader',
+        '--enable-webgl',
+        '--ignore-gpu-blocklist',
+      ],
+    })
     const context = await browser.newContext({
       viewport: { width: 1440, height: 1000 },
       deviceScaleFactor: 1,
@@ -123,7 +131,7 @@ async function run() {
       waitUntil: 'networkidle',
     })
 
-    await page.getByText('Planning Office').waitFor()
+    await page.getByText('Planning Office', { exact: true }).waitFor()
     const host = page.locator('[data-office-renderer="r3f"]')
     await host.waitFor()
     await host.locator('canvas.office-three-canvas').waitFor()
