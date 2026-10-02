@@ -128,7 +128,7 @@ The V1 light contract remains:
 
 ## Pilot questions
 
-V12 does not assume R3F is superior. It asks:
+Phase 12 does not assume R3F is superior. It asks:
 
 1. Does R3F preserve the accepted visual composition?
 2. Does it keep the same canonical projection inputs?
