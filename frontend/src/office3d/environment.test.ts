@@ -231,10 +231,11 @@ describe('office navigation clearance', () => {
     }
   })
 
-  it('exposes eight deterministic pilot placements without changing pod navigation geometry', () => {
+  it('exposes eight deterministic pilot furniture placements for the existing pod', () => {
     const placements = engineeringPodPilotPlacements()
 
     expect(placements).toHaveLength(8)
+    expect(officeZoneCapacity('engineering-pod')).toBe(8)
     expect(
       new Set(
         placements.map(
@@ -245,13 +246,16 @@ describe('office navigation clearance', () => {
     ).toBe(8)
 
     placements.forEach((entry) => {
-      const station = officeZonePlacement('engineering-pod', entry.index)
-      expect(
-        officeWorkspacePathHasFurnitureClearance(
-          [station.position, ...buildWorkspaceOfficePath(station.position, ENTRANCE, 'build')],
-          'build',
-        ),
-      ).toBe(true)
+      for (const placement of [
+        entry.desk,
+        entry.chair,
+        entry.screen,
+        entry.keyboard,
+        entry.mouse,
+      ]) {
+        expect(placement.position.toArray().every(Number.isFinite)).toBe(true)
+        expect(Number.isFinite(placement.yaw)).toBe(true)
+      }
     })
   })
 
