@@ -25,6 +25,7 @@ Canonical full verification:
 
 ```text
 branch: phase-13a-r3f-planning-production
+pr: #35
 scope: Phase 13A — R3F Planning production migration
 status: IMPLEMENTING / AUTOMATED VERIFICATION PENDING
 ```
