@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { officeCameraView, officeCameraViews } from './camera'
+import { OFFICE_CAMERA_CONTROL_POLICY, officeCameraView, officeCameraViews } from './camera'
 
 describe('office camera presets', () => {
   it('exposes three keyboard-addressable views for every floor', () => {
@@ -16,6 +16,16 @@ describe('office camera presets', () => {
       expect(views.map((view) => view.shortcut)).toEqual(['1', '2', '3'])
       expect(new Set(views.map((view) => view.label)).size).toBe(3)
     }
+  })
+
+  it('uses snap views with bounded zoom instead of free orbit or pan', () => {
+    expect(OFFICE_CAMERA_CONTROL_POLICY).toEqual({
+      enablePan: false,
+      enableRotate: false,
+      enableZoom: true,
+      minDistance: 9.5,
+      maxDistance: 22,
+    })
   })
 
   it('uses floor-specific semantic destinations instead of generic camera names', () => {
