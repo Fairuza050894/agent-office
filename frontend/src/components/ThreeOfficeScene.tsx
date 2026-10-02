@@ -36,6 +36,7 @@ import {
 } from '../office3d/livingOffice'
 import { officeLightingForHour } from '../office3d/lighting'
 import {
+  OFFICE_CAMERA_CONTROL_POLICY,
   officeCameraView,
   type OfficeCameraViewKey,
 } from '../office3d/camera'
@@ -108,7 +109,6 @@ interface Engine {
   agents: THREE.Group
   hemisphere: THREE.HemisphereLight
   keyLight: THREE.DirectionalLight
-  fillLight: THREE.DirectionalLight
   runtimes: Map<string, RuntimeAgent>
   clickable: THREE.Object3D[]
   frame: number | null
@@ -207,9 +207,6 @@ function applyOfficeLighting(engine: Engine, hour: number): void {
 
   engine.keyLight.color.setHex(profile.keyColor)
   engine.keyLight.intensity = profile.keyIntensity
-
-  engine.fillLight.color.setHex(profile.fillColor)
-  engine.fillLight.intensity = profile.fillIntensity
 }
 
 function prefersReducedMotion(): boolean {
@@ -548,13 +545,12 @@ export function ThreeOfficeScene({
       controls.target.set(0, 0.68, 0.3)
       controls.enableDamping = true
       controls.dampingFactor = 0.075
-      controls.enablePan = true
-      controls.enableRotate = true
-      controls.screenSpacePanning = true
-      controls.minDistance = 8.5
-      controls.maxDistance = 30
-      controls.minPolarAngle = Math.PI * 0.16
-      controls.maxPolarAngle = Math.PI * 0.48
+      controls.enablePan = OFFICE_CAMERA_CONTROL_POLICY.enablePan
+      controls.enableRotate = OFFICE_CAMERA_CONTROL_POLICY.enableRotate
+      controls.enableZoom = OFFICE_CAMERA_CONTROL_POLICY.enableZoom
+      controls.screenSpacePanning = false
+      controls.minDistance = OFFICE_CAMERA_CONTROL_POLICY.minDistance
+      controls.maxDistance = OFFICE_CAMERA_CONTROL_POLICY.maxDistance
 
       const hemisphere = new THREE.HemisphereLight(0xdce9f4, 0x1a232d, 2.0)
       scene.add(hemisphere)
@@ -568,10 +564,6 @@ export function ThreeOfficeScene({
       keyLight.shadow.camera.top = 14
       keyLight.shadow.camera.bottom = -14
       scene.add(keyLight)
-
-      const fillLight = new THREE.DirectionalLight(0x8fb8dc, 0.8)
-      fillLight.position.set(10, 10, -7)
-      scene.add(fillLight)
 
       const environment = new THREE.Group()
       const agentLayer = new THREE.Group()
@@ -587,7 +579,6 @@ export function ThreeOfficeScene({
         agents: agentLayer,
         hemisphere,
         keyLight,
-        fillLight,
         runtimes: new Map(),
         clickable: [],
         frame: null,
