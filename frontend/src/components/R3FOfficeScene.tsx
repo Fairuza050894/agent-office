@@ -205,7 +205,6 @@ function LabelLayer({ visible }: { visible: boolean }) {
     const labels = new CSS2DRenderer()
     labels.domElement.className = 'office-three-label-layer'
     labels.domElement.setAttribute('aria-hidden', 'true')
-    labels.domElement.style.display = visible ? '' : 'none'
     host.appendChild(labels.domElement)
     rendererRef.current = labels
 
@@ -252,7 +251,7 @@ function SceneContents({
   dioramaPilot,
   labelsVisible,
 }: R3FOfficeSceneProps) {
-  const { gl, invalidate } = useThree()
+  const { invalidate } = useThree()
   const environment = useMemo(() => new THREE.Group(), [])
   const agentLayer = useMemo(() => new THREE.Group(), [])
   const runtimesRef = useRef<Map<string, RuntimeAgent>>(new Map())
@@ -262,14 +261,6 @@ function SceneContents({
     [floor, workspaceMembers],
   )
   const lighting = officeLightingForHour(officeHour)
-
-  useEffect(() => {
-    gl.outputColorSpace = THREE.SRGBColorSpace
-    gl.toneMapping = THREE.ACESFilmicToneMapping
-    gl.toneMappingExposure = lighting.exposure
-    gl.shadowMap.enabled = true
-    gl.shadowMap.type = THREE.PCFSoftShadowMap
-  }, [gl, lighting.exposure])
 
   useEffect(() => {
     const generation = generationRef.current + 1
@@ -465,6 +456,7 @@ function SceneContents({
 
 export function R3FOfficeScene(props: R3FOfficeSceneProps) {
   const preset = officeCameraView(props.floor, props.cameraView)
+  const lighting = officeLightingForHour(props.officeHour)
   return (
     <div
       className="office-three-host office-three-host-r3f"
@@ -484,6 +476,9 @@ export function R3FOfficeScene(props: R3FOfficeSceneProps) {
           antialias: true,
           alpha: false,
           powerPreference: 'high-performance',
+          outputColorSpace: THREE.SRGBColorSpace,
+          toneMapping: THREE.ACESFilmicToneMapping,
+          toneMappingExposure: lighting.exposure,
         }}
         onCreated={({ gl }) => {
           gl.domElement.setAttribute(
