@@ -1,5 +1,6 @@
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -215,33 +216,36 @@ function CameraRig({
   const controlsRef = useRef<OrbitControls | null>(null)
   const transitionRef = useRef<CameraTransition | null>(null)
 
-  const transitionTo = (
-    toPosition: THREE.Vector3,
-    toTarget: THREE.Vector3,
-    duration = 520,
-  ) => {
-    const controls = controlsRef.current
-    if (!controls) return
+  const transitionTo = useCallback(
+    (
+      toPosition: THREE.Vector3,
+      toTarget: THREE.Vector3,
+      duration = 520,
+    ) => {
+      const controls = controlsRef.current
+      if (!controls) return
 
-    if (prefersReducedMotion()) {
-      transitionRef.current = null
-      camera.position.copy(toPosition)
-      controls.target.copy(toTarget)
-      controls.update()
+      if (prefersReducedMotion()) {
+        transitionRef.current = null
+        camera.position.copy(toPosition)
+        controls.target.copy(toTarget)
+        controls.update()
+        invalidate()
+        return
+      }
+
+      transitionRef.current = {
+        startedAt: performance.now(),
+        duration,
+        fromPosition: camera.position.clone(),
+        fromTarget: controls.target.clone(),
+        toPosition,
+        toTarget,
+      }
       invalidate()
-      return
-    }
-
-    transitionRef.current = {
-      startedAt: performance.now(),
-      duration,
-      fromPosition: camera.position.clone(),
-      fromTarget: controls.target.clone(),
-      toPosition,
-      toTarget,
-    }
-    invalidate()
-  }
+    },
+    [camera, invalidate],
+  )
 
   useEffect(() => {
     const controls = new OrbitControls(camera, gl.domElement)
@@ -269,9 +273,7 @@ function CameraRig({
       new THREE.Vector3(...preset.position),
       new THREE.Vector3(...preset.target),
     )
-    // transitionTo intentionally reads the current camera/controls.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cameraResetNonce, cameraView, floor])
+  }, [cameraResetNonce, cameraView, floor, transitionTo])
 
   useEffect(() => {
     const controls = controlsRef.current
@@ -285,9 +287,7 @@ function CameraRig({
       .clone()
       .add(target.clone().sub(controls.target))
     transitionTo(position, target, 430)
-    // transitionTo intentionally reads the current camera/controls.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedAgentId])
+  }, [camera, runtimes, selectedAgentId, transitionTo])
 
   useFrame(() => {
     const controls = controlsRef.current
