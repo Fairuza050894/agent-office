@@ -3,7 +3,6 @@ import {
   useEffect,
   useMemo,
   useRef,
-  useState,
   type MutableRefObject,
 } from 'react'
 import * as THREE from 'three'
@@ -215,7 +214,7 @@ function SceneContents({
   officeMode,
   dioramaPilot,
 }: R3FOfficeSceneProps) {
-  const { gl, scene, invalidate } = useThree()
+  const { gl, invalidate } = useThree()
   const environment = useMemo(() => new THREE.Group(), [])
   const agentLayer = useMemo(() => new THREE.Group(), [])
   const runtimesRef = useRef<Map<string, RuntimeAgent>>(new Map())
@@ -427,17 +426,6 @@ function SceneContents({
 
 export function R3FOfficeScene(props: R3FOfficeSceneProps) {
   const preset = officeCameraView(props.floor, props.cameraView)
-  const [rendererError, setRendererError] = useState<string | null>(null)
-
-  if (rendererError) {
-    return (
-      <div className="office-three-host office-three-fallback">
-        <strong>R3F pilot renderer unavailable</strong>
-        <span>{rendererError}</span>
-      </div>
-    )
-  }
-
   return (
     <div
       className="office-three-host office-three-host-r3f"
