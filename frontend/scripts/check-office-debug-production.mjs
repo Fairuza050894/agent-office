@@ -14,7 +14,6 @@ const markers = [
   'office-pilot/kenney',
   'Kenney kit pilot',
   'R3F pilot',
-  'data-office-renderer="r3f"',
   'office-renderer-pilot-shots',
 ]
 
