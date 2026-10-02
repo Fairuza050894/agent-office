@@ -22,7 +22,7 @@ Canonical full verification:
 ```text
 branch: phase-11-office-diorama-v1
 scope: Phase 11 / Office Diorama V1 — camera + lighting simplification
-status: IMPLEMENTING / DRAFT VERIFICATION
+status: IMPLEMENTED / DRAFT VERIFICATION
 ```
 
 ## V0 baseline
@@ -74,7 +74,7 @@ Use real Office time with a readable night minimum.
 - simplify camera control policy;
 - update camera control copy/tests;
 - simplify scene lighting architecture;
-- replace ceiling PointLights with emissive fixtures;
+- remove generic ceiling PointLights and rely on existing emissive surfaces plus bounded floor accents;
 - keep floor-specific accent lights bounded;
 - preserve readable night exposure;
 - regenerate the V0 screenshot matrix and renderer metrics;
