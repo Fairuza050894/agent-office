@@ -15,7 +15,7 @@ export const OFFICE_CAMERA_CONTROL_POLICY: OfficeCameraControlPolicy = {
   enableRotate: false,
   enableZoom: true,
   minDistance: 9.5,
-  maxDistance: 22,
+  maxDistance: 24,
 }
 
 export interface OfficeCameraView {
