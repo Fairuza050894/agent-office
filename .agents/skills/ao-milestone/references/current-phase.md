@@ -21,6 +21,7 @@ Canonical full verification:
 
 ```text
 branch: phase-11-office-diorama-v1
+pr: #30
 scope: Phase 11 / Office Diorama V1 — camera + lighting simplification
 status: IMPLEMENTED / DRAFT VERIFICATION
 ```
