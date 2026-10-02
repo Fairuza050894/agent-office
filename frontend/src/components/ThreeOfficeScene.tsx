@@ -40,6 +40,7 @@ import { officeLightingForHour } from '../office3d/lighting'
 import {
   OFFICE_CAMERA_CONTROL_POLICY,
   officeCameraView,
+  officeRendererViewport,
   type OfficeCameraViewKey,
 } from '../office3d/camera'
 import type { OfficeModeKey } from '../office3d/officeWorld'
@@ -650,8 +651,10 @@ export function ThreeOfficeScene({
       const render = () => renderEngine(engine!)
       const resize = () => {
         if (!host.isConnected || !engine) return
-        const width = Math.max(host.clientWidth, 320)
-        const height = Math.max(host.clientHeight, 480)
+        const { width, height } = officeRendererViewport(
+          host.clientWidth,
+          host.clientHeight,
+        )
         camera.aspect = width / height
         camera.updateProjectionMatrix()
         renderer.setSize(width, height, false)
