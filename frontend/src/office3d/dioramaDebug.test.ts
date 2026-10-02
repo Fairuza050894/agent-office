@@ -24,12 +24,29 @@ describe('Office Diorama development fixture', () => {
 
     expect(config?.debugTime).toBe('2026-10-05T11:30:00.000Z')
     expect(config?.timeZone).toBe('Asia/Jakarta')
+    expect(config?.pilot).toBe('primitive')
     expect(config?.members).toHaveLength(10)
     expect(new Set(config?.members.map((member) => member.floor))).toEqual(
       new Set(['commons', 'build', 'strategy']),
     )
     expect(config?.members.every((member) => member.truth === 'AMBIENT')).toBe(true)
     expect(config?.members.every((member) => member.name.startsWith('Simulated '))).toBe(true)
+  })
+
+  it('enables the Kenney pilot only when explicitly requested', () => {
+    expect(
+      officeDioramaDebugConfig(
+        '?fixture=diorama&pilot=kit&debugTime=2026-10-05T04:00:00.000Z',
+        true,
+      )?.pilot,
+    ).toBe('kit')
+
+    expect(
+      officeDioramaDebugConfig(
+        '?fixture=diorama&pilot=unknown&debugTime=2026-10-05T04:00:00.000Z',
+        true,
+      )?.pilot,
+    ).toBe('primitive')
   })
 
   it('falls back to a fixed instant when debugTime is invalid', () => {
@@ -43,7 +60,7 @@ describe('Office Diorama development fixture', () => {
 
   it('preserves fixture and frozen time while changing Office floor', () => {
     const config = officeDioramaDebugConfig(
-      '?fixture=diorama&debugTime=2026-10-05T04:00:00.000Z',
+      '?fixture=diorama&pilot=kit&debugTime=2026-10-05T04:00:00.000Z',
       true,
     )
     const params = appendOfficeDioramaDebugParams(
@@ -54,5 +71,6 @@ describe('Office Diorama development fixture', () => {
     expect(params.get('floor')).toBe('build')
     expect(params.get('fixture')).toBe('diorama')
     expect(params.get('debugTime')).toBe('2026-10-05T04:00:00.000Z')
+    expect(params.get('pilot')).toBe('kit')
   })
 })
