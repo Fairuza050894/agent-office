@@ -79,7 +79,7 @@ provides self-contained GLB files.
 | Pilot file | Source path | Expected bytes | Git blob SHA |
 | --- | --- | ---: | --- |
 | `desk.glb` | `packs/furniture-kit/desk.glb` | 15048 | `8ca187070cd666239ab1d93dda2e98105f7de776` |
-| `chairdesk.glb` | `packs/furniture-kit/chairdesk.glb` | 39016 | `131101f3dbc72f41ca624ddd77ce53d8bafea9ed` |
+| `chairmoderncushion.glb` | `packs/furniture-kit/chairmoderncushion.glb` | 7376 | `a6c18d94ec17231807043b0fb18e766b020ec81e` |
 | `computerscreen.glb` | `packs/furniture-kit/computerscreen.glb` | 6404 | `c509093d35ee40bb6791dde9ad8e9de4bc3348dd` |
 | `computerkeyboard.glb` | `packs/furniture-kit/computerkeyboard.glb` | 3476 | `77e5b4fc0d2d4c748173068f8ec325497f3c9011` |
 | `computermouse.glb` | `packs/furniture-kit/computermouse.glb` | 5868 | `333b20fad5121354f165ca7f77b6f2e777691bbb` |
