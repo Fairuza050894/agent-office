@@ -1,5 +1,11 @@
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MutableRefObject,
+} from 'react'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 
@@ -132,7 +138,7 @@ function CameraRig({
   cameraView: OfficeCameraViewKey
   cameraResetNonce: number
   selectedAgentId: string | null
-  runtimes: React.MutableRefObject<Map<string, RuntimeAgent>>
+  runtimes: MutableRefObject<Map<string, RuntimeAgent>>
 }) {
   const { camera, gl } = useThree()
   const controlsRef = useRef<OrbitControls | null>(null)
@@ -347,7 +353,6 @@ function SceneContents({
     floor,
     invalidate,
     officeMode,
-    selectedAgentId,
     visibleMembers,
   ])
 
