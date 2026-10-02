@@ -24,7 +24,7 @@ Canonical full verification:
 branch: phase-11-office-diorama-v2-pilot
 pr: #31
 scope: Phase 11 / Office Diorama V2 — engineering-pod asset pilot
-status: IMPLEMENTED / PILOT HARNESS RE-VERIFICATION PENDING
+status: ACCEPTED / GO / READY FOR REVIEW
 ```
 
 ## V2 decision boundary
@@ -154,3 +154,25 @@ Remediation:
 - retain asset-count and mounted-bounds validation before capture.
 
 The 8-shot pilot A/B matrix must be rerun before V2 acceptance.
+
+
+## V2 acceptance record
+
+```text
+GitHub Actions verify: PASS
+pilot mode: pilot-ab
+capture matrix: 8 / 8
+kit visible desktop/mobile day/night: PASS
+source assets: 5
+instanced placements: 80
+mounted bounds validation: PASS
+draw-call ceiling: PASS
+triangle ceiling: PASS
+light contract: PASS
+V2 decision: GO
+verification document: docs/product/PHASE_11_V2_VERIFICATION.md
+```
+
+V3 owns Build-floor rollout and Blender/material consolidation.
+
+Merge remains manual.
