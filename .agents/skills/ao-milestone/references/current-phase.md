@@ -27,7 +27,7 @@ Canonical full verification:
 branch: phase-13a-r3f-planning-production
 pr: #35
 scope: Phase 13A — R3F Planning production migration
-status: IMPLEMENTING / AUTOMATED VERIFICATION PENDING
+status: ACCEPTED / FINAL EXACT-HEAD CI PENDING
 ```
 
 ## Phase 13A authority
@@ -36,6 +36,7 @@ Read:
 
 ```text
 docs/product/PHASE_13A_R3F_PLANNING_PRODUCTION.md
+docs/product/PHASE_13A_R3F_PLANNING_PRODUCTION_VERIFICATION.md
 docs/product/PHASE_12_R3F_RENDERER_PILOT_VERIFICATION.md
 docs/architecture/ADR-0004-office-renderer-evolution.md
 docs/ux/OFFICE_VIEW.md
@@ -73,3 +74,20 @@ GitHub Actions verify:
 - production Office guard
 - production R3F Planning browser smoke
 ```
+
+
+## Phase 13A acceptance evidence
+
+```text
+verified runtime head: d1ec45f
+GitHub Actions verify #1368: SUCCESS
+backend: 658 passed / Ruff / format / MyPy PASS
+frontend: 26 files / 181 tests PASS
+typecheck / lint / build PASS
+production bundle guard PASS
+production R3F Planning Chromium smoke PASS
+repository whitespace PASS
+```
+
+This documentation commit moves the branch head after the verified runtime
+commit, so one final exact-head CI run is required before merge.
