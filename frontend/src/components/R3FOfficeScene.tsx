@@ -259,7 +259,6 @@ function SceneContents({
         invalidate,
       )
       runtime.root.userData.agentId = member.id
-      setCharacterSelected(runtime, member.id === selectedAgentId)
       runtimes.set(member.id, runtime)
       agentLayer.add(runtime.root)
     })
