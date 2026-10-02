@@ -871,8 +871,6 @@ export function ThreeOfficeScene({
       if (runtime.behavior !== (member.behavior ?? null)) {
         setCharacterBehavior(runtime, member.behavior ?? null)
       }
-      setCharacterSelected(runtime, selectedAgentId === member.id)
-
       if (mode === 'live') {
         const target = stateTarget(runtime, member.status, memberIndex)
 
@@ -998,7 +996,6 @@ export function ThreeOfficeScene({
     officeMode,
     dioramaPilot,
     profiles,
-    selectedAgentId,
     stages,
     startLoop,
     workspaceMembers,
