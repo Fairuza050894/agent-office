@@ -27,7 +27,7 @@ Canonical full verification:
 branch: phase-13a-r3f-planning-production
 pr: #35
 scope: Phase 13A — R3F Planning production migration
-status: ACCEPTED / FINAL EXACT-HEAD CI PENDING
+status: ACCEPTED / READY FOR MERGE
 ```
 
 ## Phase 13A authority
@@ -91,3 +91,16 @@ repository whitespace PASS
 
 This documentation commit moves the branch head after the verified runtime
 commit, so one final exact-head CI run is required before merge.
+
+
+## Final merge gate
+
+```text
+GitHub Actions verify #1372 on 04e5d50: SUCCESS
+frontend production R3F Planning smoke: PASS
+production bundle guard: PASS
+backend / frontend / repository gates: PASS
+```
+
+The final documentation-only status commit must also receive a green verify run
+before PR #35 is merged.
