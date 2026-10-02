@@ -24,7 +24,7 @@ Canonical full verification:
 branch: phase-11-office-diorama-v2-pilot
 pr: #31
 scope: Phase 11 / Office Diorama V2 — engineering-pod asset pilot
-status: IMPLEMENTED / DRAFT VERIFICATION
+status: IMPLEMENTED / RE-VERIFICATION PENDING
 ```
 
 ## V2 decision boundary
@@ -70,6 +70,24 @@ docs/architecture/ADR-0003-office-diorama-asset-transport.md
 - record renderer metrics;
 - hard-fail pilot if draw calls or triangles exceed the accepted V1 Build ceiling;
 - production bundle must contain no pilot asset or pilot debug marker.
+
+## V2 first local gate result
+
+The owner-machine gate at head `6368b61` passed unit/type/lint/build,
+production cleanup/guard, the 24-shot V1 baseline, and full repository
+verification, but correctly rejected the initial kit candidate on:
+
+```text
+kit-day-390: 30,640 triangles > 25,320 mobile ceiling
+```
+
+The budget is not relaxed.
+
+The original `chairdesk.glb` (39,016 bytes) was replaced with the lower
+complexity Kenney `chairmoderncushion.glb` (7,376 bytes), while preserving all
+eight chair placements and spatial truth.
+
+The V2 A/B capture must be rerun before GO/NO-GO.
 
 ## Explicitly deferred
 
