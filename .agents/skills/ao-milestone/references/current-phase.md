@@ -26,7 +26,7 @@ Canonical full verification:
 branch: phase-12-r3f-renderer-pilot
 pr: #33
 scope: Phase 12 — R3F renderer pilot
-status: IMPLEMENTING / DRAFT VERIFICATION
+status: IMPLEMENTED / AUTOMATED VERIFIED / RENDERED COMPARISON PENDING
 ```
 
 ## Phase 12 authority
@@ -87,3 +87,33 @@ cd ..
 git diff --check
 git status --short
 ```
+
+
+## Phase 12 automated verification
+
+Verified runtime head:
+
+```text
+9331628
+GitHub Actions verify #1271: PASS
+repository: PASS
+frontend: 25 files / 179 tests
+frontend typecheck: PASS
+frontend lint: PASS
+frontend build: PASS
+backend pytest: 658 passed
+backend Ruff: PASS
+backend format: PASS
+backend MyPy: PASS
+```
+
+Remaining gate:
+
+```text
+Three.js vs R3F deterministic rendered comparison
+desktop/mobile × day/night
+renderer-info.json review
+production debug/R3F leakage guard on owner machine
+```
+
+PR remains Draft until the rendered comparison is accepted.
