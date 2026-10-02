@@ -30,6 +30,25 @@ vi.mock('./ThreeOfficeScene', () => ({
   ),
 }))
 
+vi.mock('./R3FOfficeScene', () => ({
+  default: ({
+    mode,
+    onSelectAgent,
+  }: {
+    mode: 'live' | 'replay'
+    onSelectAgent: (agentId: string) => void
+  }) => (
+    <button
+      type="button"
+      aria-label="Mock R3F office renderer"
+      data-mode={mode}
+      onClick={() => onSelectAgent('ambient:backend-engineer')}
+    >
+      r3f
+    </button>
+  ),
+}))
+
 const member: OfficePresenceMember = {
   id: 'ambient:backend-engineer',
   agent_profile_key: 'backend-engineer',
@@ -62,12 +81,62 @@ const workMember: OfficePresenceMember = {
   stageKey: 'IMPLEMENTATION',
 }
 
+describe('OfficeScene production renderer selection', () => {
+  it('uses R3F by default while retaining an explicit Three control path', async () => {
+    const { rerender } = render(
+      <OfficeScene
+        stages={[]}
+        agents={[]}
+        profiles={[]}
+        selectedAgentId={null}
+        onSelectAgent={vi.fn()}
+        motionPaused={false}
+        mode="live"
+        replayNonce={0}
+        replayStartedAt={null}
+        replayRange={null}
+        showRoster={false}
+        floor="build"
+      />,
+    )
+
+    expect(
+      await screen.findByRole('button', {
+        name: 'Mock R3F office renderer',
+      }),
+    ).toHaveAttribute('data-mode', 'live')
+
+    rerender(
+      <OfficeScene
+        dioramaRenderer="three"
+        stages={[]}
+        agents={[]}
+        profiles={[]}
+        selectedAgentId={null}
+        onSelectAgent={vi.fn()}
+        motionPaused={false}
+        mode="live"
+        replayNonce={0}
+        replayStartedAt={null}
+        replayRange={null}
+        showRoster={false}
+        floor="build"
+      />,
+    )
+
+    expect(
+      screen.getByRole('button', { name: 'Mock 3D member' }),
+    ).toBeInTheDocument()
+  })
+})
+
 describe('OfficeScene operational scope', () => {
   it('keeps the same floor language while projecting canonical Run truth', () => {
     const onFloorChange = vi.fn()
 
     render(
       <OfficeScene
+        dioramaRenderer="three"
         stages={[]}
         agents={[]}
         profiles={[]}
@@ -123,6 +192,7 @@ describe('OfficeScene workspace presence', () => {
 
     render(
       <OfficeScene
+        dioramaRenderer="three"
         stages={[]}
         agents={[]}
         profiles={[]}
@@ -164,6 +234,7 @@ describe('OfficeScene workspace presence', () => {
   it('labels selected canonical work separately from ambient presentation', () => {
     render(
       <OfficeScene
+        dioramaRenderer="three"
         stages={[]}
         agents={[]}
         profiles={[]}
@@ -199,6 +270,7 @@ describe('OfficeScene workspace presence', () => {
   it('does not show a stale inspector for a member on another floor', () => {
     render(
       <OfficeScene
+        dioramaRenderer="three"
         stages={[]}
         agents={[]}
         profiles={[]}
@@ -229,6 +301,7 @@ describe('OfficeScene workspace presence', () => {
   it('renders explicit office time, mode, presence, and next event', () => {
     render(
       <OfficeScene
+        dioramaRenderer="three"
         stages={[]}
         agents={[]}
         profiles={[]}
@@ -271,6 +344,7 @@ describe('OfficeScene workspace presence', () => {
   it('keeps workspace context, controls, and world status hierarchically separate', () => {
     render(
       <OfficeScene
+        dioramaRenderer="three"
         stages={[]}
         agents={[]}
         profiles={[]}
@@ -313,6 +387,7 @@ describe('OfficeScene workspace presence', () => {
   it('offers floor-aware camera presets and a label layer toggle', () => {
     render(
       <OfficeScene
+        dioramaRenderer="three"
         stages={[]}
         agents={[]}
         profiles={[]}
@@ -357,6 +432,7 @@ describe('OfficeScene workspace presence', () => {
   it('supports keyboard-first camera and label controls from the 3D surface', () => {
     render(
       <OfficeScene
+        dioramaRenderer="three"
         stages={[]}
         agents={[]}
         profiles={[]}
@@ -389,6 +465,7 @@ describe('OfficeScene workspace presence', () => {
   it('keeps every floor name contained inside its switcher card', () => {
     render(
       <OfficeScene
+        dioramaRenderer="three"
         stages={[]}
         agents={[]}
         profiles={[]}
@@ -440,6 +517,7 @@ describe('OfficeScene workspace presence', () => {
   it('shows truthful per-floor presence counts', () => {
     render(
       <OfficeScene
+        dioramaRenderer="three"
         stages={[]}
         agents={[]}
         profiles={[]}
@@ -489,6 +567,7 @@ describe('OfficeScene workspace presence', () => {
 
     render(
       <OfficeScene
+        dioramaRenderer="three"
         stages={[]}
         agents={[]}
         profiles={[]}
