@@ -332,3 +332,30 @@ Phase 10H-1 also establishes:
 
 Phase 10G canonical WORK projection remains valid inside Planning and must not
 be removed merely to match an older planning+ambient-only mock.
+
+
+## Phase 11 V0 deterministic visual verification
+
+Phase 11 V0 adds a development-only visual evidence harness for Office View.
+
+The debug fixture uses the existing `/office` route with:
+
+```text
+fixture=diorama
+debugTime=<fixed instant>
+floor=commons|build|strategy
+```
+
+The fixture is visibly labelled `Simulated`, uses deterministic AMBIENT
+presentation members only, and never creates canonical Task, Run, AgentRun, or
+Event truth.
+
+The fixture freezes Office world time so lighting and environment screenshots
+can be compared deterministically. Three.js renderer counters are exposed only
+to the development harness for baseline evidence.
+
+Production Office behavior ignores the fixture. The production build gate scans
+for Diorama debug markers before V0 can be accepted.
+
+The V0 harness does not change camera policy, lighting architecture, asset
+transport, workflow state, Replay, Shift Ruler, or truth-line behavior.
