@@ -82,6 +82,22 @@ interface CameraTransition {
   toTarget: THREE.Vector3
 }
 
+interface OfficeDioramaRendererInfo {
+  calls: number
+  triangles: number
+  points: number
+  lines: number
+  geometries: number
+  textures: number
+}
+
+type OfficeDioramaWindow = Window & {
+  __AGENT_OFFICE_DIARAMA__?: {
+    ready: boolean
+    rendererInfo: OfficeDioramaRendererInfo
+  }
+}
+
 interface Engine {
   renderer: THREE.WebGLRenderer
   labels: CSS2DRenderer
@@ -152,9 +168,30 @@ function webGlUnavailable(): boolean {
   )
 }
 
+function publishDioramaRendererInfo(engine: Engine): void {
+  if (!import.meta.env.DEV || typeof window === 'undefined') return
+
+  const params = new URLSearchParams(window.location.search)
+  if (params.get('fixture') !== 'diorama') return
+
+  const info = engine.renderer.info
+  ;(window as OfficeDioramaWindow).__AGENT_OFFICE_DIARAMA__ = {
+    ready: true,
+    rendererInfo: {
+      calls: info.render.calls,
+      triangles: info.render.triangles,
+      points: info.render.points,
+      lines: info.render.lines,
+      geometries: info.memory.geometries,
+      textures: info.memory.textures,
+    },
+  }
+}
+
 function renderEngine(engine: Engine): void {
   engine.renderer.render(engine.scene, engine.camera)
   engine.labels.render(engine.scene, engine.camera)
+  publishDioramaRendererInfo(engine)
 }
 
 function applyOfficeLighting(engine: Engine, hour: number): void {
