@@ -30,8 +30,12 @@ describe('Office Diorama development fixture', () => {
     expect(new Set(config?.members.map((member) => member.floor))).toEqual(
       new Set(['commons', 'build', 'strategy']),
     )
-    expect(config?.members.every((member) => member.truth === 'AMBIENT')).toBe(true)
-    expect(config?.members.every((member) => member.name.startsWith('Simulated '))).toBe(true)
+    expect(
+      config?.members.every((member) => member.truth === 'AMBIENT'),
+    ).toBe(true)
+    expect(
+      config?.members.every((member) => member.name.startsWith('Simulated ')),
+    ).toBe(true)
   })
 
   it('enables the R3F renderer only when explicitly requested', () => {
@@ -77,7 +81,7 @@ describe('Office Diorama development fixture', () => {
 
   it('preserves fixture and frozen time while changing Office floor', () => {
     const config = officeDioramaDebugConfig(
-      '?fixture=diorama&pilot=kit&debugTime=2026-10-05T04:00:00.000Z',
+      '?fixture=diorama&pilot=kit&renderer=r3f&debugTime=2026-10-05T04:00:00.000Z',
       true,
     )
     const params = appendOfficeDioramaDebugParams(
