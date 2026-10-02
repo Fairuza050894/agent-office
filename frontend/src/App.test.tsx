@@ -3,6 +3,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import App from './App'
 
+vi.mock('./components/R3FOfficeScene', () => ({
+  default: () => (
+    <div data-office-renderer="r3f">
+      <canvas className="office-three-canvas" />
+    </div>
+  ),
+}))
+
 function jsonResponse(body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status: 200,

@@ -24,12 +24,14 @@
     "office:pilot-shots": "node scripts/capture-office-shots.mjs --pilot",
     "office:furniture-assets": "node scripts/fetch-office-furniture-assets.mjs",
     "preoffice:renderer-shots": "npm run office:assets && npm run office:furniture-assets",
-    "office:renderer-shots": "node scripts/capture-office-renderer-pilot.mjs"
+    "office:renderer-shots": "node scripts/capture-office-renderer-pilot.mjs",
+    "office:production-r3f-smoke": "node scripts/check-office-r3f-production.mjs"
   },
   "dependencies": {
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "three": "^0.181.2"
+    "three": "^0.181.2",
+    "@react-three/fiber": "9.8.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -49,7 +51,6 @@
     "vite": "^8.3.0",
     "vitest": "^5.0.0",
     "@types/three": "^0.181.0",
-    "playwright": "^1.63.0",
-    "@react-three/fiber": "9.8.1"
+    "playwright": "^1.63.0"
   }
 }

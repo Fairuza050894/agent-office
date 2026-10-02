@@ -23,6 +23,33 @@ vi.mock('./ThreeOfficeScene', () => ({
       data-office-mode={officeMode ?? ''}
       data-camera-view={cameraView ?? ''}
       data-labels-visible={String(labelsVisible ?? true)}
+      data-renderer="three"
+      onClick={() => onSelectAgent('ambient:backend-engineer')}
+    >
+      member
+    </button>
+  ),
+}))
+
+vi.mock('./R3FOfficeScene', () => ({
+  default: ({
+    onSelectAgent,
+    officeMode,
+    cameraView,
+    labelsVisible,
+  }: {
+    onSelectAgent: (agentId: string) => void
+    officeMode?: string | null
+    cameraView?: string
+    labelsVisible?: boolean
+  }) => (
+    <button
+      type="button"
+      aria-label="Mock 3D member"
+      data-office-mode={officeMode ?? ''}
+      data-camera-view={cameraView ?? ''}
+      data-labels-visible={String(labelsVisible ?? true)}
+      data-renderer="r3f"
       onClick={() => onSelectAgent('ambient:backend-engineer')}
     >
       member
@@ -89,6 +116,9 @@ describe('OfficeScene operational scope', () => {
     expect(screen.getAllByText('Strategy').length).toBeGreaterThan(0)
     expect(screen.getByText('Historical Run / AgentRun replay')).toBeInTheDocument()
     expect(
+      screen.getByRole('button', { name: 'Mock 3D member' }),
+    ).toHaveAttribute('data-renderer', 'three')
+    expect(
       screen.getByLabelText('Agent Office operational 3D projection'),
     ).toBeInTheDocument()
     fireEvent.click(screen.getByText('Controls'))
@@ -118,7 +148,7 @@ describe('OfficeScene operational scope', () => {
 })
 
 describe('OfficeScene workspace presence', () => {
-  it('renders a truthful selected-member inspector', () => {
+  it('renders a truthful selected-member inspector', async () => {
     const onSelectAgent = vi.fn()
 
     render(
@@ -154,6 +184,9 @@ describe('OfficeScene workspace presence', () => {
     expect(
       screen.getByText('Planning office view · No canonical work active'),
     ).toBeInTheDocument()
+    expect(
+      await screen.findByRole('button', { name: 'Mock 3D member' }),
+    ).toHaveAttribute('data-renderer', 'r3f')
 
     fireEvent.click(
       screen.getByRole('button', { name: 'Close office member inspector' }),
@@ -226,7 +259,7 @@ describe('OfficeScene workspace presence', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('renders explicit office time, mode, presence, and next event', () => {
+  it('renders explicit office time, mode, presence, and next event', async () => {
     render(
       <OfficeScene
         stages={[]}
@@ -262,10 +295,9 @@ describe('OfficeScene workspace presence', () => {
     expect(hud).toHaveTextContent('Ambient cap 0')
     expect(hud).toHaveTextContent('Morning arrival')
     expect(hud).toHaveTextContent('07:00')
-    expect(screen.getByRole('button', { name: 'Mock 3D member' })).toHaveAttribute(
-      'data-office-mode',
-      'NIGHT_QUIET',
-    )
+    expect(
+      await screen.findByRole('button', { name: 'Mock 3D member' }),
+    ).toHaveAttribute('data-office-mode', 'NIGHT_QUIET')
   })
 
   it('keeps workspace context, controls, and world status hierarchically separate', () => {
@@ -310,7 +342,7 @@ describe('OfficeScene workspace presence', () => {
     expect(screen.getAllByText('Build')).toHaveLength(1)
   })
 
-  it('offers floor-aware camera presets and a label layer toggle', () => {
+  it('offers floor-aware camera presets and a label layer toggle', async () => {
     render(
       <OfficeScene
         stages={[]}
@@ -342,19 +374,16 @@ describe('OfficeScene workspace presence', () => {
     fireEvent.click(
       within(cameraViews).getByRole('button', { name: /Engineering/i }),
     )
-    expect(screen.getByRole('button', { name: 'Mock 3D member' })).toHaveAttribute(
-      'data-camera-view',
-      'primary',
-    )
+    const renderer = await screen.findByRole('button', {
+      name: 'Mock 3D member',
+    })
+    expect(renderer).toHaveAttribute('data-camera-view', 'primary')
 
     fireEvent.click(screen.getByRole('button', { name: /Labels/i }))
-    expect(screen.getByRole('button', { name: 'Mock 3D member' })).toHaveAttribute(
-      'data-labels-visible',
-      'false',
-    )
+    expect(renderer).toHaveAttribute('data-labels-visible', 'false')
   })
 
-  it('supports keyboard-first camera and label controls from the 3D surface', () => {
+  it('supports keyboard-first camera and label controls from the 3D surface', async () => {
     render(
       <OfficeScene
         stages={[]}
@@ -377,7 +406,9 @@ describe('OfficeScene workspace presence', () => {
     )
 
     const scene = screen.getByLabelText('Planning office 3D environment')
-    const renderer = screen.getByRole('button', { name: 'Mock 3D member' })
+    const renderer = await screen.findByRole('button', {
+      name: 'Mock 3D member',
+    })
 
     fireEvent.keyDown(scene, { key: '3' })
     expect(renderer).toHaveAttribute('data-camera-view', 'secondary')

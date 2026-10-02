@@ -472,3 +472,23 @@ workflow state and does not migrate Live/Replay in this phase.
 
 No post-processing stack is enabled. The purpose is to compare renderer
 architecture and evidence first, before any full migration decision.
+
+
+## Phase 13A Planning production renderer
+
+Planning Office now uses the R3F renderer in production.
+
+The renderer boundary is intentionally asymmetric:
+
+```text
+Planning → R3F → Three.js fallback on React renderer failure
+Live     → Three.js
+Replay   → Three.js
+```
+
+This is a renderer migration only. The visible Office vocabulary, canonical
+truth, camera contract, character/furniture assets, and HTML planning surfaces
+do not change.
+
+The development Diorama fixture keeps the explicit Three.js/R3F selector so
+future regression work can still compare both renderers deterministically.
