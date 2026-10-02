@@ -4,7 +4,10 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const here = dirname(fileURLToPath(import.meta.url))
-const outputRoot = resolve(here, '../public/assets/office-pilot/kenney')
+const outputRoot = resolve(
+  here,
+  '../public/assets/office/furniture/kenney-v1',
+)
 
 const SOURCE_REPOSITORY = 'Hidencod/tge-assets'
 const SOURCE_COMMIT = '1f7dee9076ee848773f08fd632ab4e4e73357777'
@@ -74,33 +77,33 @@ async function validExisting(path, expected) {
 async function fetchAsset(asset) {
   const destination = resolve(outputRoot, asset.filename)
   if (await validExisting(destination, asset)) {
-    console.log(`office pilot asset verified: ${asset.filename}`)
+    console.log(`office furniture asset verified: ${asset.filename}`)
     return
   }
 
   const url =
     `https://raw.githubusercontent.com/${SOURCE_REPOSITORY}/${SOURCE_COMMIT}/${asset.sourcePath}`
 
-  console.log(`fetching office pilot asset: ${asset.filename}`)
+  console.log(`fetching office furniture asset: ${asset.filename}`)
   const response = await fetch(url, {
     redirect: 'follow',
-    headers: { 'user-agent': 'agent-office-pilot-asset-bootstrap' },
+    headers: { 'user-agent': 'agent-office-furniture-bootstrap' },
   })
   if (!response.ok) {
     throw new Error(
-      `Failed to fetch pilot asset ${asset.filename}: HTTP ${response.status}`,
+      `Failed to fetch office furniture asset ${asset.filename}: HTTP ${response.status}`,
     )
   }
 
   const buffer = Buffer.from(await response.arrayBuffer())
   if (!validBuffer(buffer, asset)) {
     throw new Error(
-      `Integrity mismatch for pilot asset ${asset.filename}; expected ${asset.size} bytes / Git blob ${asset.gitBlobSha}`,
+      `Integrity mismatch for office furniture asset ${asset.filename}; expected ${asset.size} bytes / Git blob ${asset.gitBlobSha}`,
     )
   }
 
   await writeFile(destination, buffer)
-  console.log(`office pilot asset ready: ${asset.filename}`)
+  console.log(`office furniture asset ready: ${asset.filename}`)
 }
 
 await mkdir(outputRoot, { recursive: true })
@@ -108,8 +111,11 @@ await mkdir(outputRoot, { recursive: true })
 const expectedFiles = new Set(assets.map((asset) => asset.filename))
 for (const filename of await readdir(outputRoot)) {
   if (!expectedFiles.has(filename)) {
-    await rm(resolve(outputRoot, filename), { recursive: true, force: true })
-    console.log(`removed stale office pilot asset: ${filename}`)
+    await rm(resolve(outputRoot, filename), {
+      recursive: true,
+      force: true,
+    })
+    console.log(`removed stale office furniture asset: ${filename}`)
   }
 }
 

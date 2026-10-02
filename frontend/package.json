@@ -12,16 +12,17 @@
     "test:watch": "vitest",
     "typecheck": "tsc -b",
     "office:assets": "node scripts/fetch-office-assets.mjs",
-    "predev": "npm run office:assets",
-    "prebuild": "npm run office:pilot-clean && npm run office:assets",
-    "preoffice:shots": "npm run office:assets",
+    "predev": "npm run office:assets && npm run office:furniture-assets",
+    "prebuild": "npm run office:pilot-clean && npm run office:assets && npm run office:furniture-assets",
+    "preoffice:shots": "npm run office:assets && npm run office:furniture-assets",
     "office:shots": "node scripts/capture-office-shots.mjs",
     "office:shots:install": "playwright install chromium",
     "office:debug:prod-check": "node scripts/check-office-debug-production.mjs",
-    "office:pilot-assets": "node scripts/fetch-office-pilot-assets.mjs",
+    "office:pilot-assets": "npm run office:furniture-assets",
     "office:pilot-clean": "node scripts/clean-office-pilot-assets.mjs",
-    "preoffice:pilot-shots": "npm run office:assets && npm run office:pilot-assets",
-    "office:pilot-shots": "node scripts/capture-office-shots.mjs --pilot"
+    "preoffice:pilot-shots": "npm run office:assets && npm run office:furniture-assets",
+    "office:pilot-shots": "node scripts/capture-office-shots.mjs --pilot",
+    "office:furniture-assets": "node scripts/fetch-office-furniture-assets.mjs"
   },
   "dependencies": {
     "react": "^19.2.8",

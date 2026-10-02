@@ -45,3 +45,6 @@ artifacts/
 
 # Development-only Office Diorama pilot assets
 frontend/public/assets/office-pilot/
+
+# Verified runtime Office furniture fetched during dev/build
+frontend/public/assets/office/furniture/

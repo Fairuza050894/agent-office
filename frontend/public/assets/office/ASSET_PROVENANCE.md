@@ -86,3 +86,35 @@ provides self-contained GLB files.
 
 These pilot binaries are not committed. They are fetched only for the V2
 development harness, ignored by Git, and removed before production builds.
+
+
+## Phase 11 V3 production Build furniture
+
+V2 GO promotes the same verified five-file Kenney subset into the ordinary Build
+floor.
+
+Runtime fetch destination:
+
+```text
+frontend/public/assets/office/furniture/kenney-v1/
+```
+
+The binaries remain uncommitted. `predev` and `prebuild` fetch them from the
+same pinned transport commit and verify exact byte size + Git blob SHA before
+the application uses them.
+
+V3 changes presentation, not source authority:
+
+- desk wood → warm muted brown;
+- desk/chair metal → slate/charcoal;
+- chair cushion → muted blue-slate;
+- device shells → dark neutral;
+- display face → restrained cyan with low emissive intensity.
+
+The material mapping is deterministic in
+`frontend/src/office3d/officeFurnitureKit.ts` and mirrors the optional Blender
+authoring helper in `tools/blender/normalize_office_furniture.py`.
+
+The production renderer uses a primitive engineering-pod fallback only while the
+verified kit is loading. The primitive group is removed only after the full kit
+mount passes bounds validation.

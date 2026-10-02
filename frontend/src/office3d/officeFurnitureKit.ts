@@ -6,45 +6,45 @@ import {
   type EngineeringPodPilotPlacement,
 } from './environment'
 
-export const OFFICE_DIORAMA_PILOT_ASSET_COUNT = 5
+export const OFFICE_FURNITURE_KIT_ASSET_COUNT = 5
+export const OFFICE_FURNITURE_ASSET_ROOT =
+  '/assets/office/furniture/kenney-v1'
 
-type PilotAssetKey =
+export type OfficeFurnitureAssetKey =
   | 'desk'
   | 'chair'
   | 'screen'
   | 'keyboard'
   | 'mouse'
 
-interface PilotAssetDefinition {
+interface FurnitureAssetDefinition {
   filename: string
   target: THREE.Vector3
 }
 
-interface PilotAssetPart {
+interface FurnitureAssetPart {
   geometry: THREE.BufferGeometry
   material: THREE.Material | THREE.Material[]
 }
 
-interface PilotAssetTemplate {
-  parts: PilotAssetPart[]
+interface FurnitureAssetTemplate {
+  parts: FurnitureAssetPart[]
 }
 
-export interface EngineeringPodPilotBounds {
+export interface EngineeringPodFurnitureBounds {
   min: [number, number, number]
   max: [number, number, number]
   size: [number, number, number]
 }
 
-export interface EngineeringPodPilotMount {
+export interface EngineeringPodFurnitureMount {
   group: THREE.Group
   sourceAssetCount: number
   instanceCount: number
-  bounds: EngineeringPodPilotBounds
+  bounds: EngineeringPodFurnitureBounds
 }
 
-const ASSET_ROOT = '/assets/office-pilot/kenney'
-
-const ASSETS: Record<PilotAssetKey, PilotAssetDefinition> = {
+const ASSETS: Record<OfficeFurnitureAssetKey, FurnitureAssetDefinition> = {
   desk: {
     filename: 'desk.glb',
     target: new THREE.Vector3(1.45, 0.98, 0.72),
@@ -68,14 +68,75 @@ const ASSETS: Record<PilotAssetKey, PilotAssetDefinition> = {
 }
 
 const loader = new GLTFLoader()
-const templateCache = new Map<PilotAssetKey, Promise<PilotAssetTemplate>>()
+const templateCache = new Map<
+  OfficeFurnitureAssetKey,
+  Promise<FurnitureAssetTemplate>
+>()
 
-function cloneMaterial(
+const BUILD_PALETTE = {
+  wood: 0x73533d,
+  metal: 0x52636d,
+  chairFrame: 0x344650,
+  chairCushion: 0x3d5d70,
+  deviceDark: 0x17262f,
+  deviceMid: 0x526b76,
+  screen: 0x3f91ad,
+  screenEmissive: 0x17485d,
+} as const
+
+export function styleOfficeFurnitureMaterial(
+  key: OfficeFurnitureAssetKey,
+  material: THREE.Material,
+): THREE.Material {
+  const styled = material.clone()
+  if (!(styled instanceof THREE.MeshStandardMaterial)) return styled
+
+  const materialName = styled.name.toLowerCase()
+  styled.roughness = 0.76
+  styled.metalness = 0.08
+
+  if (key === 'desk') {
+    styled.color.setHex(materialName.includes('wood') ? BUILD_PALETTE.wood : BUILD_PALETTE.metal)
+  } else if (key === 'chair') {
+    styled.color.setHex(
+      materialName.includes('carpet')
+        ? BUILD_PALETTE.chairCushion
+        : BUILD_PALETTE.chairFrame,
+    )
+  } else if (key === 'screen') {
+    const isDisplaySurface =
+      materialName === 'metal' || materialName.includes('medium')
+    styled.color.setHex(
+      isDisplaySurface ? BUILD_PALETTE.screen : BUILD_PALETTE.deviceDark,
+    )
+    if (isDisplaySurface) {
+      styled.emissive.setHex(BUILD_PALETTE.screenEmissive)
+      styled.emissiveIntensity = 0.42
+      styled.roughness = 0.38
+    }
+  } else if (key === 'keyboard') {
+    styled.color.setHex(
+      materialName.includes('medium')
+        ? BUILD_PALETTE.deviceMid
+        : BUILD_PALETTE.deviceDark,
+    )
+  } else {
+    styled.color.setHex(BUILD_PALETTE.deviceDark)
+  }
+
+  styled.needsUpdate = true
+  return styled
+}
+
+function cloneStyledMaterial(
+  key: OfficeFurnitureAssetKey,
   material: THREE.Material | THREE.Material[],
 ): THREE.Material | THREE.Material[] {
   return Array.isArray(material)
-    ? material.map((candidate) => candidate.clone())
-    : material.clone()
+    ? material.map((candidate) =>
+        styleOfficeFurnitureMaterial(key, candidate),
+      )
+    : styleOfficeFurnitureMaterial(key, material)
 }
 
 function normalizeScale(
@@ -89,24 +150,30 @@ function normalizeScale(
   ].filter(Number.isFinite)
 
   if (ratios.length === 0) {
-    throw new Error('Pilot GLB has no measurable bounds')
+    throw new Error('Office furniture GLB has no measurable bounds')
   }
 
   return Math.min(...ratios)
 }
 
-async function loadTemplate(key: PilotAssetKey): Promise<PilotAssetTemplate> {
+async function loadTemplate(
+  key: OfficeFurnitureAssetKey,
+): Promise<FurnitureAssetTemplate> {
   const existing = templateCache.get(key)
   if (existing) return existing
 
   const promise = (async () => {
     const definition = ASSETS[key]
-    const gltf = await loader.loadAsync(`${ASSET_ROOT}/${definition.filename}`)
+    const gltf = await loader.loadAsync(
+      `${OFFICE_FURNITURE_ASSET_ROOT}/${definition.filename}`,
+    )
     gltf.scene.updateMatrixWorld(true)
 
     const bounds = new THREE.Box3().setFromObject(gltf.scene)
     if (bounds.isEmpty()) {
-      throw new Error(`Pilot asset ${definition.filename} has empty bounds`)
+      throw new Error(
+        `Office furniture asset ${definition.filename} has empty bounds`,
+      )
     }
 
     const size = bounds.getSize(new THREE.Vector3())
@@ -123,7 +190,7 @@ async function loadTemplate(key: PilotAssetKey): Promise<PilotAssetTemplate> {
         ),
       )
 
-    const parts: PilotAssetPart[] = []
+    const parts: FurnitureAssetPart[] = []
     gltf.scene.traverse((object) => {
       if (!(object instanceof THREE.Mesh)) return
 
@@ -136,12 +203,14 @@ async function loadTemplate(key: PilotAssetKey): Promise<PilotAssetTemplate> {
 
       parts.push({
         geometry,
-        material: cloneMaterial(object.material),
+        material: cloneStyledMaterial(key, object.material),
       })
     })
 
     if (parts.length === 0) {
-      throw new Error(`Pilot asset ${definition.filename} contains no meshes`)
+      throw new Error(
+        `Office furniture asset ${definition.filename} contains no meshes`,
+      )
     }
 
     return { parts }
@@ -167,8 +236,8 @@ function placementMatrix(placement: {
 
 function addInstancedAsset(
   parent: THREE.Group,
-  key: PilotAssetKey,
-  template: PilotAssetTemplate,
+  key: OfficeFurnitureAssetKey,
+  template: FurnitureAssetTemplate,
   placements: Array<{ position: THREE.Vector3; yaw: number }>,
 ): number {
   let instances = 0
@@ -176,10 +245,10 @@ function addInstancedAsset(
   template.parts.forEach((part, partIndex) => {
     const mesh = new THREE.InstancedMesh(
       part.geometry.clone(),
-      cloneMaterial(part.material),
+      cloneStyledMaterial(key, part.material),
       placements.length,
     )
-    mesh.name = `office-engineering-pod-kit-${key}-${partIndex}`
+    mesh.name = `office-engineering-pod-furniture-${key}-${partIndex}`
     mesh.castShadow = true
     mesh.receiveShadow = true
     mesh.instanceMatrix.setUsage(THREE.StaticDrawUsage)
@@ -200,7 +269,7 @@ function addInstancedAsset(
 
 function placementsFor(
   entries: EngineeringPodPilotPlacement[],
-  key: PilotAssetKey,
+  key: OfficeFurnitureAssetKey,
 ): Array<{ position: THREE.Vector3; yaw: number }> {
   return entries.map((entry) => {
     if (key === 'chair') return entry.chair
@@ -211,15 +280,17 @@ function placementsFor(
   })
 }
 
-export async function mountEngineeringPodPilot(
+export async function mountEngineeringPodFurnitureKit(
   parent: THREE.Group,
-): Promise<EngineeringPodPilotMount> {
+): Promise<EngineeringPodFurnitureMount> {
   const group = new THREE.Group()
-  group.name = 'office-engineering-pod-kit'
+  group.name = 'office-engineering-pod-furniture-kit'
 
   const placements = engineeringPodPilotPlacements()
-  const keys = Object.keys(ASSETS) as PilotAssetKey[]
-  const templates = await Promise.all(keys.map((key) => loadTemplate(key)))
+  const keys = Object.keys(ASSETS) as OfficeFurnitureAssetKey[]
+  const templates = await Promise.all(
+    keys.map((key) => loadTemplate(key)),
+  )
 
   let instanceCount = 0
   keys.forEach((key, index) => {
@@ -237,8 +308,8 @@ export async function mountEngineeringPodPilot(
   const bounds = new THREE.Box3().setFromObject(group)
   if (bounds.isEmpty()) {
     parent.remove(group)
-    disposeObjectTree(group)
-    throw new Error('Engineering pod pilot has empty mounted bounds')
+    disposeFurnitureGroup(group)
+    throw new Error('Engineering pod furniture kit has empty mounted bounds')
   }
 
   const size = bounds.getSize(new THREE.Vector3())
@@ -257,15 +328,15 @@ export async function mountEngineeringPodPilot(
 
   if (!plausible) {
     parent.remove(group)
-    disposeObjectTree(group)
+    disposeFurnitureGroup(group)
     throw new Error(
-      `Engineering pod pilot mounted outside expected bounds: min=${min.toArray().join(',')} max=${max.toArray().join(',')}`,
+      `Engineering pod furniture mounted outside expected bounds: min=${min.toArray().join(',')} max=${max.toArray().join(',')}`,
     )
   }
 
   return {
     group,
-    sourceAssetCount: OFFICE_DIORAMA_PILOT_ASSET_COUNT,
+    sourceAssetCount: OFFICE_FURNITURE_KIT_ASSET_COUNT,
     instanceCount,
     bounds: {
       min: min.toArray() as [number, number, number],
@@ -275,7 +346,7 @@ export async function mountEngineeringPodPilot(
   }
 }
 
-function disposeObjectTree(group: THREE.Object3D): void {
+function disposeFurnitureGroup(group: THREE.Object3D): void {
   group.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return
     object.geometry.dispose()
