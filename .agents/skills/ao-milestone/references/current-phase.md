@@ -22,7 +22,7 @@ Canonical full verification:
 branch: phase-11-office-diorama-v0
 pr: #29
 scope: Phase 11 / Office Diorama V0 — deterministic visual harness
-status: IMPLEMENTED / DRAFT VERIFICATION
+status: IMPLEMENTED / OWNER RE-VERIFICATION PENDING
 ```
 
 ## Why this phase exists
