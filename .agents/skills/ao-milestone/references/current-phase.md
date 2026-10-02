@@ -3,7 +3,7 @@
 ## Current checkpoint
 
 ```text
-main@b65bd74
+main@0df26e9
 Phase 10H-1 merged
 PR #24 Vocabulary & Structure merged
 PR #25 Office 3D experience polish merged
@@ -13,6 +13,7 @@ PR #30 Office Diorama V1 merged
 PR #31 Office Diorama V2 asset pilot merged
 PR #32 Office Diorama V3 Build rollout merged
 PR #33 Phase 12 R3F renderer pilot merged
+PR #35 Phase 13A R3F Planning production migration merged
 ```
 
 Canonical full verification:
@@ -21,18 +22,47 @@ Canonical full verification:
 ./scripts/verify.sh
 ```
 
-## Current work
+## Current status
 
 ```text
-branch: phase-13a-r3f-planning-production
-pr: #35
-scope: Phase 13A — R3F Planning production migration
-status: ACCEPTED / READY FOR MERGE
+Phase 13A — COMPLETE / MERGED
+merge commit: 0df26e9b211e8e27bbd4c0a822d68cab8233df17
+next checkpoint: not started
 ```
 
-## Phase 13A authority
+## Phase 13A accepted production state
 
-Read:
+- Planning Office now uses R3F in normal production rendering.
+- Three.js remains the tested Planning fallback.
+- Live and Replay remain on the existing Three.js renderer.
+- Task / Run / AgentRun / Event truth remains outside the renderer.
+- R3F is a production dependency because Planning now consumes it.
+- Production bundle guard requires the production R3F Planning path and rejects
+  Diorama/debug leakage.
+- Production Chromium smoke verifies Planning R3F loads successfully.
+- No visual redesign, post-processing stack, or workflow-truth change was made
+  in Phase 13A.
+
+## Phase 13A final verification
+
+Exact PR head:
+
+```text
+0ecabadd2d01834d18b2878bc71d0582068afab4
+GitHub Actions verify #1376: SUCCESS
+```
+
+Gates:
+
+```text
+backend pytest / Ruff / format / MyPy: PASS
+frontend tests / typecheck / lint / build: PASS
+repository whitespace: PASS
+production Office guard: PASS
+production R3F Planning Chromium smoke: PASS
+```
+
+Detailed evidence:
 
 ```text
 docs/product/PHASE_13A_R3F_PLANNING_PRODUCTION.md
@@ -42,65 +72,16 @@ docs/architecture/ADR-0004-office-renderer-evolution.md
 docs/ux/OFFICE_VIEW.md
 ```
 
-## Scope
+## Next renderer boundary
 
-- promote R3F to normal production Planning Office;
-- keep Live/Replay on current Three.js;
-- preserve DEV Three-vs-R3F Diorama override;
-- add R3F-to-Three React failure fallback;
-- promote R3F package to production dependency;
-- require production R3F bundle marker;
-- run production Chromium smoke in GitHub Actions;
-- no visual redesign and no workflow-truth change.
+A later checkpoint may evaluate Live/Replay migration, but it must preserve:
 
-## Safety invariants
+- canonical execution/replay truth;
+- tested Three.js fallback until cutover evidence is accepted;
+- accessibility through HTML operational surfaces;
+- reduced-motion behavior;
+- deterministic visual/performance gates;
+- no fake progress, collaboration, dialogue, or execution state;
+- one checkpoint per PR.
 
-- Task / Run / AgentRun / Event truth remains outside renderer;
-- Planning records remain backend/durable state;
-- no fake activity/progress/dialogue;
-- Three.js remains available as Planning fallback;
-- Live/Replay remain unchanged in 13A;
-- no post-processing;
-- no auto force push;
-- merge only after all verification gates pass.
-
-## Verification pending
-
-```text
-GitHub Actions verify:
-- backend
-- frontend
-- repository
-- production Office guard
-- production R3F Planning browser smoke
-```
-
-
-## Phase 13A acceptance evidence
-
-```text
-verified runtime head: d1ec45f
-GitHub Actions verify #1368: SUCCESS
-backend: 658 passed / Ruff / format / MyPy PASS
-frontend: 26 files / 181 tests PASS
-typecheck / lint / build PASS
-production bundle guard PASS
-production R3F Planning Chromium smoke PASS
-repository whitespace PASS
-```
-
-This documentation commit moves the branch head after the verified runtime
-commit, so one final exact-head CI run is required before merge.
-
-
-## Final merge gate
-
-```text
-GitHub Actions verify #1372 on 04e5d50: SUCCESS
-frontend production R3F Planning smoke: PASS
-production bundle guard: PASS
-backend / frontend / repository gates: PASS
-```
-
-The final documentation-only status commit must also receive a green verify run
-before PR #35 is merged.
+No Phase 13B implementation has started from this post-merge sync.
