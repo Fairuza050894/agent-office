@@ -28,6 +28,7 @@ import {
   stageCenter,
   waitingPosition,
 } from '../office3d/environment'
+import type { OfficeDioramaPilotMode } from '../office3d/dioramaDebug'
 import {
   officeRoleHomeLocation,
   type OfficeFloorKey,
@@ -65,6 +66,7 @@ export interface ThreeOfficeSceneProps {
   labelsVisible?: boolean
   officeHour?: number
   officeMode?: OfficeModeKey | null
+  dioramaPilot?: OfficeDioramaPilotMode
 }
 
 interface SceneMember extends OfficeCharacterSource {
@@ -102,6 +104,13 @@ type OfficeDioramaWindow = Window & {
   __AGENT_OFFICE_DIARAMA__?: {
     ready: boolean
     rendererInfo: OfficeDioramaRendererInfo
+  }
+  __AGENT_OFFICE_DIARAMA_PILOT__?: {
+    mode: OfficeDioramaPilotMode
+    ready: boolean
+    sourceAssetCount: number
+    instanceCount: number
+    error?: string
   }
 }
 
@@ -263,6 +272,7 @@ export function ThreeOfficeScene({
   labelsVisible = true,
   officeHour = new Date().getHours(),
   officeMode = null,
+  dioramaPilot = 'primitive',
 }: ThreeOfficeSceneProps) {
   const hostRef = useRef<HTMLDivElement>(null)
   const engineRef = useRef<Engine | null>(null)
@@ -271,6 +281,7 @@ export function ThreeOfficeScene({
   const modeRef = useRef(mode)
   const selectedAgentIdRef = useRef(selectedAgentId)
   const workspaceMemberIdsRef = useRef<Set<string>>(new Set())
+  const pilotGenerationRef = useRef(0)
   const firstSyncRef = useRef(true)
   const [rendererError, setRendererError] = useState<string | null>(() =>
     webGlUnavailable() ? 'WebGL is unavailable in this browser.' : null,
@@ -673,6 +684,7 @@ export function ThreeOfficeScene({
         }
 
         if (engine) {
+          pilotGenerationRef.current += 1
           engine.disposed = true
           engine.runtimes.forEach(disposeCharacter)
           disposeObject(engine.environment)
@@ -785,13 +797,28 @@ export function ThreeOfficeScene({
         placementIndex: member.placementIndex,
       })),
     ]
+    const pilotGeneration = pilotGenerationRef.current + 1
+    pilotGenerationRef.current = pilotGeneration
+    const kitPilotEnabled =
+      import.meta.env.DEV && floor === 'build' && dioramaPilot === 'kit'
+
     const stations = createOfficeEnvironment(
       engine.environment,
       stages,
       sceneMembers,
       floor,
       officeMode,
+      kitPilotEnabled ? 'kit' : 'primitive',
     )
+
+    if (import.meta.env.DEV && typeof window !== 'undefined') {
+      ;(window as OfficeDioramaWindow).__AGENT_OFFICE_DIARAMA_PILOT__ = {
+        mode: kitPilotEnabled ? 'kit' : 'primitive',
+        ready: !kitPilotEnabled,
+        sourceAssetCount: 0,
+        instanceCount: 0,
+      }
+    }
 
     const liveIds = new Set(sceneMembers.map((member) => member.id))
 
@@ -880,12 +907,58 @@ export function ThreeOfficeScene({
 
     firstSyncRef.current = false
     renderEngine(engine)
+
+    if (kitPilotEnabled) {
+      void import('../office3d/dioramaPilot')
+        .then(({ mountEngineeringPodPilot }) =>
+          mountEngineeringPodPilot(engine.environment),
+        )
+        .then((mount) => {
+          if (
+            engine.disposed ||
+            pilotGenerationRef.current !== pilotGeneration
+          ) {
+            engine.environment.remove(mount.group)
+            disposeObject(mount.group)
+            return
+          }
+
+          ;(window as OfficeDioramaWindow).__AGENT_OFFICE_DIARAMA_PILOT__ = {
+            mode: 'kit',
+            ready: true,
+            sourceAssetCount: mount.sourceAssetCount,
+            instanceCount: mount.instanceCount,
+          }
+          renderEngine(engine)
+        })
+        .catch((error: unknown) => {
+          if (
+            engine.disposed ||
+            pilotGenerationRef.current !== pilotGeneration
+          ) {
+            return
+          }
+
+          const message =
+            error instanceof Error ? error.message : String(error)
+          ;(window as OfficeDioramaWindow).__AGENT_OFFICE_DIARAMA_PILOT__ = {
+            mode: 'kit',
+            ready: false,
+            sourceAssetCount: 0,
+            instanceCount: 0,
+            error: message,
+          }
+          console.error('Office Diorama kit pilot failed:', error)
+        })
+    }
+
     if (mode === 'live') startLoop()
   }, [
     agents,
     floor,
     mode,
     officeMode,
+    dioramaPilot,
     profiles,
     selectedAgentId,
     stages,
