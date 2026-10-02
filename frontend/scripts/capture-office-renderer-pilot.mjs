@@ -165,6 +165,59 @@ async function waitForKit(page) {
   )
 }
 
+async function waitForRendererSettled(page, requestedRenderer) {
+  let previousKey = null
+  let stableSamples = 0
+  let lastEvidence = null
+
+  for (let attempt = 1; attempt <= 20; attempt += 1) {
+    const evidence = await page.evaluate(() => ({
+      renderer:
+        window.__AGENT_OFFICE_DIARAMA__?.renderer ?? 'three',
+      rendererInfo:
+        window.__AGENT_OFFICE_DIARAMA__?.rendererInfo ?? null,
+      pilot:
+        window.__AGENT_OFFICE_DIARAMA_PILOT__ ?? null,
+    }))
+
+    const rendererMatches =
+      requestedRenderer === 'r3f'
+        ? evidence.renderer === 'r3f'
+        : evidence.renderer !== 'r3f'
+
+    if (rendererMatches && evidence.rendererInfo) {
+      lastEvidence = evidence
+      const info = evidence.rendererInfo
+      const key = [
+        info.calls,
+        info.triangles,
+        info.geometries,
+        info.textures,
+      ].join(':')
+
+      if (key === previousKey) {
+        stableSamples += 1
+      } else {
+        previousKey = key
+        stableSamples = 1
+      }
+
+      if (stableSamples >= 3) {
+        return evidence
+      }
+    } else {
+      previousKey = null
+      stableSamples = 0
+    }
+
+    await page.waitForTimeout(250)
+  }
+
+  throw new Error(
+    `Renderer metrics did not stabilize for ${requestedRenderer}. Last evidence: ${JSON.stringify(lastEvidence)}`,
+  )
+}
+
 function rendererBudgetViolations(capture) {
   const ceiling = buildCeilings[String(capture.viewport.width)]
   if (!ceiling) {
@@ -283,22 +336,7 @@ async function capture() {
             return evidence.renderer !== 'r3f'
           }, renderer)
 
-          await page.waitForTimeout(650)
-
-          const evidence = await page.evaluate(() => ({
-            renderer:
-              window.__AGENT_OFFICE_DIARAMA__?.renderer ?? 'three',
-            rendererInfo:
-              window.__AGENT_OFFICE_DIARAMA__?.rendererInfo ?? null,
-            pilot:
-              window.__AGENT_OFFICE_DIARAMA_PILOT__ ?? null,
-          }))
-
-          if (!evidence.rendererInfo) {
-            throw new Error(
-              `Renderer metrics unavailable for ${renderer}/${lighting.key}/${viewport.key}`,
-            )
-          }
+          const evidence = await waitForRendererSettled(page, renderer)
 
           const filename =
             `${renderer}-${lighting.key}-${viewport.key}.png`
