@@ -831,6 +831,7 @@ export function OfficeWorkspacePage() {
       params.set('fixture', dioramaDebug.fixture)
       params.set('debugTime', dioramaDebug.debugTime)
       params.set('pilot', dioramaDebug.pilot)
+      params.set('renderer', dioramaDebug.renderer)
     }
     navigate(`/office?${params.toString()}`)
   }
@@ -951,6 +952,7 @@ export function OfficeWorkspacePage() {
               worldContext={officeWorld}
               totalPresence={workspaceMembers.length}
               dioramaPilot={dioramaDebug?.pilot}
+              dioramaRenderer={dioramaDebug?.renderer}
             />
           </OfficeRendererBoundary>
         </div>
