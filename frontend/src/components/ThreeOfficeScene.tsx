@@ -15,6 +15,7 @@ import {
   setCharacterStatus,
   workspaceCandidateBlockedByPeer,
   type RuntimeAgent,
+  type StationPlacement,
 } from '../office3d/character'
 import {
   entrancePosition,

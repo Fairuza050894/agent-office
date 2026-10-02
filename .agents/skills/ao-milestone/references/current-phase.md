@@ -20,7 +20,7 @@ Canonical full verification:
 ```text
 Phase 13B — IN PROGRESS
 base: e40b1b48f0b7262edaaa0a342b943ef46f97189f
-PR: pending creation from the Phase 13B branch
+PR: #37 (Draft)
 ```
 
 ## Phase 13B scope
