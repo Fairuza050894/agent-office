@@ -37,6 +37,7 @@ docs/product/PHASE_11_V3_BUILD_ROLLOUT.md
 docs/architecture/ADR-0004-office-renderer-evolution.md
 docs/product/PHASE_11_V2_VERIFICATION.md
 docs/ux/OFFICE_VIEW.md
+docs/ux/OFFICE_R3F_REFERENCE_REVIEW.md
 ```
 
 ## V3 scope
