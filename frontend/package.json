@@ -24,7 +24,9 @@
     "office:pilot-shots": "node scripts/capture-office-shots.mjs --pilot",
     "office:furniture-assets": "node scripts/fetch-office-furniture-assets.mjs",
     "preoffice:renderer-shots": "npm run office:assets && npm run office:furniture-assets",
-    "office:renderer-shots": "node scripts/capture-office-renderer-pilot.mjs"
+    "office:renderer-shots": "node scripts/capture-office-renderer-pilot.mjs",
+    "preoffice:r3f-production-smoke": "npm run office:assets && npm run office:furniture-assets",
+    "office:r3f-production-smoke": "node scripts/smoke-office-r3f-production.mjs"
   },
   "dependencies": {
     "react": "^19.2.8",
