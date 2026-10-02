@@ -58,6 +58,8 @@ jobs:
         run: npm run lint
       - name: Build
         run: npm run build
+      - name: Production Office guard
+        run: npm run office:debug:prod-check
 
   repository:
     runs-on: ubuntu-latest
