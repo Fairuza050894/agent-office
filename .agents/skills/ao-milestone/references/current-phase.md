@@ -26,7 +26,7 @@ Canonical full verification:
 branch: phase-12-r3f-renderer-pilot
 pr: #33
 scope: Phase 12 — R3F renderer pilot
-status: IMPLEMENTED / AUTOMATED VERIFIED / RENDERED COMPARISON PENDING
+status: RENDERED A/B ACCEPTED / FINAL OWNER VERIFICATION PENDING
 ```
 
 ## Phase 12 authority
@@ -35,6 +35,7 @@ Read:
 
 ```text
 docs/product/PHASE_12_R3F_RENDERER_PILOT.md
+docs/product/PHASE_12_R3F_RENDERER_PILOT_VERIFICATION.md
 docs/architecture/ADR-0004-office-renderer-evolution.md
 docs/ux/OFFICE_R3F_REFERENCE_REVIEW.md
 docs/ux/OFFICE_VIEW.md
@@ -117,3 +118,28 @@ production debug/R3F leakage guard on owner machine
 ```
 
 PR remains Draft until the rendered comparison is accepted.
+
+
+## Phase 12 rendered decision
+
+```text
+GO — Three.js and R3F reached exact renderer parity
+desktop day/night
+mobile day/night after responsive aspect correction
+```
+
+Accepted fully-rigged correct-frustum ceilings:
+
+```text
+desktop <= 170 calls / <= 35,500 triangles
+mobile  <= 145 calls / <= 35,000 triangles
+```
+
+Remaining gate:
+
+```text
+owner rerun of office:renderer-shots with recalibrated ceilings
+production leakage guard
+canonical full verify
+clean diff/status
+```
