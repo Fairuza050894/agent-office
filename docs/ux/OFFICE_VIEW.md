@@ -162,18 +162,21 @@ uses the same safe navigation paths as Live state.
 
 ## Camera
 
+Phase 11 V1 simplifies the interaction policy:
+
 ```text
 PerspectiveCamera
-left drag     orbit
-right drag    pan
-wheel         zoom
-horizontal    full 360°
-vertical      bounded above floor
+1 / 2 / 3     floor-aware snap presets
+click agent   eased factual focus
+wheel/pinch   bounded zoom
+free orbit    disabled
+free pan      disabled
 ```
 
-OrbitControls use damping. Camera focus eases toward a selected agent and may
-briefly ease toward an agent entering a Historical replay sequence; it never
-changes Run state.
+OrbitControls remain an implementation detail for damping and bounded zoom, but
+users no longer need to repair arbitrary camera angles. Camera focus may ease
+toward a selected agent and may briefly ease toward an agent entering a
+Historical replay sequence; it never changes Run state.
 
 ## Labels and shadows
 
@@ -359,3 +362,29 @@ for Diorama debug markers before V0 can be accepted.
 
 The V0 harness does not change camera policy, lighting architecture, asset
 transport, workflow state, Replay, Shift Ruler, or truth-line behavior.
+
+
+## Phase 11 V1 camera and lighting override
+
+Phase 11 V1 uses the accepted V0 visual baseline to simplify camera and lighting
+without introducing new assets.
+
+Camera:
+
+- Overview / primary / secondary presets remain floor-aware;
+- free orbit and pan are disabled;
+- wheel/pinch zoom remains bounded;
+- selected-agent focus remains presentation-only.
+
+Lighting:
+
+- one HemisphereLight;
+- one shadow-casting DirectionalLight;
+- at most three floor-specific PointLight accents;
+- no global directional fill;
+- no generic ceiling PointLights;
+- real Office time still selects morning/day/evening/night;
+- night must remain readable rather than being replaced by daytime presentation.
+
+The deterministic V0 harness now enforces both renderer-budget and light-count
+gates for V1.
