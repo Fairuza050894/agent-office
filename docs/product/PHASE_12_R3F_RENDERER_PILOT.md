@@ -70,14 +70,15 @@ Live/Replay migration is not part of this checkpoint.
 V1 of the pilot adds only:
 
 ```text
-@react-three/fiber 9.4.0
+@react-three/fiber 9.8.1
 ```
 
 No Drei, post-processing, AO, Bloom, SMAA, Vignette, or physics package is
 required for the first comparison.
 
-The dependency version follows the user-provided R3F reference implementation
-while remaining compatible with React 19 and Three 0.181.x.
+The user-provided reference declared `^9.4.0`. The pilot pins the current stable
+`9.8.1`, whose upstream peer range explicitly covers the repo's resolved React
+19.3 runtime while remaining compatible with Three 0.181.x.
 
 ## Deterministic A/B gate
 
