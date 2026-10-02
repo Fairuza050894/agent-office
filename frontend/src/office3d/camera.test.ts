@@ -24,7 +24,7 @@ describe('office camera presets', () => {
       enableRotate: false,
       enableZoom: true,
       minDistance: 9.5,
-      maxDistance: 22,
+      maxDistance: 24,
     })
   })
 
@@ -35,6 +35,23 @@ describe('office camera presets', () => {
     expect(officeCameraView('build', 'secondary').label).toBe('QA / Review')
     expect(officeCameraView('strategy', 'primary').label).toBe('Planning')
     expect(officeCameraView('strategy', 'secondary').label).toBe('Meeting')
+  })
+
+  it('keeps every snap preset inside the bounded zoom envelope', () => {
+    for (const floor of ['commons', 'build', 'strategy'] as const) {
+      for (const view of officeCameraViews(floor)) {
+        const [x, y, z] = view.position
+        const [tx, ty, tz] = view.target
+        const distance = Math.hypot(x - tx, y - ty, z - tz)
+
+        expect(distance).toBeGreaterThanOrEqual(
+          OFFICE_CAMERA_CONTROL_POLICY.minDistance,
+        )
+        expect(distance).toBeLessThanOrEqual(
+          OFFICE_CAMERA_CONTROL_POLICY.maxDistance,
+        )
+      }
+    }
   })
 
   it('keeps overview framing intentionally different across floors', () => {
