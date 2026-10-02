@@ -3,12 +3,13 @@
 ## Current checkpoint
 
 ```text
-main@7c50260
+main@326b784
 Phase 10H-1 merged
 PR #24 Vocabulary & Structure merged
 PR #25 Office 3D experience polish merged
 PR #27 Phase 6 Codex test hardening merged
 PR #29 Office Diorama V0 merged
+PR #30 Office Diorama V1 merged
 ```
 
 Canonical full verification:
@@ -20,108 +21,80 @@ Canonical full verification:
 ## Current work
 
 ```text
-branch: phase-11-office-diorama-v1
-pr: #30
-scope: Phase 11 / Office Diorama V1 — camera + lighting simplification
-status: ACCEPTED / READY FOR REVIEW
+branch: phase-11-office-diorama-v2-pilot
+scope: Phase 11 / Office Diorama V2 — engineering-pod asset pilot
+status: IMPLEMENTING / DRAFT VERIFICATION
 ```
 
-## V0 baseline
+## V2 decision boundary
 
-V0 is accepted and recorded in:
+V2 is a development-only A/B pilot.
+
+Production Office keeps the existing primitive engineering pod until the owner
+reviews the V2 screenshots and explicitly approves rollout.
+
+## Asset decision
+
+Pilot source:
 
 ```text
-docs/product/PHASE_11_V0_VERIFICATION.md
+Kenney Furniture Kit
+license: CC0 1.0
+official source: https://kenney.nl/assets/furniture-kit
+transport mirror: Hidencod/tge-assets
+transport commit: 1f7dee9076ee848773f08fd632ab4e4e73357777
 ```
 
-Build is the current heaviest floor:
+Binary pilot GLBs remain uncommitted.
+
+They are fetched only for the V2 development harness, verified by byte size and
+Git blob SHA, ignored by Git, and removed before production build.
+
+ADR:
 
 ```text
-desktop: 273–276 calls / 33,268–33,304 triangles / 271–274 geometries / 41 textures
-mobile:  222–225 calls / 25,284–25,320 triangles / 270–273 geometries / 41 textures
+docs/architecture/ADR-0003-office-diorama-asset-transport.md
 ```
 
-V1 must compare against this baseline rather than relying on subjective tuning.
+## V2 scope
 
-## V1 owner decisions
-
-### Camera
-
-Use fixed/snap presets with limited zoom.
-
-- keep Overview / primary / secondary presets;
-- disable free orbit;
-- disable free pan;
-- keep wheel/pinch zoom within a bounded distance;
-- clicking an agent may still ease focus toward factual presence;
-- preset and floor transitions remain eased;
-- keyboard camera shortcuts remain valid.
-
-### Lighting
-
-Use real Office time with a readable night minimum.
-
-- one hemisphere light;
-- one shadow-casting directional key light;
-- no global directional fill light;
-- remove generic ceiling PointLights;
-- use emissive ceiling fixtures for visual warmth;
-- keep at most three floor-specific accent PointLights;
-- retain ACES tone mapping and soft shadows;
-- no AO/bloom/post-processing dependency in V1.
-
-## Scope
-
-- simplify camera control policy;
-- update camera control copy/tests;
-- simplify scene lighting architecture;
-- remove generic ceiling PointLights and rely on existing emissive surfaces plus bounded floor accents;
-- keep floor-specific accent lights bounded;
-- preserve readable night exposure;
-- regenerate the V0 screenshot matrix and renderer metrics;
-- record before/after findings.
+- pilot only the Build `engineering-pod`;
+- keep the accepted V1 primitive pod as the A/B control;
+- add development-only `pilot=kit` presentation mode;
+- replace primitive desks/chairs/computer props only in that pilot mode;
+- instance repeated static GLB meshes;
+- preserve existing navigation obstacles and agent station coordinates;
+- add dedicated pilot screenshot matrix;
+- compare primitive vs kit at day/night × desktop/mobile;
+- record renderer metrics;
+- hard-fail pilot if draw calls or triangles exceed the accepted V1 Build ceiling;
+- production bundle must contain no pilot asset or pilot debug marker.
 
 ## Explicitly deferred
 
-### V2 — Blender asset pilot
+### V3 — Build floor rollout
 
-No new GLB furniture kit, Blender asset import, or asset-policy ADR in V1.
+No rollout before owner go/no-go.
 
-### R3F migration
+### R3F
 
-No React Three Fiber rewrite in V1. The current Three.js runtime remains canonical.
+No R3F migration in V2.
 
 ### Unity
 
-No Unity runtime or WebGL client in V1.
+No Unity runtime in V2.
 
-### Phase 10H-2 / 10H-3
+### Other floors
 
-Shift Ruler and truth lines remain separate.
+Commons and Strategy are unchanged.
 
 ## Safety invariants
 
 - no canonical Task / Run / AgentRun / Event changes;
 - no fake execution/progress/dialogue;
 - no backend/schema changes;
-- no asset-policy changes;
-- no new post-processing/physics dependency;
-- Office remains supplemental to HTML operational truth;
+- pilot is development-only;
+- asset license/source/provenance must remain explicit;
+- no binary GLB commit;
 - no auto merge;
 - no force push.
-
-
-## V1 acceptance record
-
-```text
-automated verification: PASS
-GitHub Actions verify: PASS
-24-shot renderer/light budgets: PASS
-rendered Build day/night desktop: PASS
-rendered Build day/night mobile: PASS
-camera policy: ACCEPTED
-lighting policy: ACCEPTED
-verification document: docs/product/PHASE_11_V1_VERIFICATION.md
-```
-
-Merge remains manual.
