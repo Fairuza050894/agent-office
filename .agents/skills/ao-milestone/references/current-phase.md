@@ -25,7 +25,7 @@ Canonical full verification:
 branch: phase-11-office-diorama-v3-build-rollout
 pr: #32
 scope: Phase 11 / Office Diorama V3 — Build floor rollout
-status: IMPLEMENTING / DRAFT VERIFICATION
+status: IMPLEMENTED / VERIFICATION IN PROGRESS
 ```
 
 ## V3 authority
