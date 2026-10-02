@@ -25,9 +25,12 @@ const viewports = [
   { key: '390', width: 390, height: 844 },
 ]
 
+// Phase 12 accepted baseline: fully-rigged characters + Kenney kit +
+// correct responsive camera frustum. Ceilings retain only a small regression
+// margin above the owner-reviewed A/B evidence rather than the stale V2 values.
 const buildCeilings = {
-  '1440': { calls: 276, triangles: 33304 },
-  '390': { calls: 225, triangles: 25320 },
+  '1440': { calls: 170, triangles: 35500 },
+  '390': { calls: 145, triangles: 35000 },
 }
 
 function jsonResponse(route, body) {
