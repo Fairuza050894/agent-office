@@ -4,11 +4,14 @@ export const OFFICE_DIORAMA_FIXTURE_KEY = 'diorama'
 export const OFFICE_DIORAMA_TIME_ZONE = 'Asia/Jakarta'
 export const OFFICE_DIORAMA_DEFAULT_TIME = '2026-10-05T04:00:00.000Z'
 
+export type OfficeDioramaPilotMode = 'primitive' | 'kit'
+
 export interface OfficeDioramaDebugConfig {
   fixture: typeof OFFICE_DIORAMA_FIXTURE_KEY
   now: Date
   debugTime: string
   timeZone: string
+  pilot: OfficeDioramaPilotMode
   members: OfficePresenceMember[]
 }
 
@@ -142,11 +145,14 @@ export function officeDioramaDebugConfig(
   if (params.get('fixture') !== OFFICE_DIORAMA_FIXTURE_KEY) return null
 
   const now = parseTime(params.get('debugTime'))
+  const pilot: OfficeDioramaPilotMode =
+    params.get('pilot') === 'kit' ? 'kit' : 'primitive'
   return {
     fixture: OFFICE_DIORAMA_FIXTURE_KEY,
     now,
     debugTime: now.toISOString(),
     timeZone: OFFICE_DIORAMA_TIME_ZONE,
+    pilot,
     members: MEMBERS.map((member) => ({ ...member })),
   }
 }
@@ -159,5 +165,6 @@ export function appendOfficeDioramaDebugParams(
 
   params.set('fixture', config.fixture)
   params.set('debugTime', config.debugTime)
+  params.set('pilot', config.pilot)
   return params
 }
