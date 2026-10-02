@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "source": "docs/product/PHASE_11_V0_VERIFICATION.md",
+  "floors": {
+    "commons": {
+      "1440": {
+        "calls": 189,
+        "triangles": 29398,
+        "geometries": 195,
+        "textures": 32
+      },
+      "390": {
+        "calls": 132,
+        "triangles": 24638,
+        "geometries": 194,
+        "textures": 32
+      }
+    },
+    "build": {
+      "1440": {
+        "calls": 276,
+        "triangles": 33304,
+        "geometries": 274,
+        "textures": 41
+      },
+      "390": {
+        "calls": 225,
+        "triangles": 25320,
+        "geometries": 273,
+        "textures": 41
+      }
+    },
+    "strategy": {
+      "1440": {
+        "calls": 186,
+        "triangles": 29992,
+        "geometries": 192,
+        "textures": 31
+      },
+      "390": {
+        "calls": 154,
+        "triangles": 27152,
+        "geometries": 192,
+        "textures": 31
+      }
+    }
+  }
+}
