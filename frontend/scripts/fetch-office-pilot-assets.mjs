@@ -17,10 +17,10 @@ const assets = [
     size: 15048,
   },
   {
-    filename: 'chairdesk.glb',
-    sourcePath: 'packs/furniture-kit/chairdesk.glb',
-    gitBlobSha: '131101f3dbc72f41ca624ddd77ce53d8bafea9ed',
-    size: 39016,
+    filename: 'chairmoderncushion.glb',
+    sourcePath: 'packs/furniture-kit/chairmoderncushion.glb',
+    gitBlobSha: 'a6c18d94ec17231807043b0fb18e766b020ec81e',
+    size: 7376,
   },
   {
     filename: 'computerscreen.glb',
