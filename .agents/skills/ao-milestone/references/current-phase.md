@@ -3,11 +3,12 @@
 ## Current checkpoint
 
 ```text
-main@880e544
+main@7c50260
 Phase 10H-1 merged
 PR #24 Vocabulary & Structure merged
 PR #25 Office 3D experience polish merged
 PR #27 Phase 6 Codex test hardening merged
+PR #29 Office Diorama V0 merged
 ```
 
 Canonical full verification:
@@ -19,71 +20,108 @@ Canonical full verification:
 ## Current work
 
 ```text
-branch: phase-11-office-diorama-v0
-pr: #29
-scope: Phase 11 / Office Diorama V0 — deterministic visual harness
+branch: phase-11-office-diorama-v1
+pr: #30
+scope: Phase 11 / Office Diorama V1 — camera + lighting simplification
 status: ACCEPTED / READY FOR REVIEW
 ```
 
-## Why this phase exists
+## V0 baseline
 
-The Office renderer is now stable enough for directed visual work, but prior visual
-iterations depended on manual screenshots and hand-tuned values without a deterministic
-capture loop.
+V0 is accepted and recorded in:
 
-Phase 11 V0 creates the visual evidence harness before any asset-kit, lighting-model,
-camera-policy, or furniture rollout work.
+```text
+docs/product/PHASE_11_V0_VERIFICATION.md
+```
+
+Build is the current heaviest floor:
+
+```text
+desktop: 273–276 calls / 33,268–33,304 triangles / 271–274 geometries / 41 textures
+mobile:  222–225 calls / 25,284–25,320 triangles / 270–273 geometries / 41 textures
+```
+
+V1 must compare against this baseline rather than relying on subjective tuning.
+
+## V1 owner decisions
+
+### Camera
+
+Use fixed/snap presets with limited zoom.
+
+- keep Overview / primary / secondary presets;
+- disable free orbit;
+- disable free pan;
+- keep wheel/pinch zoom within a bounded distance;
+- clicking an agent may still ease focus toward factual presence;
+- preset and floor transitions remain eased;
+- keyboard camera shortcuts remain valid.
+
+### Lighting
+
+Use real Office time with a readable night minimum.
+
+- one hemisphere light;
+- one shadow-casting directional key light;
+- no global directional fill light;
+- remove generic ceiling PointLights;
+- use emissive ceiling fixtures for visual warmth;
+- keep at most three floor-specific accent PointLights;
+- retain ACES tone mapping and soft shadows;
+- no AO/bloom/post-processing dependency in V1.
 
 ## Scope
 
-- add Playwright as a measured frontend dev dependency for screenshot verification;
-- add a development-only deterministic Office Diorama fixture on the existing `/office` route;
-- label the fixture `Simulated` and keep it unavailable in production behavior;
-- freeze time through an explicit debug query parameter;
-- keep the fixture cast deterministic and presentation-only;
-- add `npm run office:shots` to capture 3 floors × 4 lighting windows × 2 widths;
-- write screenshots and renderer metrics to ignored `artifacts/office-shots/`;
-- record draw calls, triangles, geometries, textures, and viewport metadata as the V0 baseline.
+- simplify camera control policy;
+- update camera control copy/tests;
+- simplify scene lighting architecture;
+- remove generic ceiling PointLights and rely on existing emissive surfaces plus bounded floor accents;
+- keep floor-specific accent lights bounded;
+- preserve readable night exposure;
+- regenerate the V0 screenshot matrix and renderer metrics;
+- record before/after findings.
 
 ## Explicitly deferred
 
-### Phase 11 V1 — camera and light simplification
+### V2 — Blender asset pilot
 
-No camera-control or lighting-architecture rewrite in V0.
+No new GLB furniture kit, Blender asset import, or asset-policy ADR in V1.
 
-### Phase 11 V2 — pilot asset kit
+### R3F migration
 
-No new furniture/model kit and no asset-policy ADR in V0.
+No React Three Fiber rewrite in V1. The current Three.js runtime remains canonical.
+
+### Unity
+
+No Unity runtime or WebGL client in V1.
 
 ### Phase 10H-2 / 10H-3
 
-Shift Ruler and truth lines remain separate phases and are not modified here.
-
-### Obsidian knowledge cockpit
-
-Tracked separately in Issue #28; not a runtime dependency of Agent Office.
+Shift Ruler and truth lines remain separate.
 
 ## Safety invariants
 
-- debug fixture is development-only and visibly labeled `Simulated`;
-- no canonical Task / Run / AgentRun / Event state is fabricated;
-- no backend/schema contract changes;
-- no asset-policy changes;
+- no canonical Task / Run / AgentRun / Event changes;
 - no fake execution/progress/dialogue;
-- Office View remains supplemental to HTML operational truth;
+- no backend/schema changes;
+- no asset-policy changes;
+- no new post-processing/physics dependency;
+- Office remains supplemental to HTML operational truth;
 - no auto merge;
 - no force push.
 
 
-## V0 acceptance record
+## V1 acceptance record
 
 ```text
 automated verification: PASS
-rendered baseline review: PASS
-capture matrix: 24 / 24
-renderer baseline: recorded
-production debug-marker guard: PASS
-verification document: docs/product/PHASE_11_V0_VERIFICATION.md
+GitHub Actions verify: PASS
+24-shot renderer/light budgets: PASS
+rendered Build day/night desktop: PASS
+rendered Build day/night mobile: PASS
+camera policy: ACCEPTED
+lighting policy: ACCEPTED
+verification document: docs/product/PHASE_11_V1_VERIFICATION.md
 ```
 
 Merge remains manual.

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { officeCameraView, officeCameraViews } from './camera'
+import { OFFICE_CAMERA_CONTROL_POLICY, officeCameraView, officeCameraViews } from './camera'
 
 describe('office camera presets', () => {
   it('exposes three keyboard-addressable views for every floor', () => {
@@ -18,6 +18,16 @@ describe('office camera presets', () => {
     }
   })
 
+  it('uses snap views with bounded zoom instead of free orbit or pan', () => {
+    expect(OFFICE_CAMERA_CONTROL_POLICY).toEqual({
+      enablePan: false,
+      enableRotate: false,
+      enableZoom: true,
+      minDistance: 9.5,
+      maxDistance: 24,
+    })
+  })
+
   it('uses floor-specific semantic destinations instead of generic camera names', () => {
     expect(officeCameraView('commons', 'primary').label).toBe('Lounge')
     expect(officeCameraView('commons', 'secondary').label).toBe('Pantry')
@@ -25,6 +35,23 @@ describe('office camera presets', () => {
     expect(officeCameraView('build', 'secondary').label).toBe('QA / Review')
     expect(officeCameraView('strategy', 'primary').label).toBe('Planning')
     expect(officeCameraView('strategy', 'secondary').label).toBe('Meeting')
+  })
+
+  it('keeps every snap preset inside the bounded zoom envelope', () => {
+    for (const floor of ['commons', 'build', 'strategy'] as const) {
+      for (const view of officeCameraViews(floor)) {
+        const [x, y, z] = view.position
+        const [tx, ty, tz] = view.target
+        const distance = Math.hypot(x - tx, y - ty, z - tz)
+
+        expect(distance).toBeGreaterThanOrEqual(
+          OFFICE_CAMERA_CONTROL_POLICY.minDistance,
+        )
+        expect(distance).toBeLessThanOrEqual(
+          OFFICE_CAMERA_CONTROL_POLICY.maxDistance,
+        )
+      }
+    }
   })
 
   it('keeps overview framing intentionally different across floors', () => {

@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process'
-import { mkdir, rm, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -10,6 +10,7 @@ const frontendRoot = path.resolve(__dirname, '..')
 const repositoryRoot = path.resolve(frontendRoot, '..')
 const outputRoot = path.join(repositoryRoot, 'artifacts', 'office-shots')
 const baseUrl = 'http://127.0.0.1:5174'
+const v0BudgetPath = path.join(__dirname, 'office-v0-renderer-budget.json')
 
 const floors = ['commons', 'build', 'strategy']
 const lightingWindows = [
@@ -64,7 +65,42 @@ async function stopServer(process) {
   if (process.exitCode === null) process.kill('SIGKILL')
 }
 
+function assertV1RendererBudget(capture, budget) {
+  const viewportKey = String(capture.viewport.width)
+  const expected = budget.floors?.[capture.floor]?.[viewportKey]
+  if (!expected) {
+    throw new Error(
+      `Missing V0 renderer budget for ${capture.floor}/${viewportKey}.`,
+    )
+  }
+
+  for (const key of ['calls', 'triangles', 'geometries', 'textures']) {
+    if (capture.renderer[key] > expected[key]) {
+      throw new Error(
+        `V1 renderer budget exceeded for ${capture.file}: ${key}=${capture.renderer[key]} > V0 ${expected[key]}.`,
+      )
+    }
+  }
+
+  const lights = capture.renderer.lights
+  if (!lights) {
+    throw new Error(`V1 light metrics missing for ${capture.file}.`)
+  }
+  if (lights.hemisphere !== 1 || lights.directional !== 1) {
+    throw new Error(
+      `V1 global lighting contract failed for ${capture.file}: hemisphere=${lights.hemisphere}, directional=${lights.directional}.`,
+    )
+  }
+  if (lights.point > 3 || lights.total > 5) {
+    throw new Error(
+      `V1 accent-light budget failed for ${capture.file}: point=${lights.point}, total=${lights.total}.`,
+    )
+  }
+}
+
 async function capture() {
+  const v0Budget = JSON.parse(await readFile(v0BudgetPath, 'utf8'))
+
   await rm(outputRoot, { recursive: true, force: true })
   await mkdir(outputRoot, { recursive: true })
 
@@ -162,7 +198,7 @@ async function capture() {
             animations: 'disabled',
           })
 
-          captures.push({
+          const captureRecord = {
             file: filename,
             floor,
             lighting: lighting.key,
@@ -173,7 +209,9 @@ async function capture() {
               deviceScaleFactor: 1,
             },
             renderer: rendererInfo,
-          })
+          }
+          assertV1RendererBudget(captureRecord, v0Budget)
+          captures.push(captureRecord)
 
           await context.close()
           process.stdout.write(`captured ${filename}\n`)
@@ -204,6 +242,9 @@ async function capture() {
 
     process.stdout.write(
       `Office visual baseline complete: ${captures.length} PNG files + renderer-info.json\n`,
+    )
+    process.stdout.write(
+      'V1 renderer and light budgets passed against the accepted V0 baseline.\n',
     )
     process.stdout.write(`Artifacts: ${outputRoot}\n`)
   } catch (error) {

@@ -104,9 +104,9 @@ function SceneControls({
           </div>
         </div>
         <div className="office-scene-control-hints">
-          <span><kbd>Drag</kbd> orbit</span>
-          <span><kbd>Right-drag</kbd> pan</span>
-          <span><kbd>Wheel</kbd> zoom</span>
+          <span><kbd>1–3</kbd> snap view</span>
+          <span><kbd>Click</kbd> focus agent</span>
+          <span><kbd>Wheel</kbd> bounded zoom</span>
         </div>
         <button
           type="button"

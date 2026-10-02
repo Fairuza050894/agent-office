@@ -1358,20 +1358,6 @@ function createDoor(position: THREE.Vector3): THREE.Group {
   return group
 }
 
-function createCeilingLights(parent: THREE.Group): void {
-  for (const [x, z, intensity] of [
-    [-3.4, 0.8, 0.24],
-    [0, 0.8, 0.28],
-    [3.4, 0.8, 0.24],
-    [-1.7, 3.7, 0.2],
-    [1.7, 3.7, 0.2],
-  ] as Array<[number, number, number]>) {
-    const light = new THREE.PointLight(0xffdfad, intensity, 6.5)
-    light.position.set(x, 3.25, z)
-    parent.add(light)
-  }
-}
-
 function createWoodFloor(parent: THREE.Group): void {
   const floor = addBox(
     parent,
@@ -1536,7 +1522,6 @@ function createOfficeShell(
   createWindowWall(environment)
   environment.add(createDoor(new THREE.Vector3(0, 0, -6.9)))
   createLiftCore(environment, floor)
-  createCeilingLights(environment)
 }
 
 function createCup(
@@ -1587,16 +1572,6 @@ function createCommonsWorldCue(
     return
   }
 
-  if (
-    mode === 'EVENING' ||
-    mode === 'LATE_EVENING' ||
-    mode === 'NIGHT_QUIET' ||
-    mode === 'WEEKEND_QUIET'
-  ) {
-    const securityLamp = new THREE.PointLight(0x6e91b0, 0.18, 4)
-    securityLamp.position.set(-8.5, 1.55, -5.15)
-    parent.add(securityLamp)
-  }
 }
 
 function createBuildWorldCue(

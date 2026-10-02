@@ -92,6 +92,12 @@ describe('OfficeScene operational scope', () => {
       screen.getByLabelText('Agent Office operational 3D projection'),
     ).toBeInTheDocument()
     fireEvent.click(screen.getByText('Controls'))
+    expect(screen.getByText(/snap view/i)).toBeInTheDocument()
+    expect(screen.getByText(/focus agent/i)).toBeInTheDocument()
+    expect(screen.getByText(/bounded zoom/i)).toBeInTheDocument()
+    expect(screen.queryByText(/orbit/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/right-drag/i)).not.toBeInTheDocument()
+
     const cameraViews = screen.getByRole('group', { name: 'Camera view' })
     expect(
       within(cameraViews).getByRole('button', { name: /Planning/i }),

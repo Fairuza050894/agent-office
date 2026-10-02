@@ -36,6 +36,7 @@ import {
 } from '../office3d/livingOffice'
 import { officeLightingForHour } from '../office3d/lighting'
 import {
+  OFFICE_CAMERA_CONTROL_POLICY,
   officeCameraView,
   type OfficeCameraViewKey,
 } from '../office3d/camera'
@@ -89,6 +90,12 @@ interface OfficeDioramaRendererInfo {
   lines: number
   geometries: number
   textures: number
+  lights: {
+    total: number
+    hemisphere: number
+    directional: number
+    point: number
+  }
 }
 
 type OfficeDioramaWindow = Window & {
@@ -108,7 +115,6 @@ interface Engine {
   agents: THREE.Group
   hemisphere: THREE.HemisphereLight
   keyLight: THREE.DirectionalLight
-  fillLight: THREE.DirectionalLight
   runtimes: Map<string, RuntimeAgent>
   clickable: THREE.Object3D[]
   frame: number | null
@@ -175,6 +181,20 @@ function publishDioramaRendererInfo(engine: Engine): void {
   if (params.get('fixture') !== 'diorama') return
 
   const info = engine.renderer.info
+  const lights = {
+    total: 0,
+    hemisphere: 0,
+    directional: 0,
+    point: 0,
+  }
+  engine.scene.traverse((object) => {
+    if (!(object instanceof THREE.Light)) return
+    lights.total += 1
+    if (object instanceof THREE.HemisphereLight) lights.hemisphere += 1
+    if (object instanceof THREE.DirectionalLight) lights.directional += 1
+    if (object instanceof THREE.PointLight) lights.point += 1
+  })
+
   ;(window as OfficeDioramaWindow).__AGENT_OFFICE_DIARAMA__ = {
     ready: true,
     rendererInfo: {
@@ -184,6 +204,7 @@ function publishDioramaRendererInfo(engine: Engine): void {
       lines: info.render.lines,
       geometries: info.memory.geometries,
       textures: info.memory.textures,
+      lights,
     },
   }
 }
@@ -207,9 +228,6 @@ function applyOfficeLighting(engine: Engine, hour: number): void {
 
   engine.keyLight.color.setHex(profile.keyColor)
   engine.keyLight.intensity = profile.keyIntensity
-
-  engine.fillLight.color.setHex(profile.fillColor)
-  engine.fillLight.intensity = profile.fillIntensity
 }
 
 function prefersReducedMotion(): boolean {
@@ -548,13 +566,12 @@ export function ThreeOfficeScene({
       controls.target.set(0, 0.68, 0.3)
       controls.enableDamping = true
       controls.dampingFactor = 0.075
-      controls.enablePan = true
-      controls.enableRotate = true
-      controls.screenSpacePanning = true
-      controls.minDistance = 8.5
-      controls.maxDistance = 30
-      controls.minPolarAngle = Math.PI * 0.16
-      controls.maxPolarAngle = Math.PI * 0.48
+      controls.enablePan = OFFICE_CAMERA_CONTROL_POLICY.enablePan
+      controls.enableRotate = OFFICE_CAMERA_CONTROL_POLICY.enableRotate
+      controls.enableZoom = OFFICE_CAMERA_CONTROL_POLICY.enableZoom
+      controls.screenSpacePanning = false
+      controls.minDistance = OFFICE_CAMERA_CONTROL_POLICY.minDistance
+      controls.maxDistance = OFFICE_CAMERA_CONTROL_POLICY.maxDistance
 
       const hemisphere = new THREE.HemisphereLight(0xdce9f4, 0x1a232d, 2.0)
       scene.add(hemisphere)
@@ -568,10 +585,6 @@ export function ThreeOfficeScene({
       keyLight.shadow.camera.top = 14
       keyLight.shadow.camera.bottom = -14
       scene.add(keyLight)
-
-      const fillLight = new THREE.DirectionalLight(0x8fb8dc, 0.8)
-      fillLight.position.set(10, 10, -7)
-      scene.add(fillLight)
 
       const environment = new THREE.Group()
       const agentLayer = new THREE.Group()
@@ -587,7 +600,6 @@ export function ThreeOfficeScene({
         agents: agentLayer,
         hemisphere,
         keyLight,
-        fillLight,
         runtimes: new Map(),
         clickable: [],
         frame: null,

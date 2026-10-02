@@ -2,6 +2,22 @@ import type { OfficeFloorKey } from './livingOffice'
 
 export type OfficeCameraViewKey = 'overview' | 'primary' | 'secondary'
 
+export interface OfficeCameraControlPolicy {
+  enablePan: boolean
+  enableRotate: boolean
+  enableZoom: boolean
+  minDistance: number
+  maxDistance: number
+}
+
+export const OFFICE_CAMERA_CONTROL_POLICY: OfficeCameraControlPolicy = {
+  enablePan: false,
+  enableRotate: false,
+  enableZoom: true,
+  minDistance: 9.5,
+  maxDistance: 24,
+}
+
 export interface OfficeCameraView {
   key: OfficeCameraViewKey
   label: string
