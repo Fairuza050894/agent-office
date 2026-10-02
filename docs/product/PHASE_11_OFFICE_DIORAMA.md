@@ -115,6 +115,7 @@ npm test -- --run
 npm run typecheck
 npm run lint
 npm run build
+npm run office:debug:prod-check
 npm run office:shots
 
 cd ..
