@@ -146,7 +146,7 @@ export function OfficeScene({
   worldContext = null,
   totalPresence = 0,
   operationalFloorCounts,
-  dioramaPilot = 'primitive',
+  dioramaPilot,
 }: OfficeSceneProps) {
   const profileByKey = useMemo(
     () => new Map(profiles.map((profile) => [profile.key, profile])),
