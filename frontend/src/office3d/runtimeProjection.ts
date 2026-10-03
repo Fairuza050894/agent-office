@@ -16,6 +16,7 @@ import {
   type OfficePresenceMember,
   type OfficeZoneKey,
 } from './livingOffice'
+import { applyOfficeLaneSeparation } from './navigationPolicy'
 
 export interface OfficeSceneMember extends OfficeCharacterSource {
   name: string
@@ -98,12 +99,21 @@ export function moveOfficeRuntime(
 ): void {
   runtime.target.copy(target.position)
   runtime.targetYaw = target.yaw
-  runtime.path = workspaceFloor
-    ? buildWorkspaceOfficePath(
-        runtime.root.position,
-        target.position,
-        workspaceFloor,
-      )
-    : buildOfficePath(runtime.root.position, target.position)
+
+  if (workspaceFloor) {
+    const semanticPath = buildWorkspaceOfficePath(
+      runtime.root.position,
+      target.position,
+      workspaceFloor,
+    )
+    runtime.path = applyOfficeLaneSeparation(
+      semanticPath,
+      runtime.agentId,
+      workspaceFloor,
+    )
+  } else {
+    runtime.path = buildOfficePath(runtime.root.position, target.position)
+  }
+
   runtime.moving = runtime.path.length > 0
 }
