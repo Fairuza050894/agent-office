@@ -151,6 +151,13 @@ new light truth, stays outside the walkable/collision volume, and batches
 repeated static geometry with `THREE.InstancedMesh` to preserve renderer
 headroom.
 
+The RC1 room-richness baseline further separates the floors without inventing
+operational state: Commons gains recognizable arrival/social zones, Build gains
+paired engineering operations bays, and Strategy gains a central decision
+forum. These architectural masses remain abstract presentation only; they do
+not represent occupancy, workload, health, KPI, progress, meetings, evidence,
+or dialogue.
+
 Architecture reference:
 
 - `docs/architecture/RC1_PREMIUM_3D_ARCHITECTURE.md`
