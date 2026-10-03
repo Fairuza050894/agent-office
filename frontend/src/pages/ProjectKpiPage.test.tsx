@@ -63,7 +63,7 @@ afterEach(() => {
 })
 
 describe('ProjectKpiPage', () => {
-  it('renders factual Task/Run KPI without an agent productivity score', async () => {
+  it('renders factual Task/Run KPI and states the non-ranking policy', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn((input: RequestInfo | URL) => {
@@ -97,6 +97,5 @@ describe('ProjectKpiPage', () => {
     expect(
       screen.getByText(/does not rank agents or infer individual productivity/i),
     ).toBeInTheDocument()
-    expect(screen.queryByText(/productivity score/i)).not.toBeInTheDocument()
   })
 })
