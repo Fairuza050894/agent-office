@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import type { Project, Run, Task } from '../api'
+import type { Project, ResultReview, Run, Task } from '../api'
 import { Router } from '../router/Router'
 import { ProjectKpiPage } from './ProjectKpiPage'
 
@@ -50,6 +50,21 @@ const RUN: Run = {
   updated_at: '2026-10-01T03:30:00Z',
 }
 
+const REVIEW: ResultReview & { approved_at: string; delivered_at: string } = {
+  run_id: RUN.id,
+  task_id: TASK.id,
+  state: 'DELIVERED',
+  candidate_workspace_id: null,
+  feedback: null,
+  remediation_run_id: null,
+  delivered_branch: 'agent-office/accepted/task',
+  delivered_commit: '0123456789abcdef',
+  approved_at: '2026-10-01T03:40:00Z',
+  delivered_at: '2026-10-01T03:45:00Z',
+  can_approve: false,
+  can_request_changes: false,
+}
+
 function response(body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status: 200,
@@ -63,7 +78,7 @@ afterEach(() => {
 })
 
 describe('ProjectKpiPage', () => {
-  it('renders technical completion without calling it delivery', async () => {
+  it('separates technical completion from human accepted delivery', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn((input: RequestInfo | URL) => {
@@ -80,6 +95,9 @@ describe('ProjectKpiPage', () => {
         if (url === `/api/tasks/${TASK.id}/runs`) {
           return Promise.resolve(response([RUN]))
         }
+        if (url === `/api/runs/${RUN.id}/result-review`) {
+          return Promise.resolve(response(REVIEW))
+        }
         throw new Error(`Unexpected request: ${url}`)
       }),
     )
@@ -91,6 +109,12 @@ describe('ProjectKpiPage', () => {
     )
 
     expect(await screen.findByText('Ship KPI report')).toBeInTheDocument()
+
+    const accepted = screen.getByLabelText('Accepted change North Star')
+    expect(within(accepted).getByText('Accepted changes · 7d')).toBeInTheDocument()
+    expect(within(accepted).getByText('Accepted changes')).toBeInTheDocument()
+    expect(within(accepted).getByText('Acceptance rate')).toBeInTheDocument()
+    expect(within(accepted).getByText('15m')).toBeInTheDocument()
 
     const summary = screen.getByLabelText('Project KPI summary')
     expect(within(summary).getByText('Runs completed')).toBeInTheDocument()
