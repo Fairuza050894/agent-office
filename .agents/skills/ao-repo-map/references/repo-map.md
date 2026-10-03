@@ -20,7 +20,8 @@ Core:
 - `docs/product/MVP_ACCEPTANCE.md` — acceptance criteria and historical phase gates
 - `docs/architecture/SYSTEM_ARCHITECTURE.md` — control-plane architecture
 - `docs/architecture/DOMAIN_MODEL.md` — canonical domain model
-- `docs/architecture/RC1_PREMIUM_3D_ARCHITECTURE.md` — current RC1 renderer/presentation architecture
+- `docs/architecture/RC1_PREMIUM_3D_ARCHITECTURE.md` — current RC1 renderer/presentation architecture, floor identity, and room-richness boundaries
+- `docs/architecture/RC1_CHARACTER_PRESENTATION.md` — accepted RC1 character/readability presentation boundary
 - `docs/architecture/LIVING_OFFICE_TECHNICAL_DESIGN.md` — current Living Office projection design
 - `docs/architecture/ADR-0004-office-renderer-evolution.md` — R3F production ownership and Three.js fallback criteria
 
@@ -104,8 +105,10 @@ been decomposed.
 - `components/ThreeOfficeScene.tsx` — recovery-only renderer
 - `office3d/runtimeProjection.ts` — canonical state -> scene member projection
 - `office3d/environment.ts` — functional floors/zones/stations/collision anchors
-- `office3d/premiumEnvironment.ts` — RC1 presentation-only architecture
-- `office3d/character.ts` — character runtime, variants, animation, labels
+- `office3d/premiumEnvironment.ts` — RC1 presentation-only architecture plus Commons/Build/Strategy room-richness geometry; never canonical occupancy/telemetry/collision truth
+- `office3d/premiumEnvironment.test.ts` — floor identity, light ownership, instancing, and premium-layer mesh-budget guard
+- `office3d/character.ts` — character runtime, variants, verified animation, labels
+- `styles/premium-characters.css` — CSS2D premium character/readability presentation
 - `office3d/camera.ts` — semantic camera composition
 - `office3d/lighting.ts` — time-of-day lighting policy
 - `office3d/livingOffice.ts` — floor/zone/presence policy
@@ -143,7 +146,7 @@ Presentation path:
 canonical records
    -> runtime/presence projection
    -> R3F scene members
-   -> environment + premium architecture + characters
+   -> environment + premium architecture/room richness + characters
 ```
 
 Writable AgentRuns must use isolated managed Git worktrees.

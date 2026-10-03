@@ -3,7 +3,7 @@
 ## Current checkpoint
 
 ```text
-accepted main before active room slice: 8e17a248dca02b5a9e07c7b602b806ab6ca3c8a8
+accepted product main: f0f35c17b777f867866c41c480fbacb9bf810f4c
 Phase 22 Enterprise Trust Layer — COMPLETE / MERGED
 Phase 23 Release Hardening — COMPLETE / MERGED
 Phase 24 Office Operating Experience — COMPLETE / MERGED
@@ -14,7 +14,7 @@ RC1 Slice 2B Camera Composition — COMPLETE / MERGED
 RC1 Zero-Friction Navigation — COMPLETE / MERGED
 RC1 Premium Environment & Floor Identity — COMPLETE / MERGED
 RC1 Premium Character Presentation — COMPLETE / MERGED
-RC1 Premium Room Richness — IN DEVELOPMENT
+RC1 Premium Room Richness — COMPLETE / MERGED
 ```
 
 Canonical full verification remains:
@@ -142,6 +142,34 @@ Accepted production state:
   including frontend build, production Office guard, Chromium setup, and
   production renderer split smoke in run #1621.
 
+### Premium Room Richness — PR #69
+
+```text
+superseded PR: #68 — CLOSED / NOT MERGED / NO FORCE-PUSH
+successor PR: #69
+exact verified head: 8114de89033b70064d36c5a55c9550da186ef5b5
+GitHub Actions verify #1623: SUCCESS
+merge commit: f0f35c17b777f867866c41c480fbacb9bf810f4c
+post-merge main verify #1624: SUCCESS
+```
+
+Accepted production state:
+
+- Commons has a stronger arrival/social-hub spatial identity;
+- Build has paired engineering operations bays and denser control-room framing;
+- Strategy has a central decision forum / briefing-platform identity;
+- rear command-wall and floor-orientation massing are richer while remaining
+  abstract presentation rather than telemetry;
+- repeated geometry remains `THREE.InstancedMesh` batched;
+- floor-specific tests require the richness groups while guarding zero added
+  `THREE.Light` objects, at least nine instanced groups, and no more than sixteen
+  renderable premium-layer meshes;
+- canonical Task / Run / AgentRun / Event / Evidence / ResultReview truth,
+  navigation/collision truth, and Git/runtime safety behavior are unchanged;
+- exact-head #1623 and post-merge #1624 both used real runners and passed
+  repository, backend, frontend, build, production Office guard, Chromium, and
+  production Office renderer split smoke gates.
+
 ## Current product value loop
 
 ```text
@@ -162,34 +190,13 @@ Technical `COMPLETED` and human `DELIVERED` remain distinct.
 - Planning, Live, and Replay use R3F in the normal production path.
 - Three.js remains the renderer recovery path; HTML operational surfaces remain
   the final non-WebGL fallback.
-- premium framing, lighting, camera composition, floor architecture, and premium
-  character presentation are merged into `main`.
+- premium framing, lighting, camera composition, floor architecture, character
+  presentation, and room richness are accepted on product `main`.
 - Living Office time, occupancy, presence, navigation, and room behavior remain
   deterministic projections over canonical facts plus explicitly
   presentation-only ambience.
 - existing production character assets remain third-party/provenance-pinned; no
   first-party Blender art is falsely claimed.
-
-## Active RC1 checkpoint — Premium Room Richness
-
-```text
-active isolated branch: rc1-premium-room-richness-v2
-base: main@8e17a248dca02b5a9e07c7b602b806ab6ca3c8a8
-scope: stronger floor/sub-zone identity without new operational truth
-status: IN DEVELOPMENT / MUST PASS FRESH EXACT-HEAD FULL CI BEFORE MERGE
-```
-
-Intended presentation-only additions:
-
-- Commons: recognizable arrival/social zones;
-- Build: paired engineering operations bays;
-- Strategy: central decision forum / briefing platform;
-- richer command-wall/floor orientation massing while retaining instancing and
-  the renderer-safe mesh budget.
-
-Room richness must not claim occupancy, service health, workload, progress, KPI,
-meeting state, evidence, dialogue, or agent activity. It must not modify
-canonical navigation/collision truth.
 
 ## Dependency / release-hardening lane
 
@@ -224,13 +231,25 @@ Agent Office is not yet claiming enterprise-complete:
 - a custom first-party production environment/character asset pack;
 - completed RC1 browser/device visual-regression matrix and adaptive-quality release gate.
 
-## Remaining RC1 sequence
-
-After room richness is accepted:
+## Next RC1 checkpoint
 
 ```text
-Composer-first zero-friction UX
-  -> Decision Inbox / Board / KPI / Dossier polish
+Agent Office RC1 — Composer-First Zero-Friction UX
+accepted base: product main@f0f35c17b777f867866c41c480fbacb9bf810f4c
+scope: make Composer the primary low-friction entry point while preserving explicit promotion and canonical workflow truth
+status: READY after this milestone-sync PR is verified and merged
+```
+
+The next slice should reduce user setup/form burden and improve outcome-first
+interaction, project/context selection, plan preview, and handoff into the
+existing Task/Run lifecycle. It must not silently start high-risk work, invent
+requirements, auto-approve, auto-deliver, or bypass human promotion/decision
+boundaries.
+
+After Composer-first UX:
+
+```text
+Decision Inbox / Board / KPI / Dossier polish
   -> adaptive quality / performance
   -> deterministic visual regression + browser/device QA
   -> dependency hardening on latest main
