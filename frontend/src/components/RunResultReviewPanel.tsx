@@ -40,7 +40,7 @@ export function RunResultReviewPanel({ run }: RunResultReviewPanelProps) {
   }, [run.id])
 
   useEffect(() => {
-    void load()
+    void Promise.resolve().then(load)
   }, [load])
 
   const requestChanges = async () => {
