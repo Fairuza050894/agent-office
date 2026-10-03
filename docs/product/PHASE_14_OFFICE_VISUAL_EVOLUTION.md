@@ -2,9 +2,15 @@
 
 ## Status
 
-Implementation checkpoint for the unified R3F production Office after Phase 13C.
+```text
+COMPLETE / MERGED
+PR #39
+exact verified head: aff921d640eef690fe4cb922640aa9860b9325d6
+GitHub Actions verify #1425: SUCCESS
+merge commit: 588ae3af511219a4d6c3691fa70360967c3b11a9
+```
 
-Base merge:
+Base merge before Phase 14:
 
 ```text
 786417e75bd02fe22b5e23c5a4d96d1e7cb29f92
@@ -40,7 +46,7 @@ Improve visual depth and direct-manipulation feel without redesigning the produc
 
 ### Hover and selection
 
-- pointer hover exposes a restrained interaction ring and pointer cursor;
+- pointer hover exposes a restrained interaction ring;
 - hover can reveal a nameplate without forcing transient labels to be permanently visible;
 - selected Agent retains the stronger ring;
 - R3F reapplies selection after canonical status changes so a selected Agent does not visually lose selection during Live/Replay transitions.
@@ -59,14 +65,28 @@ The existing third-party GLBs are not relabeled as custom Blender-authored props
 
 Phase 14 changes presentation only. Task, Run, AgentRun, Event, Finding, Evidence, executor, approval, replay timing, and workflow state remain canonical outside the renderer.
 
-## Acceptance gates
+## Acceptance evidence
+
+Exact PR #39 head:
 
 ```text
-backend pytest / Ruff / format / MyPy
-frontend tests / typecheck / lint / build
-repository whitespace verification
-production Office guard
-Chromium production smoke:
+aff921d640eef690fe4cb922640aa9860b9325d6
+```
+
+GitHub Actions:
+
+```text
+verify #1425: SUCCESS
+```
+
+Gates:
+
+```text
+backend pytest / Ruff / format / MyPy: PASS
+frontend tests (184) / typecheck / lint / build: PASS
+repository whitespace verification: PASS
+production Office guard: PASS
+Chromium production smoke: PASS
   Planning = R3F
   Live = R3F
   Replay = R3F
@@ -76,4 +96,6 @@ Chromium production smoke:
 
 ## Readiness interpretation
 
-After these gates pass, Agent Office is suitable as a polished internal/technical beta with a coherent production renderer and professional interaction language. It should not be described as a finished AAA/Sim-style art package until a dedicated custom authored asset pack and broader device/performance validation are completed.
+Agent Office is now suitable as a polished internal/technical beta with a coherent production renderer, tested recovery boundary, and professional interaction language.
+
+It should not be described as a finished AAA/Sim-style art package until a dedicated custom-authored asset pack and broader device/performance validation are completed. That distinction is intentional: Phase 14 completes the production visual-evolution checkpoint without pretending curated assets are custom art.
