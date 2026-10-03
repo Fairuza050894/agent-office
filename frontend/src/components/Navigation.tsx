@@ -16,7 +16,8 @@ const SECTION_LABELS: Record<NavSection, string> = {
   CONTROL: 'Control',
 }
 
-const CORE_NAV_IDS = new Set(['office', 'projects', 'runs'])
+const CORE_NAV_IDS = ['office', 'inbox', 'board', 'kpi'] as const
+const CORE_NAV_ID_SET = new Set<string>(CORE_NAV_IDS)
 
 export function Navigation({
   isOpen,
@@ -25,8 +26,11 @@ export function Navigation({
   onToggleCollapsed,
 }: NavigationProps) {
   const { currentPath } = useRouter()
-  const coreItems = NAV_ITEMS.filter((item) => CORE_NAV_IDS.has(item.id))
-  const utilityItems = NAV_ITEMS.filter((item) => !CORE_NAV_IDS.has(item.id))
+  const coreItems = CORE_NAV_IDS.flatMap((id) => {
+    const item = NAV_ITEMS.find((candidate) => candidate.id === id)
+    return item ? [item] : []
+  })
+  const utilityItems = NAV_ITEMS.filter((item) => !CORE_NAV_ID_SET.has(item.id))
   const utilityRouteActive = utilityItems.some((item) => item.path === currentPath)
 
   const getUtilityItemsBySection = (section: NavSection) =>
