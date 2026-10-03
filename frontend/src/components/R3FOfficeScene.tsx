@@ -589,7 +589,7 @@ function SceneContents({
 
     replayIndexRef.current = 0
     replayFocusRef.current = null
-    runtimesRef.current.forEach((runtime, index) => {
+    ;[...runtimesRef.current.values()].forEach((runtime, index) => {
       runtime.root.visible = false
       runtime.root.position.copy(entrancePosition(index))
       runtime.root.rotation.y = 0
