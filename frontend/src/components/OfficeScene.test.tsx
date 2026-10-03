@@ -37,11 +37,13 @@ vi.mock('./R3FOfficeScene', () => ({
     officeMode,
     cameraView,
     labelsVisible,
+    scope,
   }: {
     onSelectAgent: (agentId: string) => void
     officeMode?: string | null
     cameraView?: string
     labelsVisible?: boolean
+    scope?: string
   }) => (
     <button
       type="button"
@@ -50,6 +52,7 @@ vi.mock('./R3FOfficeScene', () => ({
       data-camera-view={cameraView ?? ''}
       data-labels-visible={String(labelsVisible ?? true)}
       data-renderer="r3f"
+      data-renderer-scope={scope ?? ''}
       onClick={() => onSelectAgent('ambient:backend-engineer')}
     >
       member
@@ -68,7 +71,6 @@ const member: OfficePresenceMember = {
   placementIndex: 1,
   truth: 'AMBIENT',
 }
-
 
 const workMember: OfficePresenceMember = {
   id: 'work:agent-run-1',
@@ -90,7 +92,7 @@ const workMember: OfficePresenceMember = {
 }
 
 describe('OfficeScene operational scope', () => {
-  it('keeps the same floor language while projecting canonical Run truth', () => {
+  it('keeps the same floor language while projecting canonical Run truth through R3F Replay', async () => {
     const onFloorChange = vi.fn()
 
     render(
@@ -115,9 +117,9 @@ describe('OfficeScene operational scope', () => {
 
     expect(screen.getAllByText('Strategy').length).toBeGreaterThan(0)
     expect(screen.getByText('Historical Run / AgentRun replay')).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Mock 3D member' }),
-    ).toHaveAttribute('data-renderer', 'three')
+    const renderer = await screen.findByRole('button', { name: 'Mock 3D member' })
+    expect(renderer).toHaveAttribute('data-renderer', 'r3f')
+    expect(renderer).toHaveAttribute('data-renderer-scope', 'replay')
     expect(
       screen.getByLabelText('Agent Office operational 3D projection'),
     ).toBeInTheDocument()
@@ -146,7 +148,7 @@ describe('OfficeScene operational scope', () => {
     expect(onFloorChange).toHaveBeenCalledWith('build')
   })
 
-  it('uses R3F for live canonical Run projection while Replay remains on Three.js', async () => {
+  it('uses R3F for live canonical Run projection', async () => {
     render(
       <OfficeScene
         stages={[]}
@@ -169,9 +171,11 @@ describe('OfficeScene operational scope', () => {
     expect(
       screen.getByText('Live canonical Run / AgentRun projection'),
     ).toBeInTheDocument()
-    expect(
-      await screen.findByRole('button', { name: 'Mock 3D member' }),
-    ).toHaveAttribute('data-renderer', 'r3f')
+    const renderer = await screen.findByRole('button', {
+      name: 'Mock 3D member',
+    })
+    expect(renderer).toHaveAttribute('data-renderer', 'r3f')
+    expect(renderer).toHaveAttribute('data-renderer-scope', 'live')
   })
 })
 
