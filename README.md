@@ -151,9 +151,15 @@ new light truth, stays outside the walkable/collision volume, and batches
 repeated static geometry with `THREE.InstancedMesh` to preserve renderer
 headroom.
 
+Character presentation uses deterministic role/model/accent profiles, verified
+animation clips, and a restrained CSS2D interaction layer. Presentation may
+improve silhouette/readability and selected/hover/failure hierarchy, but it must
+not invent concrete work or activity.
+
 Architecture reference:
 
 - `docs/architecture/RC1_PREMIUM_3D_ARCHITECTURE.md`
+- `docs/architecture/RC1_CHARACTER_PRESENTATION.md`
 - `docs/architecture/LIVING_OFFICE_TECHNICAL_DESIGN.md`
 - `docs/architecture/ADR-0004-office-renderer-evolution.md`
 
@@ -190,6 +196,7 @@ frontend/src/office3d/camera.ts
 frontend/src/office3d/lighting.ts
 frontend/src/office3d/livingOffice.ts
 frontend/src/office3d/runtimeProjection.ts
+frontend/src/styles/premium-characters.css
 ```
 
 ## Specification Map
@@ -210,6 +217,7 @@ Core architecture/specification references include:
 - `docs/architecture/SYSTEM_ARCHITECTURE.md`
 - `docs/architecture/DOMAIN_MODEL.md`
 - `docs/architecture/RC1_PREMIUM_3D_ARCHITECTURE.md`
+- `docs/architecture/RC1_CHARACTER_PRESENTATION.md`
 - `docs/architecture/LIVING_OFFICE_TECHNICAL_DESIGN.md`
 - `docs/architecture/ADR-0004-office-renderer-evolution.md`
 - `docs/contracts/WORKFLOW_CONTRACT.md`
