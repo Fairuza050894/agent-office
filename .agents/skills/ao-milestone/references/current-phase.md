@@ -3,7 +3,7 @@
 ## Current checkpoint
 
 ```text
-main@544f593ca198c8dbe2b7cab703df17483b7c6ee5
+main@88f01c76b04f88af193f4fd00c25d2371a8f3b9d
 Phase 22 Enterprise Trust Layer — COMPLETE / MERGED
 Phase 23 Release Hardening — COMPLETE / MERGED
 Phase 24 Office Operating Experience — COMPLETE / MERGED
@@ -13,6 +13,7 @@ RC1 Slice 2A Cinematic Lighting — COMPLETE / MERGED
 RC1 Slice 2B Camera Composition — COMPLETE / MERGED
 RC1 Zero-Friction Navigation — COMPLETE / MERGED
 RC1 Premium Environment & Floor Identity — COMPLETE / MERGED
+RC1 Premium Character Presentation — IN DEVELOPMENT
 ```
 
 Canonical full verification remains:
@@ -160,17 +161,21 @@ exact verified head: b39f6c4957b260b81ad1b8406badaa8101157ba8
 GitHub Actions verify #1615: SUCCESS
 merge commit: 544f593ca198c8dbe2b7cab703df17483b7c6ee5
 post-merge main verify #1616: SUCCESS
+milestone sync PR: #66
+milestone sync head: 8c6afbaa739ad4ec183d9fe5a0675376d8365168
+milestone sync verify #1617: SUCCESS
+milestone sync merge: 88f01c76b04f88af193f4fd00c25d2371a8f3b9d
+post-sync main verify #1618: SUCCESS
 ```
 
 Accepted production state:
 
-- the renderer-safe premium architecture foundation is now mounted in the normal R3F Planning / Live / Replay lifecycle;
+- the renderer-safe premium architecture foundation is mounted in the normal R3F Planning / Live / Replay lifecycle;
 - Commons, Build, and Strategy have distinct presentation identities: social hub, engineering control room, and decision studio;
 - repeated premium structural geometry is material-grouped through `THREE.InstancedMesh` rather than dozens of independent draw calls;
 - the premium layer adds no `THREE.Light` objects and stays outside the walkable/collision truth boundary;
 - decorative signal geometry is abstract presentation only and does not claim telemetry, KPI, progress, tests, dialogue, or agent activity;
-- repository, backend, frontend, build, production Office guard, Playwright Chromium, and production Office renderer split smoke all executed and passed on the exact PR head;
-- the merged `main` commit also passed the same repository/backend/frontend verification workflow in run #1616.
+- repository, backend, frontend, build, production Office guard, Playwright Chromium, and production Office renderer split smoke executed and passed on the exact PR head and on merged `main`.
 
 ## Current product value loop
 
@@ -233,14 +238,18 @@ Agent Office is not yet claiming enterprise-complete:
 - a custom first-party production environment/character asset pack;
 - completed RC1 browser/device visual-regression matrix and adaptive-quality release gate.
 
-## Next RC1 checkpoint
+## Active RC1 checkpoint
 
 ```text
 Agent Office RC1 — Premium 3D Product Overhaul
-accepted base: main@544f593ca198c8dbe2b7cab703df17483b7c6ee5
-next product slice: premium character presentation
-scope: stronger role/silhouette distinction, grounded materials, hover/selection/nameplate polish, verified-animation presentation only
-status: READY — create a fresh isolated branch from accepted main before implementation
+active isolated branch: rc1-premium-character-presentation
+base: main@88f01c76b04f88af193f4fd00c25d2371a8f3b9d
+scope: premium character readability and interaction polish using existing deterministic role appearances and verified animations
+status: IN DEVELOPMENT / MUST PASS EXACT-HEAD FULL CI BEFORE MERGE
 ```
+
+This slice may improve role/readability hierarchy, hover/selection/nameplates,
+and restrained factual-state emphasis. It must not fabricate typing, testing,
+review, meetings, dialogue, KPI, or other concrete activity.
 
 After character presentation, continue Composer-first UX, Decision/Board/KPI/Dossier polish, adaptive quality/performance, visual regression/device-browser QA, dependency hardening, and RC1 release packaging.
