@@ -14,29 +14,27 @@ import {
   setCharacterSelected,
   setCharacterStatus,
   workspaceCandidateBlockedByPeer,
-  type OfficeCharacterSource,
   type RuntimeAgent,
   type StationPlacement,
 } from '../office3d/character'
 import {
-  buildOfficePath,
-  buildWorkspaceOfficePath,
   entrancePosition,
-  incidentPosition,
   createOfficeEnvironment,
   disposeObject,
   stageCenter,
-  waitingPosition,
 } from '../office3d/environment'
 import type { OfficeDioramaPilotMode } from '../office3d/dioramaDebug'
 import { officeFurniturePolicy } from '../office3d/furniturePolicy'
 import {
-  officeRoleHomeLocation,
   type OfficeFloorKey,
   type OfficePresenceMember,
-  type OfficeZoneKey,
 } from '../office3d/livingOffice'
 import { officeLightingForHour } from '../office3d/lighting'
+import {
+  moveOfficeRuntime,
+  officeRuntimeStateTarget,
+  officeSceneMembers,
+} from '../office3d/runtimeProjection'
 import {
   OFFICE_CAMERA_CONTROL_POLICY,
   officeCameraView,
@@ -69,13 +67,6 @@ export interface ThreeOfficeSceneProps {
   officeHour?: number
   officeMode?: OfficeModeKey | null
   dioramaPilot?: OfficeDioramaPilotMode
-}
-
-interface SceneMember extends OfficeCharacterSource {
-  name: string
-  zone?: OfficeZoneKey
-  placementIndex?: number
-  stageKey?: string
 }
 
 interface CameraTransition {
@@ -148,44 +139,6 @@ interface Engine {
   focusUntil: number | null
   cameraTransition: CameraTransition | null
   disposed: boolean
-}
-
-function stateTarget(
-  runtime: RuntimeAgent,
-  status: string,
-  index: number,
-): StationPlacement {
-  switch (status.toUpperCase()) {
-    case 'WAITING':
-      return {
-        position: waitingPosition(index),
-        yaw: Math.PI * 0.5,
-      }
-    case 'BLOCKED':
-    case 'FAILED':
-      return {
-        position: incidentPosition(index),
-        yaw: Math.PI * 0.5,
-      }
-    default:
-      return {
-        position: runtime.station.clone(),
-        yaw: runtime.stationYaw,
-      }
-  }
-}
-
-function moveRuntime(
-  runtime: RuntimeAgent,
-  target: StationPlacement,
-  workspaceFloor?: OfficeFloorKey,
-): void {
-  runtime.target.copy(target.position)
-  runtime.targetYaw = target.yaw
-  runtime.path = workspaceFloor
-    ? buildWorkspaceOfficePath(runtime.root.position, target.position, workspaceFloor)
-    : buildOfficePath(runtime.root.position, target.position)
-  runtime.moving = runtime.path.length > 0
 }
 
 function webGlUnavailable(): boolean {
@@ -361,7 +314,7 @@ export function ThreeOfficeScene({
               runtime.pendingStatus = null
               runtime.pendingStatusAt = null
               setCharacterStatus(runtime, 'STARTING')
-              moveRuntime(runtime, {
+              moveOfficeRuntime(runtime, {
                 position: runtime.station.clone(),
                 yaw: runtime.stationYaw,
               })
@@ -786,42 +739,18 @@ export function ThreeOfficeScene({
     const engine = engineRef.current
     if (!engine) return
 
-    const profileByKey = new Map(
-      profiles.map((profile) => [profile.key, profile]),
-    )
     const visibleWorkspaceMembers = workspaceMembers.filter(
       (member) => member.floor === floor,
     )
     workspaceMemberIdsRef.current = new Set(
       visibleWorkspaceMembers.map((member) => member.id),
     )
-    const sceneMembers: SceneMember[] = [
-      ...agents.map((agent) => {
-        const home = officeRoleHomeLocation(agent.agent_profile_key)
-        return {
-          id: agent.id,
-          agent_profile_key: agent.agent_profile_key,
-          name:
-            profileByKey.get(agent.agent_profile_key)?.name ??
-            agent.agent_profile_key,
-          status: agent.status,
-          stageKey: agent.stage_key,
-          zone:
-            floor !== 'build' && home.floor === floor
-              ? home.zone
-              : undefined,
-        }
-      }),
-      ...visibleWorkspaceMembers.map((member) => ({
-        id: member.id,
-        agent_profile_key: member.agent_profile_key,
-        name: member.name,
-        status: member.status,
-        behavior: member.behavior,
-        zone: member.zone,
-        placementIndex: member.placementIndex,
-      })),
-    ]
+    const sceneMembers = officeSceneMembers(
+      agents,
+      profiles,
+      workspaceMembers,
+      floor,
+    )
     const pilotGeneration = pilotGenerationRef.current + 1
     pilotGenerationRef.current = pilotGeneration
     const furniture = officeFurniturePolicy(floor, dioramaPilot)
@@ -891,7 +820,7 @@ export function ThreeOfficeScene({
         setCharacterBehavior(runtime, member.behavior ?? null)
       }
       if (mode === 'live') {
-        const target = stateTarget(runtime, member.status, memberIndex)
+        const target = officeRuntimeStateTarget(runtime, member.status, memberIndex)
 
         if (firstSyncRef.current) {
           runtime.root.visible = true
@@ -913,7 +842,7 @@ export function ThreeOfficeScene({
           runtime.pendingStatus = null
           runtime.pendingStatusAt = null
           setCharacterStatus(runtime, member.status)
-          moveRuntime(
+          moveOfficeRuntime(
             runtime,
             target,
             workspaceMemberIdsRef.current.has(member.id) ? floor : undefined,
@@ -1087,5 +1016,11 @@ export function ThreeOfficeScene({
     )
   }
 
-  return <div ref={hostRef} className="office-three-host" />
+  return (
+    <div
+      ref={hostRef}
+      className="office-three-host"
+      data-office-renderer="three"
+    />
+  )
 }

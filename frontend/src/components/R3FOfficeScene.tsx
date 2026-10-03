@@ -9,17 +9,23 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
 
+import type { AgentProfile, AgentRun, RunStage } from '../api'
 import {
   animateCharacter,
   applyWorkspaceIdlePresentation,
   createCharacterRuntime,
   disposeCharacter,
+  officeMovementYaw,
+  setCharacterBehavior,
   setCharacterSelected,
+  setCharacterStatus,
   type RuntimeAgent,
+  type StationPlacement,
 } from '../office3d/character'
 import {
   createOfficeEnvironment,
   disposeObject,
+  stageCenter,
 } from '../office3d/environment'
 import type { OfficeDioramaPilotMode } from '../office3d/dioramaDebug'
 import { officeFurniturePolicy } from '../office3d/furniturePolicy'
@@ -34,8 +40,18 @@ import {
 } from '../office3d/livingOffice'
 import { officeLightingForHour } from '../office3d/lighting'
 import type { OfficeModeKey } from '../office3d/officeWorld'
+import {
+  moveOfficeRuntime,
+  officeRuntimeStateTarget,
+  officeSceneMembers,
+  type OfficeSceneMember,
+} from '../office3d/runtimeProjection'
 
 export interface R3FOfficeSceneProps {
+  stages: RunStage[]
+  agents: AgentRun[]
+  profiles: AgentProfile[]
+  scope: 'planning' | 'live'
   selectedAgentId: string | null
   onSelectAgent: (agentId: string) => void
   motionPaused: boolean
@@ -257,7 +273,34 @@ function RendererEvidence({
   return null
 }
 
+function stationForMember(
+  member: OfficeSceneMember,
+  memberIndex: number,
+  stages: RunStage[],
+  stations: Map<string, StationPlacement>,
+): StationPlacement {
+  const stageIndex = member.stageKey
+    ? Math.max(
+        0,
+        stages.findIndex(
+          (stage) => stage.stage_key === member.stageKey,
+        ),
+      )
+    : memberIndex
+
+  return (
+    stations.get(member.id) ?? {
+      position: stageCenter(stageIndex),
+      yaw: stageIndex < 3 ? Math.PI : 0,
+    }
+  )
+}
+
 function SceneContents({
+  stages,
+  agents,
+  profiles,
+  scope,
   selectedAgentId,
   onSelectAgent,
   motionPaused,
@@ -275,30 +318,71 @@ function SceneContents({
   const agentLayer = useMemo(() => new THREE.Group(), [])
   const runtimesRef = useRef<Map<string, RuntimeAgent>>(new Map())
   const generationRef = useRef(0)
-  const visibleMembers = useMemo(
-    () => workspaceMembers.filter((member) => member.floor === floor),
-    [floor, workspaceMembers],
+  const stagesRef = useRef(stages)
+  const sceneMembers = useMemo(
+    () =>
+      scope === 'live'
+        ? officeSceneMembers(agents, profiles, [], floor)
+        : officeSceneMembers([], profiles, workspaceMembers, floor),
+    [agents, floor, profiles, scope, workspaceMembers],
+  )
+  const sceneMembersRef = useRef(sceneMembers)
+  const structureKey = useMemo(
+    () =>
+      sceneMembers
+        .map((member) =>
+          [
+            member.id,
+            member.agent_profile_key,
+            member.name,
+            member.stageKey ?? '',
+            member.zone ?? '',
+            member.placementIndex ?? '',
+          ].join(':'),
+        )
+        .join('|'),
+    [sceneMembers],
+  )
+  const stageStructureKey = useMemo(
+    () =>
+      scope === 'live'
+        ? stages.map((stage) => stage.stage_key).join('|')
+        : '',
+    [scope, stages],
   )
   const lighting = officeLightingForHour(officeHour)
 
   useEffect(() => {
+    stagesRef.current = stages
+  }, [stages])
+
+  useEffect(() => {
+    sceneMembersRef.current = sceneMembers
+  }, [sceneMembers])
+
+  useEffect(() => {
     const generation = generationRef.current + 1
     generationRef.current = generation
+    const members = sceneMembersRef.current
+    const currentStages = scope === 'live' ? stagesRef.current : []
     const furniture = officeFurniturePolicy(floor, dioramaPilot)
     const stations = createOfficeEnvironment(
       environment,
-      [],
-      visibleMembers,
+      currentStages,
+      members,
       floor,
       officeMode,
       furniture.initialPresentation,
     )
 
     const runtimes = new Map<string, RuntimeAgent>()
-    visibleMembers.forEach((member) => {
-      const station = stations.get(member.id)
-      if (!station) return
-
+    members.forEach((member, memberIndex) => {
+      const station = stationForMember(
+        member,
+        memberIndex,
+        currentStages,
+        stations,
+      )
       const runtime = createCharacterRuntime(
         member,
         member.name,
@@ -306,6 +390,22 @@ function SceneContents({
         invalidate,
       )
       runtime.root.userData.agentId = member.id
+
+      if (scope === 'live') {
+        const target = officeRuntimeStateTarget(
+          runtime,
+          member.status,
+          memberIndex,
+        )
+        runtime.root.position.copy(target.position)
+        runtime.root.rotation.y = target.yaw
+        runtime.target.copy(target.position)
+        runtime.targetYaw = target.yaw
+        runtime.path = []
+        runtime.moving = false
+        setCharacterStatus(runtime, member.status)
+      }
+
       runtimes.set(member.id, runtime)
       agentLayer.add(runtime.root)
     })
@@ -399,8 +499,41 @@ function SceneContents({
     floor,
     invalidate,
     officeMode,
-    visibleMembers,
+    scope,
+    stageStructureKey,
+    structureKey,
   ])
+
+  useEffect(() => {
+    if (scope !== 'live') return
+
+    sceneMembers.forEach((member, memberIndex) => {
+      const runtime = runtimesRef.current.get(member.id)
+      if (!runtime) return
+
+      runtime.finalStatus = member.status
+      if (runtime.behavior !== (member.behavior ?? null)) {
+        setCharacterBehavior(runtime, member.behavior ?? null)
+      }
+
+      const target = officeRuntimeStateTarget(
+        runtime,
+        member.status,
+        memberIndex,
+      )
+      if (
+        runtime.currentStatus !== member.status ||
+        runtime.target.distanceTo(target.position) > 0.1
+      ) {
+        runtime.pendingStatus = null
+        runtime.pendingStatusAt = null
+        setCharacterStatus(runtime, member.status)
+        moveOfficeRuntime(runtime, target)
+      }
+    })
+
+    invalidate()
+  }, [invalidate, sceneMembers, scope])
 
   useEffect(() => {
     runtimesRef.current.forEach((runtime) => {
@@ -412,21 +545,46 @@ function SceneContents({
     invalidate()
   }, [invalidate, selectedAgentId])
 
-  useFrame((state) => {
-    let animated = false
+  useFrame((state, frameDelta) => {
+    const now = state.clock.elapsedTime * 1000
+    const delta = Math.min(0.05, Math.max(0.001, frameDelta))
+
     runtimesRef.current.forEach((runtime) => {
-      animated =
-        animateCharacter(runtime, state.clock.elapsedTime * 1000, motionPaused) ||
-        animated
-      animated =
+      if (
+        scope === 'live' &&
+        !motionPaused &&
+        runtime.moving &&
+        runtime.path.length > 0
+      ) {
+        const waypoint = runtime.path[0]
+        const direction = waypoint.clone().sub(runtime.root.position)
+        const distance = direction.length()
+        const step = 2.15 * delta
+
+        if (distance <= step) {
+          runtime.root.position.copy(waypoint)
+          runtime.path.shift()
+          runtime.moving = runtime.path.length > 0
+          if (!runtime.moving) {
+            runtime.root.rotation.y = runtime.targetYaw
+          }
+        } else {
+          direction.normalize()
+          runtime.root.position.addScaledVector(direction, step)
+          runtime.root.rotation.y = officeMovementYaw(direction, 'live')
+        }
+      }
+
+      animateCharacter(runtime, now, motionPaused)
+
+      if (scope === 'planning') {
         applyWorkspaceIdlePresentation(
           runtime,
-          state.clock.elapsedTime * 1000,
+          now,
           !runtime.moving && !motionPaused,
-        ) || animated
+        )
+      }
     })
-
-    if (animated && !motionPaused) invalidate()
   })
 
   const handleAgentClick = (event: ThreeEvent<MouseEvent>) => {
@@ -480,6 +638,7 @@ export function R3FOfficeScene(props: R3FOfficeSceneProps) {
     <div
       className="office-three-host office-three-host-r3f"
       data-office-renderer="r3f"
+      data-office-scope={props.scope}
     >
       <Canvas
         className="office-r3f-canvas-shell"
@@ -504,13 +663,17 @@ export function R3FOfficeScene(props: R3FOfficeSceneProps) {
           gl.domElement.classList.add('office-three-canvas')
           gl.domElement.setAttribute(
             'aria-label',
-            'R3F Planning Office 3D scene',
+            props.scope === 'live'
+              ? 'R3F Live Office 3D scene'
+              : 'R3F Planning Office 3D scene',
           )
           gl.domElement.tabIndex = 0
         }}
         fallback={
           <div className="office-three-fallback">
-            R3F Planning Office WebGL unavailable
+            {props.scope === 'live'
+              ? 'R3F Live Office WebGL unavailable'
+              : 'R3F Planning Office WebGL unavailable'}
           </div>
         }
         onPointerMissed={() => {
