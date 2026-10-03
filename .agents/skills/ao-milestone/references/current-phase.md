@@ -3,11 +3,15 @@
 ## Current checkpoint
 
 ```text
-main@8c6f94d259be27093b02d9017dbb1722bd956d31
+main@3acba39a59d991f019e5208be70cb44290320ada
 Phase 22 Enterprise Trust Layer — COMPLETE / MERGED
 Phase 23 Release Hardening — COMPLETE / MERGED
 Phase 24 Office Operating Experience — COMPLETE / MERGED
 Phase 25 Decision & KPI Cockpit — COMPLETE / MERGED
+RC1 Slice 1 Premium Product Framing — COMPLETE / MERGED
+RC1 Slice 2A Cinematic Lighting — COMPLETE / MERGED
+RC1 Slice 2B Camera Composition — COMPLETE / MERGED
+RC1 Zero-Friction Navigation — COMPLETE / MERGED
 ```
 
 Canonical full verification remains:
@@ -15,6 +19,10 @@ Canonical full verification remains:
 ```bash
 ./scripts/verify.sh
 ```
+
+A GitHub Actions result counts as release evidence only when the runner actually
+starts and the repository, backend, and frontend jobs execute their real steps.
+A pre-run infrastructure failure with missing steps/logs is not green evidence.
 
 ## Phase 22–25 exact evidence
 
@@ -63,8 +71,8 @@ merge commit: e0090ed405bc36522a562b75d066b750418d3dd7
 
 Accepted production state:
 
-- Office command rail now reads as a mission-control surface with stronger Project/mode/status hierarchy.
-- existing Office-world clock, lifecycle, presence, next-event, floor selector, Context Rail, Operations Dock, and Composer share one dark control-room presentation language.
+- Office command rail reads as a mission-control surface with stronger Project/mode/status hierarchy.
+- Office-world clock, lifecycle, presence, next-event, floor selector, Context Rail, Operations Dock, and Composer share one dark control-room presentation language.
 - presentation does not infer Run/Task state or fabricate agent activity.
 - Planning / Live / Replay canonical renderer inputs remain unchanged.
 
@@ -84,6 +92,66 @@ Accepted production state:
 - Task Board remains a read-only delivery pipeline: Planning / Ready / Running / In review / Needs you / Accepted.
 - no drag/drop state mutation, auto-approval, auto-delivery, fabricated KPI, or agent/person productivity ranking is introduced.
 
+## RC1 merged evidence
+
+### Slice 1 — Premium product framing and architecture foundation
+
+```text
+PR: #61
+exact verified head: c54ab44df586161aefa285a535f4392df4c58424
+GitHub Actions verify #1607: SUCCESS
+merge commit: f40b58c8f97a58fc5f8660bd7e179ba406608f0f
+```
+
+Accepted state:
+
+- Office surfaces use the RC1 dark/futuristic control-room framing.
+- `premiumEnvironment.ts` establishes a presentation-only architecture layer.
+- that initial module was intentionally staged rather than claimed as active production 3D.
+
+### Slice 2A — Cinematic Office lighting
+
+```text
+PR: #62
+exact verified head: 4c4d178fb2859fa64302d6080f09845c10af891e
+GitHub Actions verify #1609: SUCCESS
+merge commit: 6245c28aa166c14ea5283febb8e7ae0cc7feed6e
+```
+
+Accepted state:
+
+- morning/day/evening/night lighting profiles have stronger material separation and readable dark-mode contrast;
+- no extra global-light truth or operational-state source was introduced.
+
+### Slice 2B — Camera composition
+
+```text
+PR: #63
+exact verified head: 16594e5bb1c4f6b16150d05bc9aacff01dbb2171
+GitHub Actions verify #1611: SUCCESS
+merge commit: 3c553d888702fbbde1856107a52ab232e0c9cf6c
+```
+
+Accepted state:
+
+- overview and semantic camera presets are tighter and more diorama-like;
+- camera movement remains bounded by semantic views rather than unrestricted free navigation.
+
+### Zero-Friction Navigation
+
+```text
+PR: #64
+exact verified head: 964117e0d9fc3ac03d3ca649116365be8bd95403
+GitHub Actions verify #1613: SUCCESS
+merge commit: 3acba39a59d991f019e5208be70cb44290320ada
+```
+
+Accepted state:
+
+- primary navigation is Office -> Inbox -> Task Board -> Project KPI;
+- lower-frequency registries and control surfaces remain available under More tools;
+- no route or capability was deleted and no automatic decision/execution behavior was added.
+
 ## Current product value loop
 
 ```text
@@ -97,7 +165,8 @@ Describe outcome
   -> ACCEPTED / change dossier / KPI
 ```
 
-The human remains the final decision maker. Technical `COMPLETED` and human `DELIVERED` remain distinct.
+The human remains the final decision maker. Technical `COMPLETED` and human
+`DELIVERED` remain distinct.
 
 ## Current renderer and Office state
 
@@ -105,7 +174,28 @@ The human remains the final decision maker. Technical `COMPLETED` and human `DEL
 - Three.js remains a tested renderer recovery path.
 - HTML operational surfaces remain the final non-WebGL fallback.
 - Living Office time, occupancy, work presence, navigation, and room behavior remain deterministic projections over canonical facts plus explicitly presentation-only ambience.
-- Existing production character assets remain third-party/provenance-pinned; no first-party Blender art is falsely claimed.
+- RC1 premium framing, lighting, and camera composition are active in `main`.
+- the premium 3D architecture foundation exists but is not considered active production architecture until its dedicated wiring slice passes the renderer/performance gates.
+- existing production character assets remain third-party/provenance-pinned; no first-party Blender art is falsely claimed.
+
+## Dependency / release-hardening lane
+
+Dependabot PRs are tracked separately from RC1 product slices so renderer and
+toolchain changes do not destabilize visual work mid-slice.
+
+```text
+#53 httpx        previous verify #1596 SUCCESS — requires fresh latest-main verification before merge
+#54 three.js     previous verify #1597 SUCCESS — renderer-impacting; requires full latest-main visual/render verification
+#55 pytest       previous verify #1598 SUCCESS — requires fresh latest-main verification
+#56 ruff         previous verify #1599 SUCCESS — requires fresh latest-main verification
+#57 setuptools   previous verify #1600 SUCCESS — requires fresh latest-main verification
+#58 uvicorn      previous verify #1601 SUCCESS — runtime-impacting; requires fresh latest-main verification
+#59 frontend dev verify #1602 FAILURE — npm ERESOLVE: TypeScript 7 is outside typescript-eslint 8.71 peer range
+```
+
+Old successful runs are historical evidence only because those PRs were created
+against an earlier `main`. They are not authorization to merge into the RC1
+checkpoint without a fresh exact-head run.
 
 ## Known limitations that remain explicit
 
@@ -113,19 +203,25 @@ Agent Office is not yet claiming enterprise-complete:
 
 - multi-user identity / SSO / RBAC / separation of duties;
 - multi-tenant cloud isolation;
-- automatic Git provider push / PR / merge;
+- automatic Git provider push / PR / merge from Agent Office runtime behavior;
 - webhook/email/chat notification transport;
 - automatic retention/worktree cleanup;
 - a second production executor;
 - a generic cross-domain business-workflow step model;
 - Three.js fallback retirement;
-- a custom first-party production environment/character asset pack.
+- a custom first-party production environment/character asset pack;
+- completed RC1 browser/device visual-regression matrix and adaptive-quality release gate.
 
-## Next checkpoint
+## Active checkpoint
 
 ```text
 Agent Office RC1 — Premium 3D Product Overhaul
-status: CANDIDATE / REQUIRES DIFF AUDIT AGAINST LATEST MAIN
+active isolated branch: rc1-premium-environment-identity
+base: main@3acba39a59d991f019e5208be70cb44290320ada
+scope: activate renderer-safe premium architecture + stronger per-floor spatial identity
+status: IN DEVELOPMENT / MUST PASS EXACT-HEAD FULL CI BEFORE MERGE
 ```
 
-The RC1 branch may evolve the visual experience substantially, but it must preserve the Phase 22–25 truth, human-decision, repository-safety, and exact-head verification contracts before merge.
+After this slice, continue character/environment presentation, Composer-first UX,
+Decision/Board/KPI/Dossier polish, adaptive quality/performance, visual
+regression/device-browser QA, dependency hardening, and RC1 release packaging.
