@@ -1,115 +1,154 @@
 # Living Office — Technical Design
 
-Status: Initial implementation design  
-Depends on: merged Phase 9C planning foundation  
-Primary frontend: React + TypeScript + Three.js
+Status: Production design, updated for RC1  
+Renderer authority: R3F production, Three.js recovery  
+Primary frontend: React + TypeScript + React Three Fiber / Three.js
 
 ## 1. Architecture boundary
 
-The Living Office is a projection layer.
-
-It does not become a new source of operational truth.
+Living Office is a projection layer. It is not a second workflow engine and is
+not a source of operational truth.
 
 ```text
 Canonical planning / execution state
         +
-Office schedule / ambient policy
-        ↓
-Presence resolver
-        ↓
-OfficePresenceMember[]
-        ↓
-ThreeOfficeScene
-        ↓
-Rendered character + floor + zone
+Office schedule / explicit ambient policy
+        |
+        v
+Presence + runtime projection
+        |
+        v
+OfficePresenceMember[] / OfficeSceneMember[]
+        |
+        v
+R3FOfficeScene
+        |
+        +--> environment.ts
+        +--> premiumEnvironment.ts
+        +--> character.ts
+        +--> lighting.ts
+        +--> camera.ts
 ```
 
-The renderer never decides whether work is factually happening.
+The renderer never decides whether work factually happened.
 
-## 2. Initial frontend modules
+## 2. Canonical truth and presentation truth
+
+Operational truth remains rooted in durable application records including:
+
+```text
+Project
+Task
+Run
+AgentRun
+Event
+Evidence
+ResultReview
+```
+
+Living Office may also render explicitly classified planning or ambient
+presence. Those projections must remain visually and semantically distinct from
+factual execution.
+
+No Office presentation code may fabricate:
+
+- Run progress;
+- tests or verification;
+- conversations;
+- meetings;
+- KPI;
+- approvals/delivery;
+- repository changes.
+
+## 3. Primary frontend modules
 
 ### `office3d/livingOffice.ts`
 
-Owns:
+Owns floor definitions, zone taxonomy, deterministic presence policy, planning
+presence, and presentation-only ambient rules.
 
-- floor definitions
-- zone taxonomy
-- presence-state taxonomy
-- deterministic ambient window rules
-- planning-team -> presence projection
-- ambient profile -> presence projection
+### `office3d/runtimeProjection.ts`
 
-This is presentation logic only.
+Projects canonical Run/AgentRun state and workspace presence into renderer-safe
+scene members. It is the important truth seam between application state and
+3D runtime state.
 
 ### `office3d/environment.ts`
 
-Owns:
+Owns procedural floor geometry, functional zones, deterministic station anchors,
+collision/path targets, and the established room/detail props.
 
-- procedural floor geometry
-- floor-specific functional zones
-- deterministic station/zone anchors
-- collision-safe path targets
-- Run Office backwards-compatible Build-floor defaults
+### `office3d/premiumEnvironment.ts`
+
+Owns RC1 presentation-only architectural framing. It is mounted by the R3F
+production scene after the canonical environment is created.
+
+The premium layer:
+
+- adds no workflow state;
+- adds no `THREE.Light` objects;
+- remains outside the walkable collision volume;
+- uses instancing for repeated static geometry;
+- gives Commons, Build, and Strategy distinct spatial identities.
+
+See `RC1_PREMIUM_3D_ARCHITECTURE.md`.
 
 ### `office3d/character.ts`
 
-Owns:
+Owns character model variants, role appearance, nameplates, animation mixer,
+selection treatment, and renderer runtime behavior.
 
-- model variants
-- role-specific visual appearance
-- nameplates
-- animation mixer
-- generic character runtime source contract
+It accepts canonical AgentRun-derived members as well as explicitly classified
+planning/ambient presentation members. Presentation classification never
+upgrades ambient presence into execution truth.
 
-It accepts both factual AgentRun-derived characters and non-operational planning/ambient presence sources.
+### `office3d/lighting.ts`
+
+Owns deterministic time-of-day lighting profiles. Lighting changes readability
+and atmosphere only.
+
+### `office3d/camera.ts`
+
+Owns semantic camera presets and bounded camera-control policy.
+
+### `components/R3FOfficeScene.tsx`
+
+Owns the production WebGL/R3F lifecycle, scene composition, environment rebuild,
+character runtime synchronization, pointer selection, live/replay motion,
+labels, camera focus, and development renderer evidence.
 
 ### `components/ThreeOfficeScene.tsx`
 
-Owns:
-
-- Three.js engine lifecycle
-- active-floor environment creation
-- character runtime synchronization
-- camera / controls
-- click projection
-- live/replay animation scheduling
+Recovery renderer only. It remains tested while the fallback sunset criteria in
+ADR-0004 are unmet. New speculative visual work does not need duplicate feature
+implementation here.
 
 ### `components/OfficeScene.tsx`
 
-Owns:
-
-- semantic scene wrapper
-- floor selector
-- renderer mode/floor metadata
-- forwarding floor and presence state to ThreeOfficeScene
+Owns the semantic renderer wrapper and recovery/fallback selection.
 
 ### `pages/OfficeWorkspacePage.tsx`
 
-Owns:
+Owns workspace Office composition, active floor, project/planning context,
+Office clock projection, Composer integration, and selected-member inspection.
 
-- current project/planning state
-- selected floor
-- local office clock refresh
-- projection of TeamProposal / ComposerThread into OfficePresenceMember
-- ambient fallback when no planning team is active
-
-## 3. Floor model
-
-Initial keys:
+## 4. Floor model
 
 ```text
-commons  -> L1
-build    -> L2
-strategy -> L3
+commons  -> L1 -> social / arrival hub
+build    -> L2 -> engineering control room
+strategy -> L3 -> planning / decision studio
 ```
 
-Run Office defaults to `build` unless a later operational mapping specifies another floor.
+Run Office keeps Build as the normal operational default unless a canonical
+mapping says otherwise.
 
-Workspace floor switching is presentation state and must not modify ComposerThread, Run, AgentRun, or repository state.
+Changing workspace floor is presentation state. It must not create or mutate a
+Task, Run, AgentRun, ResultReview, or repository state.
 
-## 4. Presence identity
+## 5. Presence identity
 
-Initial runtime shape:
+The presentation contract remains conceptually:
 
 ```ts
 interface OfficePresenceMember {
@@ -125,43 +164,15 @@ interface OfficePresenceMember {
 }
 ```
 
-Future factual execution projection can add `truth: 'OPERATIONAL'` once the Activity Interpreter contract is introduced.
+Operational members come from the Run/AgentRun projection path rather than being
+reclassified from ambient presence.
 
-Planning identity uses stable synthetic presentation IDs derived from durable thread + role keys. These IDs are not AgentRun IDs.
+Stable IDs are required so floor/zone changes move an existing character rather
+than creating a fictional new worker.
 
-Ambient IDs are role scoped and presentation-only.
+## 6. Behavior policy
 
-## 5. Planning projection rules
-
-For a TeamProposal:
-
-- INCLUDED -> may appear as planning presence
-- DEFERRED -> does not appear as active project worker
-- EXCLUDED -> does not appear as active project worker
-
-Thread state mapping:
-
-```text
-ACTIVE        -> PLANNING
-AWAITING_USER -> WAITING_USER
-```
-
-Initial planning floor:
-
-```text
-L3 Strategy
-```
-
-Initial zones:
-
-- first planning roles -> planning table
-- overflow -> architecture wall
-
-## 6. Ambient schedule and behavior
-
-The browser-local schedule remains a presentation policy, not an execution source.
-
-Phase 10B adds explicit behavior semantics:
+Presentation behaviors may include:
 
 ```text
 ARRIVAL
@@ -177,166 +188,49 @@ PRAYER_QUIET
 OFFLINE
 ```
 
-Behavior is derived from presence state, zone, and truth type. It cannot upgrade
-`AMBIENT` into operational work.
+Behavior remains deterministic and bounded. Ambient routines must never override
+higher-priority factual Run state.
 
-Role-specific ambient tendencies are deterministic. Each standard role has
-preferred coffee, lunch, and after-hours zones. Stable hashing ensures a reload
-does not randomly assign a different personality.
-
-To avoid synchronized "NPC scheduler" behavior:
-
-- arrivals are staggered per role during the arrival window
-- coffee participation is bounded
-- lunch participation is bounded
-- after-hours occupancy is bounded
-- nonparticipants remain AVAILABLE at their home zone
-- planning roles are excluded from ambient duplication
-
-A future backend/configuration phase should replace browser-local schedule policy
-with durable office settings while preserving this resolver contract.
-
-## 7. Prayer schedule contract
-
-Prayer behavior is explicitly reserved behind a provider/configuration contract.
-
-Do not hard-code fixed daily prayer times.
-
-Future input should contain at minimum:
-
-```text
-timezone
-date
-configured location or schedule source
-prayer name
-window start
-window end
-enabled flag
-```
-
-The presence resolver may only choose PRAYER_BREAK when:
-
-- the feature is enabled
-- a valid current prayer window exists
-- a higher-priority factual work/safety state does not override it
-
-The 3D representation should remain respectful and minimal.
-
-## 8. Priority resolution target
-
-Future unified resolver precedence:
+Priority model:
 
 ```text
 critical factual event
-> active factual AgentRun work
+> active factual AgentRun state
 > waiting user / planning decision
 > configured scheduled event
 > ambient routine
 ```
 
-This prevents coffee/social ambience from visually overriding real urgent work.
+Prayer behavior remains behind explicit schedule/configuration data; fixed daily
+prayer times must not be hard-coded.
 
-## 9. Floor rendering strategy
+## 7. Movement and collision
 
-Only the selected workspace floor is built into the active environment group.
+Each Office zone owns deterministic station placements.
 
-When the selected floor changes:
+- selected-floor members receive stable targets;
+- Build AgentRuns preserve established role workstation mappings;
+- movement uses the shared runtime path loop;
+- premium architecture is deliberately outside the walkable volume;
+- presentation architecture must not silently create new collision truth.
 
-1. dispose current procedural environment meshes/materials
-2. build the selected floor
-3. remove character runtimes that are not on the selected floor
-4. instantiate/synchronize members belonging to the new floor
-5. render without mutating canonical state
+Live and Replay share movement orientation rules so a character does not appear
+to walk backwards when the same canonical direction is replayed.
 
-The current approach intentionally avoids simultaneously rendering all floors.
+## 8. Animation policy
 
-## 10. Zone anchoring and movement
+Only verified animation clips may be claimed.
 
-Each `OfficeZoneKey` owns one or more deterministic `StationPlacement` anchors.
+Missing typing/review/talking/sitting clips fall back to supported animation
+rather than pretending the action exists. Historical experiments with
+incompatible rigs remain rejected unless an offline, deterministic retargeting
+pipeline is introduced with provenance and visual-regression evidence.
 
-Phase 10B adds:
+Animation is presentation, never Evidence.
 
-- explicit zone capacity
-- preferred `placementIndex`
-- unique slot reservation when capacity permits
-- deterministic ten-minute ambient beats
+## 9. Time-of-day lighting
 
-When a stable ambient member receives a new zone or placement index, its
-presentation ID remains unchanged. `ThreeOfficeScene` therefore keeps the same
-character runtime and moves it to the new target through the existing shared
-path/movement loop rather than teleporting or creating a new avatar.
-
-For the Build floor, factual AgentRuns without an explicit zone preserve the
-established role workstation mapping.
-
-This keeps Run Office behavior compatible while allowing Living Office
-presentation to move ambient members without introducing a second movement
-engine.
-
-## 11. Animation policy and rig compatibility
-
-The current character bootstrap guarantees only:
-
-```text
-Idle
-Walk
-Run
-```
-
-Phase 10B is behavior-aware but does not pretend unsupported clips exist:
-
-- movement -> Walk
-- stationary behavior -> best compatible local clip
-- missing behavior-specific clip -> Idle
-- active planning/focus may vary idle playback rate without claiming a new action
-
-A CC0 Quaternius Universal Animation Library candidate was audited because it
-contains useful clips such as `Sitting_Idle_Loop`,
-`Sitting_Talking_Loop`, `Idle_Talking_Loop`, `Interact`, and
-`PickUp_Table`.
-
-A strict build-time bone-target compatibility check rejected the candidate. The
-library targets a newer `DEF-*` rig while the five current Agent Office
-character binaries use a different skeleton. The experiment was fully rolled
-back.
-
-Therefore Phase 10B does **not** ship runtime skeleton retargeting, incompatible
-animation assets, or furniture that implies a sitting pose the current rig
-cannot truthfully render.
-
-Future seated/typing/talking animation requires one of:
-
-1. character assets authored for the same verified rig as the animation pack, or
-2. an explicit offline retargeting pipeline with deterministic output,
-   provenance, and visual regression review.
-
-Animation remains presentation only and never becomes evidence.
-
-## 12. Member inspection
-
-Workspace characters are selectable.
-
-The compact inspector exposes:
-
-- display name
-- derived behavior
-- role
-- floor and zone
-- truth classification
-
-Truth classification is rendered explicitly as either:
-
-```text
-Planning truth
-Ambient presentation
-```
-
-Changing floor clears selection so an inspector cannot remain attached to a
-member that is no longer visible.
-
-## 13. Time-of-day lighting
-
-Phase 10B introduces deterministic presentation profiles:
+Profiles remain:
 
 ```text
 morning
@@ -345,87 +239,105 @@ evening
 night
 ```
 
-Profiles control:
+They control background, hemisphere ambience, directional key light, and
+exposure. RC1 increases cinematic separation while keeping status/nameplate
+legibility and existing light-count budgets.
 
-- scene background
-- hemisphere sky/ground color and intensity
-- directional key light
-- directional fill light
-- tone-mapping exposure
+## 10. Premium environment composition
 
-Night is intentionally dimmer than day but must remain readable. Lighting does
-not alter planning or operational state.
+RC1 mounts `premiumEnvironment.ts` after the canonical procedural environment.
+This ordering is intentional:
 
-## 14. Performance guardrails
+```text
+clear previous environment
+  -> build Office shell + selected functional floor
+  -> resolve deterministic station placements
+  -> mount premium presentation architecture
+  -> mount optional verified furniture kit
+  -> instantiate/synchronize characters
+```
 
-- one active procedural floor
-- shared GLB asset promise cache
-- deterministic model variants per role
-- no per-character uncontrolled requestAnimationFrame loop
-- current shared scene loop retained
-- stop scheduling frames when no movement/active animation requires them
-- cap renderer pixel ratio as today
+The premium layer contains abstract signal geometry only. It does not display
+fake graphs, fake service health, fake progress, fake KPI, or fake dialogue.
 
-## 15. Testing
+## 11. Performance guardrails
 
-Unit tests must cover:
+Current guardrails include:
 
-- floor catalog
-- planning-team disposition filtering
-- AWAITING_USER presence mapping
-- ambient schedule windows
-- after-hours reduced occupancy
-- deterministic zone anchors
-- existing Run Office workstation clearance
+- only one selected floor is active;
+- shared asset caches;
+- deterministic model variants;
+- one shared R3F frame lifecycle;
+- bounded device pixel ratio;
+- no uncontrolled per-character requestAnimationFrame loop;
+- repeated premium architecture uses `THREE.InstancedMesh`;
+- no extra premium-layer light objects;
+- static architecture has no per-frame animation.
 
-Integration tests should verify:
+The V2 Diorama reference ceilings remain useful regression evidence:
 
-- floor selector appears on workspace Office
-- changing floor does not create a Run
-- Start Run remains governed by execution-promotion rules
-- planning TeamProposal presence does not instantiate AgentRun
+```text
+Desktop: draw calls <= 276, triangles <= 33,304
+Mobile:  draw calls <= 225, triangles <= 25,320
+```
 
-## 16. Incremental implementation plan
+RC1 adaptive-quality work may introduce tighter product-specific budgets later,
+but must do so from measured evidence rather than browser/user-agent guesses.
 
-### Slice 10A — Foundation
+## 12. Camera and interaction
 
-- floor/zone model
-- floor selector
-- distinct L1/L2/L3 environment
-- planning presence
-- ambient schedule foundation
-- backward-compatible Run Office
+RC1 uses closer semantic camera compositions so characters and room identity
+occupy more of the viewport.
 
-### Slice 10B — Presence UX
+Free pan/rotate remain constrained. Selection may temporarily focus the camera
+on a character; Replay may temporarily focus a factual event participant.
+Neither behavior changes Run state.
 
-Implemented on `phase-10b-presence-behavior`:
+Hover and selection are presentation-only. HTML operational surfaces remain the
+complete accessibility/fallback route for decisions when 3D is unavailable.
 
-- selected planning/ambient member inspector
-- behavior-aware selected-floor summary
-- richer role-specific ambient zone preferences
-- deterministic movement between zone anchors
-- staggered arrival
-- bounded coffee/lunch/after-hours participation
-- morning/day/evening/night lighting
-- behavior-aware character runtime with safe Idle fallback
-- strict incompatible-animation rejection
+## 13. Testing and release evidence
 
-### Slice 10C — Schedule configuration
+Unit/integration coverage should continue to lock:
 
-- durable office timezone/hours
-- ambient policy settings
-- prayer schedule provider contract
-- user-configurable break/social ambience
+- floor and zone catalogs;
+- planning/ambient truth classification;
+- deterministic presence and placement;
+- Run Office workstation clearance;
+- movement orientation;
+- camera bounds;
+- lighting profiles;
+- premium architecture floor identity;
+- zero premium-layer light additions;
+- batched premium geometry budget;
+- production Office guard;
+- Planning / Live / Replay renderer smoke.
 
-### Slice 10D — Event-driven activity
+A GitHub Actions run is accepted only if its runner starts and repository,
+backend, and frontend job steps actually execute and pass. Missing-step/log
+infrastructure failures are not green.
 
-- canonical PlanningEvent / AgentRun / telemetry interpreter
-- IMPLEMENTING / TESTING / REVIEWING / DOCUMENTING projection
-- factual movement between work zones
+## 14. Recovery and sunset
 
-### Slice 10E — Visual polish
+Normal path:
 
-- expanded startup-office assets
-- compatible/retargeted additional animation clips
-- optional rooftop/breakout floor
-- controlled ambience density
+```text
+R3F -> Three.js recovery -> HTML operational fallback
+```
+
+The Three.js path may be retired only through the criteria in
+`ADR-0004-office-renderer-evolution.md`, including visual regression,
+device/browser evidence, failure observability, rollback planning, and proof
+that no production-only capability remains exclusive to the fallback.
+
+## 15. RC1 continuation
+
+After premium environment activation, the remaining visual/product work is:
+
+1. richer character presentation and grounded material treatment;
+2. Composer-first zero-friction workflow refinement;
+3. Decision Inbox / Board / KPI / Dossier polish;
+4. adaptive quality/performance;
+5. deterministic visual regression and browser/device QA;
+6. dependency hardening on latest `main`;
+7. RC1 release packaging and rollback evidence.
