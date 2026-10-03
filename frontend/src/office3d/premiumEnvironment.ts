@@ -129,17 +129,6 @@ function addPerimeterArchitecture(
   group: THREE.Group,
   palette: PremiumPalette,
 ): void {
-  const frameMaterial = material(palette.metal, {
-    metalness: 0.48,
-    roughness: 0.34,
-  })
-  const stripMaterial = material(palette.accentSoft, {
-    emissive: palette.accent,
-    emissiveIntensity: 1.05,
-    metalness: 0.12,
-    roughness: 0.26,
-  })
-
   const frameSpecs: BoxSpec[] = []
   const stripSpecs: BoxSpec[] = []
 
@@ -163,8 +152,23 @@ function addPerimeterArchitecture(
     frameSpecs.push({ size: [17.6, 0.05, 0.05], position: [0, 3.02, z] })
   }
 
-  batchedBoxes(group, 'office-premium-perimeter-frame', frameSpecs, frameMaterial)
-  batchedBoxes(group, 'office-premium-perimeter-signals', stripSpecs, stripMaterial)
+  batchedBoxes(
+    group,
+    'office-premium-perimeter-frame',
+    frameSpecs,
+    material(palette.metal, { metalness: 0.48, roughness: 0.34 }),
+  )
+  batchedBoxes(
+    group,
+    'office-premium-perimeter-signals',
+    stripSpecs,
+    material(palette.accentSoft, {
+      emissive: palette.accent,
+      emissiveIntensity: 1.05,
+      metalness: 0.12,
+      roughness: 0.26,
+    }),
+  )
 }
 
 function addRearCommandWall(
@@ -172,40 +176,36 @@ function addRearCommandWall(
   palette: PremiumPalette,
   floor: OfficeFloorKey,
 ): void {
-  const backing = material(palette.wall, {
-    metalness: 0.26,
-    roughness: 0.46,
-  })
-  const glass = material(0x10242f, {
-    emissive: palette.accentSoft,
-    emissiveIntensity: 0.46,
-    metalness: 0.08,
-    roughness: 0.22,
-    transparent: true,
-    opacity: 0.82,
-  })
-  const accent = material(palette.accentSoft, {
-    emissive: palette.accent,
-    emissiveIntensity: 1.25,
-    metalness: 0.18,
-    roughness: 0.2,
-  })
-
   batchedBoxes(
     group,
     'office-premium-command-wall-shell',
-    [{ size: [7.8, 1.72, 0.12], position: [0, 1.68, -6.78] }],
-    backing,
+    [
+      { size: [7.8, 1.72, 0.12], position: [0, 1.68, -6.78] },
+      { size: [8.35, 0.09, 0.18], position: [0, 2.61, -6.79] },
+      { size: [8.35, 0.09, 0.18], position: [0, 0.75, -6.79] },
+    ],
+    material(palette.wall, { metalness: 0.26, roughness: 0.46 }),
   )
   batchedBoxes(
     group,
     'office-premium-command-wall-glass',
-    [{ size: [7.22, 1.28, 0.035], position: [0, 1.68, -6.69] }],
-    glass,
+    [
+      { size: [7.22, 1.28, 0.035], position: [0, 1.68, -6.69] },
+      { size: [1.18, 1.05, 0.03], position: [-4.72, 1.63, -6.63] },
+      { size: [1.18, 1.05, 0.03], position: [4.72, 1.63, -6.63] },
+    ],
+    material(0x10242f, {
+      emissive: palette.accentSoft,
+      emissiveIntensity: 0.46,
+      metalness: 0.08,
+      roughness: 0.22,
+      transparent: true,
+      opacity: 0.82,
+    }),
   )
 
-  // Abstract geometry only: these bars never encode progress, KPI, dialogue,
-  // test state, availability, or live telemetry.
+  // Decorative signal geometry only. It never represents progress, KPI,
+  // dialogue, test state, availability, activity, or live telemetry.
   const signalSpecs: BoxSpec[] = []
   for (const x of [-2.45, -0.82, 0.82, 2.45]) {
     signalSpecs.push(
@@ -219,7 +219,17 @@ function addRearCommandWall(
     size: [0.58, 0.07, 0.035],
     position: [-0.72 + floorIndex * 0.72, 0.63, -6.64],
   })
-  batchedBoxes(group, 'office-premium-command-wall-signals', signalSpecs, accent)
+  batchedBoxes(
+    group,
+    'office-premium-command-wall-signals',
+    signalSpecs,
+    material(palette.accentSoft, {
+      emissive: palette.accent,
+      emissiveIntensity: 1.25,
+      metalness: 0.18,
+      roughness: 0.2,
+    }),
+  )
 
   const dormantFloorSpecs: BoxSpec[] = []
   for (let index = 0; index < 3; index += 1) {
@@ -277,8 +287,7 @@ function addSuspendedCommandBeacon(
   inner.rotation.z = Math.PI / 7
   beacon.add(inner)
 
-  const core = new THREE.Mesh(new THREE.SphereGeometry(0.24, 20, 14), coreMaterial)
-  beacon.add(core)
+  beacon.add(new THREE.Mesh(new THREE.SphereGeometry(0.24, 20, 14), coreMaterial))
 
   batchedBoxes(
     beacon,
@@ -294,13 +303,6 @@ function addFloorEdgeLighting(
   group: THREE.Group,
   palette: PremiumPalette,
 ): void {
-  const edge = material(palette.accentSoft, {
-    emissive: palette.accent,
-    emissiveIntensity: 0.9,
-    metalness: 0.08,
-    roughness: 0.3,
-  })
-
   batchedBoxes(
     group,
     'office-premium-floor-edge-signals',
@@ -309,8 +311,15 @@ function addFloorEdgeLighting(
       { size: [16.9, 0.025, 0.035], position: [0, 0.045, 6.32] },
       { size: [0.035, 0.025, 11.85], position: [-9.42, 0.045, 0] },
       { size: [0.035, 0.025, 11.85], position: [9.42, 0.045, 0] },
+      { size: [4.4, 0.018, 0.025], position: [-5.6, 0.048, 0] },
+      { size: [4.4, 0.018, 0.025], position: [5.6, 0.048, 0] },
     ],
-    edge,
+    material(palette.accentSoft, {
+      emissive: palette.accent,
+      emissiveIntensity: 0.9,
+      metalness: 0.08,
+      roughness: 0.3,
+    }),
   )
 }
 
@@ -327,6 +336,8 @@ function addCommonsIdentity(
     [
       { size: [0.14, 2.35, 0.14], position: [-7.9, 1.22, -5.75] },
       { size: [0.14, 2.35, 0.14], position: [7.9, 1.22, -5.75] },
+      { size: [3.2, 0.08, 0.14], position: [-6.3, 2.38, -5.75] },
+      { size: [3.2, 0.08, 0.14], position: [6.3, 2.38, -5.75] },
     ],
     material(palette.metal, { metalness: 0.38, roughness: 0.36 }),
   )
@@ -345,6 +356,17 @@ function addCommonsIdentity(
       metalness: 0.12,
       roughness: 0.32,
     }),
+  )
+  batchedBoxes(
+    identity,
+    'office-premium-commons-zones',
+    [
+      { size: [2.6, 0.08, 1.45], position: [-6.65, 0.08, 3.85] },
+      { size: [2.6, 0.08, 1.45], position: [6.65, 0.08, 3.85] },
+      { size: [2.15, 0.12, 0.42], position: [-6.65, 0.46, 4.34] },
+      { size: [2.15, 0.12, 0.42], position: [6.65, 0.46, 4.34] },
+    ],
+    material(0x203944, { metalness: 0.16, roughness: 0.62 }),
   )
 
   group.add(identity)
@@ -390,6 +412,24 @@ function addBuildIdentity(
       roughness: 0.2,
     }),
   )
+  batchedBoxes(
+    identity,
+    'office-premium-build-ops-bays',
+    [
+      { size: [2.55, 0.09, 0.95], position: [-6.45, 0.1, -3.7] },
+      { size: [2.55, 0.09, 0.95], position: [6.45, 0.1, -3.7] },
+      { size: [1.95, 0.78, 0.08], position: [-6.45, 1.12, -5.85] },
+      { size: [1.95, 0.78, 0.08], position: [6.45, 1.12, -5.85] },
+      { size: [0.08, 1.55, 0.08], position: [-7.55, 0.84, -5.85] },
+      { size: [0.08, 1.55, 0.08], position: [7.55, 0.84, -5.85] },
+    ],
+    material(0x172d38, {
+      emissive: palette.accentSoft,
+      emissiveIntensity: 0.18,
+      metalness: 0.38,
+      roughness: 0.42,
+    }),
+  )
 
   group.add(identity)
 }
@@ -407,6 +447,7 @@ function addStrategyIdentity(
     [
       { size: [0.12, 2.45, 0.12], position: [-7.7, 1.28, -5.9] },
       { size: [0.12, 2.45, 0.12], position: [7.7, 1.28, -5.9] },
+      { size: [5.2, 0.07, 0.12], position: [0, 2.76, 5.95] },
     ],
     material(palette.metal, { metalness: 0.42, roughness: 0.34 }),
   )
@@ -418,6 +459,7 @@ function addStrategyIdentity(
       { size: [1.5, 0.06, 0.12], position: [7.0, 2.48, -5.9] },
       { size: [0.055, 2.15, 0.08], position: [-3.4, 1.46, 6.18] },
       { size: [0.055, 2.15, 0.08], position: [3.4, 1.46, 6.18] },
+      { size: [6.9, 0.05, 0.08], position: [0, 2.78, 5.95] },
     ],
     material(palette.accentSoft, {
       emissive: palette.accent,
@@ -428,13 +470,18 @@ function addStrategyIdentity(
   )
   batchedBoxes(
     identity,
-    'office-premium-strategy-warm-line',
-    [{ size: [6.9, 0.05, 0.08], position: [0, 2.78, 5.95] }],
-    material(0x6c513a, {
-      emissive: palette.warm,
-      emissiveIntensity: 0.32,
-      metalness: 0.08,
-      roughness: 0.38,
+    'office-premium-strategy-forum',
+    [
+      { size: [4.8, 0.08, 2.35], position: [0, 0.09, 3.95] },
+      { size: [3.25, 0.1, 0.36], position: [0, 0.42, 4.72] },
+      { size: [2.2, 0.08, 0.28], position: [-2.45, 0.34, 3.35] },
+      { size: [2.2, 0.08, 0.28], position: [2.45, 0.34, 3.35] },
+    ],
+    material(0x282943, {
+      emissive: 0x3b355f,
+      emissiveIntensity: 0.16,
+      metalness: 0.24,
+      roughness: 0.5,
     }),
   )
 
@@ -456,10 +503,11 @@ function addFloorIdentity(
  *
  * Geometry is batched with InstancedMesh where shapes repeat so the premium
  * layer remains compatible with the accepted Diorama draw-call budget. The
- * layer stays outside the walkable volume and never creates Office presence,
- * Run state, progress, agent activity, KPI, dialogue, telemetry, or collision
- * truth. It also adds no THREE.Light objects; light ownership stays with the
- * canonical Office lighting/environment policies.
+ * layer stays outside canonical runtime truth: it never creates Office
+ * presence, Run state, progress, agent activity, KPI, dialogue, telemetry,
+ * evidence, ResultReview, or collision truth. It also adds no THREE.Light
+ * objects; light ownership stays with canonical Office lighting/environment
+ * policies.
  */
 export function mountPremiumOfficeArchitecture(
   parent: THREE.Group,
