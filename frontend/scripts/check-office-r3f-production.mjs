@@ -274,7 +274,11 @@ async function run() {
     await page.getByRole('button', { name: 'Replay', exact: true }).click()
     await page.getByText('Historical Run / AgentRun replay', { exact: true }).waitFor()
     const replayHost = await assertR3fHost(page, 'replay')
-    await replayHost.locator('.office-avatar-nameplate', { hasText: 'Backend Developer' }).waitFor()
+    await replayHost
+      .locator('.office-avatar-nameplate.state-starting, .office-avatar-nameplate.state-running', {
+        hasText: 'Backend Developer',
+      })
+      .waitFor({ state: 'attached' })
     if ((await page.locator('[data-office-renderer="three"]').count()) > 0) {
       throw new Error('Replay unexpectedly fell back to Three.js during production smoke.')
     }
@@ -284,7 +288,7 @@ async function run() {
     }
     await context.close()
     process.stdout.write(
-      'Production Office R3F migration verified: Planning=R3F, Live=R3F, Replay=R3F; Three.js remains fallback-only and no Diorama fixture leaked.\n',
+      'Production Office R3F migration verified: Planning=R3F, Live=R3F, Replay=R3F; Replay reached its factual start state, Three.js remains fallback-only, and no Diorama fixture leaked.\n',
     )
   } catch (error) {
     if (serverLog.trim()) {
