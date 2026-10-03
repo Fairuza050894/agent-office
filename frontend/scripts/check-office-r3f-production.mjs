@@ -23,8 +23,8 @@ const PROJECT = {
 const TASK = {
   id: '22222222-2222-4222-8222-222222222222',
   project_id: PROJECT.id,
-  title: 'Verify production Live Office',
-  objective: 'Verify renderer selection without changing canonical truth.',
+  title: 'Verify production Office renderer',
+  objective: 'Verify Planning, Live, and Replay renderer selection without changing canonical truth.',
   constraints: null,
   requested_workflow_id: null,
   requested_executor_id: null,
@@ -273,9 +273,11 @@ async function run() {
 
     await page.goto(`${baseUrl}/runs/${RUN.id}/office?mode=replay`, { waitUntil: 'networkidle' })
     await page.getByText('Historical Run / AgentRun replay', { exact: true }).waitFor()
-    await page.locator('[data-office-renderer="three"]').waitFor()
-    if ((await page.locator('[data-office-renderer="r3f"]').count()) > 0) {
-      throw new Error('Replay unexpectedly rendered through R3F.')
+    const replayHost = await assertR3fHost(page, 'replay')
+    await page.waitForTimeout(750)
+    await replayHost.locator('.office-avatar-nameplate', { hasText: 'Backend Developer' }).waitFor()
+    if ((await page.locator('[data-office-renderer="three"]').count()) > 0) {
+      throw new Error('Replay unexpectedly fell back to Three.js during production smoke.')
     }
 
     if (pageErrors.length > 0) {
@@ -283,7 +285,7 @@ async function run() {
     }
     await context.close()
     process.stdout.write(
-      'Production Office renderer split verified: Planning=R3F, Live=R3F, Replay=Three.js; no Diorama fixture leakage.\n',
+      'Production Office R3F migration verified: Planning=R3F, Live=R3F, Replay=R3F; Three.js remains fallback-only and no Diorama fixture leaked.\n',
     )
   } catch (error) {
     if (serverLog.trim()) {
