@@ -78,6 +78,13 @@ export const NAV_ITEMS: NavItem[] = [
 
   // OBSERVABILITY
   {
+    id: 'kpi',
+    label: 'Project KPI',
+    path: '/kpi',
+    section: 'OBSERVABILITY',
+    description: 'Task and Run delivery metrics derived from canonical execution facts.',
+  },
+  {
     id: 'activity',
     label: 'Activity',
     path: '/activity',

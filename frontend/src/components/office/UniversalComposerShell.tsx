@@ -35,6 +35,11 @@ export interface UniversalComposerShellProps {
   error?: string | null
 }
 
+interface ContextDraft<T> {
+  contextKey: string
+  value: T
+}
+
 export function UniversalComposerShell({
   projects,
   selectedProjectId,
@@ -54,20 +59,43 @@ export function UniversalComposerShell({
   messages = [],
   error = null,
 }: UniversalComposerShellProps) {
-  const [intent, setIntent] = useState<ComposerIntent>(
-    activeThread?.requested_intent ?? 'AUTO',
-  )
-  const [instruction, setInstruction] = useState('')
-  const [executorId, setExecutorId] = useState(
-    activeThread?.executor_id ?? selectedExecutorId ?? '',
-  )
+  const baseIntent = activeThread?.requested_intent ?? 'AUTO'
+  const baseExecutorId = activeThread?.executor_id ?? selectedExecutorId ?? ''
+  const contextKey = [
+    selectedProjectId || 'no-project',
+    activeThread?.id ?? 'new-thread',
+    baseIntent,
+    baseExecutorId || 'auto-executor',
+  ].join(':')
+
+  const [intentDraft, setIntentDraft] = useState<ContextDraft<ComposerIntent>>({
+    contextKey,
+    value: baseIntent,
+  })
+  const [executorDraft, setExecutorDraft] = useState<ContextDraft<string>>({
+    contextKey,
+    value: baseExecutorId,
+  })
+  const [instructionDraft, setInstructionDraft] = useState<ContextDraft<string>>({
+    contextKey,
+    value: '',
+  })
+
+  const intent =
+    intentDraft.contextKey === contextKey ? intentDraft.value : baseIntent
+  const executorId =
+    executorDraft.contextKey === contextKey
+      ? executorDraft.value
+      : baseExecutorId
+  const instruction =
+    instructionDraft.contextKey === contextKey ? instructionDraft.value : ''
 
   const selectedProjectName =
     projects.find((project) => project.id === selectedProjectId)?.name ??
     'No Project'
   const selectedExecutorName =
     executors.find((executor) => executor.id === executorId)?.name ??
-    'No executor'
+    (executorId ? 'Configured executor' : 'Auto-resolve')
 
   const canSend =
     Boolean(onSubmit) &&
@@ -83,7 +111,7 @@ export function UniversalComposerShell({
       instruction: instruction.trim(),
       executorId: executorId || null,
     })
-    setInstruction('')
+    setInstructionDraft({ contextKey, value: '' })
   }
 
   const submitLabel = isThreadLoading
@@ -127,7 +155,7 @@ export function UniversalComposerShell({
           <span>Context</span>
           <strong>{selectedProjectName}</strong>
           <span>{activeThread ? `Thread ${activeThread.id.slice(0, 8)}` : 'New thread'}</span>
-          <span>{intent}</span>
+          <span>{intent === 'AUTO' ? 'Auto orchestration' : intent}</span>
           <span>{selectedExecutorName}</span>
         </summary>
         <div className="office-composer-context-controls">
@@ -176,9 +204,14 @@ export function UniversalComposerShell({
             aria-label="Composer intent"
             value={intent}
             disabled={isSubmitting || isThreadLoading}
-            onChange={(event) => setIntent(event.target.value as ComposerIntent)}
+            onChange={(event) =>
+              setIntentDraft({
+                contextKey,
+                value: event.target.value as ComposerIntent,
+              })
+            }
           >
-            <option value="AUTO">AUTO</option>
+            <option value="AUTO">AUTO · let Agent Office route the work</option>
             <option value="ASK">ASK</option>
             <option value="PLAN">PLAN</option>
             <option value="BRAINSTORM">BRAINSTORM</option>
@@ -190,9 +223,11 @@ export function UniversalComposerShell({
             aria-label="Composer executor"
             value={executorId}
             disabled={executors.length === 0 || isSubmitting || isThreadLoading}
-            onChange={(event) => setExecutorId(event.target.value)}
+            onChange={(event) =>
+              setExecutorDraft({ contextKey, value: event.target.value })
+            }
           >
-            {executors.length === 0 && <option value="">No executor</option>}
+            <option value="">Auto-resolve executor</option>
             {executors.map((executor) => (
               <option key={executor.id} value={executor.id}>
                 {executor.name}
@@ -222,14 +257,16 @@ export function UniversalComposerShell({
           className="office-composer-input"
           value={instruction}
           disabled={isSubmitting || isThreadLoading}
-          onChange={(event) => setInstruction(event.target.value)}
+          onChange={(event) =>
+            setInstructionDraft({ contextKey, value: event.target.value })
+          }
           onKeyDown={(event) => {
             if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
               event.preventDefault()
               void submit()
             }
           }}
-          placeholder="Ask, plan, brainstorm, or describe what you want to continue in this project..."
+          placeholder="Describe the outcome you want. Agent Office will plan the team, workflow and execution context."
         />
         <div className="office-composer-actions">
           <button
@@ -238,7 +275,7 @@ export function UniversalComposerShell({
             disabled={!canSend}
             title={
               intent === 'RUN'
-                ? 'Review RUN intent and planning scope. This does not start execution.'
+                ? 'Review RUN intent and planning scope. This does not bypass execution gates.'
                 : undefined
             }
             onClick={() => void submit()}
@@ -254,7 +291,7 @@ export function UniversalComposerShell({
         </span>
       ) : (
         <span className="office-composer-note">
-          Planning remains durable. RUN intent is reviewed before any explicit execution promotion.
+          AUTO is zero-config: project context, team, workflow and executor are resolved through existing safety gates. RUN never bypasses canonical Task/Run promotion.
         </span>
       )}
     </section>
