@@ -59,6 +59,9 @@ const REVIEW: ResultReview = {
   remediation_run_id: null,
   delivered_branch: null,
   delivered_commit: null,
+  changes_requested_at: null,
+  approved_at: null,
+  delivered_at: null,
   can_approve: true,
   can_request_changes: true,
 }
