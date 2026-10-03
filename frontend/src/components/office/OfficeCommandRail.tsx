@@ -32,7 +32,6 @@ export function OfficeCommandRail({
             <span className="office-command-project">{projectName}</span>
             {statusLabel && (
               <span className="office-command-status" role="status">
-                <i aria-hidden="true" />
                 <span>{statusLabel}</span>
               </span>
             )}
