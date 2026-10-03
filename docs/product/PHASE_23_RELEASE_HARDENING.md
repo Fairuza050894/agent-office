@@ -22,6 +22,18 @@ The verification workflow uses current Node-24-based GitHub actions:
 
 The existing Node 22 application test runtime and Python 3.12 application runtime remain pinned.
 
+### CI trigger efficiency
+
+Full repository verification now runs on:
+
+- pull requests;
+- pushes to `main`;
+- explicit manual `workflow_dispatch` runs.
+
+Pushes to ordinary `phase-*` development branches no longer start a second full verification in addition to the pull-request run. `cancel-in-progress` remains enabled so a newer PR head supersedes an older in-flight verification for the same ref.
+
+This keeps the merge gate intact while avoiding duplicate GitHub-hosted runner consumption for the same development checkpoint.
+
 ### Dependency release gates
 
 Verification now checks:
@@ -128,6 +140,7 @@ The 3D Office is the operational visualization layer. Task decisions, evidence, 
 
 ```text
 modernized GitHub Actions bootstrap
+PR/main/manual-only full verification triggers
 pip check
 backend pytest / Ruff / format / MyPy
 npm production dependency audit
