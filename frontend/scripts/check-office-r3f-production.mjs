@@ -271,10 +271,9 @@ async function run() {
     const liveHost = await assertR3fHost(page, 'live')
     await liveHost.locator('.office-avatar-nameplate', { hasText: 'Backend Developer' }).waitFor()
 
-    await page.goto(`${baseUrl}/runs/${RUN.id}/office?mode=replay`, { waitUntil: 'networkidle' })
+    await page.getByRole('button', { name: 'Replay', exact: true }).click()
     await page.getByText('Historical Run / AgentRun replay', { exact: true }).waitFor()
     const replayHost = await assertR3fHost(page, 'replay')
-    await page.waitForTimeout(750)
     await replayHost.locator('.office-avatar-nameplate', { hasText: 'Backend Developer' }).waitFor()
     if ((await page.locator('[data-office-renderer="three"]').count()) > 0) {
       throw new Error('Replay unexpectedly fell back to Three.js during production smoke.')
