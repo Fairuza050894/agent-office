@@ -27,9 +27,11 @@ describe('RC1 premium Office architecture', () => {
       expect(layer.userData.presentationOnly).toBe(true)
       expect(layer.userData.floor).toBe(floor)
       expect(layer.userData.identity).toBe(identity.signature)
-      expect(layer.getObjectByName('office-premium-command-beacon')).toBeTruthy()
+      expect(layer.userData.visualRevision).toBe('composition-reset-v1')
+      expect(layer.userData.roomSpanningOverheadFrame).toBe(false)
       expect(layer.getObjectByName(identity.architectureGroupName)).toBeTruthy()
       expect(layer.getObjectByName(FLOOR_RICHNESS[floor])).toBeTruthy()
+      expect(layer.getObjectByName('office-premium-command-beacon')).toBeFalsy()
 
       let lightCount = 0
       let renderableMeshCount = 0
@@ -42,7 +44,38 @@ describe('RC1 premium Office architecture', () => {
 
       expect(lightCount).toBe(0)
       expect(instancedMeshCount).toBeGreaterThanOrEqual(9)
-      expect(renderableMeshCount).toBeLessThanOrEqual(16)
+      expect(renderableMeshCount).toBeLessThanOrEqual(12)
+    },
+  )
+
+  it.each(FLOORS)(
+    'prevents room-spanning decorative beams for %s',
+    (floor) => {
+      const parent = new THREE.Group()
+      const layer = mountPremiumOfficeArchitecture(parent, floor)
+      const matrix = new THREE.Matrix4()
+      const position = new THREE.Vector3()
+      const quaternion = new THREE.Quaternion()
+      const scale = new THREE.Vector3()
+      let largestHorizontalSpan = 0
+
+      layer.traverse((object) => {
+        if (!(object instanceof THREE.InstancedMesh)) return
+
+        for (let index = 0; index < object.count; index += 1) {
+          object.getMatrixAt(index, matrix)
+          matrix.decompose(position, quaternion, scale)
+          largestHorizontalSpan = Math.max(
+            largestHorizontalSpan,
+            scale.x,
+            scale.z,
+          )
+        }
+      })
+
+      // The room is 20 x 14. Decorative architecture must never bridge most of
+      // that span again; long cross-room beams were the source of the cage look.
+      expect(largestHorizontalSpan).toBeLessThanOrEqual(9)
     },
   )
 

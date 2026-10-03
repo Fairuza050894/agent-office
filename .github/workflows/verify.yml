@@ -67,6 +67,16 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Production Office renderer split smoke
         run: npm run office:production-r3f-smoke
+      - name: Office visual acceptance capture
+        run: npm run office:shots
+      - name: Upload Office visual acceptance artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: office-visual-acceptance
+          path: artifacts/office-shots
+          if-no-files-found: warn
+          retention-days: 14
 
   repository:
     runs-on: ubuntu-latest

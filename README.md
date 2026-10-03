@@ -56,7 +56,7 @@ Technical completion and human delivery remain distinct states.
           Task                 Task                 Task
            |                    |                    |
            v                    v                    v
-          Run                  Run                  Run
+          Run                  Run                 Run
            |                    |                    |
            +--------------------+--------------------+
                                 |
@@ -147,16 +147,40 @@ than a generic dashboard aesthetic. Commons, Build, and Strategy retain distinct
 room identity while sharing one product language.
 
 The premium architecture layer is presentation-only, adds no workflow state or
-new light truth, stays outside the walkable/collision volume, and batches
-repeated static geometry with `THREE.InstancedMesh` to preserve renderer
-headroom.
+new light truth, and batches repeated static geometry with
+`THREE.InstancedMesh` to preserve renderer headroom.
 
-The room-richness baseline strengthens spatial identity without inventing
-operational state: Commons adds recognizable arrival/social zones, Build adds
-paired engineering operations bays, and Strategy adds a central decision forum.
-These architectural masses remain abstract presentation only; they do not
-represent occupancy, workload, health, KPI, progress, meetings, evidence, or
-dialogue.
+### Visual composition rule
+
+Visual richness must remain subordinate to the Office itself. Floor identity is
+created through furniture, wall-adjacent panels, restrained perimeter anchors,
+lighting, and camera composition—not full-room neon rails or room-spanning
+roof grids.
+
+Production guardrails now explicitly prohibit cage-like decorative framing:
+
+```text
+no room-spanning decorative overhead beams
+no giant suspended sci-fi ornaments
+no signal bars crossing primary sight lines
+no decorative instance spanning most of the 20 x 14 Office footprint
+```
+
+The composition-reset regression test caps decorative horizontal spans at 9
+scene units. Overview cameras are also kept closer so furniture and characters
+remain readable, and night lighting uses a cooler neutral control-room key so
+the Office does not collapse into an orange/brown wash.
+
+The room-richness intent remains:
+
+```text
+Commons  -> social / arrival hub
+Build    -> engineering control room
+Strategy -> decision studio
+```
+
+These identities are presentation only; they do not represent occupancy,
+workload, health, KPI, progress, meetings, evidence, dialogue, or telemetry.
 
 Character presentation uses deterministic role/model/accent profiles, verified
 animation clips, and a restrained CSS2D interaction layer. Presentation may
@@ -169,6 +193,28 @@ Architecture reference:
 - `docs/architecture/RC1_CHARACTER_PRESENTATION.md`
 - `docs/architecture/LIVING_OFFICE_TECHNICAL_DESIGN.md`
 - `docs/architecture/ADR-0004-office-renderer-evolution.md`
+
+## Visual Acceptance
+
+A passing renderer smoke test proves that the Office renders; it does **not**
+prove that the result looks acceptable.
+
+For visual Office changes the verification chain is:
+
+```text
+repository/backend/frontend gates
+  -> build + production Office guard
+  -> Planning/Live/Replay renderer smoke
+  -> office:shots capture matrix
+  -> office-visual-acceptance artifact
+  -> screenshot inspection
+  -> merge
+```
+
+The capture matrix covers multiple floors, lighting windows, and desktop/mobile
+viewports. Screenshot artifacts are evidence for human visual review, not an
+automated aesthetic score. Deterministic image-diff baselines belong to the
+later visual-regression hardening phase.
 
 ## Repository Structure
 
@@ -349,15 +395,17 @@ A historical green run against an older base does not authorize a later merge.
 ## Development Status
 
 The authoritative checkpoint, exact PR heads, verification run numbers, merge
-SHAs, active branch, dependency lane, and known limitations live in:
+SHAs, active branch, dependency lane, known limitations, and reopened visual
+acceptance status live in:
 
 `.agents/skills/ao-milestone/references/current-phase.md`
 
 README intentionally does not duplicate the active phase number. Check the
-milestone reference against committed code, Git state, and verification evidence
-before starting implementation.
+milestone reference against committed code, Git state, functional verification,
+and visual evidence before starting implementation.
 
 ## Contribution and Agent Instructions
 
 All coding agents must read `AGENTS.md` before changing the repository and must
-keep implementation, tests, architecture documents, and milestone truth in sync.
+keep implementation, tests, architecture documents, milestone truth, and visual
+acceptance evidence in sync.

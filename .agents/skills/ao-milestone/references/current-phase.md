@@ -3,7 +3,8 @@
 ## Current checkpoint
 
 ```text
-accepted product main: f0f35c17b777f867866c41c480fbacb9bf810f4c
+repository main: c00447a809fa020eef496786c481699bda5c194b
+product behavior through: f0f35c17b777f867866c41c480fbacb9bf810f4c
 Phase 22 Enterprise Trust Layer — COMPLETE / MERGED
 Phase 23 Release Hardening — COMPLETE / MERGED
 Phase 24 Office Operating Experience — COMPLETE / MERGED
@@ -14,7 +15,8 @@ RC1 Slice 2B Camera Composition — COMPLETE / MERGED
 RC1 Zero-Friction Navigation — COMPLETE / MERGED
 RC1 Premium Environment & Floor Identity — COMPLETE / MERGED
 RC1 Premium Character Presentation — COMPLETE / MERGED
-RC1 Premium Room Richness — COMPLETE / MERGED
+RC1 Premium Room Richness — FUNCTIONALLY MERGED / VISUAL ACCEPTANCE REOPENED
+RC1 Visual Composition Reset — IN DEVELOPMENT
 ```
 
 Canonical full verification remains:
@@ -26,6 +28,9 @@ Canonical full verification remains:
 A GitHub Actions result counts as release evidence only when the runner actually
 starts and the repository, backend, and frontend jobs execute their real steps.
 A pre-run infrastructure failure with missing steps/logs is not green evidence.
+
+For visual Office work, functional CI is necessary but no longer sufficient.
+The PR must also produce and inspect Office screenshot artifacts before merge.
 
 ## Phase 22–25 exact evidence
 
@@ -110,65 +115,84 @@ merge: 88f01c76b04f88af193f4fd00c25d2371a8f3b9d
 post-sync main verify #1618: SUCCESS
 ```
 
-Accepted state:
-
-- R3F owns normal Planning / Live / Replay rendering;
-- premium architecture is presentation-only and active in all three scopes;
-- Commons / Build / Strategy map to social hub / engineering control room / decision studio;
-- repeated architecture is material-grouped with `THREE.InstancedMesh`;
-- the premium layer adds no `THREE.Light` objects and does not create workflow,
-  telemetry, KPI, collision, progress, dialogue, or activity truth.
-
 ### Premium Character Presentation — PR #67
 
 ```text
-PR: #67
 exact verified head: a2459708392d61ee010bf954769ab0d3c61c3790
-GitHub Actions verify #1619: SUCCESS
-merge commit: 8e17a248dca02b5a9e07c7b602b806ab6ca3c8a8
+verify #1619: SUCCESS
+merge: 8e17a248dca02b5a9e07c7b602b806ab6ca3c8a8
 post-merge main verify #1621: SUCCESS
 ```
 
-Accepted production state:
+Accepted state:
 
-- premium CSS2D nameplates improve factual name/state hierarchy, hover, selection,
-  and restrained blocked/failed emphasis;
-- deterministic role/model/accent profiles and verified animation fallback remain
-  the character truth boundary;
-- the slice adds no WebGL mesh/light/mixer cost and does not fabricate typing,
-  testing, review, meetings, dialogue, KPI, or concrete work;
-- reduced-motion and mobile-density presentation are explicitly handled;
-- the merged `main` commit passed the real repository/backend/frontend workflow,
-  including frontend build, production Office guard, Chromium setup, and
-  production renderer split smoke in run #1621.
+- premium CSS2D nameplates improve factual name/state hierarchy, hover,
+  selection, and restrained blocked/failed emphasis;
+- deterministic role/model/accent profiles and verified animation fallback
+  remain the character truth boundary;
+- no fabricated typing, testing, review, meetings, dialogue, KPI, or concrete
+  work was added.
 
-### Premium Room Richness — PR #69
+### Premium Room Richness — PR #69 / sync #70
 
 ```text
 superseded PR: #68 — CLOSED / NOT MERGED / NO FORCE-PUSH
 successor PR: #69
 exact verified head: 8114de89033b70064d36c5a55c9550da186ef5b5
-GitHub Actions verify #1623: SUCCESS
-merge commit: f0f35c17b777f867866c41c480fbacb9bf810f4c
+verify #1623: SUCCESS
+merge: f0f35c17b777f867866c41c480fbacb9bf810f4c
 post-merge main verify #1624: SUCCESS
+
+milestone sync PR: #70
+head: 6f0522dc0ab4df48e4f052eac26a42cdd74f52cb
+verify #1625: SUCCESS
+merge: c00447a809fa020eef496786c481699bda5c194b
+post-sync main verify #1626: SUCCESS
 ```
 
-Accepted production state:
+Functional state from #69 remains valid: renderer selection, build, typecheck,
+tests, renderer smoke, canonical truth boundaries, and Git/runtime safety all
+passed. However, manual production visual inspection on 2026-10-04 exposed a
+serious composition regression that automated smoke did not catch:
 
-- Commons has a stronger arrival/social-hub spatial identity;
-- Build has paired engineering operations bays and denser control-room framing;
-- Strategy has a central decision forum / briefing-platform identity;
-- rear command-wall and floor-orientation massing are richer while remaining
-  abstract presentation rather than telemetry;
-- repeated geometry remains `THREE.InstancedMesh` batched;
-- floor-specific tests require the richness groups while guarding zero added
-  `THREE.Light` objects, at least nine instanced groups, and no more than sixteen
-  renderable premium-layer meshes;
-- canonical Task / Run / AgentRun / Event / Evidence / ResultReview truth,
-  navigation/collision truth, and Git/runtime safety behavior are unchanged;
-- exact-head #1623 and post-merge #1624 both used real runners and passed
-  repository, backend, frontend, build, production Office guard, Chromium, and
-  production Office renderer split smoke gates.
+- room-spanning overhead beams read as a wireframe/debug cage;
+- cyan/violet signal strips dominated the room instead of supporting it;
+- overview cameras were still too distant for furniture/character readability;
+- night lighting pushed the Office too warm/orange;
+- room identity relied too heavily on decorative rails rather than believable
+  wall-adjacent architecture and furniture composition.
+
+Therefore **RC1 Premium Room Richness is not considered visually accepted** even
+though its functional CI evidence is valid. Visual acceptance is explicitly
+reopened until the corrective slice below passes both functional and screenshot
+review.
+
+## Active corrective checkpoint — RC1 Visual Composition Reset
+
+```text
+branch: fix/rc1-visual-composition-reset
+base: main@c00447a809fa020eef496786c481699bda5c194b
+status: IN DEVELOPMENT / MUST PASS EXACT-HEAD FULL CI + VISUAL ARTIFACT REVIEW
+```
+
+Corrective scope:
+
+- remove room-spanning overhead framing and suspended beacon geometry;
+- replace cage-like beams with short perimeter/wall-adjacent architectural
+  anchors;
+- reduce emissive signal intensity and keep accents local;
+- preserve distinct Commons / Build / Strategy identity through wall panels and
+  restrained architectural treatment rather than giant rails;
+- tighten overview/focus camera distances;
+- rebalance night lighting toward a cooler neutral control-room palette;
+- add a regression test that caps decorative horizontal spans so a full-room
+  cage cannot return silently;
+- add `office:shots` to GitHub Actions and upload the screenshot matrix as an
+  `office-visual-acceptance` artifact for manual visual inspection before merge.
+
+No canonical Task / Run / AgentRun / Event / Evidence / ResultReview behavior,
+collision truth, occupancy truth, or Agent Office runtime Git delivery behavior
+may change in this corrective slice.
 
 ## Current product value loop
 
@@ -185,22 +209,9 @@ Describe outcome
 
 Technical `COMPLETED` and human `DELIVERED` remain distinct.
 
-## Current renderer and Office state
-
-- Planning, Live, and Replay use R3F in the normal production path.
-- Three.js remains the renderer recovery path; HTML operational surfaces remain
-  the final non-WebGL fallback.
-- premium framing, lighting, camera composition, floor architecture, character
-  presentation, and room richness are accepted on product `main`.
-- Living Office time, occupancy, presence, navigation, and room behavior remain
-  deterministic projections over canonical facts plus explicitly
-  presentation-only ambience.
-- existing production character assets remain third-party/provenance-pinned; no
-  first-party Blender art is falsely claimed.
-
 ## Dependency / release-hardening lane
 
-Dependency updates remain isolated from active RC1 product slices.
+Dependency updates remain isolated from active RC1 product/visual correction.
 
 ```text
 #53 httpx        historical verify #1596 SUCCESS — requires fresh latest-main verification
@@ -229,33 +240,24 @@ Agent Office is not yet claiming enterprise-complete:
 - a generic cross-domain business-workflow step model;
 - Three.js fallback retirement;
 - a custom first-party production environment/character asset pack;
-- completed RC1 browser/device visual-regression matrix and adaptive-quality release gate.
+- completed RC1 browser/device visual-regression matrix and adaptive-quality
+  release gate.
 
-## Next RC1 checkpoint
+## Remaining RC1 sequence
 
-```text
-Agent Office RC1 — Composer-First Zero-Friction UX
-accepted base: product main@f0f35c17b777f867866c41c480fbacb9bf810f4c
-scope: make Composer the primary low-friction entry point while preserving explicit promotion and canonical workflow truth
-status: READY after this milestone-sync PR is verified and merged
-```
-
-The next slice should reduce user setup/form burden and improve outcome-first
-interaction, project/context selection, plan preview, and handoff into the
-existing Task/Run lifecycle. It must not silently start high-risk work, invent
-requirements, auto-approve, auto-deliver, or bypass human promotion/decision
-boundaries.
-
-After Composer-first UX:
+Composer-first work is paused until the visual composition reset is genuinely
+accepted.
 
 ```text
-Decision Inbox / Board / KPI / Dossier polish
+Visual Composition Reset
+  -> Composer-First Zero-Friction UX
+  -> Decision Inbox / Board / KPI / Dossier polish
   -> adaptive quality / performance
   -> deterministic visual regression + browser/device QA
   -> dependency hardening on latest main
   -> RC1 release packaging / rollback evidence
 ```
 
-Every merged product checkpoint must be followed by an honest milestone sync
-containing its exact verified PR head, real GitHub Actions run number, merge SHA,
-accepted production state, and remaining limitations.
+Every merged visual checkpoint must include exact-head functional verification
+and inspected screenshot evidence. Passing renderer smoke alone is no longer
+sufficient visual acceptance.

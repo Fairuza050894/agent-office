@@ -14,13 +14,13 @@ Before changing the repository:
 
 Core:
 
-- `README.md` — product overview, development, safety, current architecture entry points
+- `README.md` — product overview, development, safety, current architecture entry points and visual-acceptance rule
 - `AGENTS.md` — repository governance and engineering rules
 - `docs/product/PRD.md` — core product requirements
 - `docs/product/MVP_ACCEPTANCE.md` — acceptance criteria and historical phase gates
 - `docs/architecture/SYSTEM_ARCHITECTURE.md` — control-plane architecture
 - `docs/architecture/DOMAIN_MODEL.md` — canonical domain model
-- `docs/architecture/RC1_PREMIUM_3D_ARCHITECTURE.md` — current RC1 renderer/presentation architecture, floor identity, and room-richness boundaries
+- `docs/architecture/RC1_PREMIUM_3D_ARCHITECTURE.md` — current RC1 renderer/presentation architecture, cage-free composition guardrails, floor identity, camera/lighting policy, and visual acceptance workflow
 - `docs/architecture/RC1_CHARACTER_PRESENTATION.md` — accepted RC1 character/readability presentation boundary
 - `docs/architecture/LIVING_OFFICE_TECHNICAL_DESIGN.md` — current Living Office projection design
 - `docs/architecture/ADR-0004-office-renderer-evolution.md` — R3F production ownership and Three.js fallback criteria
@@ -105,22 +105,33 @@ been decomposed.
 - `components/ThreeOfficeScene.tsx` — recovery-only renderer
 - `office3d/runtimeProjection.ts` — canonical state -> scene member projection
 - `office3d/environment.ts` — functional floors/zones/stations/collision anchors
-- `office3d/premiumEnvironment.ts` — RC1 presentation-only architecture plus Commons/Build/Strategy room-richness geometry; never canonical occupancy/telemetry/collision truth
-- `office3d/premiumEnvironment.test.ts` — floor identity, light ownership, instancing, and premium-layer mesh-budget guard
+- `office3d/premiumEnvironment.ts` — RC1 presentation-only wall/perimeter architecture; no room-spanning decorative overhead frame and never canonical occupancy/telemetry/collision truth
+- `office3d/premiumEnvironment.test.ts` — floor identity, zero-light ownership, instancing/mesh budget, and maximum decorative-span regression guard
 - `office3d/character.ts` — character runtime, variants, verified animation, labels
 - `styles/premium-characters.css` — CSS2D premium character/readability presentation
-- `office3d/camera.ts` — semantic camera composition
-- `office3d/lighting.ts` — time-of-day lighting policy
+- `office3d/camera.ts` — semantic bounded camera composition and tighter RC1 overview envelope
+- `office3d/lighting.ts` — time-of-day lighting policy including neutral/cooler night balance
 - `office3d/livingOffice.ts` — floor/zone/presence policy
 - `office3d/furniturePolicy.ts` — production/pilot furniture policy
 - `office3d/officeFurnitureKit.ts` — verified engineering-pod asset mounting
 - `office3d/replay.ts` — replay presentation plan
 
-### Office asset and renderer verification
+### Office asset, renderer, and visual verification
 
 Important scripts under `frontend/scripts/` include Office asset fetching,
 production guards, screenshot capture, pilot capture, and R3F production smoke.
 Check `frontend/package.json` for the canonical script names before invoking them.
+
+For visual Office PRs, GitHub Actions now runs `office:shots` after production
+renderer smoke and uploads:
+
+```text
+office-visual-acceptance
+  -> artifacts/office-shots/
+```
+
+The artifact must be inspected before merge. Renderer smoke alone is not visual
+acceptance.
 
 ## Current domain shape
 
@@ -146,7 +157,7 @@ Presentation path:
 canonical records
    -> runtime/presence projection
    -> R3F scene members
-   -> environment + premium architecture/room richness + characters
+   -> environment + premium architecture + characters
 ```
 
 Writable AgentRuns must use isolated managed Git worktrees.
@@ -166,6 +177,9 @@ GitHub Actions evidence is valid only after the runner starts and the real
 repository/backend/frontend steps execute and pass. `steps=null` or missing logs
 from a pre-run infrastructure failure is not a passing gate.
 
+For visual Office changes, screenshot artifact generation and inspection are
+additional required evidence.
+
 ## Active checkpoint
 
 Do not duplicate active phase/branch truth in this map. Read:
@@ -173,4 +187,5 @@ Do not duplicate active phase/branch truth in this map. Read:
 `.agents/skills/ao-milestone/references/current-phase.md`
 
 That file owns exact PR heads, verification run numbers, merge SHAs, current RC1
-scope, dependency-hardening status, and known limitations.
+scope, dependency-hardening status, visual-acceptance state, and known
+limitations.
