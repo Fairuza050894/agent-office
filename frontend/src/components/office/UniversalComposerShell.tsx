@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import type {
   ComposerIntent,
@@ -62,12 +62,20 @@ export function UniversalComposerShell({
     activeThread?.executor_id ?? selectedExecutorId ?? '',
   )
 
+  useEffect(() => {
+    setIntent(activeThread?.requested_intent ?? 'AUTO')
+  }, [activeThread?.id, activeThread?.requested_intent])
+
+  useEffect(() => {
+    setExecutorId(activeThread?.executor_id ?? selectedExecutorId ?? '')
+  }, [activeThread?.executor_id, activeThread?.id, selectedExecutorId])
+
   const selectedProjectName =
     projects.find((project) => project.id === selectedProjectId)?.name ??
     'No Project'
   const selectedExecutorName =
     executors.find((executor) => executor.id === executorId)?.name ??
-    'No executor'
+    (executorId ? 'Configured executor' : 'Auto-resolve')
 
   const canSend =
     Boolean(onSubmit) &&
@@ -127,7 +135,7 @@ export function UniversalComposerShell({
           <span>Context</span>
           <strong>{selectedProjectName}</strong>
           <span>{activeThread ? `Thread ${activeThread.id.slice(0, 8)}` : 'New thread'}</span>
-          <span>{intent}</span>
+          <span>{intent === 'AUTO' ? 'Auto orchestration' : intent}</span>
           <span>{selectedExecutorName}</span>
         </summary>
         <div className="office-composer-context-controls">
@@ -178,7 +186,7 @@ export function UniversalComposerShell({
             disabled={isSubmitting || isThreadLoading}
             onChange={(event) => setIntent(event.target.value as ComposerIntent)}
           >
-            <option value="AUTO">AUTO</option>
+            <option value="AUTO">AUTO · let Agent Office route the work</option>
             <option value="ASK">ASK</option>
             <option value="PLAN">PLAN</option>
             <option value="BRAINSTORM">BRAINSTORM</option>
@@ -192,7 +200,7 @@ export function UniversalComposerShell({
             disabled={executors.length === 0 || isSubmitting || isThreadLoading}
             onChange={(event) => setExecutorId(event.target.value)}
           >
-            {executors.length === 0 && <option value="">No executor</option>}
+            <option value="">Auto-resolve executor</option>
             {executors.map((executor) => (
               <option key={executor.id} value={executor.id}>
                 {executor.name}
@@ -229,7 +237,7 @@ export function UniversalComposerShell({
               void submit()
             }
           }}
-          placeholder="Ask, plan, brainstorm, or describe what you want to continue in this project..."
+          placeholder="Describe the outcome you want. Agent Office will plan the team, workflow and execution context."
         />
         <div className="office-composer-actions">
           <button
@@ -238,7 +246,7 @@ export function UniversalComposerShell({
             disabled={!canSend}
             title={
               intent === 'RUN'
-                ? 'Review RUN intent and planning scope. This does not start execution.'
+                ? 'Review RUN intent and planning scope. This does not bypass execution gates.'
                 : undefined
             }
             onClick={() => void submit()}
@@ -254,7 +262,7 @@ export function UniversalComposerShell({
         </span>
       ) : (
         <span className="office-composer-note">
-          Planning remains durable. RUN intent is reviewed before any explicit execution promotion.
+          AUTO is zero-config: project context, team, workflow and executor are resolved through existing safety gates. RUN never bypasses canonical Task/Run promotion.
         </span>
       )}
     </section>
