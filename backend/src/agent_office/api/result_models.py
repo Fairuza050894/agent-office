@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Self
 
 from pydantic import BaseModel, Field
@@ -26,6 +27,9 @@ class ResultReviewResponse(BaseModel):
     remediation_run_id: str | None
     delivered_branch: str | None
     delivered_commit: str | None
+    changes_requested_at: datetime | None
+    approved_at: datetime | None
+    delivered_at: datetime | None
     can_approve: bool
     can_request_changes: bool
 
@@ -40,6 +44,9 @@ class ResultReviewResponse(BaseModel):
             remediation_run_id=result.remediation_run_id,
             delivered_branch=result.delivered_branch,
             delivered_commit=result.delivered_commit,
+            changes_requested_at=result.changes_requested_at,
+            approved_at=result.approved_at,
+            delivered_at=result.delivered_at,
             can_approve=result.can_approve,
             can_request_changes=result.can_request_changes,
         )
