@@ -215,21 +215,24 @@ class ResultReviewService:
             elif record.action is AuditAction.RESULT_DELIVERED:
                 delivered = record
 
-        common = {
-            "run_id": str(run.id),
-            "task_id": str(run.task_id),
-            "candidate_workspace_id": (
-                None if run.candidate_workspace_id is None else str(run.candidate_workspace_id)
-            ),
-            "changes_requested_at": None if changed is None else changed.occurred_at,
-            "approved_at": None if approved is None else approved.occurred_at,
-            "delivered_at": None if delivered is None else delivered.occurred_at,
-        }
+        run_id = str(run.id)
+        task_id = str(run.task_id)
+        candidate_workspace_id = (
+            None if run.candidate_workspace_id is None else str(run.candidate_workspace_id)
+        )
+        changes_requested_at = None if changed is None else changed.occurred_at
+        approved_at = None if approved is None else approved.occurred_at
+        delivered_at = None if delivered is None else delivered.occurred_at
 
         if delivered is not None:
             metadata = dict(delivered.safe_metadata)
             return ResultReviewProjection(
-                **common,
+                run_id=run_id,
+                task_id=task_id,
+                candidate_workspace_id=candidate_workspace_id,
+                changes_requested_at=changes_requested_at,
+                approved_at=approved_at,
+                delivered_at=delivered_at,
                 state=ResultReviewState.DELIVERED,
                 delivered_branch=metadata.get("branch"),
                 delivered_commit=metadata.get("commit"),
@@ -238,7 +241,12 @@ class ResultReviewService:
         if changed is not None:
             metadata = dict(changed.safe_metadata)
             return ResultReviewProjection(
-                **common,
+                run_id=run_id,
+                task_id=task_id,
+                candidate_workspace_id=candidate_workspace_id,
+                changes_requested_at=changes_requested_at,
+                approved_at=approved_at,
+                delivered_at=delivered_at,
                 state=ResultReviewState.CHANGES_REQUESTED,
                 feedback=metadata.get("feedback"),
                 remediation_run_id=metadata.get("remediation_run_id"),
@@ -246,7 +254,12 @@ class ResultReviewService:
 
         if approved is not None:
             return ResultReviewProjection(
-                **common,
+                run_id=run_id,
+                task_id=task_id,
+                candidate_workspace_id=candidate_workspace_id,
+                changes_requested_at=changes_requested_at,
+                approved_at=approved_at,
+                delivered_at=delivered_at,
                 state=ResultReviewState.APPROVED,
             )
 
@@ -255,7 +268,15 @@ class ResultReviewService:
             if run.status is RunStatus.COMPLETED
             else ResultReviewState.NOT_READY
         )
-        return ResultReviewProjection(**common, state=state)
+        return ResultReviewProjection(
+            run_id=run_id,
+            task_id=task_id,
+            candidate_workspace_id=candidate_workspace_id,
+            changes_requested_at=changes_requested_at,
+            approved_at=approved_at,
+            delivered_at=delivered_at,
+            state=state,
+        )
 
     def _require_reviewable(self, run: Run) -> None:
         if run.status is not RunStatus.COMPLETED:
