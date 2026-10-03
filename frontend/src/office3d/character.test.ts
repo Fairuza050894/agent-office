@@ -9,28 +9,47 @@ import {
   workspaceCandidateBlockedByPeer,
   workspaceIdlePose,
 } from './character'
+import { LIVING_OFFICE_CORE_ROLES } from './livingOffice'
 
-const CORE_ROLES = [
+const LEGACY_EXECUTION_ROLES = [
   'architect',
   'explorer',
   'backend-developer',
   'frontend-developer',
   'qa-reviewer',
-  'security-reviewer',
   'verifier',
   'documentation-writer',
+  'ux-reviewer',
 ] as const
 
 describe('officeCharacterAppearance', () => {
-  it('gives all eight core roles a deterministic unique visual identity', () => {
-    const appearances = CORE_ROLES.map((role) => officeCharacterAppearance(role))
+  it('gives the nine Living Office core roles deterministic unique visual identities', () => {
+    const appearances = LIVING_OFFICE_CORE_ROLES.map((role) =>
+      officeCharacterAppearance(role),
+    )
 
-    expect(new Set(appearances.map((appearance) => appearance.id)).size).toBe(8)
-    expect(new Set(appearances.map((appearance) => appearance.accent)).size).toBe(8)
-    expect(officeCharacterVariant('architect')).toBe('suit')
-    expect(officeCharacterVariant('security-reviewer')).toBe('suit')
-    expect(officeCharacterAppearance('architect').id).not.toBe(
-      officeCharacterAppearance('security-reviewer').id,
+    expect(LIVING_OFFICE_CORE_ROLES).toHaveLength(9)
+    expect(new Set(appearances.map((appearance) => appearance.id)).size).toBe(9)
+    expect(new Set(appearances.map((appearance) => appearance.accent)).size).toBe(9)
+    expect(officeCharacterVariant('product-manager')).toBe('suit')
+    expect(officeCharacterVariant('backend-engineer')).toBe('hoodie')
+    expect(officeCharacterVariant('technical-writer')).toBe('dress')
+    expect(officeCharacterAppearance('product-manager').id).not.toBe(
+      officeCharacterAppearance('principal-engineer').id,
+    )
+  })
+
+  it('keeps legacy execution roles deterministic while the Living Office catalog evolves', () => {
+    const first = LEGACY_EXECUTION_ROLES.map((role) =>
+      officeCharacterAppearance(role),
+    )
+    const second = LEGACY_EXECUTION_ROLES.map((role) =>
+      officeCharacterAppearance(role),
+    )
+
+    expect(second).toEqual(first)
+    expect(new Set(first.map((appearance) => appearance.id)).size).toBe(
+      LEGACY_EXECUTION_ROLES.length,
     )
   })
 
@@ -67,8 +86,6 @@ describe('officeCharacterAppearance', () => {
       expect(replayYaw - liveYaw).toBeCloseTo(Math.PI)
       expect(workspaceYaw).toBeCloseTo(replayYaw)
 
-      // Office presentation forward is -Z after its model yaw offset.
-      // Test the resulting direction, rather than only comparing mode angles.
       const visibleForward = new THREE.Vector3(0, 0, -1).applyAxisAngle(
         new THREE.Vector3(0, 1, 0),
         workspaceYaw,
@@ -79,17 +96,9 @@ describe('officeCharacterAppearance', () => {
 
   it('gives Workspace idle a deterministic Sims-like posture cycle', () => {
     const samples = Array.from({ length: 16 }, (_, index) =>
-      workspaceIdlePose(
-        'agent-a',
-        index * 2_000,
-        'WORK_WAITING',
-      ),
+      workspaceIdlePose('agent-a', index * 2_000, 'WORK_WAITING'),
     )
-    const repeated = workspaceIdlePose(
-      'agent-a',
-      8_000,
-      'WORK_WAITING',
-    )
+    const repeated = workspaceIdlePose('agent-a', 8_000, 'WORK_WAITING')
 
     expect(repeated).toEqual(samples[4])
     expect(
@@ -105,9 +114,7 @@ describe('officeCharacterAppearance', () => {
       Math.max(...samples.map((pose) => pose.breathScale)),
     ).toBeGreaterThan(1.002)
 
-    expect(
-      workspaceIdlePose('agent-a', 10_000, 'PRAYER_QUIET'),
-    ).toEqual({
+    expect(workspaceIdlePose('agent-a', 10_000, 'PRAYER_QUIET')).toEqual({
       lookYaw: 0,
       leanZ: 0,
       lateralX: 0,
