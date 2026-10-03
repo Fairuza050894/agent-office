@@ -178,14 +178,14 @@ function CameraRig({
   cameraResetNonce,
   selectedAgentId,
   runtimes,
-  replayFocus,
+  replayFocusRef,
 }: {
   floor: OfficeFloorKey
   cameraView: OfficeCameraViewKey
   cameraResetNonce: number
   selectedAgentId: string | null
   runtimes: MutableRefObject<Map<string, RuntimeAgent>>
-  replayFocus: MutableRefObject<ReplayCameraFocus | null>
+  replayFocusRef: MutableRefObject<ReplayCameraFocus | null>
 }) {
   const { camera, gl } = useThree()
   const controlsRef = useRef<OrbitControls | null>(null)
@@ -216,8 +216,8 @@ function CameraRig({
     camera.position.set(...preset.position)
     controls.target.set(...preset.target)
     controls.update()
-    replayFocus.current = null
-  }, [camera, cameraResetNonce, cameraView, floor, replayFocus])
+    replayFocusRef.current = null
+  }, [camera, cameraResetNonce, cameraView, floor, replayFocusRef])
 
   useEffect(() => {
     const controls = controlsRef.current
@@ -226,22 +226,22 @@ function CameraRig({
     const runtime = runtimes.current.get(selectedAgentId)
     if (!runtime) return
 
-    replayFocus.current = null
+    replayFocusRef.current = null
     const previousTarget = controls.target.clone()
     controls.target.copy(runtime.root.position)
     camera.position.add(controls.target.clone().sub(previousTarget))
     controls.update()
-  }, [camera, replayFocus, runtimes, selectedAgentId])
+  }, [camera, replayFocusRef, runtimes, selectedAgentId])
 
   useFrame(() => {
     const controls = controlsRef.current
     if (!controls) return
 
-    const focus = replayFocus.current
+    const focus = replayFocusRef.current
     if (focus) {
       const runtime = runtimes.current.get(focus.agentId)
       if (!runtime || performance.now() >= focus.until) {
-        replayFocus.current = null
+        replayFocusRef.current = null
       } else {
         const before = controls.target.clone()
         controls.target.lerp(runtime.station, 0.12)
@@ -747,7 +747,7 @@ function SceneContents({
         cameraResetNonce={cameraResetNonce}
         selectedAgentId={selectedAgentId}
         runtimes={runtimesRef}
-        replayFocus={replayFocusRef}
+        replayFocusRef={replayFocusRef}
       />
       <LabelLayer visible={labelsVisible} />
       <RendererEvidence runtimes={runtimesRef} />
