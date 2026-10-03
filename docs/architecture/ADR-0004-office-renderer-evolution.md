@@ -1,135 +1,86 @@
 # ADR-0004 — Office Renderer Evolution after V2
 
-Status: Accepted for Phase 11 V3  
-Date: 2026-10-02
+Status: Accepted; amended for Phase 23 release hardening  
+Date: 2026-10-02  
+Amended: 2026-10-03
 
 ## Context
 
-The current Agent Office renderer is imperative Three.js and already owns:
+The original V3 decision kept the imperative Three.js renderer while an R3F pilot proved the renderer-neutral seams. Since then, production migration has completed:
 
-- canonical Office projection;
-- deterministic floors and zones;
-- character runtime;
-- collision-safe paths;
-- replay projection;
-- camera presets;
-- V0/V1/V2 screenshot and performance gates.
+- Planning uses R3F in the normal production path;
+- Live uses R3F in the normal production path;
+- Replay uses R3F in the normal production path;
+- Three.js remains only behind the tested renderer recovery boundary;
+- HTML operational surfaces remain the final non-WebGL fallback.
 
-A user-provided R3F mockup demonstrates useful declarative composition,
-damped camera focus, reduced-motion handling, compact 3D-first layout, and
-optional post-processing. It also contains sample Run/Event/timeline data that
-is illustrative only and cannot become Agent Office truth.
-
-V2 has separately proved that verified low-poly GLBs plus instancing materially
-reduce draw calls/geometries for the Build engineering pod.
+The canonical Office truth remains outside either renderer. Rendering code must project Task/Run/AgentRun/Event and Workspace/Living Office truth rather than create operational state.
 
 ## Decision
 
-### V3 renderer
+### Production renderer
 
-Keep the production renderer on Three.js for V3.
+R3F is the canonical production renderer for Planning, Live, and Replay.
 
-Do not combine:
+The imperative Three.js renderer is a **temporary compatibility fallback**, not a second product surface and not an independent feature target.
 
-```text
-production furniture rollout
-+
-full R3F renderer migration
-```
-
-in one checkpoint.
+New Office visual/product functionality should be implemented in R3F first. A fallback change is justified only when required to preserve recovery behavior.
 
 ### Renderer-neutral boundaries
 
-V3 moves accepted furniture behavior behind modules that contain no workflow
-state:
+Furniture, environment, navigation, role identity, lighting, replay projection, and living-office policy remain renderer-neutral wherever practical. Renderer code must not own workflow truth.
 
-```text
-furniturePolicy.ts
-officeFurnitureKit.ts
-environment placement contract
-```
+### Failure behavior
 
-These modules may later be consumed by either the imperative Three renderer or
-an R3F pilot.
+R3F failure may fall back to Three.js while the fallback remains accepted. If both WebGL renderer paths fail, HTML operational surfaces remain usable for factual Task/Run decisions.
 
-### Production failure behavior
-
-The ordinary Build floor renders its existing primitive pod first.
-
-The primitive group is removed only after the verified kit:
-
-1. loads;
-2. mounts;
-3. passes spatial bounds validation.
-
-Asset failure therefore degrades presentation without removing operational
-state or leaving an empty engineering pod.
+A visual failure must never fabricate or remove canonical execution state.
 
 ### Asset delivery
 
-Production/dev bootstrap fetches the exact V2-approved Kenney files from the
-pinned transport commit and verifies size + Git blob SHA.
+Production/dev bootstrap verifies pinned third-party Office assets before build/render preparation. External assets remain correctly attributed and are not relabeled as Agent Office-authored Blender work.
 
-Fetched GLBs remain uncommitted.
-
-### Blender
-
-Blender is approved as an offline authoring/optimization tool.
-
-It is not required at application runtime.
-
-A repository helper mirrors the production material palette so a future baked
-GLB can be generated reproducibly. Baked outputs need separate provenance and
-visual/performance verification before becoming authoritative assets.
-
-### R3F
-
-A later R3F pilot is approved as an experiment, not as a V3 dependency.
-
-That pilot must consume the same canonical OfficeProjection inputs and pass the
-existing visual/performance/truth gates before any renderer migration.
+Blender remains an offline authoring/optimization option, not an application runtime dependency.
 
 ### Post-processing
 
-N8AO, Bloom, SMAA, Vignette, and similar effects shown by the reference mockup
-are not approved by this ADR for production.
+Expensive post-processing remains opt-in only after measured performance/legibility evidence. Visual effects may not make operational status harder to read.
 
-Each effect must justify its cost through a separate measured A/B gate. The
-current V1 light budget remains authoritative.
+### Unity / alternate runtime
 
-### Unity
+No second game engine/runtime is introduced without a separate architecture decision demonstrating a product requirement that R3F/Three cannot satisfy.
 
-Unity is not introduced for the web Agent Office runtime.
+## Three.js fallback sunset criteria
 
-No current requirement justifies a second rendering/runtime stack.
+The fallback may be removed only in a dedicated PR after **all** of the following are true on the same production checkpoint:
+
+1. Planning, Live, and Replay R3F production smoke remains green for at least three consecutive release checkpoints.
+2. Deterministic screenshot/visual-regression coverage exists for the primary Office scopes and catches material layout/visibility regressions rather than only renderer startup.
+3. R3F has an accepted device/browser matrix covering the supported desktop targets and a documented degraded/non-WebGL experience.
+4. R3F error telemetry or an equivalent reproducible failure-reporting mechanism can distinguish renderer failure from API/data failure.
+5. No production-only capability remains implemented exclusively in Three.js.
+6. The HTML operational fallback is verified independently so removing Three.js does not remove access to Task/Run decisions.
+7. Bundle and maintenance impact of deleting Three.js fallback code is measured and recorded.
+8. A rollback plan exists for the release that removes it.
+
+Until those criteria are met, Three.js remains recovery-only and receives no speculative feature investment.
 
 ## Consequences
 
 Positive:
 
-- V3 ships the accepted asset improvement without a renderer rewrite;
-- production keeps a truthful visual fallback;
-- Build art direction becomes deterministic and testable;
-- future R3F work has smaller, clearer seams;
-- Blender can optimize art without owning product state.
+- R3F has one clear production ownership model;
+- dual-renderer maintenance is bounded by explicit sunset criteria;
+- fallback retirement cannot happen on visual preference alone;
+- canonical truth remains independent of renderer lifecycle;
+- future custom art can evolve without changing Task/Run truth.
 
 Tradeoffs:
 
-- imperative Three.js remains for V3;
-- source GLBs are still fetched during setup/build;
-- runtime material normalization exists until/if baked assets are separately
-  accepted.
+- some duplicate renderer code remains until the criteria are satisfied;
+- fallback smoke must continue to be maintained;
+- visual-regression and device evidence are required before code deletion.
 
-## Follow-up
+## Historical note
 
-After V3 acceptance, a separate R3F pilot may compare:
-
-```text
-current Three renderer
-vs
-R3F renderer
-```
-
-using identical canonical fixture data, camera targets, lighting profiles, and
-performance evidence.
+The original V3 decision intentionally separated furniture rollout from R3F migration. That sequencing is complete and remains valid history; this amendment supersedes the old statement that R3F was only an experiment.
