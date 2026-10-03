@@ -3,7 +3,7 @@
 ## Current checkpoint
 
 ```text
-main@3acba39a59d991f019e5208be70cb44290320ada
+main@544f593ca198c8dbe2b7cab703df17483b7c6ee5
 Phase 22 Enterprise Trust Layer — COMPLETE / MERGED
 Phase 23 Release Hardening — COMPLETE / MERGED
 Phase 24 Office Operating Experience — COMPLETE / MERGED
@@ -12,6 +12,7 @@ RC1 Slice 1 Premium Product Framing — COMPLETE / MERGED
 RC1 Slice 2A Cinematic Lighting — COMPLETE / MERGED
 RC1 Slice 2B Camera Composition — COMPLETE / MERGED
 RC1 Zero-Friction Navigation — COMPLETE / MERGED
+RC1 Premium Environment & Floor Identity — COMPLETE / MERGED
 ```
 
 Canonical full verification remains:
@@ -106,8 +107,7 @@ merge commit: f40b58c8f97a58fc5f8660bd7e179ba406608f0f
 Accepted state:
 
 - Office surfaces use the RC1 dark/futuristic control-room framing.
-- `premiumEnvironment.ts` establishes a presentation-only architecture layer.
-- that initial module was intentionally staged rather than claimed as active production 3D.
+- `premiumEnvironment.ts` established the presentation-only architecture foundation later activated by PR #65.
 
 ### Slice 2A — Cinematic Office lighting
 
@@ -152,6 +152,26 @@ Accepted state:
 - lower-frequency registries and control surfaces remain available under More tools;
 - no route or capability was deleted and no automatic decision/execution behavior was added.
 
+### Premium Environment & Floor Identity
+
+```text
+PR: #65
+exact verified head: b39f6c4957b260b81ad1b8406badaa8101157ba8
+GitHub Actions verify #1615: SUCCESS
+merge commit: 544f593ca198c8dbe2b7cab703df17483b7c6ee5
+post-merge main verify #1616: SUCCESS
+```
+
+Accepted production state:
+
+- the renderer-safe premium architecture foundation is now mounted in the normal R3F Planning / Live / Replay lifecycle;
+- Commons, Build, and Strategy have distinct presentation identities: social hub, engineering control room, and decision studio;
+- repeated premium structural geometry is material-grouped through `THREE.InstancedMesh` rather than dozens of independent draw calls;
+- the premium layer adds no `THREE.Light` objects and stays outside the walkable/collision truth boundary;
+- decorative signal geometry is abstract presentation only and does not claim telemetry, KPI, progress, tests, dialogue, or agent activity;
+- repository, backend, frontend, build, production Office guard, Playwright Chromium, and production Office renderer split smoke all executed and passed on the exact PR head;
+- the merged `main` commit also passed the same repository/backend/frontend verification workflow in run #1616.
+
 ## Current product value loop
 
 ```text
@@ -174,8 +194,9 @@ The human remains the final decision maker. Technical `COMPLETED` and human
 - Three.js remains a tested renderer recovery path.
 - HTML operational surfaces remain the final non-WebGL fallback.
 - Living Office time, occupancy, work presence, navigation, and room behavior remain deterministic projections over canonical facts plus explicitly presentation-only ambience.
-- RC1 premium framing, lighting, and camera composition are active in `main`.
-- the premium 3D architecture foundation exists but is not considered active production architecture until its dedicated wiring slice passes the renderer/performance gates.
+- RC1 premium framing, lighting, camera composition, and premium floor architecture are active in `main`.
+- repeated premium architecture is instanced to preserve renderer headroom.
+- premium architecture adds no workflow state, operational telemetry, collision truth, or extra light ownership.
 - existing production character assets remain third-party/provenance-pinned; no first-party Blender art is falsely claimed.
 
 ## Dependency / release-hardening lane
@@ -194,8 +215,8 @@ toolchain changes do not destabilize visual work mid-slice.
 ```
 
 Old successful runs are historical evidence only because those PRs were created
-against an earlier `main`. They are not authorization to merge into the RC1
-checkpoint without a fresh exact-head run.
+against an earlier `main`. They are not authorization to merge into the current
+RC1 checkpoint without a fresh exact-head run.
 
 ## Known limitations that remain explicit
 
@@ -212,16 +233,14 @@ Agent Office is not yet claiming enterprise-complete:
 - a custom first-party production environment/character asset pack;
 - completed RC1 browser/device visual-regression matrix and adaptive-quality release gate.
 
-## Active checkpoint
+## Next RC1 checkpoint
 
 ```text
 Agent Office RC1 — Premium 3D Product Overhaul
-active isolated branch: rc1-premium-environment-identity
-base: main@3acba39a59d991f019e5208be70cb44290320ada
-scope: activate renderer-safe premium architecture + stronger per-floor spatial identity
-status: IN DEVELOPMENT / MUST PASS EXACT-HEAD FULL CI BEFORE MERGE
+accepted base: main@544f593ca198c8dbe2b7cab703df17483b7c6ee5
+next product slice: premium character presentation
+scope: stronger role/silhouette distinction, grounded materials, hover/selection/nameplate polish, verified-animation presentation only
+status: READY — create a fresh isolated branch from accepted main before implementation
 ```
 
-After this slice, continue character/environment presentation, Composer-first UX,
-Decision/Board/KPI/Dossier polish, adaptive quality/performance, visual
-regression/device-browser QA, dependency hardening, and RC1 release packaging.
+After character presentation, continue Composer-first UX, Decision/Board/KPI/Dossier polish, adaptive quality/performance, visual regression/device-browser QA, dependency hardening, and RC1 release packaging.
