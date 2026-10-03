@@ -19,6 +19,8 @@ import { ProjectDetailPage } from '../pages/ProjectDetailPage'
 import { RunOfficePage } from '../pages/RunOfficePage'
 import { OfficeWorkspacePage } from '../pages/OfficeWorkspacePage'
 import { ProjectKpiPage } from '../pages/ProjectKpiPage'
+import { DecisionCenterPage } from '../pages/DecisionCenterPage'
+import { TaskDecisionPage } from '../pages/TaskDecisionPage'
 
 const OFFICE_SIDEBAR_STORAGE_KEY = 'agent-office.office-sidebar-collapsed'
 
@@ -78,6 +80,13 @@ export function AppShell() {
       }
     }
 
+    if (currentPath.startsWith('/tasks/')) {
+      const parts = currentPath.split('/')
+      if (parts.length === 3) {
+        return <TaskDecisionPage taskId={parts[2]} />
+      }
+    }
+
     if (currentPath.startsWith('/runs/')) {
       const parts = currentPath.split('/')
       if (parts.length === 4 && parts[3] === 'office') {
@@ -89,6 +98,10 @@ export function AppShell() {
     }
 
     switch (currentPath) {
+      case '/inbox':
+        return <DecisionCenterPage mode="inbox" />
+      case '/board':
+        return <DecisionCenterPage mode="board" />
       case '/office':
         return <OfficeWorkspacePage />
       case '/overview':
