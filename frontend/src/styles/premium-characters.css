@@ -1,0 +1,189 @@
+/*
+ * RC1 premium character presentation.
+ *
+ * This layer is deliberately CSS-only: it improves nameplate hierarchy and
+ * selection/hover readability without inventing character activity, adding 3D
+ * draw calls, or changing AgentRun/presence truth. CSS2DRenderer owns element
+ * transforms, so this file intentionally avoids transform rules on nameplates.
+ */
+
+.office-avatar-nameplate {
+  --office-character-state: rgba(132, 145, 163, 0.9);
+  position: relative;
+  min-width: 112px;
+  max-width: 168px;
+  padding: 7px 10px 7px 13px;
+  overflow: hidden;
+  border: 1px solid rgba(145, 166, 184, 0.24);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(20, 31, 40, 0.94), rgba(10, 18, 25, 0.91));
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.055);
+  backdrop-filter: blur(12px) saturate(112%);
+  -webkit-backdrop-filter: blur(12px) saturate(112%);
+  isolation: isolate;
+  transition:
+    opacity 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    background-color 140ms ease;
+}
+
+.office-avatar-nameplate::before {
+  content: '';
+  position: absolute;
+  inset: 5px auto 5px 5px;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--office-character-state);
+  box-shadow: 0 0 10px var(--office-character-state);
+  opacity: 0.82;
+  pointer-events: none;
+}
+
+.office-avatar-nameplate::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 15% 0%, rgba(255, 255, 255, 0.055), transparent 44%),
+    linear-gradient(90deg, color-mix(in srgb, var(--office-character-state) 9%, transparent), transparent 46%);
+  pointer-events: none;
+}
+
+.office-avatar-nameplate strong {
+  display: block;
+  max-width: 145px;
+  overflow: hidden;
+  color: rgba(241, 247, 250, 0.96);
+  font-size: 11px;
+  font-weight: 680;
+  line-height: 1.22;
+  letter-spacing: 0.015em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-shadow: 0 1px 7px rgba(0, 0, 0, 0.38);
+}
+
+.office-avatar-nameplate span {
+  display: block;
+  margin-top: 3px;
+  overflow: hidden;
+  color: rgba(175, 194, 205, 0.78);
+  font-size: 9px;
+  font-weight: 580;
+  line-height: 1.15;
+  letter-spacing: 0.075em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.office-avatar-nameplate.state-running,
+.office-avatar-nameplate.state-working,
+.office-avatar-nameplate.state-planning,
+.office-avatar-nameplate.state-completed,
+.office-avatar-nameplate.state-available {
+  --office-character-state: rgba(65, 201, 139, 0.94);
+}
+
+.office-avatar-nameplate.state-starting,
+.office-avatar-nameplate.state-arriving,
+.office-avatar-nameplate.state-waiting,
+.office-avatar-nameplate.state-waiting-user,
+.office-avatar-nameplate.state-waiting-work,
+.office-avatar-nameplate.state-coffee-break,
+.office-avatar-nameplate.state-lunch-break,
+.office-avatar-nameplate.state-social-break,
+.office-avatar-nameplate.state-prayer-break {
+  --office-character-state: rgba(225, 170, 66, 0.94);
+}
+
+.office-avatar-nameplate.state-blocked,
+.office-avatar-nameplate.state-failed {
+  --office-character-state: rgba(226, 91, 80, 0.96);
+}
+
+.office-avatar-nameplate.is-hovered {
+  border-color: rgba(141, 191, 222, 0.5);
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.38),
+    0 0 0 1px rgba(104, 177, 218, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+.office-avatar-nameplate.is-selected {
+  border-color: rgba(117, 194, 235, 0.68);
+  background:
+    linear-gradient(180deg, rgba(24, 41, 53, 0.97), rgba(10, 21, 29, 0.95));
+  box-shadow:
+    0 13px 36px rgba(0, 0, 0, 0.42),
+    0 0 0 1px rgba(89, 184, 232, 0.2),
+    0 0 24px rgba(54, 145, 194, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.office-avatar-nameplate.is-selected::before {
+  opacity: 1;
+  box-shadow:
+    0 0 8px var(--office-character-state),
+    0 0 16px color-mix(in srgb, var(--office-character-state) 45%, transparent);
+}
+
+.office-avatar-nameplate.state-blocked.is-nameplate-visible,
+.office-avatar-nameplate.state-failed.is-nameplate-visible {
+  animation: office-character-alert-breathe 2.8s ease-in-out infinite;
+}
+
+.office-three-host-r3f:focus-within .office-avatar-nameplate.is-selected strong,
+.office-avatar-nameplate.is-hovered strong {
+  color: #ffffff;
+}
+
+@keyframes office-character-alert-breathe {
+  0%,
+  100% {
+    border-color: rgba(226, 91, 80, 0.44);
+    box-shadow:
+      0 10px 28px rgba(0, 0, 0, 0.34),
+      0 0 0 rgba(226, 91, 80, 0);
+  }
+  50% {
+    border-color: rgba(226, 91, 80, 0.7);
+    box-shadow:
+      0 12px 32px rgba(0, 0, 0, 0.4),
+      0 0 18px rgba(226, 91, 80, 0.13);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .office-avatar-nameplate,
+  .office-avatar-nameplate.state-blocked.is-nameplate-visible,
+  .office-avatar-nameplate.state-failed.is-nameplate-visible {
+    animation: none;
+    transition: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .office-avatar-nameplate {
+    min-width: 102px;
+    max-width: 148px;
+    padding: 6px 9px 6px 12px;
+    backdrop-filter: blur(9px);
+    -webkit-backdrop-filter: blur(9px);
+  }
+
+  .office-avatar-nameplate strong {
+    max-width: 126px;
+    font-size: 10px;
+  }
+
+  .office-avatar-nameplate span {
+    font-size: 8px;
+    letter-spacing: 0.065em;
+  }
+}
