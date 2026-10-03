@@ -14,9 +14,9 @@ const FLOOR_RICHNESS = {
   strategy: 'office-premium-strategy-forum',
 } as const
 
-describe('RC1 premium Office architecture', () => {
+describe('RC1 premium Office spatial architecture', () => {
   it.each(FLOORS)(
-    'mounts a batched presentation-only architecture layer for %s',
+    'mounts a presentation-only spatial scene kit for %s',
     (floor) => {
       const parent = new THREE.Group()
       const layer = mountPremiumOfficeArchitecture(parent, floor)
@@ -25,12 +25,15 @@ describe('RC1 premium Office architecture', () => {
       expect(layer.name).toBe('office-premium-architecture')
       expect(parent.children).toContain(layer)
       expect(layer.userData.presentationOnly).toBe(true)
+      expect(layer.userData.canonicalStateOwner).toBe(false)
       expect(layer.userData.floor).toBe(floor)
       expect(layer.userData.identity).toBe(identity.signature)
-      expect(layer.userData.visualRevision).toBe('composition-reset-v1')
+      expect(layer.userData.visualRevision).toBe('spatial-overhaul-v1')
       expect(layer.userData.roomSpanningOverheadFrame).toBe(false)
       expect(layer.getObjectByName(identity.architectureGroupName)).toBeTruthy()
       expect(layer.getObjectByName(FLOOR_RICHNESS[floor])).toBeTruthy()
+      expect(layer.getObjectByName('office-premium-floor-tiles')).toBeTruthy()
+      expect(layer.getObjectByName('office-premium-command-wall-display')).toBeTruthy()
       expect(layer.getObjectByName('office-premium-command-beacon')).toBeFalsy()
 
       let lightCount = 0
@@ -43,8 +46,8 @@ describe('RC1 premium Office architecture', () => {
       })
 
       expect(lightCount).toBe(0)
-      expect(instancedMeshCount).toBeGreaterThanOrEqual(9)
-      expect(renderableMeshCount).toBeLessThanOrEqual(12)
+      expect(instancedMeshCount).toBeGreaterThanOrEqual(16)
+      expect(renderableMeshCount).toBeLessThanOrEqual(18)
     },
   )
 
@@ -73,9 +76,27 @@ describe('RC1 premium Office architecture', () => {
         }
       })
 
-      // The room is 20 x 14. Decorative architecture must never bridge most of
-      // that span again; long cross-room beams were the source of the cage look.
+      // The Office footprint is approximately 20 x 14. No decorative element
+      // may bridge most of the room; larger surfaces are tiled into local pieces.
       expect(largestHorizontalSpan).toBeLessThanOrEqual(9)
+    },
+  )
+
+  it.each(FLOORS)(
+    'adds believable furniture/greenery depth without creating workflow truth for %s',
+    (floor) => {
+      const parent = new THREE.Group()
+      const layer = mountPremiumOfficeArchitecture(parent, floor)
+
+      const namedObjects: string[] = []
+      layer.traverse((object) => namedObjects.push(object.name))
+
+      expect(namedObjects.some((name) => name.includes('planters'))).toBe(true)
+      expect(namedObjects.some((name) => name.includes('greenery'))).toBe(true)
+      expect(namedObjects.some((name) => name.includes('practical-glow'))).toBe(true)
+      expect(layer.userData.telemetry).toBeUndefined()
+      expect(layer.userData.kpi).toBeUndefined()
+      expect(layer.userData.activity).toBeUndefined()
     },
   )
 
