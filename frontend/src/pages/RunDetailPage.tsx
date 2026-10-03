@@ -10,6 +10,7 @@ import { RunEvidenceTab } from '../components/RunEvidenceTab'
 import { RunFindingsTab } from '../components/RunFindingsTab'
 import { RunHeader } from '../components/RunHeader'
 import { RunOverviewTab } from '../components/RunOverviewTab'
+import { RunResultReviewPanel } from '../components/RunResultReviewPanel'
 import { RunTestsTab } from '../components/RunTestsTab'
 import { RunWorkflowTab } from '../components/RunWorkflowTab'
 
@@ -106,6 +107,8 @@ export function RunDetailPage({ runId }: RunDetailPageProps) {
         task={task}
         onRunUpdated={setRun}
       />
+
+      <RunResultReviewPanel run={run} />
 
       <div className="run-view-switch">
         <Link href={`/runs/${run.id}/office`} className="run-office-link">
