@@ -2,7 +2,14 @@
 
 ## Status
 
-Stacked implementation checkpoint after Phase 15–16.
+**COMPLETE / MERGED**
+
+```text
+PR: #42
+exact verified head: 9ebd07acb6fb0c015fbac8b1c1baaabc0f28c17a
+GitHub Actions verify #1440: SUCCESS
+merge commit: 979f18f00d3afe45ec0018494bfa7536bc7ec2d0
+```
 
 ## Why these phases are combined
 
@@ -27,11 +34,11 @@ This reduces exact head-on path overlap without introducing a physics engine, ra
 
 ### Shared runtime integration
 
-`moveOfficeRuntime()` now applies lane separation to `buildWorkspaceOfficePath()` output. Both current and future R3F consumers therefore inherit the same deterministic navigation policy rather than implementing renderer-specific movement logic.
+`moveOfficeRuntime()` applies lane separation to `buildWorkspaceOfficePath()` output. R3F Workspace consumers therefore inherit the same deterministic navigation policy rather than implementing renderer-specific movement logic.
 
 ### Living Office V2 truth retained
 
-The accepted behavior engine already provides:
+The accepted behavior engine provides:
 
 - Product, Analysis, Principal Engineering, Design, Backend, Frontend, QA, Security, and Technical Writing role homes;
 - stage-aware routing to planning, architecture, QA, review, documentation, and engineering zones;
@@ -52,11 +59,11 @@ Rapier/Cannon-style rigid-body simulation is intentionally not introduced. The O
 ## Acceptance gates
 
 ```text
-navigation policy tests
-existing Living Office tests
-frontend tests / typecheck / lint / build
-backend pytest / Ruff / format / MyPy
-production Office guard
-Chromium Planning / Live / Replay R3F smoke
-repository whitespace verification
+navigation policy tests: PASS
+existing Living Office tests: PASS
+frontend tests / typecheck / lint / build: PASS
+backend pytest / Ruff / format / MyPy: PASS
+production Office guard: PASS
+Chromium Planning / Live / Replay R3F smoke: PASS
+repository whitespace verification: PASS
 ```
