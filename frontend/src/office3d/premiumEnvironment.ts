@@ -2,6 +2,7 @@ import * as THREE from 'three'
 
 import { disposeObject } from './environment'
 import type { OfficeFloorKey } from './livingOffice'
+import { mountPremiumSceneEnhancements } from './premiumSceneEnhancements'
 import { mountPremiumSceneKit } from './premiumSceneKit'
 
 export interface PremiumOfficeIdentity {
@@ -66,13 +67,11 @@ function replaceLegacyVisualShell(parent: THREE.Group): void {
  *
  * This is a spatial replacement, not a decorative overlay. Production R3F
  * keeps canonical station/navigation/collision facts from `environment.ts`,
- * removes the historical primitive render shell, then mounts this premium
- * visual scene. It may provide materials, floor surfaces, glass rooms,
- * furniture masses, planters, wall displays and practical-light geometry, but
- * it never creates canonical workflow truth.
+ * removes the historical primitive render shell, then mounts a premium spatial
+ * kit plus a small practical-detail layer. The practical layer is capped at two
+ * local point lights; global hemisphere/key lighting remains renderer-owned.
  *
- * No THREE.Light objects are created here. Renderer lighting remains owned by
- * R3FOfficeScene/lighting.ts. Navigation, collision, occupancy and character
+ * Navigation, collision, occupancy, workflow, KPI, activity and character
  * stations remain owned by canonical environment/runtime projection code.
  */
 export function mountPremiumOfficeArchitecture(
@@ -82,16 +81,18 @@ export function mountPremiumOfficeArchitecture(
   replaceLegacyVisualShell(parent)
 
   const group = mountPremiumSceneKit(parent, floor)
+  mountPremiumSceneEnhancements(group, floor, 'evening')
   const identity = FLOOR_IDENTITY[floor]
 
   group.name = 'office-premium-architecture'
   group.userData.presentationOnly = true
   group.userData.floor = floor
   group.userData.identity = identity.signature
-  group.userData.visualRevision = 'spatial-overhaul-v2'
+  group.userData.visualRevision = 'spatial-overhaul-v3'
   group.userData.roomSpanningOverheadFrame = false
   group.userData.canonicalStateOwner = false
   group.userData.replacesLegacyVisualShell = true
+  group.userData.localPracticalLightCount = 2
 
   return group
 }
