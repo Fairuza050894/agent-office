@@ -14,8 +14,8 @@ export const OFFICE_CAMERA_CONTROL_POLICY: OfficeCameraControlPolicy = {
   enablePan: false,
   enableRotate: false,
   enableZoom: true,
-  minDistance: 9.5,
-  maxDistance: 24,
+  minDistance: 8.5,
+  maxDistance: 22,
 }
 
 export interface OfficeCameraView {
@@ -35,22 +35,22 @@ const FLOOR_CAMERA_VIEWS: Record<
       key: 'overview',
       label: 'Overview',
       shortcut: '1',
-      position: [14.4, 10.8, 16.2],
-      target: [0, 0.72, 0.65],
+      position: [13.2, 9.4, 14.2],
+      target: [0, 0.78, 0.75],
     },
     {
       key: 'primary',
       label: 'Lounge',
       shortcut: '2',
-      position: [8.6, 6.4, 12.0],
-      target: [-5.8, 0.8, 3.6],
+      position: [7.9, 5.85, 10.6],
+      target: [-5.8, 0.82, 3.6],
     },
     {
       key: 'secondary',
       label: 'Pantry',
       shortcut: '3',
-      position: [13.2, 5.8, 4.0],
-      target: [6.7, 0.78, -3.7],
+      position: [12.2, 5.35, 3.8],
+      target: [6.7, 0.82, -3.7],
     },
   ],
   build: [
@@ -58,22 +58,22 @@ const FLOOR_CAMERA_VIEWS: Record<
       key: 'overview',
       label: 'Overview',
       shortcut: '1',
-      position: [13.65, 10.75, 15.2],
-      target: [0, 0.68, 0.3],
+      position: [12.55, 9.25, 13.45],
+      target: [0, 0.72, 0.45],
     },
     {
       key: 'primary',
       label: 'Engineering',
       shortcut: '2',
-      position: [11.4, 7.0, 12.8],
-      target: [0, 0.72, 1.2],
+      position: [10.35, 6.35, 11.5],
+      target: [0, 0.78, 1.2],
     },
     {
       key: 'secondary',
       label: 'QA / Review',
       shortcut: '3',
-      position: [3.0, 6.0, 8.8],
-      target: [-5.4, 0.82, -2.2],
+      position: [2.4, 5.45, 7.8],
+      target: [-5.4, 0.85, -2.2],
     },
   ],
   strategy: [
@@ -81,22 +81,22 @@ const FLOOR_CAMERA_VIEWS: Record<
       key: 'overview',
       label: 'Overview',
       shortcut: '1',
-      position: [14.0, 10.9, 16.0],
-      target: [0, 0.76, 0.55],
+      position: [13.0, 9.5, 14.0],
+      target: [0, 0.8, 0.6],
     },
     {
       key: 'primary',
       label: 'Planning',
       shortcut: '2',
-      position: [9.2, 6.4, 11.0],
-      target: [0, 0.82, 0.45],
+      position: [8.4, 5.9, 10.0],
+      target: [0, 0.86, 0.5],
     },
     {
       key: 'secondary',
       label: 'Meeting',
       shortcut: '3',
-      position: [2.7, 5.4, 3.4],
-      target: [-6.8, 0.82, -3.5],
+      position: [1.8, 4.85, 2.7],
+      target: [-6.8, 0.85, -3.5],
     },
   ],
 }
@@ -116,7 +116,6 @@ export function officeCameraView(
     FLOOR_CAMERA_VIEWS[floor][0]
   )
 }
-
 
 export interface OfficeRendererViewport {
   width: number

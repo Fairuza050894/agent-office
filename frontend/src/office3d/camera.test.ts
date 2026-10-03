@@ -28,8 +28,8 @@ describe('office camera presets', () => {
       enablePan: false,
       enableRotate: false,
       enableZoom: true,
-      minDistance: 9.5,
-      maxDistance: 24,
+      minDistance: 8.5,
+      maxDistance: 22,
     })
   })
 
@@ -56,6 +56,17 @@ describe('office camera presets', () => {
           OFFICE_CAMERA_CONTROL_POLICY.maxDistance,
         )
       }
+    }
+  })
+
+  it('keeps overview framing immersive rather than distant', () => {
+    for (const floor of ['commons', 'build', 'strategy'] as const) {
+      const view = officeCameraView(floor, 'overview')
+      const [x, y, z] = view.position
+      const [tx, ty, tz] = view.target
+      const distance = Math.hypot(x - tx, y - ty, z - tz)
+
+      expect(distance).toBeLessThanOrEqual(21)
     }
   })
 
