@@ -35,7 +35,9 @@ const floors = pilotRequested ? ['build'] : fullFloors
 const lightingWindows = pilotRequested
   ? pilotLightingWindows
   : fullLightingWindows
-const pilotVariants = pilotRequested ? ['primitive', 'kit'] : ['primitive']
+// Full acceptance must reflect the normal production path. Do not force the
+// primitive pilot fallback when generating release-facing screenshots.
+const pilotVariants = pilotRequested ? ['primitive', 'kit'] : [null]
 
 function jsonResponse(route, body) {
   return route.fulfill({
@@ -94,27 +96,27 @@ function expectedBudget(capture, budget) {
 function assertLightBudget(capture) {
   const lights = capture.renderer.lights
   if (!lights) {
-    throw new Error(`V1 light metrics missing for ${capture.file}.`)
+    throw new Error(`Light metrics missing for ${capture.file}.`)
   }
   if (lights.hemisphere !== 1 || lights.directional !== 1) {
     throw new Error(
-      `V1 global lighting contract failed for ${capture.file}: hemisphere=${lights.hemisphere}, directional=${lights.directional}.`,
+      `Global lighting contract failed for ${capture.file}: hemisphere=${lights.hemisphere}, directional=${lights.directional}.`,
     )
   }
   if (lights.point > 3 || lights.total > 5) {
     throw new Error(
-      `V1 accent-light budget failed for ${capture.file}: point=${lights.point}, total=${lights.total}.`,
+      `Accent-light budget failed for ${capture.file}: point=${lights.point}, total=${lights.total}.`,
     )
   }
 }
 
-function assertV1RendererBudget(capture, budget) {
+function assertProductionRendererBudget(capture, budget) {
   const expected = expectedBudget(capture, budget)
 
   for (const key of ['calls', 'triangles', 'geometries', 'textures']) {
     if (capture.renderer[key] > expected[key]) {
       throw new Error(
-        `V1 renderer budget exceeded for ${capture.file}: ${key}=${capture.renderer[key]} > V0 ${expected[key]}.`,
+        `Production R3F renderer budget exceeded for ${capture.file}: ${key}=${capture.renderer[key]} > accepted ceiling ${expected[key]}.`,
       )
     }
   }
@@ -240,9 +242,6 @@ async function waitForPilot(page, variant) {
     lastObserved = candidate
     if (!assertPilotState(candidate, variant)) continue
 
-    // React registry/context updates can remount the Office environment shortly
-    // after the first ready signal. Require the same pilot generation to remain
-    // ready across a short settle window before taking renderer evidence.
     await page.waitForTimeout(500)
 
     const confirmed = await page.evaluate((requestedVariant) => {
@@ -266,14 +265,10 @@ async function waitForPilot(page, variant) {
       }
     }, variant)
 
-    if (!confirmed) {
-      continue
-    }
+    if (!confirmed) continue
 
     lastObserved = confirmed
-    if (assertPilotState(confirmed, variant)) {
-      return confirmed
-    }
+    if (assertPilotState(confirmed, variant)) return confirmed
   }
 
   throw new Error(
@@ -338,14 +333,15 @@ async function capture() {
             const params = new URLSearchParams({
               floor,
               fixture: 'diorama',
-              pilot,
+              renderer: 'r3f',
               debugTime: lighting.debugTime,
             })
+            if (pilotRequested && pilot) params.set('pilot', pilot)
             const url = `${baseUrl}/office?${params.toString()}`
 
             await page.goto(url, { waitUntil: 'networkidle' })
             await page.locator('[data-office-diorama-debug="simulated"]').waitFor()
-            await page.locator('.office-three-host canvas').waitFor()
+            await page.locator('[data-office-renderer="r3f"] canvas').waitFor()
             await page.waitForFunction(
               () =>
                 Boolean(
@@ -354,11 +350,27 @@ async function capture() {
                 ),
             )
 
-            const pilotState = pilotRequested
+            const rendererKind = await page.evaluate(
+              () => window.__AGENT_OFFICE_DIARAMA__?.renderer ?? null,
+            )
+            if (rendererKind !== 'r3f') {
+              throw new Error(
+                `Visual acceptance captured ${rendererKind ?? 'unknown'} instead of production R3F for ${floor}/${lighting.key}/${viewport.key}.`,
+              )
+            }
+
+            const pilotState = pilotRequested && pilot
               ? await waitForPilot(page, pilot)
               : null
 
-            await page.waitForTimeout(350)
+            // Normal Build production mode mounts the GLB furniture kit
+            // asynchronously. Give the settled scene a short deterministic
+            // window before renderer metrics and screenshots are collected.
+            if (!pilotRequested && floor === 'build') {
+              await page.waitForTimeout(900)
+            } else {
+              await page.waitForTimeout(350)
+            }
 
             const rendererInfo = await page.evaluate(
               () => window.__AGENT_OFFICE_DIARAMA__?.rendererInfo ?? null,
@@ -383,13 +395,14 @@ async function capture() {
               file: filename,
               floor,
               lighting: lighting.key,
-              pilot,
+              pilot: pilot ?? null,
               debugTime: lighting.debugTime,
               viewport: {
                 width: viewport.width,
                 height: viewport.height,
                 deviceScaleFactor: 1,
               },
+              rendererKind,
               renderer: rendererInfo,
               pilotState,
             }
@@ -397,12 +410,12 @@ async function capture() {
             if (pilotRequested) {
               assertV2PilotBudget(captureRecord, v0Budget)
             } else {
-              assertV1RendererBudget(captureRecord, v0Budget)
+              assertProductionRendererBudget(captureRecord, v0Budget)
             }
             captures.push(captureRecord)
 
             await context.close()
-            process.stdout.write(`captured ${filename}\n`)
+            process.stdout.write(`captured ${filename} with ${rendererKind}\n`)
           }
         }
       }
@@ -420,9 +433,10 @@ async function capture() {
     }
 
     const baseline = {
-      schemaVersion: pilotRequested ? 2 : 1,
+      schemaVersion: pilotRequested ? 2 : 3,
       fixture: 'diorama',
-      mode: pilotRequested ? 'pilot-ab' : 'baseline',
+      renderer: 'r3f',
+      mode: pilotRequested ? 'pilot-ab' : 'production-visual-acceptance',
       timeZone: 'Asia/Jakarta',
       captureCount: captures.length,
       captures,
@@ -442,10 +456,10 @@ async function capture() {
       )
     } else {
       process.stdout.write(
-        `Office visual baseline complete: ${captures.length} PNG files + renderer-info.json\n`,
+        `Office production R3F visual acceptance complete: ${captures.length} PNG files + renderer-info.json\n`,
       )
       process.stdout.write(
-        'V1 renderer and light budgets passed against the accepted V0 baseline.\n',
+        'Production R3F renderer/light budgets passed against the accepted ceiling.\n',
       )
     }
     process.stdout.write(`Artifacts: ${outputRoot}\n`)
