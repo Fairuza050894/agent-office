@@ -10,7 +10,7 @@ const FLOORS = ['commons', 'build', 'strategy'] as const
 
 describe('RC1 premium Office architecture', () => {
   it.each(FLOORS)(
-    'mounts a presentation-only architecture layer for %s',
+    'mounts a batched presentation-only architecture layer for %s',
     (floor) => {
       const parent = new THREE.Group()
       const layer = mountPremiumOfficeArchitecture(parent, floor)
@@ -25,11 +25,17 @@ describe('RC1 premium Office architecture', () => {
       expect(layer.getObjectByName(identity.architectureGroupName)).toBeTruthy()
 
       let lightCount = 0
+      let renderableMeshCount = 0
+      let instancedMeshCount = 0
       layer.traverse((object) => {
         if (object instanceof THREE.Light) lightCount += 1
+        if (object instanceof THREE.Mesh) renderableMeshCount += 1
+        if (object instanceof THREE.InstancedMesh) instancedMeshCount += 1
       })
 
       expect(lightCount).toBe(0)
+      expect(instancedMeshCount).toBeGreaterThanOrEqual(8)
+      expect(renderableMeshCount).toBeLessThanOrEqual(16)
     },
   )
 
