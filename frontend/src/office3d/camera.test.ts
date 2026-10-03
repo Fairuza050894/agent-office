@@ -28,8 +28,8 @@ describe('office camera presets', () => {
       enablePan: false,
       enableRotate: false,
       enableZoom: true,
-      minDistance: 8.5,
-      maxDistance: 22,
+      minDistance: 7.5,
+      maxDistance: 18.5,
     })
   })
 
@@ -59,14 +59,15 @@ describe('office camera presets', () => {
     }
   })
 
-  it('keeps overview framing immersive rather than distant', () => {
+  it('keeps overview framing close enough to read furniture and characters', () => {
     for (const floor of ['commons', 'build', 'strategy'] as const) {
       const view = officeCameraView(floor, 'overview')
       const [x, y, z] = view.position
       const [tx, ty, tz] = view.target
       const distance = Math.hypot(x - tx, y - ty, z - tz)
 
-      expect(distance).toBeLessThanOrEqual(21)
+      expect(distance).toBeLessThanOrEqual(18)
+      expect(y).toBeLessThanOrEqual(8)
     }
   })
 
@@ -103,7 +104,7 @@ describe('office camera presets', () => {
 
         expect(Math.abs(x)).toBeLessThanOrEqual(16)
         expect(y).toBeGreaterThanOrEqual(4)
-        expect(y).toBeLessThanOrEqual(12)
+        expect(y).toBeLessThanOrEqual(9)
         expect(Math.abs(z)).toBeLessThanOrEqual(18)
         expect(Math.abs(tx)).toBeLessThanOrEqual(9)
         expect(ty).toBeGreaterThanOrEqual(0)
