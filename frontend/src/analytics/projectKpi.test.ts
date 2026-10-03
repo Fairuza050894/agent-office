@@ -7,7 +7,7 @@ const TASKS: Task[] = [
   {
     id: 'task-1',
     project_id: 'project-1',
-    title: 'Delivered feature',
+    title: 'Technically completed feature',
     objective: 'Ship feature',
     constraints: null,
     requested_workflow_id: null,
@@ -63,7 +63,7 @@ function run(overrides: Partial<Run>): Run {
 }
 
 describe('projectKpiSnapshot', () => {
-  it('derives delivery, success, cycle time, retries, and remediation from canonical Task/Run facts', () => {
+  it('derives technical completion, success, cycle time, retries, and remediation from canonical Task/Run facts', () => {
     const snapshot = projectKpiSnapshot(TASKS, [
       run({
         id: 'run-1',
@@ -95,12 +95,10 @@ describe('projectKpiSnapshot', () => {
     expect(snapshot.totalTasks).toBe(3)
     expect(snapshot.tasksWithRuns).toBe(2)
     expect(snapshot.unstartedTasks).toBe(1)
-    expect(snapshot.deliveredTasks).toBe(1)
     expect(snapshot.activeRuns).toBe(1)
     expect(snapshot.completedRuns).toBe(1)
     expect(snapshot.failedRuns).toBe(1)
     expect(snapshot.runSuccessRate).toBe(50)
-    expect(snapshot.taskDeliveryRate).toBeCloseTo(100 / 3)
     expect(snapshot.averageCompletedCycleMinutes).toBe(60)
     expect(snapshot.totalRemediationCycles).toBe(3)
     expect(snapshot.tasksWithRetries).toBe(1)
@@ -120,7 +118,6 @@ describe('projectKpiSnapshot', () => {
     const snapshot = projectKpiSnapshot([], [])
 
     expect(snapshot.runSuccessRate).toBeNull()
-    expect(snapshot.taskDeliveryRate).toBeNull()
     expect(snapshot.averageCompletedCycleMinutes).toBeNull()
     expect(snapshot.latestActivityAt).toBeNull()
   })
