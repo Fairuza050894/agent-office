@@ -1,6 +1,6 @@
 # RC1 Premium 3D Architecture
 
-Status: Active RC1 architecture  
+Status: Active production RC1 architecture  
 Date: 2026-10-03
 
 ## 1. Purpose
@@ -97,7 +97,8 @@ business-state owner.
 
 ## 5. Premium architecture layer
 
-`premiumEnvironment.ts` is presentation-only.
+`premiumEnvironment.ts` is presentation-only and is active in the normal R3F
+Planning / Live / Replay scene lifecycle.
 
 It provides:
 
@@ -243,3 +244,27 @@ A premium 3D slice is mergeable only when:
 
 Infrastructure failures with absent job steps/logs are retriable failures, not
 successful verification.
+
+## 13. Activation evidence
+
+The first production activation of this architecture was accepted through:
+
+```text
+PR: #65
+exact verified head: b39f6c4957b260b81ad1b8406badaa8101157ba8
+GitHub Actions verify #1615: SUCCESS
+merge commit: 544f593ca198c8dbe2b7cab703df17483b7c6ee5
+post-merge main verify #1616: SUCCESS
+```
+
+Both verification runs used real hosted runners. The PR-head run executed and
+passed repository whitespace verification, backend install/dependency check,
+pytest, Ruff, format, MyPy, frontend install/audit/tests/typecheck/lint/build,
+production Office guard, Playwright Chromium installation, and production
+Office renderer split smoke. The merged `main` commit then passed the same
+repository/backend/frontend workflow again.
+
+This evidence accepts the premium architecture as production presentation for
+Planning, Live, and Replay. It does not change the truth model, does not retire
+the recovery renderer, and does not claim completion of the later browser/device
+visual-regression or adaptive-quality release gates.
