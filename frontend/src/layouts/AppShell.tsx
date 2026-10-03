@@ -18,6 +18,7 @@ import { RunDetailPage } from '../pages/RunDetailPage'
 import { ProjectDetailPage } from '../pages/ProjectDetailPage'
 import { RunOfficePage } from '../pages/RunOfficePage'
 import { OfficeWorkspacePage } from '../pages/OfficeWorkspacePage'
+import { ProjectKpiPage } from '../pages/ProjectKpiPage'
 
 const OFFICE_SIDEBAR_STORAGE_KEY = 'agent-office.office-sidebar-collapsed'
 
@@ -58,7 +59,6 @@ export function AppShell() {
     })
   }
 
-  // Close drawer on Escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isNavOpen) {
@@ -105,6 +105,8 @@ export function AppShell() {
         return <WorkflowsPage />
       case '/executors':
         return <ExecutorsPage />
+      case '/kpi':
+        return <ProjectKpiPage />
       case '/activity':
         return <ActivityPage />
       case '/evidence':
