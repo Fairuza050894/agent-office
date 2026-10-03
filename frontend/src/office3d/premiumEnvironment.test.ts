@@ -31,26 +31,31 @@ describe('RC1 premium Office spatial architecture', () => {
       expect(layer.userData.replacesLegacyVisualShell).toBe(true)
       expect(layer.userData.floor).toBe(floor)
       expect(layer.userData.identity).toBe(identity.signature)
-      expect(layer.userData.visualRevision).toBe('spatial-overhaul-v2')
+      expect(layer.userData.visualRevision).toBe('spatial-overhaul-v3')
       expect(layer.userData.roomSpanningOverheadFrame).toBe(false)
+      expect(layer.userData.localPracticalLightCount).toBe(2)
       expect(layer.getObjectByName(identity.architectureGroupName)).toBeTruthy()
       expect(layer.getObjectByName(FLOOR_RICHNESS[floor])).toBeTruthy()
       expect(layer.getObjectByName('office-premium-floor-tiles')).toBeTruthy()
       expect(layer.getObjectByName('office-premium-command-wall-display')).toBeTruthy()
+      expect(layer.getObjectByName('office-premium-scene-enhancements')).toBeTruthy()
       expect(layer.getObjectByName('office-premium-command-beacon')).toBeFalsy()
 
       let lightCount = 0
+      let pointLightCount = 0
       let renderableMeshCount = 0
       let instancedMeshCount = 0
       layer.traverse((object) => {
         if (object instanceof THREE.Light) lightCount += 1
+        if (object instanceof THREE.PointLight) pointLightCount += 1
         if (object instanceof THREE.Mesh) renderableMeshCount += 1
         if (object instanceof THREE.InstancedMesh) instancedMeshCount += 1
       })
 
-      expect(lightCount).toBe(0)
-      expect(instancedMeshCount).toBeGreaterThanOrEqual(16)
-      expect(renderableMeshCount).toBeLessThanOrEqual(18)
+      expect(lightCount).toBe(2)
+      expect(pointLightCount).toBe(2)
+      expect(instancedMeshCount).toBeGreaterThanOrEqual(20)
+      expect(renderableMeshCount).toBeLessThanOrEqual(26)
     },
   )
 
@@ -113,6 +118,7 @@ describe('RC1 premium Office spatial architecture', () => {
       expect(namedObjects.some((name) => name.includes('planters'))).toBe(true)
       expect(namedObjects.some((name) => name.includes('greenery'))).toBe(true)
       expect(namedObjects.some((name) => name.includes('practical-glow'))).toBe(true)
+      expect(namedObjects.some((name) => name.includes('refined'))).toBe(true)
       expect(layer.userData.telemetry).toBeUndefined()
       expect(layer.userData.kpi).toBeUndefined()
       expect(layer.userData.activity).toBeUndefined()
