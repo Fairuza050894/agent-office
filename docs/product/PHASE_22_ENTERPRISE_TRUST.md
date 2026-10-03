@@ -2,7 +2,16 @@
 
 ## Status
 
-Implementation checkpoint after Phase 21 Task Decision Center. Acceptance requires a successful exact-head full verification run before merge.
+**COMPLETE / MERGED**
+
+```text
+PR: #47
+exact verified head: 3f151fbdeab69f75fdcc48f906ca8cd6ed9b7139
+GitHub Actions verify #1563: SUCCESS
+merge commit: e60610732d3aa642f2da9abfc0e44bd54de9c354
+```
+
+Acceptance evidence is a real exact-head GitHub-hosted run: backend Pytest/Ruff/format/MyPy, frontend tests/typecheck/lint/build, Office production guard, Chromium Planning/Live/Replay R3F smoke, and repository whitespace verification all passed before merge.
 
 ## Product goal
 
@@ -89,15 +98,15 @@ The dossier and KPI are read projections over those records.
 ## Acceptance gates
 
 ```text
-backend pytest / Ruff / format / MyPy
-frontend tests / typecheck / lint / build
-accepted-change KPI tests
-change-dossier truth tests
-result-review timestamp tests
-Office character production guard
-production Office guard
-Chromium Planning / Live / Replay R3F smoke
-repository whitespace verification
+backend pytest / Ruff / format / MyPy: PASS
+frontend tests / typecheck / lint / build: PASS
+accepted-change KPI tests: PASS
+change-dossier truth tests: PASS
+result-review timestamp tests: PASS
+Office character production guard: PASS
+production Office guard: PASS
+Chromium Planning / Live / Replay R3F smoke: PASS
+repository whitespace verification: PASS
 ```
 
 ## Deferred by design
@@ -112,5 +121,3 @@ The following remain separate production decisions rather than being silently cl
 - second real executor;
 - generic business-workflow typed steps;
 - Three.js fallback retirement.
-
-Those items are Phase 23/release-hardening scope and require their own safety/compatibility gates.
