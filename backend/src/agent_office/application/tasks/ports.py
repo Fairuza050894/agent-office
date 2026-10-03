@@ -12,6 +12,10 @@ class TaskRepository(Protocol):
         """Persist a new Task."""
         ...
 
+    def update(self, task: Task) -> None:
+        """Persist an explicit human amendment to an existing Task."""
+        ...
+
     def get(self, task_id: TaskId) -> Task | None:
         """Return a Task by ID."""
         ...

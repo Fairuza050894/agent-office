@@ -1,6 +1,7 @@
 import type {
   AgentProfile,
   AgentRun,
+  ApproveResultRequest,
   AuditRecord,
   ComposerMessage,
   ComposerPreparation,
@@ -18,7 +19,9 @@ import type {
   PlanningQuestionDecision,
   Project,
   RegisterProjectRequest,
+  RequestResultChangesRequest,
   RequirementCandidate,
+  ResultReview,
   ResumeRunRequest,
   Run,
   RunFindingsResponse,
@@ -197,6 +200,24 @@ export const api = {
     request(`/api/runs/${encodeURIComponent(runId)}/events`),
   getRunAudit: (runId: string): Promise<AuditRecord[]> =>
     request(`/api/runs/${encodeURIComponent(runId)}/audit`),
+  getResultReview: (runId: string): Promise<ResultReview> =>
+    request(`/api/runs/${encodeURIComponent(runId)}/result-review`),
+  requestResultChanges: (
+    runId: string,
+    data: RequestResultChangesRequest,
+  ): Promise<ResultReview> =>
+    request(`/api/runs/${encodeURIComponent(runId)}/result-review/request-changes`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  approveAndDeliverResult: (
+    runId: string,
+    data: ApproveResultRequest = {},
+  ): Promise<ResultReview> =>
+    request(`/api/runs/${encodeURIComponent(runId)}/result-review/approve-and-deliver`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 
   getRunWorkspaces: (runId: string): Promise<Workspace[]> =>
     request(`/api/runs/${encodeURIComponent(runId)}/workspaces`),

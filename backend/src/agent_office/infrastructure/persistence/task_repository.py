@@ -48,6 +48,37 @@ class SQLiteTaskRepository:
                 "Task could not be persisted because a persistence invariant was violated"
             ) from exc
 
+    def update(self, task: Task) -> None:
+        """Persist the current Task value after an explicit human amendment."""
+
+        with self._database.transaction() as connection:
+            cursor = connection.execute(
+                """
+                UPDATE tasks
+                SET title = ?,
+                    objective = ?,
+                    constraints = ?,
+                    requested_workflow_id = ?,
+                    requested_executor_id = ?,
+                    updated_at = ?
+                WHERE id = ?
+                  AND project_id = ?
+                """,
+                (
+                    task.title,
+                    task.objective,
+                    task.constraints,
+                    _optional_id(task.requested_workflow_id),
+                    _optional_id(task.requested_executor_id),
+                    _serialize_datetime(task.updated_at),
+                    str(task.id),
+                    str(task.project_id),
+                ),
+            )
+
+            if cursor.rowcount != 1:
+                raise TaskPersistenceError("Task update did not match one canonical Task")
+
     def get(self, task_id: TaskId) -> Task | None:
         with self._database.connection() as connection:
             row = connection.execute(

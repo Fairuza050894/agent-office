@@ -44,11 +44,12 @@ class AuditActorType(StrEnum):
 
 
 class AuditAction(StrEnum):
-    """The closed set of auditable Phase 3 manual interventions.
+    """The closed set of auditable control-plane interventions.
 
-    DOMAIN_MODEL §36 does not enumerate actions, so Phase 3 defines only the
-    interventions it actually supports. The taxonomy is closed: an unlisted
-    action cannot be audited, so no caller can inject an arbitrary audited fact.
+    The taxonomy remains closed: an unlisted action cannot be audited, so no
+    caller can inject an arbitrary audited fact. Phase 20 adds the human result
+    review and managed-delivery actions that close the Task value loop without
+    changing the meaning of technical Run completion.
     """
 
     RUN_CANCELLATION_REQUESTED = "RUN_CANCELLATION_REQUESTED"
@@ -66,6 +67,10 @@ class AuditAction(StrEnum):
     REQUIREMENT_REJECTED = "REQUIREMENT_REJECTED"
     REQUIREMENT_DEFERRED = "REQUIREMENT_DEFERRED"
     PLANNING_DECISION_RECORDED = "PLANNING_DECISION_RECORDED"
+    RESULT_APPROVED = "RESULT_APPROVED"
+    RESULT_CHANGES_REQUESTED = "RESULT_CHANGES_REQUESTED"
+    RESULT_REMEDIATION_CREATED = "RESULT_REMEDIATION_CREATED"
+    RESULT_DELIVERED = "RESULT_DELIVERED"
 
 
 class AuditTargetType(StrEnum):
@@ -105,9 +110,9 @@ RUN_SCOPED_AUDIT_TARGETS: frozenset[AuditTargetType] = frozenset(
 class AuditRecord:
     """One append-only record of a manual control-plane intervention.
 
-    ``project_id`` and ``run_id`` carry ownership. Every Phase 3 intervention is
-    Run-scoped, so both are always populated even though DOMAIN_MODEL §36 marks
-    them optional for future control-plane actions that are not Run-scoped.
+    ``project_id`` and ``run_id`` carry ownership. Every current intervention is
+    attributable to its canonical scope; run-scoped targets always require the
+    owning Run.
     """
 
     id: AuditRecordId

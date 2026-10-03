@@ -63,7 +63,7 @@ afterEach(() => {
 })
 
 describe('ProjectKpiPage', () => {
-  it('renders factual Task/Run KPI and states the non-ranking policy', async () => {
+  it('renders technical completion without calling it delivery', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn((input: RequestInfo | URL) => {
@@ -93,14 +93,17 @@ describe('ProjectKpiPage', () => {
     expect(await screen.findByText('Ship KPI report')).toBeInTheDocument()
 
     const summary = screen.getByLabelText('Project KPI summary')
-    expect(within(summary).getAllByText('100.0%')).toHaveLength(2)
+    expect(within(summary).getByText('Runs completed')).toBeInTheDocument()
+    expect(within(summary).getByText('technical completion, not human delivery')).toBeInTheDocument()
+    expect(within(summary).getByText('100.0%')).toBeInTheDocument()
     expect(within(summary).getByText('1h 30m')).toBeInTheDocument()
+    expect(within(summary).queryByText('Task delivery')).not.toBeInTheDocument()
 
     const health = screen.getByLabelText('Project execution health')
     expect(within(health).getByText('Remediation cycles')).toBeInTheDocument()
 
     expect(
-      screen.getByText(/does not rank agents or infer individual productivity/i),
+      screen.getByText(/COMPLETED is not DELIVERED/i),
     ).toBeInTheDocument()
   })
 })

@@ -3,20 +3,33 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import replace
 from datetime import datetime
 
 from agent_office.application.projects.errors import ProjectNotFoundError
 from agent_office.application.projects.ports import ProjectRepository
 from agent_office.application.tasks.errors import TaskNotFoundError
 from agent_office.application.tasks.ports import TaskRepository
-from agent_office.domain import ExecutorId, ProjectId, Task, TaskId, WorkflowDefinitionId, utc_now
+from agent_office.domain import (
+    DomainInvariantError,
+    ExecutorId,
+    ProjectId,
+    RunId,
+    Task,
+    TaskId,
+    WorkflowDefinitionId,
+    utc_now,
+)
 
 TaskIdFactory = Callable[[], TaskId]
 Clock = Callable[[], datetime]
 
+MAX_HUMAN_REVIEW_FEEDBACK_LENGTH = 2000
+MAX_TASK_CONSTRAINTS_LENGTH = 12000
+
 
 class TaskService:
-    """Coordinates Task creation and query operations."""
+    """Coordinates Task creation, explicit intent amendments, and queries."""
 
     def __init__(
         self,
@@ -84,3 +97,45 @@ class TaskService:
     def list_tasks(self, project_id: ProjectId) -> tuple[Task, ...]:
         """Return all Tasks for a Project."""
         return self._task_repository.list_by_project(project_id)
+
+    def append_result_review_feedback(
+        self,
+        task_id: TaskId,
+        *,
+        source_run_id: RunId,
+        feedback: str,
+    ) -> Task:
+        """Append explicit human review feedback as a bounded Task constraint.
+
+        The Task objective is never rewritten. Human feedback is appended with a
+        source-Run marker so the next Run receives it through the existing Task
+        context, while the append-only AuditRecord remains the authoritative
+        history of who requested the change and why.
+        """
+
+        normalized = " ".join(feedback.split()).strip()
+        if not normalized:
+            raise DomainInvariantError("Result review feedback must not be empty")
+        if len(normalized) > MAX_HUMAN_REVIEW_FEEDBACK_LENGTH:
+            raise DomainInvariantError("Result review feedback is too long")
+
+        task = self.get_task(task_id)
+        marker = f"[Human review after Run {source_run_id}]"
+        amendment = f"{marker} {normalized}"
+        current = task.constraints or ""
+
+        # An idempotent repeated request must not duplicate the same amendment.
+        if marker in current:
+            return task
+
+        combined = amendment if not current else f"{current}\n{amendment}"
+        if len(combined) > MAX_TASK_CONSTRAINTS_LENGTH:
+            raise DomainInvariantError("Task constraints are too large after review feedback")
+
+        updated = replace(
+            task,
+            constraints=combined,
+            updated_at=utc_now(self._clock),
+        )
+        self._task_repository.update(updated)
+        return updated

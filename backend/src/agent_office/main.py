@@ -10,6 +10,7 @@ from agent_office.api.planning import router as planning_router
 from agent_office.api.projects import router as projects_router
 from agent_office.api.recovery import router as recovery_router
 from agent_office.api.resources import router as resources_router
+from agent_office.api.results import router as results_router
 from agent_office.api.review import router as review_router
 from agent_office.api.runs import router as runs_router
 from agent_office.api.tasks import router as tasks_router
@@ -30,6 +31,7 @@ from agent_office.application.planning import (
 )
 from agent_office.application.projects import ProjectService
 from agent_office.application.recovery import RecoveryService
+from agent_office.application.results import ResultReviewService
 from agent_office.application.review import FindingService
 from agent_office.application.runs import RunService, RunStageService
 from agent_office.application.tasks import TaskService
@@ -47,7 +49,11 @@ from agent_office.infrastructure.executors import (
     ReferenceScenario,
     RegisteredExecutor,
 )
-from agent_office.infrastructure.git import GitRepositoryInspector, GitWorktreeManager
+from agent_office.infrastructure.git import (
+    GitManagedResultDelivery,
+    GitRepositoryInspector,
+    GitWorktreeManager,
+)
 from agent_office.infrastructure.persistence import (
     SQLiteAgentRunRepository,
     SQLiteAuditRecordRepository,
@@ -183,6 +189,13 @@ def create_app(
         event_service=event_service,
         audit_service=audit_service,
     )
+    result_review_service = ResultReviewService(
+        run_service=run_service,
+        task_service=task_service,
+        workspace_service=workspace_service,
+        audit_service=audit_service,
+        delivery=GitManagedResultDelivery(worktree_manager),
+    )
 
     if executor_registry is None:
         reference_executor = ReferenceExecutor(
@@ -238,6 +251,7 @@ def create_app(
     app.state.workspace_service = workspace_service
     app.state.finding_service = finding_service
     app.state.verification_service = verification_service
+    app.state.result_review_service = result_review_service
     app.state.orchestrator = RunOrchestrator(
         run_service=run_service,
         task_service=task_service,
@@ -268,6 +282,7 @@ def create_app(
     app.include_router(planning_router)
     app.include_router(resources_router)
     app.include_router(review_router)
+    app.include_router(results_router)
     app.include_router(tasks_router)
     app.include_router(runs_router)
     app.include_router(workflows_router)
