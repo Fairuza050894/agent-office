@@ -12,11 +12,7 @@ export interface ChangeDossierInput {
   project: Project
   task: Task
   run: Run
-  review: ResultReview & {
-    changes_requested_at?: string | null
-    approved_at?: string | null
-    delivered_at?: string | null
-  }
+  review: ResultReview
   evidence: Evidence[]
   findings: Finding[]
   audit: AuditRecord[]
