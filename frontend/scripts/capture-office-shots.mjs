@@ -16,6 +16,10 @@ const outputRoot = path.join(
 )
 const baseUrl = 'http://127.0.0.1:5174'
 const v0BudgetPath = path.join(__dirname, 'office-v0-renderer-budget.json')
+const productionBudgetPath = path.join(
+  __dirname,
+  'office-rc1-r3f-renderer-budget.json',
+)
 
 const fullFloors = ['commons', 'build', 'strategy']
 const fullLightingWindows = [
@@ -87,7 +91,7 @@ function expectedBudget(capture, budget) {
   const expected = budget.floors?.[capture.floor]?.[viewportKey]
   if (!expected) {
     throw new Error(
-      `Missing V0 renderer budget for ${capture.floor}/${viewportKey}.`,
+      `Missing renderer budget for ${capture.floor}/${viewportKey}.`,
     )
   }
   return expected
@@ -116,7 +120,7 @@ function assertProductionRendererBudget(capture, budget) {
   for (const key of ['calls', 'triangles', 'geometries', 'textures']) {
     if (capture.renderer[key] > expected[key]) {
       throw new Error(
-        `Production R3F renderer budget exceeded for ${capture.file}: ${key}=${capture.renderer[key]} > accepted ceiling ${expected[key]}.`,
+        `Production R3F renderer budget exceeded for ${capture.file}: ${key}=${capture.renderer[key]} > candidate ceiling ${expected[key]}.`,
       )
     }
   }
@@ -278,6 +282,9 @@ async function waitForPilot(page, variant) {
 
 async function capture() {
   const v0Budget = JSON.parse(await readFile(v0BudgetPath, 'utf8'))
+  const productionBudget = JSON.parse(
+    await readFile(productionBudgetPath, 'utf8'),
+  )
 
   await rm(outputRoot, { recursive: true, force: true })
   await mkdir(outputRoot, { recursive: true })
@@ -410,7 +417,7 @@ async function capture() {
             if (pilotRequested) {
               assertV2PilotBudget(captureRecord, v0Budget)
             } else {
-              assertProductionRendererBudget(captureRecord, v0Budget)
+              assertProductionRendererBudget(captureRecord, productionBudget)
             }
             captures.push(captureRecord)
 
@@ -433,10 +440,16 @@ async function capture() {
     }
 
     const baseline = {
-      schemaVersion: pilotRequested ? 2 : 3,
+      schemaVersion: pilotRequested ? 2 : 4,
       fixture: 'diorama',
       renderer: 'r3f',
       mode: pilotRequested ? 'pilot-ab' : 'production-visual-acceptance',
+      budgetSource: pilotRequested
+        ? 'office-v0-renderer-budget.json'
+        : 'office-rc1-r3f-renderer-budget.json',
+      budgetStatus: pilotRequested
+        ? 'accepted-legacy-pilot-reference'
+        : productionBudget.status,
       timeZone: 'Asia/Jakarta',
       captureCount: captures.length,
       captures,
@@ -459,7 +472,7 @@ async function capture() {
         `Office production R3F visual acceptance complete: ${captures.length} PNG files + renderer-info.json\n`,
       )
       process.stdout.write(
-        'Production R3F renderer/light budgets passed against the accepted ceiling.\n',
+        'Production R3F renderer/light budgets passed against the RC1 candidate ceiling; tighten from measured matrix before acceptance.\n',
       )
     }
     process.stdout.write(`Artifacts: ${outputRoot}\n`)
