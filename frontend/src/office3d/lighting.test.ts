@@ -28,6 +28,16 @@ describe('officeLightingForHour', () => {
     expect(night.exposure).toBeLessThan(day.exposure)
   })
 
+  it('keeps a cool architectural ambience with a warm key light', () => {
+    const day = officeLightingForHour(12)
+    const evening = officeLightingForHour(18)
+
+    expect(day.hemisphereSky).not.toBe(day.keyColor)
+    expect(evening.hemisphereSky).not.toBe(evening.keyColor)
+    expect(day.background).toBeLessThan(day.hemisphereSky)
+    expect(evening.background).toBeLessThan(evening.hemisphereSky)
+  })
+
   it('uses one key-light profile without a second global fill channel', () => {
     const day = officeLightingForHour(12)
 
