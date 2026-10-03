@@ -151,6 +151,13 @@ new light truth, stays outside the walkable/collision volume, and batches
 repeated static geometry with `THREE.InstancedMesh` to preserve renderer
 headroom.
 
+The room-richness baseline strengthens spatial identity without inventing
+operational state: Commons adds recognizable arrival/social zones, Build adds
+paired engineering operations bays, and Strategy adds a central decision forum.
+These architectural masses remain abstract presentation only; they do not
+represent occupancy, workload, health, KPI, progress, meetings, evidence, or
+dialogue.
+
 Character presentation uses deterministic role/model/accent profiles, verified
 animation clips, and a restrained CSS2D interaction layer. Presentation may
 improve silhouette/readability and selected/hover/failure hierarchy, but it must
