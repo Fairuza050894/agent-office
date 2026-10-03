@@ -16,13 +16,11 @@ export interface ProjectKpiSnapshot {
   totalTasks: number
   tasksWithRuns: number
   unstartedTasks: number
-  deliveredTasks: number
   activeRuns: number
   completedRuns: number
   failedRuns: number
   cancelledRuns: number
   runSuccessRate: number | null
-  taskDeliveryRate: number | null
   averageCompletedCycleMinutes: number | null
   totalRemediationCycles: number
   tasksWithRetries: number
@@ -93,9 +91,6 @@ export function projectKpiSnapshot(tasks: Task[], runs: Run[]): ProjectKpiSnapsh
     })
 
   const tasksWithRuns = taskRows.filter((row) => row.attempts > 0).length
-  const deliveredTasks = taskRows.filter(
-    (row) => row.latestStatus === 'COMPLETED',
-  ).length
   const latestActivityAt = [
     ...tasks.map((task) => task.updated_at),
     ...runs.map((run) => run.updated_at),
@@ -107,13 +102,11 @@ export function projectKpiSnapshot(tasks: Task[], runs: Run[]): ProjectKpiSnapsh
     totalTasks: tasks.length,
     tasksWithRuns,
     unstartedTasks: tasks.length - tasksWithRuns,
-    deliveredTasks,
     activeRuns: activeRuns.length,
     completedRuns: completedRuns.length,
     failedRuns: failedRuns.length,
     cancelledRuns: cancelledRuns.length,
     runSuccessRate: ratioPercent(completedRuns.length, decidedRuns),
-    taskDeliveryRate: ratioPercent(deliveredTasks, tasks.length),
     averageCompletedCycleMinutes:
       completedDurations.length > 0
         ? completedDurations.reduce((sum, value) => sum + value, 0) /
