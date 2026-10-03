@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
-import { api, type Project, type Run, type Task } from '../api'
+import { api, type Project, type ResultReview, type Run, type Task } from '../api'
+import {
+  acceptedChangeMetrics,
+  type ResultReviewWithDecisionTimes,
+} from '../analytics/acceptedChangeKpi'
 import { projectKpiSnapshot } from '../analytics/projectKpi'
 import { EmptyState } from '../components/EmptyState'
 import { PageHeader } from '../components/PageHeader'
@@ -12,6 +16,7 @@ interface ProjectFactState {
   projectId: string
   tasks: Task[]
   runs: Run[]
+  reviews: ResultReviewWithDecisionTimes[]
   error: string | null
 }
 
@@ -19,6 +24,7 @@ const EMPTY_FACTS: ProjectFactState = {
   projectId: '',
   tasks: [],
   runs: [],
+  reviews: [],
   error: null,
 }
 
@@ -106,15 +112,28 @@ export function ProjectKpiPage() {
         const runGroups = await Promise.all(
           loadedTasks.map((task) => api.listRuns(task.id)),
         )
-        return { loadedTasks, loadedRuns: runGroups.flat() }
+        const loadedRuns = runGroups.flat()
+        const completedRuns = loadedRuns.filter((run) => run.status === 'COMPLETED')
+        const loadedReviews = await Promise.all(
+          completedRuns.map(async (run): Promise<ResultReviewWithDecisionTimes> => {
+            const review = await api.getResultReview(run.id)
+            return review as ResultReview & {
+              changes_requested_at?: string | null
+              approved_at?: string | null
+              delivered_at?: string | null
+            }
+          }),
+        )
+        return { loadedTasks, loadedRuns, loadedReviews }
       })
       .then(
-        ({ loadedTasks, loadedRuns }) => {
+        ({ loadedTasks, loadedRuns, loadedReviews }) => {
           if (!active) return
           setFacts({
             projectId: selectedProjectId,
             tasks: loadedTasks,
             runs: loadedRuns,
+            reviews: loadedReviews,
             error: null,
           })
         },
@@ -124,6 +143,7 @@ export function ProjectKpiPage() {
             projectId: selectedProjectId,
             tasks: [],
             runs: [],
+            reviews: [],
             error:
               reason instanceof Error
                 ? reason.message
@@ -145,6 +165,10 @@ export function ProjectKpiPage() {
   const snapshot = useMemo(
     () => projectKpiSnapshot(visibleFacts.tasks, visibleFacts.runs),
     [visibleFacts.runs, visibleFacts.tasks],
+  )
+  const accepted = useMemo(
+    () => acceptedChangeMetrics(visibleFacts.runs, visibleFacts.reviews),
+    [visibleFacts.reviews, visibleFacts.runs],
   )
 
   const changeProject = (projectId: string) => {
@@ -245,6 +269,29 @@ export function ProjectKpiPage() {
         </div>
       ) : (
         <>
+          <div className="overview-summary" aria-label="Accepted change North Star">
+            <KpiItem
+              value={accepted.acceptedChangesLast7Days}
+              label="Accepted changes · 7d"
+              detail="human accepted + managed delivery only"
+            />
+            <KpiItem
+              value={accepted.acceptedChanges}
+              label="Accepted changes"
+              detail="all recorded delivered results"
+            />
+            <KpiItem
+              value={formatPercent(accepted.acceptanceRate)}
+              label="Acceptance rate"
+              detail="accepted changes / technically completed runs"
+            />
+            <KpiItem
+              value={formatMinutes(accepted.averageAcceptanceMinutes)}
+              label="Avg accept time"
+              detail="technical completion → managed delivery"
+            />
+          </div>
+
           <div className="overview-summary" aria-label="Project KPI summary">
             <KpiItem
               value={snapshot.totalTasks}
