@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { ResultReview, Run } from '../api'
-import { acceptedChangeMetrics, type ResultReviewWithDecisionTimes } from './acceptedChangeKpi'
+import { acceptedChangeMetrics } from './acceptedChangeKpi'
 
 function run(id: string, completedAt: string): Run {
   return {
@@ -29,7 +29,7 @@ function review(
   runId: string,
   state: ResultReview['state'],
   deliveredAt: string | null,
-): ResultReviewWithDecisionTimes {
+): ResultReview {
   return {
     run_id: runId,
     task_id: `task-${runId}`,
@@ -39,6 +39,8 @@ function review(
     remediation_run_id: null,
     delivered_branch: state === 'DELIVERED' ? `accepted/${runId}` : null,
     delivered_commit: state === 'DELIVERED' ? `commit-${runId}` : null,
+    changes_requested_at: null,
+    approved_at: state === 'DELIVERED' ? '2026-10-02T00:20:00Z' : null,
     delivered_at: deliveredAt,
     can_approve: state === 'AWAITING_REVIEW',
     can_request_changes: state === 'AWAITING_REVIEW',
