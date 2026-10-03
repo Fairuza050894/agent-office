@@ -196,7 +196,10 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
     void Promise.resolve().then(() => {
       if (!active) return
 
-      if (requestedReplay && officeMode !== 'replay') {
+      if (
+        requestedReplay &&
+        (officeMode !== 'replay' || replayStartedAt === null)
+      ) {
         const range = officeReplayRange(agents, events)
         setReplayRangeSnapshot(range)
         setReplayStartedAt(performance.now())
@@ -218,7 +221,7 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
     return () => {
       active = false
     }
-  }, [agents, events, officeMode, requestedReplay, run])
+  }, [agents, events, officeMode, replayStartedAt, requestedReplay, run])
 
   useEffect(() => {
     if (!requestedFloor) return

@@ -266,10 +266,11 @@ export function OfficeScene({
     (!import.meta.env.DEV ||
       !dioramaPilot ||
       dioramaRenderer === 'r3f')
-  const liveUsesR3f =
-    presentation === 'operational' && mode === 'live'
-  const usesR3f = planningUsesR3f || liveUsesR3f
-  const r3fScope = presentation === 'workspace' ? 'planning' : 'live'
+  const operationalUsesR3f = presentation === 'operational'
+  const usesR3f = planningUsesR3f || operationalUsesR3f
+  const r3fScope = presentation === 'workspace' ? 'planning' : mode
+  const r3fScopeLabel =
+    r3fScope === 'planning' ? 'Planning' : r3fScope === 'replay' ? 'Replay' : 'Live'
 
   return (
     <section
@@ -466,7 +467,7 @@ export function OfficeScene({
           <Suspense
             fallback={
               <div className="office-three-host office-three-fallback">
-                Loading {r3fScope === 'live' ? 'Live' : 'Planning'} Office renderer…
+                Loading {r3fScopeLabel} Office renderer…
               </div>
             }
           >
@@ -478,6 +479,9 @@ export function OfficeScene({
               selectedAgentId={selectedAgentId}
               onSelectAgent={onSelectAgent}
               motionPaused={motionPaused}
+              replayNonce={replayNonce}
+              replayStartedAt={replayStartedAt}
+              replayRange={replayRange}
               floor={floor}
               workspaceMembers={workspaceMembers}
               cameraResetNonce={cameraResetNonce}
