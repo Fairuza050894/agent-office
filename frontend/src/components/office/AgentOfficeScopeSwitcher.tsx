@@ -1,5 +1,3 @@
-import { useEffect, useRef } from 'react'
-
 import type { OfficeFloorKey } from '../../office3d/livingOffice'
 import { Link } from '../../router/Link'
 
@@ -22,27 +20,6 @@ export function AgentOfficeScopeSwitcher({
   onLive,
   onReplay,
 }: AgentOfficeScopeSwitcherProps) {
-  const replayStartedRef = useRef(false)
-
-  useEffect(() => {
-    if (activeScope !== 'replay') {
-      replayStartedRef.current = false
-      return
-    }
-
-    if (!onReplay || replayStartedRef.current) return
-
-    // Planning -> Replay and direct replay URLs mount with Replay already active.
-    // Start the factual playback clock once without double-starting normal clicks.
-    replayStartedRef.current = true
-    onReplay()
-  }, [activeScope, onReplay])
-
-  const triggerReplay = () => {
-    replayStartedRef.current = true
-    onReplay?.()
-  }
-
   const workspaceParams = new URLSearchParams()
   if (projectId) workspaceParams.set('project', projectId)
   if (floor) workspaceParams.set('floor', floor)
@@ -108,7 +85,7 @@ export function AgentOfficeScopeSwitcher({
           type="button"
           className={`office-scope-link ${activeScope === 'replay' ? 'active' : ''}`}
           aria-pressed={activeScope === 'replay'}
-          onClick={triggerReplay}
+          onClick={onReplay}
         >
           Replay
         </button>
