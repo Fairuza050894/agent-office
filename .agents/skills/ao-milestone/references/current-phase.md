@@ -3,7 +3,7 @@
 ## Current checkpoint
 
 ```text
-main@588ae3a
+main@6e6680d
 Phase 10H-1 merged
 PR #24 Vocabulary & Structure merged
 PR #25 Office 3D experience polish merged
@@ -18,6 +18,9 @@ PR #36 post-Phase-13A milestone sync merged
 PR #37 Phase 13B R3F Live production migration merged
 PR #38 Phase 13C R3F Replay production migration merged
 PR #39 Phase 14 Office Visual Evolution merged
+PR #41 Phase 15–16 Character & Art Production Hardening merged
+PR #42 Phase 17–18 Navigation Hardening & Living Office V2 merged
+PR #43 Phase 19 Universal Composer & KPI Productization merged
 ```
 
 Canonical full verification:
@@ -29,10 +32,122 @@ Canonical full verification:
 ## Current status
 
 ```text
-Phase 14 — COMPLETE / MERGED
-exact verified PR head: aff921d640eef690fe4cb922640aa9860b9325d6
-GitHub Actions verify #1425: SUCCESS
-merge commit: 588ae3af511219a4d6c3691fa70360967c3b11a9
+Phase 19 — COMPLETE / MERGED
+exact verified PR head: e0638374ef4c647e81d344d3e56fdc44623b5565
+GitHub Actions verify #1461: SUCCESS
+merge commit: 6e6680dc27ad6428feba099fd2c04c269a59444b
+```
+
+## Accepted production state after Phase 19
+
+- Planning, Live, and Replay use R3F in the normal production path.
+- Three.js remains behind the tested renderer recovery boundary; HTML operational surfaces remain the final fallback.
+- The nine Living Office core roles have deterministic production identity coverage.
+- Five rigged production character GLBs are integrity/provenance checked and must expose guaranteed Idle/Walk/Run clips before development/build/render preparation can continue.
+- Current character binaries remain honestly identified as third-party assets; no fake Blender-authored provenance is claimed.
+- Workspace/Living Office movement uses deterministic per-agent corridor lane separation and waypoint compaction while preserving factual destinations.
+- Existing stage-aware, time-aware, break-aware, capacity-bounded Living Office behavior remains the source of ambient presentation truth; no fake work/dialogue/progress is introduced.
+- Universal Composer defaults to AUTO orchestration and derives project/thread intent and executor context without carrying stale drafts across context changes.
+- RUN remains a reviewed intent and cannot bypass canonical Task/Run promotion or execution safety gates.
+- `/kpi` exposes project-scoped Task/Run delivery reporting from canonical records only.
+- KPI includes task delivery, Run success, completed cycle time, active/completed/failed/cancelled Runs, retries, remediation cycles, latest activity, and task-level execution attempts.
+- Missing KPI facts remain unavailable instead of being inferred.
+- KPI is descriptive and does not rank agents or invent individual productivity scores.
+- Graphify/Obsidian/another knowledge graph was intentionally not added to execution truth; the existing Project/Task/Run/Workflow/AgentRun/Event/Evidence/Finding/ComposerThread/RequirementCandidate/TeamProposal domain model is sufficient for this checkpoint. A graph may be added later only as a read model when cross-project dependency intelligence requires it.
+
+## Phase 19 final verification
+
+Exact PR #43 head and verification:
+
+```text
+e0638374ef4c647e81d344d3e56fdc44623b5565
+GitHub Actions verify #1461: SUCCESS
+merge commit: 6e6680dc27ad6428feba099fd2c04c269a59444b
+```
+
+Gates:
+
+```text
+backend pytest / Ruff / format / MyPy: PASS
+frontend tests (193) / typecheck / lint / build: PASS
+Office character production guard: PASS
+repository whitespace verification: PASS
+production Office guard: PASS
+Chromium production smoke: PASS
+  Planning = R3F
+  Live = R3F
+  Replay = R3F
+```
+
+Phase 19 implementation evidence:
+
+```text
+docs/product/PHASE_19_COMPOSER_KPI_PRODUCTIZATION.md
+frontend/src/analytics/projectKpi.ts
+frontend/src/analytics/projectKpi.test.ts
+frontend/src/pages/ProjectKpiPage.tsx
+frontend/src/pages/ProjectKpiPage.test.tsx
+frontend/src/components/office/UniversalComposerShell.tsx
+frontend/src/components/office/UniversalComposerShell.test.tsx
+frontend/src/types/navigation.ts
+frontend/src/layouts/AppShell.tsx
+```
+
+## Phase 17–18 accepted production state
+
+Exact PR #42 head and verification:
+
+```text
+9ebd07acb6fb0c015fbac8b1c1baaabc0f28c17a
+GitHub Actions verify #1440: SUCCESS
+merge commit: 979f18f00d3afe45ec0018494bfa7536bc7ec2d0
+```
+
+Accepted scope:
+
+- deterministic per-agent corridor lane assignment;
+- intermediate path separation without offsetting the factual destination;
+- duplicate and effectively-collinear waypoint compaction;
+- shell-bound path clamping;
+- renderer-neutral integration in shared runtime projection;
+- existing Living Office truth/capacity/time behavior retained;
+- no heavy physics engine or random NPC steering introduced.
+
+Detailed evidence:
+
+```text
+docs/product/PHASE_17_18_NAVIGATION_LIVING_OFFICE_V2.md
+frontend/src/office3d/navigationPolicy.ts
+frontend/src/office3d/navigationPolicy.test.ts
+frontend/src/office3d/runtimeProjection.ts
+```
+
+## Phase 15–16 accepted production state
+
+Exact PR #41 head and verification:
+
+```text
+b2fea7b1c8bfad66fc1efef4232f11f54c3047ac
+GitHub Actions verify #1434: SUCCESS
+merge commit: ed7c7b1fa22c068ef796ac76bc930045e5483605
+```
+
+Accepted scope:
+
+- nine core Living Office roles have deterministic unique appearance identities;
+- five rigged GLBs are validated as production assets during dev/build/render preparation;
+- required Idle/Walk/Run clips and source/integrity provenance are build-gated;
+- legacy execution role identity remains deterministic;
+- incompatible skeleton retargeting is intentionally rejected;
+- bespoke Blender art remains a future art-production enhancement rather than a Phase 17–19 blocker.
+
+Detailed evidence:
+
+```text
+docs/product/PHASE_15_16_CHARACTER_ART_PRODUCTION.md
+frontend/scripts/check-office-character-production.mjs
+frontend/src/office3d/character.test.ts
+frontend/package.json
 ```
 
 ## Accepted production state after Phase 14

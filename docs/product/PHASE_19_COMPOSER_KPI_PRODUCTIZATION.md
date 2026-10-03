@@ -2,7 +2,14 @@
 
 ## Status
 
-Stacked implementation checkpoint after Phase 17–18.
+**COMPLETE / MERGED**
+
+```text
+PR: #43
+exact verified head: e0638374ef4c647e81d344d3e56fdc44623b5565
+GitHub Actions verify #1461: SUCCESS
+merge commit: 6e6680dc27ad6428feba099fd2c04c269a59444b
+```
 
 ## Product goal
 
@@ -21,11 +28,12 @@ The product should reduce configuration burden without weakening execution appro
 
 ### Zero-config Composer hardening
 
-The Composer already supported `AUTO`, `ASK`, `PLAN`, `BRAINSTORM`, and reviewed `RUN` intent. Phase 19 fixes context drift and makes the intended default clearer:
+The Composer supports `AUTO`, `ASK`, `PLAN`, `BRAINSTORM`, and reviewed `RUN` intent. Phase 19 fixes context drift and makes the intended default clearer:
 
 - AUTO remains the default orchestration mode;
-- restored threads re-sync their requested intent;
-- preferred/restored executor context re-syncs when project/thread context changes;
+- restored threads derive their requested intent from the active context;
+- preferred/restored executor context derives from the selected project/thread;
+- composer drafts are keyed to project/thread context so a stale instruction cannot silently carry into a different work context;
 - an empty executor selection means auto-resolve rather than invalid state;
 - the primary prompt asks for the desired outcome rather than implementation plumbing;
 - RUN remains a reviewed intent and never bypasses canonical Task/Run promotion.
@@ -59,7 +67,8 @@ Unavailable facts remain `null` / `—`; the product does not invent missing mea
 - execution-health summary;
 - task delivery table;
 - direct navigation to Office and Run Detail;
-- project selection preserved in the URL.
+- project selection preserved in the URL;
+- project-keyed loading/fact state so metrics from one Project cannot be shown as if they belonged to another Project during context changes.
 
 The report deliberately does **not** rank agents or infer individual productivity. It reports process and delivery facts suitable for engineering/product operations.
 
@@ -86,14 +95,14 @@ Graph projection may be added later as a read model when cross-project dependenc
 ## Acceptance gates
 
 ```text
-KPI projection tests
-KPI report page test
-Universal Composer context-resync test
-existing planning/orchestration tests
-frontend tests / typecheck / lint / build
-backend pytest / Ruff / format / MyPy
-Office character production guard
-production Office guard
-Chromium Planning / Live / Replay R3F smoke
-repository whitespace verification
+KPI projection tests: PASS
+KPI report page test: PASS
+Universal Composer context-resync test: PASS
+existing planning/orchestration tests: PASS
+frontend tests (193) / typecheck / lint / build: PASS
+backend pytest / Ruff / format / MyPy: PASS
+Office character production guard: PASS
+production Office guard: PASS
+Chromium Planning / Live / Replay R3F smoke: PASS
+repository whitespace verification: PASS
 ```
