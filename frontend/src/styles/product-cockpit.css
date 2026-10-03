@@ -1,0 +1,296 @@
+/* Phase 25 — Decision + KPI cockpit.
+ * Visual hierarchy only. Canonical Task / Run / ResultReview state remains authoritative.
+ */
+
+/* Accepted Change is the primary product outcome, not a generic statistic row. */
+.overview-view [aria-label="Accepted change North Star"] {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1.35fr repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 9px;
+  overflow: hidden;
+  border: 1px solid rgba(83, 199, 240, .22);
+  border-radius: 10px;
+  background:
+    radial-gradient(circle at 0 0, rgba(83, 199, 240, .115), transparent 36%),
+    linear-gradient(140deg, rgba(14, 35, 47, .97), rgba(8, 20, 29, .98));
+  box-shadow:
+    0 18px 42px rgba(0, 0, 0, .15),
+    inset 0 1px 0 rgba(255, 255, 255, .025);
+}
+
+.overview-view [aria-label="Accepted change North Star"]::before {
+  position: absolute;
+  top: 0;
+  left: 9px;
+  width: 74px;
+  height: 2px;
+  content: '';
+  background: linear-gradient(90deg, #53c7f0, transparent);
+  box-shadow: 0 0 10px rgba(83, 199, 240, .25);
+}
+
+.overview-view [aria-label="Accepted change North Star"] .summary-item {
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1px solid #203744;
+  border-radius: 8px;
+  background: rgba(10, 25, 35, .72);
+}
+
+.overview-view [aria-label="Accepted change North Star"] .summary-item:first-child {
+  border-color: rgba(83, 199, 240, .28);
+  background:
+    linear-gradient(145deg, rgba(23, 64, 81, .65), rgba(11, 29, 40, .76));
+}
+
+.overview-view [aria-label="Accepted change North Star"] .summary-item:first-child .summary-value {
+  color: #e3f8ff;
+  font-size: 1.55rem;
+  letter-spacing: -.045em;
+  text-shadow: 0 0 18px rgba(83, 199, 240, .12);
+}
+
+.overview-view [aria-label="Accepted change North Star"] .summary-value {
+  color: #d8e7ef;
+  font-size: 1.12rem;
+}
+
+.overview-view [aria-label="Accepted change North Star"] .summary-label {
+  color: #adc2cf;
+  font-size: .68rem;
+  font-weight: 720;
+}
+
+.overview-view [aria-label="Accepted change North Star"] .summary-detail {
+  margin-top: 2px;
+  color: #607a8c;
+  font-family: var(--ao-mono);
+  font-size: .49rem;
+}
+
+.overview-view [aria-label="Project KPI summary"],
+.overview-view [aria-label="Project execution health"] {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 7px;
+  padding: 0;
+  border: 0;
+}
+
+.overview-view [aria-label="Project KPI summary"] .summary-item,
+.overview-view [aria-label="Project execution health"] .summary-item {
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid #1d313d;
+  border-radius: 7px;
+  background: #0b1822;
+}
+
+.overview-view [aria-label="Project KPI summary"] .summary-value,
+.overview-view [aria-label="Project execution health"] .summary-value {
+  font-size: .98rem;
+}
+
+/* Human Inbox should visually read as an action queue. */
+[aria-label="Human decision inbox"] > .section-body {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 9px;
+  padding: 10px;
+  background:
+    radial-gradient(circle at 100% 0, rgba(227, 179, 65, .045), transparent 33%),
+    #09151e;
+}
+
+[aria-label="Human decision inbox"] .result-decision-card {
+  position: relative;
+  margin: 0;
+  padding: 13px 13px 12px;
+  overflow: hidden;
+  border: 1px solid #263b48;
+  border-left: 2px solid #e0b44d;
+  border-radius: 8px;
+  background:
+    linear-gradient(145deg, rgba(32, 34, 31, .82), rgba(12, 25, 34, .96));
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .1);
+}
+
+[aria-label="Human decision inbox"] .result-decision-card::after {
+  position: absolute;
+  inset: 0 0 auto auto;
+  width: 80px;
+  height: 80px;
+  content: '';
+  pointer-events: none;
+  background: radial-gradient(circle at 100% 0, rgba(227, 179, 65, .08), transparent 68%);
+}
+
+[aria-label="Human decision inbox"] .result-decision-card .section-title {
+  margin-top: 2px;
+  color: #e1e9ee;
+  font-size: .84rem;
+  letter-spacing: -.015em;
+}
+
+[aria-label="Human decision inbox"] .result-decision-card > p:not(.cell-secondary) {
+  color: #bac8d1;
+  font-size: .69rem;
+  line-height: 1.45;
+}
+
+[aria-label="Human decision inbox"] .result-decision-card > a {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  margin-top: 5px;
+  padding: 0 9px;
+  border: 1px solid #345161;
+  border-radius: 6px;
+  background: #122632;
+  color: #9ed7ed;
+  font-size: .61rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+[aria-label="Human decision inbox"] .result-decision-card > a:hover {
+  border-color: #477084;
+  background: #173341;
+  color: #d6f1fb;
+}
+
+/* Board remains read-only, but now visually communicates a delivery pipeline. */
+.decision-board {
+  gap: 9px;
+  padding: 3px 2px 14px;
+  scroll-snap-type: x proximity;
+}
+
+.decision-board-column {
+  scroll-snap-align: start;
+  overflow: hidden;
+  border: 1px solid #1f333f;
+  border-radius: 9px;
+  background: #09151e;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .1);
+}
+
+.decision-board-column > .section-header {
+  min-height: 46px;
+  padding: 9px 10px;
+  border-bottom: 1px solid #1e313d;
+  background:
+    linear-gradient(180deg, rgba(18, 36, 47, .92), rgba(11, 25, 34, .92));
+}
+
+.decision-board-column > .section-header .section-title {
+  color: #b9c9d4;
+  font-size: .68rem;
+  letter-spacing: .01em;
+}
+
+.decision-board-column > .section-header .badge {
+  min-width: 23px;
+  justify-content: center;
+  border-radius: 999px;
+  font-family: var(--ao-mono);
+  font-size: .5rem;
+}
+
+.decision-board-column > .section-body {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  min-height: 240px;
+  padding: 8px;
+  background: transparent;
+}
+
+.decision-board-column .result-decision-card {
+  margin: 0;
+  padding: 10px;
+  border: 1px solid #213743;
+  border-left: 2px solid #365a6b;
+  border-radius: 7px;
+  background: linear-gradient(145deg, #0e1d27, #0a161f);
+  transition:
+    border-color 120ms ease,
+    transform 120ms ease,
+    background-color 120ms ease;
+}
+
+.decision-board-column .result-decision-card:hover {
+  transform: translateY(-1px);
+  border-color: #355568;
+  background: linear-gradient(145deg, #112531, #0b1922);
+}
+
+.decision-board-column .result-decision-card h3 {
+  margin: 5px 0 7px;
+  color: #cfdae2;
+  font-size: .7rem;
+  line-height: 1.35;
+}
+
+.decision-board-column .result-decision-card a {
+  font-size: .58rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.decision-board-column:nth-child(4) .result-decision-card {
+  border-left-color: #7792a3;
+}
+
+.decision-board-column:nth-child(5) {
+  border-color: rgba(227, 179, 65, .24);
+}
+
+.decision-board-column:nth-child(5) > .section-header {
+  background:
+    linear-gradient(180deg, rgba(75, 61, 28, .24), rgba(18, 28, 32, .94));
+}
+
+.decision-board-column:nth-child(5) .result-decision-card {
+  border-left-color: #e0b44d;
+}
+
+.decision-board-column:nth-child(6) {
+  border-color: rgba(72, 199, 142, .2);
+}
+
+.decision-board-column:nth-child(6) > .section-header {
+  background:
+    linear-gradient(180deg, rgba(27, 78, 57, .22), rgba(13, 29, 29, .94));
+}
+
+.decision-board-column:nth-child(6) .result-decision-card {
+  border-left-color: #48c78e;
+}
+
+@media (max-width: 1100px) {
+  .overview-view [aria-label="Accepted change North Star"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .overview-view [aria-label="Project KPI summary"],
+  .overview-view [aria-label="Project execution health"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .overview-view [aria-label="Accepted change North Star"],
+  .overview-view [aria-label="Project KPI summary"],
+  .overview-view [aria-label="Project execution health"] {
+    grid-template-columns: 1fr;
+  }
+
+  [aria-label="Human decision inbox"] > .section-body {
+    grid-template-columns: 1fr;
+  }
+}
