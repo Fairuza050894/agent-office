@@ -16,7 +16,7 @@ PR #33 Phase 12 R3F renderer pilot merged
 PR #35 Phase 13A R3F Planning production migration merged
 PR #36 post-Phase-13A milestone sync merged
 PR #37 Phase 13B R3F Live production migration merged
-Phase 13C R3F Replay production migration in progress
+PR #38 Phase 13C R3F Replay production migration open
 ```
 
 Canonical full verification:
@@ -31,7 +31,7 @@ Canonical full verification:
 Phase 13C — IN PROGRESS
 base: 0eff0f4003750809b7d841f6e111be93a45d260d
 branch: phase-13c-r3f-replay-production
-PR: pending
+PR: #38
 ```
 
 ## Phase 13C checkpoint scope
