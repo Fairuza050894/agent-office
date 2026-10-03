@@ -8,6 +8,12 @@ import {
 
 const FLOORS = ['commons', 'build', 'strategy'] as const
 
+const FLOOR_RICHNESS = {
+  commons: 'office-premium-commons-zones',
+  build: 'office-premium-build-ops-bays',
+  strategy: 'office-premium-strategy-forum',
+} as const
+
 describe('RC1 premium Office architecture', () => {
   it.each(FLOORS)(
     'mounts a batched presentation-only architecture layer for %s',
@@ -23,6 +29,7 @@ describe('RC1 premium Office architecture', () => {
       expect(layer.userData.identity).toBe(identity.signature)
       expect(layer.getObjectByName('office-premium-command-beacon')).toBeTruthy()
       expect(layer.getObjectByName(identity.architectureGroupName)).toBeTruthy()
+      expect(layer.getObjectByName(FLOOR_RICHNESS[floor])).toBeTruthy()
 
       let lightCount = 0
       let renderableMeshCount = 0
@@ -34,7 +41,7 @@ describe('RC1 premium Office architecture', () => {
       })
 
       expect(lightCount).toBe(0)
-      expect(instancedMeshCount).toBeGreaterThanOrEqual(8)
+      expect(instancedMeshCount).toBeGreaterThanOrEqual(9)
       expect(renderableMeshCount).toBeLessThanOrEqual(16)
     },
   )
