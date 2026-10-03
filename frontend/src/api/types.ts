@@ -83,6 +83,9 @@ export interface ResultReview {
   remediation_run_id: string | null
   delivered_branch: string | null
   delivered_commit: string | null
+  changes_requested_at: string | null
+  approved_at: string | null
+  delivered_at: string | null
   can_approve: boolean
   can_request_changes: boolean
 }

@@ -5,6 +5,10 @@ import { EmptyState } from '../components/EmptyState'
 import { PageHeader } from '../components/PageHeader'
 import { RunResultReviewPanel } from '../components/RunResultReviewPanel'
 import { Link } from '../router/Link'
+import {
+  acceptedChangeDossierFilename,
+  buildAcceptedChangeDossier,
+} from '../trust/changeDossier'
 
 export function TaskDecisionPage({ taskId }: { taskId: string }) {
   const [task, setTask] = useState<Task | null>(null)
@@ -12,6 +16,7 @@ export function TaskDecisionPage({ taskId }: { taskId: string }) {
   const [runs, setRuns] = useState<Run[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isStarting, setIsStarting] = useState(false)
+  const [isExportingDossier, setIsExportingDossier] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -53,6 +58,47 @@ export function TaskDecisionPage({ taskId }: { taskId: string }) {
       setError(reason instanceof Error ? reason.message : 'Execution could not be started.')
     } finally {
       setIsStarting(false)
+    }
+  }
+
+  const exportAcceptedDossier = async () => {
+    if (!latestRun || !task || !project || isExportingDossier) return
+
+    setIsExportingDossier(true)
+    setError(null)
+    try {
+      const [review, evidence, findingResponse, audit] = await Promise.all([
+        api.getResultReview(latestRun.id),
+        api.getRunEvidence(latestRun.id),
+        api.getRunFindings(latestRun.id),
+        api.getRunAudit(latestRun.id),
+      ])
+      const markdown = buildAcceptedChangeDossier({
+        project,
+        task,
+        run: latestRun,
+        review,
+        evidence,
+        findings: findingResponse.findings,
+        audit,
+      })
+      const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' })
+      const href = URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      anchor.href = href
+      anchor.download = acceptedChangeDossierFilename(task, latestRun)
+      document.body.appendChild(anchor)
+      anchor.click()
+      anchor.remove()
+      URL.revokeObjectURL(href)
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : 'Accepted change dossier could not be exported.',
+      )
+    } finally {
+      setIsExportingDossier(false)
     }
   }
 
@@ -182,6 +228,33 @@ export function TaskDecisionPage({ taskId }: { taskId: string }) {
           </section>
 
           {latestRun.status === 'COMPLETED' && <RunResultReviewPanel run={latestRun} />}
+
+          {latestRun.status === 'COMPLETED' && (
+            <section className="dashboard-section" aria-labelledby="task-dossier-heading">
+              <div className="section-header">
+                <div>
+                  <h2 id="task-dossier-heading" className="section-title">Accepted change dossier</h2>
+                  <span className="section-meta">
+                    Export canonical Task, Run, Evidence, Finding, acceptance, and delivery facts.
+                  </span>
+                </div>
+              </div>
+              <div className="section-body">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  disabled={isExportingDossier}
+                  onClick={() => void exportAcceptedDossier()}
+                >
+                  {isExportingDossier ? 'Preparing dossier…' : 'Export Markdown dossier'}
+                </button>
+                <p className="cell-secondary">
+                  Export is allowed only after human acceptance and managed delivery. Technical
+                  COMPLETED by itself is not treated as delivered.
+                </p>
+              </div>
+            </section>
+          )}
         </>
       )}
 

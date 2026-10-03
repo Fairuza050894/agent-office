@@ -71,11 +71,13 @@ def candidate_workspace() -> Workspace:
 class AuditStub:
     action: AuditAction
     safe_metadata: tuple[tuple[str, str], ...]
+    occurred_at: datetime
 
 
 class FakeAudit:
     def __init__(self) -> None:
         self.records: dict[RunId, list[AuditStub]] = {}
+        self.counter = 0
 
     def list_for_run(self, run_id: RunId) -> tuple[AuditStub, ...]:
         return tuple(self.records.get(run_id, []))
@@ -88,7 +90,13 @@ class FakeAudit:
     ) -> AuditStub:
         metadata = kwargs.get("safe_metadata", ())
         assert isinstance(metadata, tuple)
-        record = AuditStub(action=action, safe_metadata=metadata)
+        self.counter += 1
+        occurred_at = datetime(2026, 10, 3, 4, self.counter, tzinfo=UTC)
+        record = AuditStub(
+            action=action,
+            safe_metadata=metadata,
+            occurred_at=occurred_at,
+        )
         self.records.setdefault(run.id, []).append(record)
         return record
 
@@ -181,6 +189,9 @@ def test_completed_run_is_only_awaiting_human_review() -> None:
     assert projection.state is ResultReviewState.AWAITING_REVIEW
     assert projection.delivered_branch is None
     assert projection.delivered_commit is None
+    assert projection.changes_requested_at is None
+    assert projection.approved_at is None
+    assert projection.delivered_at is None
 
 
 def test_request_changes_preserves_task_and_creates_new_run() -> None:
@@ -190,6 +201,9 @@ def test_request_changes_preserves_task_and_creates_new_run() -> None:
 
     assert projection.state is ResultReviewState.CHANGES_REQUESTED
     assert projection.remediation_run_id == str(runs.created[0].id)
+    assert projection.changes_requested_at == audit.records[RUN_ID][0].occurred_at
+    assert projection.approved_at is None
+    assert projection.delivered_at is None
     assert tasks.feedback == [
         (TASK_ID, RUN_ID, "Cover the missing capacity criterion."),
     ]
@@ -211,6 +225,9 @@ def test_approve_and_deliver_records_human_gate_and_managed_branch() -> None:
     assert projection.delivered_branch is not None
     assert projection.delivered_branch.startswith(f"agent-office/{RUN_ID}/accepted-")
     assert projection.delivered_commit == "0123456789abcdef0123456789abcdef01234567"
+    assert projection.approved_at == audit.records[RUN_ID][0].occurred_at
+    assert projection.delivered_at == audit.records[RUN_ID][1].occurred_at
+    assert projection.approved_at < projection.delivered_at
     assert [record.action for record in audit.records[RUN_ID]] == [
         AuditAction.RESULT_APPROVED,
         AuditAction.RESULT_DELIVERED,
@@ -219,4 +236,6 @@ def test_approve_and_deliver_records_human_gate_and_managed_branch() -> None:
 
     repeated = result.approve_and_deliver(RUN_ID)
     assert repeated.state is ResultReviewState.DELIVERED
+    assert repeated.approved_at == projection.approved_at
+    assert repeated.delivered_at == projection.delivered_at
     assert len(delivery.calls) == 1
