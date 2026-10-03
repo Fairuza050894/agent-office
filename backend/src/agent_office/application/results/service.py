@@ -9,6 +9,7 @@ AuditRecords so historical databases need no destructive migration.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from enum import StrEnum
 
 from agent_office.application.audit import AuditService
@@ -56,6 +57,9 @@ class ResultReviewProjection:
     remediation_run_id: str | None = None
     delivered_branch: str | None = None
     delivered_commit: str | None = None
+    changes_requested_at: datetime | None = None
+    approved_at: datetime | None = None
+    delivered_at: datetime | None = None
 
     @property
     def can_approve(self) -> bool:
@@ -211,15 +215,22 @@ class ResultReviewService:
             elif record.action is AuditAction.RESULT_DELIVERED:
                 delivered = record
 
+        common = {
+            "run_id": str(run.id),
+            "task_id": str(run.task_id),
+            "candidate_workspace_id": (
+                None if run.candidate_workspace_id is None else str(run.candidate_workspace_id)
+            ),
+            "changes_requested_at": None if changed is None else changed.occurred_at,
+            "approved_at": None if approved is None else approved.occurred_at,
+            "delivered_at": None if delivered is None else delivered.occurred_at,
+        }
+
         if delivered is not None:
             metadata = dict(delivered.safe_metadata)
             return ResultReviewProjection(
-                run_id=str(run.id),
-                task_id=str(run.task_id),
+                **common,
                 state=ResultReviewState.DELIVERED,
-                candidate_workspace_id=(
-                    None if run.candidate_workspace_id is None else str(run.candidate_workspace_id)
-                ),
                 delivered_branch=metadata.get("branch"),
                 delivered_commit=metadata.get("commit"),
             )
@@ -227,24 +238,16 @@ class ResultReviewService:
         if changed is not None:
             metadata = dict(changed.safe_metadata)
             return ResultReviewProjection(
-                run_id=str(run.id),
-                task_id=str(run.task_id),
+                **common,
                 state=ResultReviewState.CHANGES_REQUESTED,
-                candidate_workspace_id=(
-                    None if run.candidate_workspace_id is None else str(run.candidate_workspace_id)
-                ),
                 feedback=metadata.get("feedback"),
                 remediation_run_id=metadata.get("remediation_run_id"),
             )
 
         if approved is not None:
             return ResultReviewProjection(
-                run_id=str(run.id),
-                task_id=str(run.task_id),
+                **common,
                 state=ResultReviewState.APPROVED,
-                candidate_workspace_id=(
-                    None if run.candidate_workspace_id is None else str(run.candidate_workspace_id)
-                ),
             )
 
         state = (
@@ -252,14 +255,7 @@ class ResultReviewService:
             if run.status is RunStatus.COMPLETED
             else ResultReviewState.NOT_READY
         )
-        return ResultReviewProjection(
-            run_id=str(run.id),
-            task_id=str(run.task_id),
-            state=state,
-            candidate_workspace_id=(
-                None if run.candidate_workspace_id is None else str(run.candidate_workspace_id)
-            ),
-        )
+        return ResultReviewProjection(**common, state=state)
 
     def _require_reviewable(self, run: Run) -> None:
         if run.status is not RunStatus.COMPLETED:
