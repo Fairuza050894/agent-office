@@ -108,7 +108,7 @@ export function RunDetailPage({ runId }: RunDetailPageProps) {
         onRunUpdated={setRun}
       />
 
-      <RunResultReviewPanel run={run} />
+      {run.status === 'COMPLETED' && <RunResultReviewPanel run={run} />}
 
       <div className="run-view-switch">
         <Link href={`/runs/${run.id}/office`} className="run-office-link">
