@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { Project, Run, Task } from '../api'
@@ -91,9 +91,14 @@ describe('ProjectKpiPage', () => {
     )
 
     expect(await screen.findByText('Ship KPI report')).toBeInTheDocument()
-    expect(screen.getByText('100.0%')).toBeInTheDocument()
-    expect(screen.getByText('1h 30m')).toBeInTheDocument()
-    expect(screen.getByText('Remediation cycles')).toBeInTheDocument()
+
+    const summary = screen.getByLabelText('Project KPI summary')
+    expect(within(summary).getAllByText('100.0%')).toHaveLength(2)
+    expect(within(summary).getByText('1h 30m')).toBeInTheDocument()
+
+    const health = screen.getByLabelText('Project execution health')
+    expect(within(health).getByText('Remediation cycles')).toBeInTheDocument()
+
     expect(
       screen.getByText(/does not rank agents or infer individual productivity/i),
     ).toBeInTheDocument()
