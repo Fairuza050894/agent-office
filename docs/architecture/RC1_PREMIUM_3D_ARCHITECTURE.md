@@ -143,7 +143,7 @@ No decorative signal bar is allowed to masquerade as live telemetry.
 ## 6. Room richness baseline
 
 RC1 room richness deepens spatial identity without adding a second source of
-business truth. The same presentation-only architecture layer now establishes
+business truth. The same presentation-only architecture layer establishes
 recognizable sub-zones while keeping repeated geometry batched:
 
 ```text
@@ -223,7 +223,7 @@ second navigation system or change AgentRun movement truth.
 
 ## 10. Character presentation boundary
 
-Character work in later RC1 slices may improve:
+Character presentation may improve:
 
 - silhouette and role distinction;
 - hover/selection legibility;
@@ -239,18 +239,20 @@ It may not:
 - rank people or agents by synthetic productivity;
 - relabel ambient presence as factual execution.
 
+The accepted RC1 character treatment is documented separately in
+`RC1_CHARACTER_PRESENTATION.md`.
+
 ## 11. Quality and fallback roadmap
 
 Remaining RC1 hardening includes:
 
-1. richer verified character presentation;
-2. Composer-first zero-friction interaction refinements;
-3. Decision Inbox / Board / KPI / Dossier polish;
-4. adaptive rendering quality based on measured capability;
-5. deterministic visual-regression coverage;
-6. desktop browser/device matrix and degraded-mode checks;
-7. dependency hardening, including explicit renderer upgrade validation;
-8. release packaging and rollback evidence.
+1. Composer-first zero-friction interaction refinements;
+2. Decision Inbox / Board / KPI / Dossier polish;
+3. adaptive rendering quality based on measured capability;
+4. deterministic visual-regression coverage;
+5. desktop browser/device matrix and degraded-mode checks;
+6. dependency hardening, including explicit renderer upgrade validation;
+7. release packaging and rollback evidence.
 
 Three.js fallback retirement is not part of this architecture slice.
 
@@ -275,9 +277,9 @@ A premium 3D slice is mergeable only when:
 Infrastructure failures with absent job steps/logs are retriable failures, not
 successful verification.
 
-## 14. Activation evidence
+## 14. Activation and room-richness evidence
 
-The first production activation of this architecture was accepted through:
+Initial production activation:
 
 ```text
 PR: #65
@@ -287,14 +289,27 @@ merge commit: 544f593ca198c8dbe2b7cab703df17483b7c6ee5
 post-merge main verify #1616: SUCCESS
 ```
 
-Both verification runs used real hosted runners. The PR-head run executed and
-passed repository whitespace verification, backend install/dependency check,
-pytest, Ruff, format, MyPy, frontend install/audit/tests/typecheck/lint/build,
-production Office guard, Playwright Chromium installation, and production
-Office renderer split smoke. The merged `main` commit then passed the same
-repository/backend/frontend workflow again.
+Accepted premium room-richness evolution:
 
-This evidence accepts the premium architecture as production presentation for
-Planning, Live, and Replay. It does not change the truth model, does not retire
-the recovery renderer, and does not claim completion of the later browser/device
-visual-regression or adaptive-quality release gates.
+```text
+superseded PR: #68 — closed without merge; no force-push
+successor PR: #69
+exact verified head: 8114de89033b70064d36c5a55c9550da186ef5b5
+GitHub Actions verify #1623: SUCCESS
+merge commit: f0f35c17b777f867866c41c480fbacb9bf810f4c
+post-merge main verify #1624: SUCCESS
+```
+
+For #69, both the exact PR head and merged `main` used real hosted runners. The
+repository whitespace gate, backend install/dependency consistency/pytest/Ruff/
+format/MyPy, frontend install/dependency audit/tests/typecheck/lint/build,
+production Office guard, Chromium installation, and production renderer split
+smoke all executed and passed.
+
+This evidence accepts Commons arrival/social zones, Build engineering operations
+bays, Strategy decision-forum architecture, and richer command-wall/floor
+orientation treatment as production presentation. The change does not create
+new workflow, telemetry, KPI, occupancy, activity, collision, evidence, or
+navigation truth; does not add light ownership; and does not retire the recovery
+renderer or complete the later browser/device visual-regression and
+adaptive-quality release gates.
