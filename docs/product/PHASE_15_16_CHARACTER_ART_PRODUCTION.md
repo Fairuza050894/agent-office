@@ -2,7 +2,14 @@
 
 ## Status
 
-Implementation checkpoint after Phase 14 visual evolution.
+**COMPLETE / MERGED**
+
+```text
+PR: #41
+exact verified head: b2fea7b1c8bfad66fc1efef4232f11f54c3047ac
+GitHub Actions verify #1434: SUCCESS
+merge commit: ed7c7b1fa22c068ef796ac76bc930045e5483605
+```
 
 ## Product intent
 
@@ -28,7 +35,7 @@ Every core role must resolve to a deterministic, unique character appearance id 
 
 ### Character asset production guard
 
-`frontend/scripts/check-office-character-production.mjs` is now executed by development/build/render preparation.
+`frontend/scripts/check-office-character-production.mjs` is executed by development/build/render preparation.
 
 It verifies:
 
@@ -57,12 +64,12 @@ A future custom `.blend -> .glb` pack can replace these assets behind the same v
 ## Acceptance gates
 
 ```text
-backend pytest / Ruff / format / MyPy
-frontend tests / typecheck / lint / build
-Office character production guard
-repository whitespace verification
-production Office guard
-Chromium Planning / Live / Replay R3F smoke
+backend pytest / Ruff / format / MyPy: PASS
+frontend tests / typecheck / lint / build: PASS
+Office character production guard: PASS
+repository whitespace verification: PASS
+production Office guard: PASS
+Chromium Planning / Live / Replay R3F smoke: PASS
 ```
 
 ## Decision
