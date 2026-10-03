@@ -42,6 +42,7 @@ import {
 } from '../office3d/livingOffice'
 import { officeLightingForHour } from '../office3d/lighting'
 import type { OfficeModeKey } from '../office3d/officeWorld'
+import { mountPremiumOfficeArchitecture } from '../office3d/premiumEnvironment'
 import {
   officeReplayPlan,
   type OfficeReplayRange,
@@ -474,6 +475,7 @@ function SceneContents({
       officeMode,
       furniture.initialPresentation,
     )
+    mountPremiumOfficeArchitecture(environment, floor)
 
     const runtimes = new Map<string, RuntimeAgent>()
     members.forEach((member, memberIndex) => {
