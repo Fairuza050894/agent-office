@@ -16,13 +16,27 @@ export const NAV_SECTIONS: NavSection[] = [
 ]
 
 export const NAV_ITEMS: NavItem[] = [
-  // WORK
+  // WORK — human decisions before visualization/registries.
+  {
+    id: 'inbox',
+    label: 'Inbox',
+    path: '/inbox',
+    section: 'WORK',
+    description: 'Canonical work that currently needs an explicit human decision.',
+  },
+  {
+    id: 'board',
+    label: 'Task Board',
+    path: '/board',
+    section: 'WORK',
+    description: 'Read-only Task flow derived from planning, Run, and acceptance truth.',
+  },
   {
     id: 'office',
     label: 'Office',
     path: '/office',
     section: 'WORK',
-    description: 'Office-first planning and operational control surface for project-scoped work.',
+    description: 'Living 3D planning and operational visualization for project-scoped work.',
   },
   {
     id: 'overview',
@@ -50,7 +64,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Tasks',
     path: '/tasks',
     section: 'WORK',
-    description: 'Engineering objectives and task assignments.',
+    description: 'Task registry and engineering objectives.',
   },
 
   // ENGINEERING
@@ -82,7 +96,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Project KPI',
     path: '/kpi',
     section: 'OBSERVABILITY',
-    description: 'Task and Run delivery metrics derived from canonical execution facts.',
+    description: 'Factual execution and accepted-delivery metrics from canonical records.',
   },
   {
     id: 'activity',
@@ -105,7 +119,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Audit',
     path: '/audit',
     section: 'CONTROL',
-    description: 'Attributable record of security decisions, command approvals, and state changes.',
+    description: 'Attributable record of security decisions, approvals, and state changes.',
   },
   {
     id: 'settings',
