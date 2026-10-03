@@ -48,7 +48,7 @@ const run: Run = {
   updated_at: '2026-10-03T03:00:00Z',
 }
 
-const review: ResultReview & { approved_at: string; delivered_at: string } = {
+const review: ResultReview = {
   run_id: run.id,
   task_id: task.id,
   state: 'DELIVERED',
@@ -57,6 +57,7 @@ const review: ResultReview & { approved_at: string; delivered_at: string } = {
   remediation_run_id: null,
   delivered_branch: 'agent-office/accepted/task-1042',
   delivered_commit: 'a91c3f0cafe',
+  changes_requested_at: null,
   approved_at: '2026-10-03T03:10:00Z',
   delivered_at: '2026-10-03T03:11:00Z',
   can_approve: false,
