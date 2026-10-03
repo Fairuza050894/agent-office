@@ -29,7 +29,7 @@ function inline(value: string | null | undefined): string {
 
 function block(value: string | null | undefined): string {
   if (!value) return '—'
-  return value.replace(/```/g, "'''`).trim() || '—'
+  return value.replace(/```/g, "'''").trim() || '—'
 }
 
 function timestamp(value: string | null | undefined): string {
