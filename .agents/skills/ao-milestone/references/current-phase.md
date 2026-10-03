@@ -3,286 +3,129 @@
 ## Current checkpoint
 
 ```text
-main@6e6680d
-Phase 10H-1 merged
-PR #24 Vocabulary & Structure merged
-PR #25 Office 3D experience polish merged
-PR #27 Phase 6 Codex test hardening merged
-PR #29 Office Diorama V0 merged
-PR #30 Office Diorama V1 merged
-PR #31 Office Diorama V2 asset pilot merged
-PR #32 Office Diorama V3 Build rollout merged
-PR #33 Phase 12 R3F renderer pilot merged
-PR #35 Phase 13A R3F Planning production migration merged
-PR #36 post-Phase-13A milestone sync merged
-PR #37 Phase 13B R3F Live production migration merged
-PR #38 Phase 13C R3F Replay production migration merged
-PR #39 Phase 14 Office Visual Evolution merged
-PR #41 Phase 15–16 Character & Art Production Hardening merged
-PR #42 Phase 17–18 Navigation Hardening & Living Office V2 merged
-PR #43 Phase 19 Universal Composer & KPI Productization merged
+main@8c6f94d259be27093b02d9017dbb1722bd956d31
+Phase 22 Enterprise Trust Layer — COMPLETE / MERGED
+Phase 23 Release Hardening — COMPLETE / MERGED
+Phase 24 Office Operating Experience — COMPLETE / MERGED
+Phase 25 Decision & KPI Cockpit — COMPLETE / MERGED
 ```
 
-Canonical full verification:
+Canonical full verification remains:
 
 ```bash
 ./scripts/verify.sh
 ```
 
-## Current status
+## Phase 22–25 exact evidence
+
+### Phase 22 — Enterprise Trust Layer
 
 ```text
-Phase 19 — COMPLETE / MERGED
-exact verified PR head: e0638374ef4c647e81d344d3e56fdc44623b5565
-GitHub Actions verify #1461: SUCCESS
-merge commit: 6e6680dc27ad6428feba099fd2c04c269a59444b
+PR: #47
+exact verified head: 3f151fbdeab69f75fdcc48f906ca8cd6ed9b7139
+GitHub Actions verify #1563: SUCCESS
+merge commit: e60610732d3aa642f2da9abfc0e44bd54de9c354
 ```
 
-## Accepted production state after Phase 19
+Accepted production state:
+
+- ResultReview exposes factual `changes_requested_at`, `approved_at`, and `delivered_at` derived from append-only AuditRecords.
+- Accepted Change Dossier exports only after human `DELIVERED` state and does not equate technical `COMPLETED` with delivery.
+- Project KPI includes accepted changes, acceptance rate, and technical-completion-to-managed-delivery time from canonical records only.
+- Agent sandbox threat boundaries are explicitly documented.
+- Managed delivery remains local: no automatic push or merge to the Project default branch.
+
+### Phase 23 — Release Hardening
+
+```text
+PR: #49
+exact verified head: 7ef0187016427ca8242aa39a14e73810e5fe52e6
+GitHub Actions verify #1591: SUCCESS
+merge commit: b4bc5273580130c4dd706fd5b1ba076f3ce01f96
+```
+
+Accepted production state:
+
+- GitHub Actions bootstrap uses checkout/setup-node/setup-python v7.
+- Python dependency consistency is gated with `pip check`.
+- shipped frontend dependencies are gated with `npm audit --omit=dev --audit-level=high`.
+- full verification runs on pull requests, pushes to `main`, and manual dispatch; ordinary `phase-*` pushes no longer duplicate the full suite.
+- R3F owns normal Planning, Live, and Replay rendering; Three.js remains recovery-only and HTML operational surfaces remain final fallback.
+
+### Phase 24 — Office Operating Experience
+
+```text
+PR: #50
+exact verified head: 5940cdd9d623d0b826e4148fdd2cfcf139b97da8
+GitHub Actions verify #1592: SUCCESS
+merge commit: e0090ed405bc36522a562b75d066b750418d3dd7
+```
+
+Accepted production state:
+
+- Office command rail now reads as a mission-control surface with stronger Project/mode/status hierarchy.
+- existing Office-world clock, lifecycle, presence, next-event, floor selector, Context Rail, Operations Dock, and Composer share one dark control-room presentation language.
+- presentation does not infer Run/Task state or fabricate agent activity.
+- Planning / Live / Replay canonical renderer inputs remain unchanged.
+
+### Phase 25 — Decision & KPI Cockpit
+
+```text
+PR: #52
+exact verified head: 6d065cb52586c2830ce3a426258c5a46f3770d93
+GitHub Actions verify #1593: SUCCESS
+merge commit: 8c6f94d259be27093b02d9017dbb1722bd956d31
+```
+
+Accepted production state:
+
+- Accepted Changes is the primary executive outcome surface while technical Run metrics remain secondary.
+- Inbox is a human-action queue driven by canonical decisions.
+- Task Board remains a read-only delivery pipeline: Planning / Ready / Running / In review / Needs you / Accepted.
+- no drag/drop state mutation, auto-approval, auto-delivery, fabricated KPI, or agent/person productivity ranking is introduced.
+
+## Current product value loop
+
+```text
+Describe outcome
+  -> Plan / requirements / team
+  -> explicit promotion
+  -> isolated agent work
+  -> verification + review
+  -> human result decision
+  -> managed local delivery
+  -> ACCEPTED / change dossier / KPI
+```
+
+The human remains the final decision maker. Technical `COMPLETED` and human `DELIVERED` remain distinct.
+
+## Current renderer and Office state
 
 - Planning, Live, and Replay use R3F in the normal production path.
-- Three.js remains behind the tested renderer recovery boundary; HTML operational surfaces remain the final fallback.
-- The nine Living Office core roles have deterministic production identity coverage.
-- Five rigged production character GLBs are integrity/provenance checked and must expose guaranteed Idle/Walk/Run clips before development/build/render preparation can continue.
-- Current character binaries remain honestly identified as third-party assets; no fake Blender-authored provenance is claimed.
-- Workspace/Living Office movement uses deterministic per-agent corridor lane separation and waypoint compaction while preserving factual destinations.
-- Existing stage-aware, time-aware, break-aware, capacity-bounded Living Office behavior remains the source of ambient presentation truth; no fake work/dialogue/progress is introduced.
-- Universal Composer defaults to AUTO orchestration and derives project/thread intent and executor context without carrying stale drafts across context changes.
-- RUN remains a reviewed intent and cannot bypass canonical Task/Run promotion or execution safety gates.
-- `/kpi` exposes project-scoped Task/Run delivery reporting from canonical records only.
-- KPI includes task delivery, Run success, completed cycle time, active/completed/failed/cancelled Runs, retries, remediation cycles, latest activity, and task-level execution attempts.
-- Missing KPI facts remain unavailable instead of being inferred.
-- KPI is descriptive and does not rank agents or invent individual productivity scores.
-- Graphify/Obsidian/another knowledge graph was intentionally not added to execution truth; the existing Project/Task/Run/Workflow/AgentRun/Event/Evidence/Finding/ComposerThread/RequirementCandidate/TeamProposal domain model is sufficient for this checkpoint. A graph may be added later only as a read model when cross-project dependency intelligence requires it.
-
-## Phase 19 final verification
-
-Exact PR #43 head and verification:
-
-```text
-e0638374ef4c647e81d344d3e56fdc44623b5565
-GitHub Actions verify #1461: SUCCESS
-merge commit: 6e6680dc27ad6428feba099fd2c04c269a59444b
-```
-
-Gates:
-
-```text
-backend pytest / Ruff / format / MyPy: PASS
-frontend tests (193) / typecheck / lint / build: PASS
-Office character production guard: PASS
-repository whitespace verification: PASS
-production Office guard: PASS
-Chromium production smoke: PASS
-  Planning = R3F
-  Live = R3F
-  Replay = R3F
-```
-
-Phase 19 implementation evidence:
-
-```text
-docs/product/PHASE_19_COMPOSER_KPI_PRODUCTIZATION.md
-frontend/src/analytics/projectKpi.ts
-frontend/src/analytics/projectKpi.test.ts
-frontend/src/pages/ProjectKpiPage.tsx
-frontend/src/pages/ProjectKpiPage.test.tsx
-frontend/src/components/office/UniversalComposerShell.tsx
-frontend/src/components/office/UniversalComposerShell.test.tsx
-frontend/src/types/navigation.ts
-frontend/src/layouts/AppShell.tsx
-```
-
-## Phase 17–18 accepted production state
-
-Exact PR #42 head and verification:
-
-```text
-9ebd07acb6fb0c015fbac8b1c1baaabc0f28c17a
-GitHub Actions verify #1440: SUCCESS
-merge commit: 979f18f00d3afe45ec0018494bfa7536bc7ec2d0
-```
-
-Accepted scope:
-
-- deterministic per-agent corridor lane assignment;
-- intermediate path separation without offsetting the factual destination;
-- duplicate and effectively-collinear waypoint compaction;
-- shell-bound path clamping;
-- renderer-neutral integration in shared runtime projection;
-- existing Living Office truth/capacity/time behavior retained;
-- no heavy physics engine or random NPC steering introduced.
-
-Detailed evidence:
-
-```text
-docs/product/PHASE_17_18_NAVIGATION_LIVING_OFFICE_V2.md
-frontend/src/office3d/navigationPolicy.ts
-frontend/src/office3d/navigationPolicy.test.ts
-frontend/src/office3d/runtimeProjection.ts
-```
-
-## Phase 15–16 accepted production state
-
-Exact PR #41 head and verification:
-
-```text
-b2fea7b1c8bfad66fc1efef4232f11f54c3047ac
-GitHub Actions verify #1434: SUCCESS
-merge commit: ed7c7b1fa22c068ef796ac76bc930045e5483605
-```
-
-Accepted scope:
-
-- nine core Living Office roles have deterministic unique appearance identities;
-- five rigged GLBs are validated as production assets during dev/build/render preparation;
-- required Idle/Walk/Run clips and source/integrity provenance are build-gated;
-- legacy execution role identity remains deterministic;
-- incompatible skeleton retargeting is intentionally rejected;
-- bespoke Blender art remains a future art-production enhancement rather than a Phase 17–19 blocker.
-
-Detailed evidence:
-
-```text
-docs/product/PHASE_15_16_CHARACTER_ART_PRODUCTION.md
-frontend/scripts/check-office-character-production.mjs
-frontend/src/office3d/character.test.ts
-frontend/package.json
-```
-
-## Accepted production state after Phase 14
-
-- Planning, Live, and Replay use R3F in the normal production path.
-- Three.js remains behind the tested React renderer fallback boundary.
+- Three.js remains a tested renderer recovery path.
 - HTML operational surfaces remain the final non-WebGL fallback.
-- Furniture materials now use deeper surface separation and restrained PBR values.
-- Morning/day/evening/night lighting remains operationally readable with stronger visual distinction.
-- R3F directional shadows use tuned bias/normal-bias/radius for improved contact depth.
-- Explicit Agent selection eases camera focus rather than snapping abruptly.
-- Pointer hover exposes a restrained ring/nameplate affordance.
-- Selection presentation is reapplied after Live/Replay status changes.
-- Existing deterministic living-office idle/break/room/right-of-way behavior remains authoritative presentation; no fake work/dialogue/progress was added.
-- `docs/ux/OFFICE_ASSET_PIPELINE.md` defines the Blender-ready Tier A authoring contract while current curated GLBs remain honestly identified as Tier B assets and procedural geometry as Tier C fallback.
+- Living Office time, occupancy, work presence, navigation, and room behavior remain deterministic projections over canonical facts plus explicitly presentation-only ambience.
+- Existing production character assets remain third-party/provenance-pinned; no first-party Blender art is falsely claimed.
 
-Phase 14 implementation evidence:
+## Known limitations that remain explicit
 
-```text
-docs/product/PHASE_14_OFFICE_VISUAL_EVOLUTION.md
-docs/ux/OFFICE_ASSET_PIPELINE.md
-frontend/src/components/R3FOfficeScene.tsx
-frontend/src/office3d/lighting.ts
-frontend/src/office3d/officeFurnitureKit.ts
-frontend/src/office3d/officeFurnitureKit.test.ts
-```
+Agent Office is not yet claiming enterprise-complete:
 
-Phase 14 gates:
+- multi-user identity / SSO / RBAC / separation of duties;
+- multi-tenant cloud isolation;
+- automatic Git provider push / PR / merge;
+- webhook/email/chat notification transport;
+- automatic retention/worktree cleanup;
+- a second production executor;
+- a generic cross-domain business-workflow step model;
+- Three.js fallback retirement;
+- a custom first-party production environment/character asset pack.
+
+## Next checkpoint
 
 ```text
-backend pytest / Ruff / format / MyPy: PASS
-frontend tests (184) / typecheck / lint / build: PASS
-repository whitespace verification: PASS
-production Office bundle guard: PASS
-Chromium production smoke: PASS
-  Planning = R3F
-  Live = R3F
-  Replay = R3F
-  Three.js = fallback-only during successful smoke
+Agent Office RC1 — Premium 3D Product Overhaul
+status: CANDIDATE / REQUIRES DIFF AUDIT AGAINST LATEST MAIN
 ```
 
-## Phase 13C accepted production state
-
-Merge commit:
-
-```text
-786417e75bd02fe22b5e23c5a4d96d1e7cb29f92
-```
-
-Exact PR #38 head and verification:
-
-```text
-526b0a12bab98f344a88e4eebd13403a2c16a64d
-GitHub Actions verify #1413: SUCCESS
-```
-
-Gates:
-
-```text
-backend pytest / Ruff / format / MyPy: PASS
-frontend tests / typecheck / lint / build: PASS
-repository whitespace: PASS
-production Office guard: PASS
-production renderer split Chromium smoke: PASS
-```
-
-Accepted Phase 13C renderer state:
-
-```text
-Planning = R3F
-Live = R3F
-Replay = R3F
-Three.js = fallback-only on successful production path
-```
-
-Detailed Phase 13C evidence:
-
-```text
-docs/product/PHASE_13C_R3F_REPLAY_PRODUCTION.md
-frontend/src/components/R3FOfficeScene.tsx
-frontend/src/components/OfficeScene.tsx
-frontend/src/components/OfficeScene.test.tsx
-frontend/src/pages/RunOfficePage.tsx
-frontend/scripts/check-office-r3f-production.mjs
-```
-
-## Phase 13B accepted production state
-
-Merge commit:
-
-```text
-0eff0f4003750809b7d841f6e111be93a45d260d
-```
-
-Exact PR #37 head and verification:
-
-```text
-43af73aacefe2452faf0512faf9e8374678eb576
-GitHub Actions verify #1386: SUCCESS
-```
-
-Accepted Phase 13B renderer state:
-
-```text
-Planning = R3F
-Live = R3F
-Replay = Three.js
-```
-
-## Phase 13A accepted production state
-
-- Planning Office uses R3F in normal production rendering.
-- Three.js remains the tested Planning fallback.
-- Live and Replay remained on the existing Three.js renderer at the Phase 13A acceptance point.
-- Task / Run / AgentRun / Event truth remains outside the renderer.
-- R3F is a production dependency because Planning consumes it.
-- Production bundle guard requires the production R3F Planning path and rejects Diorama/debug leakage.
-- Production Chromium smoke verifies Planning R3F loads successfully.
-- No visual redesign, post-processing stack, or workflow-truth change was made in Phase 13A.
-
-Exact PR #35 head and verification:
-
-```text
-0ecabadd2d01834d18b2878bc71d0582068afab4
-GitHub Actions verify #1376: SUCCESS
-```
-
-## Truth and safety boundary
-
-Every later Office checkpoint must preserve:
-
-- canonical execution/replay truth;
-- tested Three.js fallback until a separate fallback-retirement decision is accepted;
-- accessibility through HTML operational surfaces;
-- reduced-motion behavior;
-- deterministic visual/performance gates;
-- no fake progress, collaboration, dialogue, testing, or execution state;
-- one checkpoint per PR.
+The RC1 branch may evolve the visual experience substantially, but it must preserve the Phase 22–25 truth, human-decision, repository-safety, and exact-head verification contracts before merge.
