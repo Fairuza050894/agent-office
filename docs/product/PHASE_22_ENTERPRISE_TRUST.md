@@ -2,7 +2,7 @@
 
 ## Status
 
-Implementation checkpoint after Phase 21 Task Decision Center.
+Implementation checkpoint after Phase 21 Task Decision Center. Acceptance requires a successful exact-head full verification run before merge.
 
 ## Product goal
 
