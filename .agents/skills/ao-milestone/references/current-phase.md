@@ -3,7 +3,7 @@
 ## Current checkpoint
 
 ```text
-main@0eff0f4
+main@786417e
 Phase 10H-1 merged
 PR #24 Vocabulary & Structure merged
 PR #25 Office 3D experience polish merged
@@ -16,7 +16,8 @@ PR #33 Phase 12 R3F renderer pilot merged
 PR #35 Phase 13A R3F Planning production migration merged
 PR #36 post-Phase-13A milestone sync merged
 PR #37 Phase 13B R3F Live production migration merged
-PR #38 Phase 13C R3F Replay production migration open
+PR #38 Phase 13C R3F Replay production migration merged
+Phase 14 Office Visual Evolution in progress
 ```
 
 Canonical full verification:
@@ -28,35 +29,33 @@ Canonical full verification:
 ## Current status
 
 ```text
-Phase 13C — IN PROGRESS
-base: 0eff0f4003750809b7d841f6e111be93a45d260d
-branch: phase-13c-r3f-replay-production
-PR: #38
+Phase 14 — IN PROGRESS
+base: 786417e75bd02fe22b5e23c5a4d96d1e7cb29f92
+branch: phase-14-office-visual-evolution
 ```
 
-## Phase 13C checkpoint scope
+## Phase 14 checkpoint scope
 
-- Planning Office remains on the accepted R3F production renderer.
-- Live operational Office remains on the accepted R3F production renderer.
-- Historical Replay moves to R3F production.
-- Replay preserves the canonical `officeReplayRange()` / `officeReplayPlan()` factual timing contract.
-- Replay preserves hidden/PENDING -> STARTING -> station movement -> RUNNING -> canonical final status presentation.
-- Replay movement retains the dedicated replay-facing yaw contract that prevents backwards-walking regressions.
-- Planning, Live, and Replay retain the R3F -> Three.js React fallback boundary.
-- The outer operational HTML boundary remains available independently of the WebGL renderer.
-- Three.js remains fallback code and is not removed in this checkpoint.
-- No backend, schema, executor, workflow-truth, fake dialogue, fake tests, fake collaboration, or fake progress change is in scope.
-- No large visual redesign, post-processing stack, physics migration, or Unity migration is in scope.
+- Keep Planning, Live, and Replay on the accepted R3F production renderer.
+- Keep Three.js behind the tested React fallback boundary.
+- Refine furniture materials without replacing the established dark Office visual language.
+- Improve time-of-day ambience while retaining operational readability.
+- Improve R3F shadow contact/depth without introducing an expensive post-processing stack.
+- Smooth explicit Agent camera focus rather than snapping to a selected character.
+- Add restrained hover affordance and preserve selection through Live/Replay status changes.
+- Retain existing deterministic living-office behaviors instead of fabricating activity.
+- Define the Blender-ready authored-asset contract without falsely relabeling curated third-party assets.
+- No backend, schema, executor, workflow-truth, fake dialogue, fake tests, fake collaboration, or fake progress changes are in scope.
 
-Phase 13C implementation details:
+Phase 14 implementation details:
 
 ```text
-docs/product/PHASE_13C_R3F_REPLAY_PRODUCTION.md
+docs/product/PHASE_14_OFFICE_VISUAL_EVOLUTION.md
+docs/ux/OFFICE_ASSET_PIPELINE.md
 frontend/src/components/R3FOfficeScene.tsx
-frontend/src/components/OfficeScene.tsx
-frontend/src/components/OfficeScene.test.tsx
-frontend/scripts/check-office-r3f-production.mjs
-frontend/scripts/check-office-debug-production.mjs
+frontend/src/office3d/lighting.ts
+frontend/src/office3d/officeFurnitureKit.ts
+frontend/src/office3d/officeFurnitureKit.test.ts
 ```
 
 Required verification for the exact PR head:
@@ -71,6 +70,51 @@ Chromium production smoke:
   Live = R3F
   Replay = R3F
   Three.js = fallback-only during successful smoke
+```
+
+## Phase 13C accepted production state
+
+Merge commit:
+
+```text
+786417e75bd02fe22b5e23c5a4d96d1e7cb29f92
+```
+
+Exact PR #38 head and verification:
+
+```text
+526b0a12bab98f344a88e4eebd13403a2c16a64d
+GitHub Actions verify #1413: SUCCESS
+```
+
+Gates:
+
+```text
+backend pytest / Ruff / format / MyPy: PASS
+frontend tests / typecheck / lint / build: PASS
+repository whitespace: PASS
+production Office guard: PASS
+production renderer split Chromium smoke: PASS
+```
+
+Accepted Phase 13C renderer state:
+
+```text
+Planning = R3F
+Live = R3F
+Replay = R3F
+Three.js = fallback-only on successful production path
+```
+
+Detailed Phase 13C evidence:
+
+```text
+docs/product/PHASE_13C_R3F_REPLAY_PRODUCTION.md
+frontend/src/components/R3FOfficeScene.tsx
+frontend/src/components/OfficeScene.tsx
+frontend/src/components/OfficeScene.test.tsx
+frontend/src/pages/RunOfficePage.tsx
+frontend/scripts/check-office-r3f-production.mjs
 ```
 
 ## Phase 13B accepted production state

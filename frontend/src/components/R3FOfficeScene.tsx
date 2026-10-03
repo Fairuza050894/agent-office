@@ -1,5 +1,6 @@
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -89,6 +90,11 @@ interface RendererInfo {
 }
 
 interface ReplayCameraFocus {
+  agentId: string
+  until: number
+}
+
+interface SelectionCameraFocus {
   agentId: string
   until: number
 }
@@ -189,6 +195,7 @@ function CameraRig({
 }) {
   const { camera, gl } = useThree()
   const controlsRef = useRef<OrbitControls | null>(null)
+  const selectionFocusRef = useRef<SelectionCameraFocus | null>(null)
 
   useEffect(() => {
     const controls = new OrbitControls(camera, gl.domElement)
@@ -217,35 +224,54 @@ function CameraRig({
     controls.target.set(...preset.target)
     controls.update()
     replayFocusRef.current = null
+    selectionFocusRef.current = null
   }, [camera, cameraResetNonce, cameraView, floor, replayFocusRef])
 
   useEffect(() => {
-    const controls = controlsRef.current
-    if (!controls || !selectedAgentId) return
+    if (!selectedAgentId) {
+      selectionFocusRef.current = null
+      return
+    }
 
     const runtime = runtimes.current.get(selectedAgentId)
     if (!runtime) return
 
     replayFocusRef.current = null
-    const previousTarget = controls.target.clone()
-    controls.target.copy(runtime.root.position)
-    camera.position.add(controls.target.clone().sub(previousTarget))
-    controls.update()
-  }, [camera, replayFocusRef, runtimes, selectedAgentId])
+    selectionFocusRef.current = {
+      agentId: selectedAgentId,
+      until: performance.now() + 1250,
+    }
+  }, [replayFocusRef, runtimes, selectedAgentId])
 
   useFrame(() => {
     const controls = controlsRef.current
     if (!controls) return
 
-    const focus = replayFocusRef.current
-    if (focus) {
-      const runtime = runtimes.current.get(focus.agentId)
-      if (!runtime || performance.now() >= focus.until) {
-        replayFocusRef.current = null
+    const selectionFocus = selectionFocusRef.current
+    if (selectionFocus) {
+      const runtime = runtimes.current.get(selectionFocus.agentId)
+      if (!runtime || performance.now() >= selectionFocus.until) {
+        selectionFocusRef.current = null
       } else {
         const before = controls.target.clone()
-        controls.target.lerp(runtime.station, 0.12)
+        const focusTarget = runtime.root.position.clone()
+        focusTarget.y += 0.72
+        controls.target.lerp(focusTarget, 0.11)
         camera.position.add(controls.target.clone().sub(before))
+      }
+    } else {
+      const focus = replayFocusRef.current
+      if (focus) {
+        const runtime = runtimes.current.get(focus.agentId)
+        if (!runtime || performance.now() >= focus.until) {
+          replayFocusRef.current = null
+        } else {
+          const before = controls.target.clone()
+          const focusTarget = runtime.station.clone()
+          focusTarget.y += 0.68
+          controls.target.lerp(focusTarget, 0.1)
+          camera.position.add(controls.target.clone().sub(before))
+        }
       }
     }
 
@@ -324,6 +350,32 @@ function stationForMember(
   )
 }
 
+function applyCharacterInteraction(
+  runtime: RuntimeAgent,
+  selected: boolean,
+  hovered: boolean,
+): void {
+  setCharacterSelected(runtime, selected)
+
+  const material = runtime.selectionRing.material as THREE.MeshBasicMaterial
+  if (selected) {
+    runtime.selectionRing.visible = true
+    runtime.selectionRing.scale.setScalar(1)
+    material.opacity = 0.92
+  } else if (hovered) {
+    runtime.selectionRing.visible = true
+    runtime.selectionRing.scale.setScalar(0.88)
+    material.opacity = 0.42
+  } else {
+    runtime.selectionRing.visible = false
+    runtime.selectionRing.scale.setScalar(1)
+    material.opacity = 0.92
+  }
+
+  runtime.labelElement.classList.toggle('is-hovered', hovered)
+  if (hovered) runtime.labelElement.classList.add('is-nameplate-visible')
+}
+
 function SceneContents({
   stages,
   agents,
@@ -350,6 +402,7 @@ function SceneContents({
   const runtimesRef = useRef<Map<string, RuntimeAgent>>(new Map())
   const replayIndexRef = useRef(0)
   const replayFocusRef = useRef<ReplayCameraFocus | null>(null)
+  const hoveredAgentIdRef = useRef<string | null>(null)
   const generationRef = useRef(0)
   const stagesRef = useRef(stages)
   const sceneMembers = useMemo(
@@ -388,6 +441,16 @@ function SceneContents({
     [scope, stages],
   )
   const lighting = officeLightingForHour(officeHour)
+
+  const refreshInteractionPresentation = useCallback(() => {
+    runtimesRef.current.forEach((runtime) => {
+      applyCharacterInteraction(
+        runtime,
+        runtime.agentId === selectedAgentId,
+        runtime.agentId === hoveredAgentIdRef.current,
+      )
+    })
+  }, [selectedAgentId])
 
   useEffect(() => {
     stagesRef.current = stages
@@ -459,6 +522,7 @@ function SceneContents({
       agentLayer.add(runtime.root)
     })
     runtimesRef.current = runtimes
+    hoveredAgentIdRef.current = null
 
     if (
       import.meta.env.DEV &&
@@ -577,12 +641,17 @@ function SceneContents({
         runtime.pendingStatus = null
         runtime.pendingStatusAt = null
         setCharacterStatus(runtime, member.status)
+        applyCharacterInteraction(
+          runtime,
+          runtime.agentId === selectedAgentId,
+          runtime.agentId === hoveredAgentIdRef.current,
+        )
         moveOfficeRuntime(runtime, target)
       }
     })
 
     invalidate()
-  }, [invalidate, sceneMembers, scope])
+  }, [invalidate, sceneMembers, scope, selectedAgentId])
 
   useEffect(() => {
     if (scope !== 'replay') return
@@ -598,16 +667,27 @@ function SceneContents({
       runtime.pendingStatus = null
       runtime.pendingStatusAt = null
       setCharacterStatus(runtime, 'PENDING')
+      applyCharacterInteraction(
+        runtime,
+        runtime.agentId === selectedAgentId,
+        runtime.agentId === hoveredAgentIdRef.current,
+      )
     })
     invalidate()
-  }, [invalidate, replayNonce, replayRange, replayStartedAt, scope, structureKey])
+  }, [
+    invalidate,
+    replayNonce,
+    replayRange,
+    replayStartedAt,
+    scope,
+    selectedAgentId,
+    structureKey,
+  ])
 
   useEffect(() => {
-    runtimesRef.current.forEach((runtime) => {
-      setCharacterSelected(runtime, runtime.agentId === selectedAgentId)
-    })
+    refreshInteractionPresentation()
     invalidate()
-  }, [invalidate, selectedAgentId])
+  }, [invalidate, refreshInteractionPresentation])
 
   useFrame((state, frameDelta) => {
     const animationNow = state.clock.elapsedTime * 1000
@@ -632,6 +712,11 @@ function SceneContents({
             runtime.pendingStatus = null
             runtime.pendingStatusAt = null
             setCharacterStatus(runtime, 'STARTING')
+            applyCharacterInteraction(
+              runtime,
+              runtime.agentId === selectedAgentId,
+              runtime.agentId === hoveredAgentIdRef.current,
+            )
             moveOfficeRuntime(runtime, {
               position: runtime.station.clone(),
               yaw: runtime.stationYaw,
@@ -660,6 +745,11 @@ function SceneContents({
         frameNow >= runtime.pendingStatusAt
       ) {
         setCharacterStatus(runtime, runtime.pendingStatus)
+        applyCharacterInteraction(
+          runtime,
+          runtime.agentId === selectedAgentId,
+          runtime.agentId === hoveredAgentIdRef.current,
+        )
         runtime.pendingStatus = null
         runtime.pendingStatusAt = null
       }
@@ -683,6 +773,11 @@ function SceneContents({
             runtime.root.rotation.y = runtime.targetYaw
             if (scope === 'replay' && runtime.currentStatus === 'STARTING') {
               setCharacterStatus(runtime, 'RUNNING')
+              applyCharacterInteraction(
+                runtime,
+                runtime.agentId === selectedAgentId,
+                runtime.agentId === hoveredAgentIdRef.current,
+              )
               if (runtime.pendingStatus) {
                 runtime.pendingStatusAt = frameNow + 1800
               }
@@ -710,13 +805,33 @@ function SceneContents({
     })
   })
 
-  const handleAgentClick = (event: ThreeEvent<MouseEvent>) => {
+  const resolveAgentId = (event: ThreeEvent<MouseEvent>) => {
     let object: THREE.Object3D | null = event.object
     while (object && !object.userData.agentId) object = object.parent
-    const agentId = object?.userData.agentId as string | undefined
+    return object?.userData.agentId as string | undefined
+  }
+
+  const handleAgentClick = (event: ThreeEvent<MouseEvent>) => {
+    const agentId = resolveAgentId(event)
     if (!agentId) return
     event.stopPropagation()
     onSelectAgent(agentId)
+  }
+
+  const handleAgentHover = (event: ThreeEvent<MouseEvent>) => {
+    const agentId = resolveAgentId(event)
+    if (!agentId || hoveredAgentIdRef.current === agentId) return
+    event.stopPropagation()
+    hoveredAgentIdRef.current = agentId
+    refreshInteractionPresentation()
+    invalidate()
+  }
+
+  const clearAgentHover = () => {
+    if (hoveredAgentIdRef.current === null) return
+    hoveredAgentIdRef.current = null
+    refreshInteractionPresentation()
+    invalidate()
   }
 
   return (
@@ -738,9 +853,17 @@ function SceneContents({
         shadow-camera-right={16}
         shadow-camera-top={14}
         shadow-camera-bottom={-14}
+        shadow-bias={-0.0002}
+        shadow-normalBias={0.035}
+        shadow-radius={3}
       />
       <primitive object={environment} />
-      <primitive object={agentLayer} onClick={handleAgentClick} />
+      <primitive
+        object={agentLayer}
+        onClick={handleAgentClick}
+        onPointerMove={handleAgentHover}
+        onPointerOut={clearAgentHover}
+      />
       <CameraRig
         floor={floor}
         cameraView={cameraView}
@@ -771,6 +894,7 @@ export function R3FOfficeScene(props: R3FOfficeSceneProps) {
       className="office-three-host office-three-host-r3f"
       data-office-renderer="r3f"
       data-office-scope={props.scope}
+      data-office-visual-evolution="phase-14"
     >
       <Canvas
         className="office-r3f-canvas-shell"
