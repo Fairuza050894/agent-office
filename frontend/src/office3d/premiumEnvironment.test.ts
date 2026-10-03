@@ -24,11 +24,14 @@ describe('RC1 premium Office spatial architecture', () => {
 
       expect(layer.name).toBe('office-premium-architecture')
       expect(parent.children).toContain(layer)
+      expect(parent.userData.visualShell).toBe('premium-r3f')
+      expect(parent.userData.legacyVisualShellMounted).toBe(false)
       expect(layer.userData.presentationOnly).toBe(true)
       expect(layer.userData.canonicalStateOwner).toBe(false)
+      expect(layer.userData.replacesLegacyVisualShell).toBe(true)
       expect(layer.userData.floor).toBe(floor)
       expect(layer.userData.identity).toBe(identity.signature)
-      expect(layer.userData.visualRevision).toBe('spatial-overhaul-v1')
+      expect(layer.userData.visualRevision).toBe('spatial-overhaul-v2')
       expect(layer.userData.roomSpanningOverheadFrame).toBe(false)
       expect(layer.getObjectByName(identity.architectureGroupName)).toBeTruthy()
       expect(layer.getObjectByName(FLOOR_RICHNESS[floor])).toBeTruthy()
@@ -50,6 +53,24 @@ describe('RC1 premium Office spatial architecture', () => {
       expect(renderableMeshCount).toBeLessThanOrEqual(18)
     },
   )
+
+  it('disposes the legacy primitive shell before mounting premium R3F visuals', () => {
+    const parent = new THREE.Group()
+    const legacyMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 })
+    const legacyGeometry = new THREE.BoxGeometry(1, 1, 1)
+    const legacy = new THREE.Mesh(legacyGeometry, legacyMaterial)
+    legacy.name = 'legacy-office-primitive'
+    parent.add(legacy)
+
+    const disposeGeometry = vi.spyOn(legacyGeometry, 'dispose')
+    const disposeMaterial = vi.spyOn(legacyMaterial, 'dispose')
+    const layer = mountPremiumOfficeArchitecture(parent, 'build')
+
+    expect(parent.getObjectByName('legacy-office-primitive')).toBeUndefined()
+    expect(parent.children).toEqual([layer])
+    expect(disposeGeometry).toHaveBeenCalledTimes(1)
+    expect(disposeMaterial).toHaveBeenCalledTimes(1)
+  })
 
   it.each(FLOORS)(
     'prevents room-spanning decorative beams for %s',
@@ -76,8 +97,6 @@ describe('RC1 premium Office spatial architecture', () => {
         }
       })
 
-      // The Office footprint is approximately 20 x 14. No decorative element
-      // may bridge most of the room; larger surfaces are tiled into local pieces.
       expect(largestHorizontalSpan).toBeLessThanOrEqual(9)
     },
   )
