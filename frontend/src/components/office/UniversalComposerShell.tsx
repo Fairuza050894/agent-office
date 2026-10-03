@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import type {
   ComposerIntent,
@@ -35,6 +35,11 @@ export interface UniversalComposerShellProps {
   error?: string | null
 }
 
+interface ContextDraft<T> {
+  contextKey: string
+  value: T
+}
+
 export function UniversalComposerShell({
   projects,
   selectedProjectId,
@@ -54,21 +59,36 @@ export function UniversalComposerShell({
   messages = [],
   error = null,
 }: UniversalComposerShellProps) {
-  const [intent, setIntent] = useState<ComposerIntent>(
-    activeThread?.requested_intent ?? 'AUTO',
-  )
-  const [instruction, setInstruction] = useState('')
-  const [executorId, setExecutorId] = useState(
-    activeThread?.executor_id ?? selectedExecutorId ?? '',
-  )
+  const baseIntent = activeThread?.requested_intent ?? 'AUTO'
+  const baseExecutorId = activeThread?.executor_id ?? selectedExecutorId ?? ''
+  const contextKey = [
+    selectedProjectId || 'no-project',
+    activeThread?.id ?? 'new-thread',
+    baseIntent,
+    baseExecutorId || 'auto-executor',
+  ].join(':')
 
-  useEffect(() => {
-    setIntent(activeThread?.requested_intent ?? 'AUTO')
-  }, [activeThread?.id, activeThread?.requested_intent])
+  const [intentDraft, setIntentDraft] = useState<ContextDraft<ComposerIntent>>({
+    contextKey,
+    value: baseIntent,
+  })
+  const [executorDraft, setExecutorDraft] = useState<ContextDraft<string>>({
+    contextKey,
+    value: baseExecutorId,
+  })
+  const [instructionDraft, setInstructionDraft] = useState<ContextDraft<string>>({
+    contextKey,
+    value: '',
+  })
 
-  useEffect(() => {
-    setExecutorId(activeThread?.executor_id ?? selectedExecutorId ?? '')
-  }, [activeThread?.executor_id, activeThread?.id, selectedExecutorId])
+  const intent =
+    intentDraft.contextKey === contextKey ? intentDraft.value : baseIntent
+  const executorId =
+    executorDraft.contextKey === contextKey
+      ? executorDraft.value
+      : baseExecutorId
+  const instruction =
+    instructionDraft.contextKey === contextKey ? instructionDraft.value : ''
 
   const selectedProjectName =
     projects.find((project) => project.id === selectedProjectId)?.name ??
@@ -91,7 +111,7 @@ export function UniversalComposerShell({
       instruction: instruction.trim(),
       executorId: executorId || null,
     })
-    setInstruction('')
+    setInstructionDraft({ contextKey, value: '' })
   }
 
   const submitLabel = isThreadLoading
@@ -184,7 +204,12 @@ export function UniversalComposerShell({
             aria-label="Composer intent"
             value={intent}
             disabled={isSubmitting || isThreadLoading}
-            onChange={(event) => setIntent(event.target.value as ComposerIntent)}
+            onChange={(event) =>
+              setIntentDraft({
+                contextKey,
+                value: event.target.value as ComposerIntent,
+              })
+            }
           >
             <option value="AUTO">AUTO · let Agent Office route the work</option>
             <option value="ASK">ASK</option>
@@ -198,7 +223,9 @@ export function UniversalComposerShell({
             aria-label="Composer executor"
             value={executorId}
             disabled={executors.length === 0 || isSubmitting || isThreadLoading}
-            onChange={(event) => setExecutorId(event.target.value)}
+            onChange={(event) =>
+              setExecutorDraft({ contextKey, value: event.target.value })
+            }
           >
             <option value="">Auto-resolve executor</option>
             {executors.map((executor) => (
@@ -230,7 +257,9 @@ export function UniversalComposerShell({
           className="office-composer-input"
           value={instruction}
           disabled={isSubmitting || isThreadLoading}
-          onChange={(event) => setInstruction(event.target.value)}
+          onChange={(event) =>
+            setInstructionDraft({ contextKey, value: event.target.value })
+          }
           onKeyDown={(event) => {
             if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
               event.preventDefault()
