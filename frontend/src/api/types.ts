@@ -67,6 +67,34 @@ export interface Run {
   updated_at: string
 }
 
+export type ResultReviewState =
+  | 'NOT_READY'
+  | 'AWAITING_REVIEW'
+  | 'CHANGES_REQUESTED'
+  | 'APPROVED'
+  | 'DELIVERED'
+
+export interface ResultReview {
+  run_id: string
+  task_id: string
+  state: ResultReviewState
+  candidate_workspace_id: string | null
+  feedback: string | null
+  remediation_run_id: string | null
+  delivered_branch: string | null
+  delivered_commit: string | null
+  can_approve: boolean
+  can_request_changes: boolean
+}
+
+export interface RequestResultChangesRequest {
+  feedback: string
+}
+
+export interface ApproveResultRequest {
+  note?: string | null
+}
+
 export interface CreateRunRequest {
   requested_executor_id?: string | null
 }
@@ -368,7 +396,6 @@ export interface ApiErrorDetail {
   detail?: string
 }
 
-
 export type ComposerIntent = 'AUTO' | 'ASK' | 'PLAN' | 'BRAINSTORM' | 'RUN'
 export type ComposerThreadStatus =
   | 'OPEN'
@@ -485,7 +512,6 @@ export interface ComposerPreparation {
   artifacts: PlanningArtifact[]
   requirements: RequirementCandidate[]
 }
-
 
 export interface PlanningEvent {
   id: string
