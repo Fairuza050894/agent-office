@@ -1,5 +1,6 @@
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -395,7 +396,7 @@ function SceneContents({
   dioramaPilot,
   labelsVisible,
 }: R3FOfficeSceneProps) {
-  const { invalidate, gl } = useThree()
+  const { invalidate } = useThree()
   const environment = useMemo(() => new THREE.Group(), [])
   const agentLayer = useMemo(() => new THREE.Group(), [])
   const runtimesRef = useRef<Map<string, RuntimeAgent>>(new Map())
@@ -441,7 +442,7 @@ function SceneContents({
   )
   const lighting = officeLightingForHour(officeHour)
 
-  const refreshInteractionPresentation = () => {
+  const refreshInteractionPresentation = useCallback(() => {
     runtimesRef.current.forEach((runtime) => {
       applyCharacterInteraction(
         runtime,
@@ -449,7 +450,7 @@ function SceneContents({
         runtime.agentId === hoveredAgentIdRef.current,
       )
     })
-  }
+  }, [selectedAgentId])
 
   useEffect(() => {
     stagesRef.current = stages
@@ -522,7 +523,6 @@ function SceneContents({
     })
     runtimesRef.current = runtimes
     hoveredAgentIdRef.current = null
-    refreshInteractionPresentation()
 
     if (
       import.meta.env.DEV &&
@@ -598,7 +598,6 @@ function SceneContents({
 
     return () => {
       generationRef.current += 1
-      gl.domElement.style.cursor = ''
       runtimes.forEach(disposeCharacter)
       runtimes.clear()
       runtimesRef.current = new Map()
@@ -611,7 +610,6 @@ function SceneContents({
     dioramaPilot,
     environment,
     floor,
-    gl,
     invalidate,
     officeMode,
     scope,
@@ -689,7 +687,7 @@ function SceneContents({
   useEffect(() => {
     refreshInteractionPresentation()
     invalidate()
-  }, [invalidate, selectedAgentId])
+  }, [invalidate, refreshInteractionPresentation])
 
   useFrame((state, frameDelta) => {
     const animationNow = state.clock.elapsedTime * 1000
@@ -825,7 +823,6 @@ function SceneContents({
     if (!agentId || hoveredAgentIdRef.current === agentId) return
     event.stopPropagation()
     hoveredAgentIdRef.current = agentId
-    gl.domElement.style.cursor = 'pointer'
     refreshInteractionPresentation()
     invalidate()
   }
@@ -833,7 +830,6 @@ function SceneContents({
   const clearAgentHover = () => {
     if (hoveredAgentIdRef.current === null) return
     hoveredAgentIdRef.current = null
-    gl.domElement.style.cursor = ''
     refreshInteractionPresentation()
     invalidate()
   }
