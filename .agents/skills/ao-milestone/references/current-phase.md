@@ -3,7 +3,7 @@
 ## Current checkpoint
 
 ```text
-main@786417e
+main@588ae3a
 Phase 10H-1 merged
 PR #24 Vocabulary & Structure merged
 PR #25 Office 3D experience polish merged
@@ -17,7 +17,7 @@ PR #35 Phase 13A R3F Planning production migration merged
 PR #36 post-Phase-13A milestone sync merged
 PR #37 Phase 13B R3F Live production migration merged
 PR #38 Phase 13C R3F Replay production migration merged
-Phase 14 Office Visual Evolution in progress
+PR #39 Phase 14 Office Visual Evolution merged
 ```
 
 Canonical full verification:
@@ -29,25 +29,27 @@ Canonical full verification:
 ## Current status
 
 ```text
-Phase 14 — IN PROGRESS
-base: 786417e75bd02fe22b5e23c5a4d96d1e7cb29f92
-branch: phase-14-office-visual-evolution
+Phase 14 — COMPLETE / MERGED
+exact verified PR head: aff921d640eef690fe4cb922640aa9860b9325d6
+GitHub Actions verify #1425: SUCCESS
+merge commit: 588ae3af511219a4d6c3691fa70360967c3b11a9
 ```
 
-## Phase 14 checkpoint scope
+## Accepted production state after Phase 14
 
-- Keep Planning, Live, and Replay on the accepted R3F production renderer.
-- Keep Three.js behind the tested React fallback boundary.
-- Refine furniture materials without replacing the established dark Office visual language.
-- Improve time-of-day ambience while retaining operational readability.
-- Improve R3F shadow contact/depth without introducing an expensive post-processing stack.
-- Smooth explicit Agent camera focus rather than snapping to a selected character.
-- Add restrained hover affordance and preserve selection through Live/Replay status changes.
-- Retain existing deterministic living-office behaviors instead of fabricating activity.
-- Define the Blender-ready authored-asset contract without falsely relabeling curated third-party assets.
-- No backend, schema, executor, workflow-truth, fake dialogue, fake tests, fake collaboration, or fake progress changes are in scope.
+- Planning, Live, and Replay use R3F in the normal production path.
+- Three.js remains behind the tested React renderer fallback boundary.
+- HTML operational surfaces remain the final non-WebGL fallback.
+- Furniture materials now use deeper surface separation and restrained PBR values.
+- Morning/day/evening/night lighting remains operationally readable with stronger visual distinction.
+- R3F directional shadows use tuned bias/normal-bias/radius for improved contact depth.
+- Explicit Agent selection eases camera focus rather than snapping abruptly.
+- Pointer hover exposes a restrained ring/nameplate affordance.
+- Selection presentation is reapplied after Live/Replay status changes.
+- Existing deterministic living-office idle/break/room/right-of-way behavior remains authoritative presentation; no fake work/dialogue/progress was added.
+- `docs/ux/OFFICE_ASSET_PIPELINE.md` defines the Blender-ready Tier A authoring contract while current curated GLBs remain honestly identified as Tier B assets and procedural geometry as Tier C fallback.
 
-Phase 14 implementation details:
+Phase 14 implementation evidence:
 
 ```text
 docs/product/PHASE_14_OFFICE_VISUAL_EVOLUTION.md
@@ -58,14 +60,14 @@ frontend/src/office3d/officeFurnitureKit.ts
 frontend/src/office3d/officeFurnitureKit.test.ts
 ```
 
-Required verification for the exact PR head:
+Phase 14 gates:
 
 ```text
-backend pytest / Ruff / format / MyPy
-frontend tests / typecheck / lint / build
-repository whitespace verification
-production Office bundle guard
-Chromium production smoke:
+backend pytest / Ruff / format / MyPy: PASS
+frontend tests (184) / typecheck / lint / build: PASS
+repository whitespace verification: PASS
+production Office bundle guard: PASS
+Chromium production smoke: PASS
   Planning = R3F
   Live = R3F
   Replay = R3F
@@ -132,32 +134,12 @@ Exact PR #37 head and verification:
 GitHub Actions verify #1386: SUCCESS
 ```
 
-Gates:
-
-```text
-backend pytest / Ruff / format / MyPy: PASS
-frontend tests / typecheck / lint / build: PASS
-repository whitespace: PASS
-production Office guard: PASS
-production renderer split Chromium smoke: PASS
-```
-
 Accepted Phase 13B renderer state:
 
 ```text
 Planning = R3F
 Live = R3F
 Replay = Three.js
-```
-
-Detailed Phase 13B evidence:
-
-```text
-docs/product/PHASE_13B_R3F_LIVE_PRODUCTION.md
-frontend/src/office3d/runtimeProjection.ts
-frontend/src/components/R3FOfficeScene.tsx
-frontend/src/components/ThreeOfficeScene.tsx
-frontend/scripts/check-office-r3f-production.mjs
 ```
 
 ## Phase 13A accepted production state
@@ -171,38 +153,16 @@ frontend/scripts/check-office-r3f-production.mjs
 - Production Chromium smoke verifies Planning R3F loads successfully.
 - No visual redesign, post-processing stack, or workflow-truth change was made in Phase 13A.
 
-## Phase 13A final verification
-
-Exact PR head:
+Exact PR #35 head and verification:
 
 ```text
 0ecabadd2d01834d18b2878bc71d0582068afab4
 GitHub Actions verify #1376: SUCCESS
 ```
 
-Gates:
-
-```text
-backend pytest / Ruff / format / MyPy: PASS
-frontend tests / typecheck / lint / build: PASS
-repository whitespace: PASS
-production Office guard: PASS
-production R3F Planning Chromium smoke: PASS
-```
-
-Detailed Phase 13A evidence:
-
-```text
-docs/product/PHASE_13A_R3F_PLANNING_PRODUCTION.md
-docs/product/PHASE_13A_R3F_PLANNING_PRODUCTION_VERIFICATION.md
-docs/product/PHASE_12_R3F_RENDERER_PILOT_VERIFICATION.md
-docs/architecture/ADR-0004-office-renderer-evolution.md
-docs/ux/OFFICE_VIEW.md
-```
-
 ## Truth and safety boundary
 
-Every later renderer/visual checkpoint must preserve:
+Every later Office checkpoint must preserve:
 
 - canonical execution/replay truth;
 - tested Three.js fallback until a separate fallback-retirement decision is accepted;
