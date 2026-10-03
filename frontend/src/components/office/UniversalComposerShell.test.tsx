@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { Executor, Project } from '../../api'
+import type { ComposerThread, Executor, Project } from '../../api'
 import { UniversalComposerShell } from './UniversalComposerShell'
 
 const PROJECT: Project = {
@@ -29,7 +29,30 @@ const EXECUTOR: Executor = {
   security_limitations: [],
 }
 
-describe('UniversalComposerShell Phase 10H-1 structure', () => {
+const EXECUTOR_2: Executor = {
+  ...EXECUTOR,
+  id: '33333333-3333-4333-8333-333333333333',
+  name: 'Codex Executor',
+}
+
+function thread(overrides: Partial<ComposerThread>): ComposerThread {
+  return {
+    id: '44444444-4444-4444-8444-444444444444',
+    project_id: PROJECT.id,
+    title: 'Planning thread',
+    requested_intent: 'AUTO',
+    resolved_intent: 'PLAN',
+    status: 'PLANNING',
+    timezone: 'Asia/Jakarta',
+    executor_id: EXECUTOR.id,
+    workflow_id: null,
+    created_at: '2026-10-01T00:00:00Z',
+    updated_at: '2026-10-01T00:00:00Z',
+    ...overrides,
+  }
+}
+
+describe('UniversalComposerShell Phase 19 structure', () => {
   it('reviews RUN intent through planning instead of exposing a direct Start Run action', () => {
     const onSubmit = vi.fn()
 
@@ -85,5 +108,36 @@ describe('UniversalComposerShell Phase 10H-1 structure', () => {
       (context as HTMLElement).compareDocumentPosition(input) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy()
+  })
+
+  it('re-syncs AUTO intent and preferred executor when project/thread context changes', () => {
+    const { rerender } = render(
+      <UniversalComposerShell
+        projects={[PROJECT]}
+        selectedProjectId={PROJECT.id}
+        executors={[EXECUTOR, EXECUTOR_2]}
+        selectedExecutorId={EXECUTOR.id}
+      />,
+    )
+
+    expect(screen.getByLabelText('Composer intent')).toHaveValue('AUTO')
+    expect(screen.getByLabelText('Composer executor')).toHaveValue(EXECUTOR.id)
+
+    rerender(
+      <UniversalComposerShell
+        projects={[PROJECT]}
+        selectedProjectId={PROJECT.id}
+        executors={[EXECUTOR, EXECUTOR_2]}
+        selectedExecutorId={EXECUTOR_2.id}
+        activeThread={thread({
+          id: '55555555-5555-4555-8555-555555555555',
+          requested_intent: 'BRAINSTORM',
+          executor_id: EXECUTOR_2.id,
+        })}
+      />,
+    )
+
+    expect(screen.getByLabelText('Composer intent')).toHaveValue('BRAINSTORM')
+    expect(screen.getByLabelText('Composer executor')).toHaveValue(EXECUTOR_2.id)
   })
 })
