@@ -126,10 +126,10 @@ PR: #67
 exact verified head: a2459708392d61ee010bf954769ab0d3c61c3790
 GitHub Actions verify #1619: SUCCESS
 merge commit: 8e17a248dca02b5a9e07c7b602b806ab6ca3c8a8
-post-merge main verify #1621: RUNNING at room-richness branch creation time
+post-merge main verify #1621: SUCCESS
 ```
 
-Accepted merge state from exact PR-head verification:
+Accepted production state:
 
 - premium CSS2D nameplates improve factual name/state hierarchy, hover, selection,
   and restrained blocked/failed emphasis;
@@ -137,11 +137,10 @@ Accepted merge state from exact PR-head verification:
   the character truth boundary;
 - the slice adds no WebGL mesh/light/mixer cost and does not fabricate typing,
   testing, review, meetings, dialogue, KPI, or concrete work;
-- reduced-motion and mobile-density presentation are explicitly handled.
-
-The post-merge `main` run must be recorded as successful only after run #1621
-actually completes with real repository/backend/frontend steps. Its in-progress
-state is not green evidence.
+- reduced-motion and mobile-density presentation are explicitly handled;
+- the merged `main` commit passed the real repository/backend/frontend workflow,
+  including frontend build, production Office guard, Chromium setup, and
+  production renderer split smoke in run #1621.
 
 ## Current product value loop
 
