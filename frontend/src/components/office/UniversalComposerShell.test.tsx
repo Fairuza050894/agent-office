@@ -42,12 +42,13 @@ function thread(overrides: Partial<ComposerThread>): ComposerThread {
     title: 'Planning thread',
     requested_intent: 'AUTO',
     resolved_intent: 'PLAN',
-    status: 'PLANNING',
+    status: 'ACTIVE',
     timezone: 'Asia/Jakarta',
     executor_id: EXECUTOR.id,
     workflow_id: null,
     created_at: '2026-10-01T00:00:00Z',
     updated_at: '2026-10-01T00:00:00Z',
+    completed_at: null,
     ...overrides,
   }
 }
