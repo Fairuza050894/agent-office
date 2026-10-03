@@ -1,0 +1,244 @@
+/* Agent Office RC1 — premium 3D product framing.
+ * Presentation only. This stylesheet never derives or mutates workflow truth.
+ */
+
+.office-shell-focus {
+  --rc1-cyan: #62d7f5;
+  --rc1-cyan-soft: rgba(98, 215, 245, .18);
+  --rc1-blue-deep: #07141d;
+  --rc1-panel: rgba(8, 21, 30, .92);
+  --rc1-line: rgba(125, 208, 234, .16);
+}
+
+.office-shell-focus .app-main {
+  background:
+    radial-gradient(circle at 48% -10%, rgba(50, 117, 145, .12), transparent 34%),
+    radial-gradient(circle at 100% 0, rgba(68, 84, 136, .08), transparent 30%),
+    linear-gradient(180deg, #08131b 0%, #061018 100%);
+}
+
+.office-shell-focus .office-structure-v2 {
+  position: relative;
+  isolation: isolate;
+}
+
+.office-shell-focus .office-structure-v2::before {
+  position: absolute;
+  z-index: -1;
+  inset: -32px -24px auto;
+  height: 180px;
+  content: '';
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 0, rgba(80, 189, 227, .085), transparent 64%);
+  filter: blur(20px);
+}
+
+.office-shell-focus .office-command-rail {
+  backdrop-filter: blur(18px) saturate(118%);
+  border-color: rgba(105, 205, 237, .2);
+  background:
+    linear-gradient(90deg, rgba(47, 136, 171, .08), transparent 33%),
+    linear-gradient(180deg, rgba(12, 29, 40, .96), rgba(7, 18, 27, .97));
+  box-shadow:
+    0 18px 48px rgba(0, 0, 0, .24),
+    inset 0 1px 0 rgba(255, 255, 255, .035),
+    inset 0 -1px 0 rgba(68, 176, 215, .04);
+}
+
+.office-shell-focus .office-command-mark {
+  border-color: rgba(98, 215, 245, .36);
+  background:
+    radial-gradient(circle at 35% 28%, rgba(160, 232, 255, .24), transparent 40%),
+    linear-gradient(145deg, rgba(22, 92, 119, .84), rgba(8, 35, 48, .88));
+  box-shadow:
+    0 0 28px rgba(98, 215, 245, .12),
+    inset 0 1px 0 rgba(255, 255, 255, .07);
+}
+
+.office-shell-focus .office-renderer {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(93, 181, 211, .2);
+  border-radius: 12px;
+  background: #061119;
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, .28),
+    0 0 0 1px rgba(255, 255, 255, .012) inset,
+    0 0 48px rgba(49, 151, 188, .035);
+}
+
+.office-shell-focus .office-renderer::before,
+.office-shell-focus .office-renderer::after {
+  position: absolute;
+  z-index: 3;
+  content: '';
+  pointer-events: none;
+}
+
+.office-shell-focus .office-renderer::before {
+  inset: 0;
+  background:
+    radial-gradient(ellipse at center, transparent 50%, rgba(2, 8, 12, .23) 100%),
+    linear-gradient(180deg, rgba(129, 217, 247, .025), transparent 20%, transparent 80%, rgba(0, 0, 0, .08));
+  box-shadow: inset 0 0 90px rgba(0, 0, 0, .12);
+}
+
+.office-shell-focus .office-renderer::after {
+  top: 0;
+  left: 12%;
+  right: 12%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(124, 222, 252, .45), transparent);
+  box-shadow: 0 0 18px rgba(98, 215, 245, .18);
+}
+
+.office-shell-focus .office-three-host {
+  background:
+    radial-gradient(circle at 50% -12%, rgba(66, 151, 188, .14), transparent 38%),
+    radial-gradient(circle at 18% 86%, rgba(41, 76, 99, .08), transparent 32%),
+    linear-gradient(180deg, #081721, #061119);
+}
+
+.office-shell-focus .office-three-host::before {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  content: '';
+  pointer-events: none;
+  opacity: .35;
+  background-image:
+    linear-gradient(rgba(124, 218, 247, .025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(124, 218, 247, .02) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, .5), transparent 55%);
+}
+
+.office-shell-focus .office-three-label-layer {
+  filter: drop-shadow(0 5px 8px rgba(0, 0, 0, .45));
+}
+
+.office-shell-focus .office-world-hud {
+  gap: 7px;
+}
+
+.office-shell-focus .office-world-stat {
+  border-color: rgba(90, 163, 190, .17);
+  background:
+    radial-gradient(circle at 0 0, rgba(98, 215, 245, .035), transparent 46%),
+    linear-gradient(145deg, rgba(13, 31, 42, .9), rgba(7, 19, 28, .93));
+  backdrop-filter: blur(12px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .025),
+    0 8px 24px rgba(0, 0, 0, .08);
+}
+
+.office-shell-focus .office-world-clock-card {
+  border-color: rgba(98, 215, 245, .26);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .035),
+    0 0 28px rgba(55, 171, 207, .045);
+}
+
+.office-shell-focus .office-floor-switcher-workspace button {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(91, 157, 182, .18);
+  background: rgba(8, 23, 32, .9);
+}
+
+.office-shell-focus .office-floor-switcher-workspace button::after {
+  position: absolute;
+  inset: auto 12px 0;
+  height: 1px;
+  content: '';
+  opacity: 0;
+  background: linear-gradient(90deg, transparent, var(--rc1-cyan), transparent);
+  transition: opacity 140ms ease;
+}
+
+.office-shell-focus .office-floor-switcher-workspace button.active::after {
+  opacity: .8;
+}
+
+.office-shell-focus .office-floor-switcher-workspace button.active {
+  border-color: rgba(98, 215, 245, .32);
+  background:
+    linear-gradient(180deg, rgba(50, 149, 185, .13), rgba(20, 57, 72, .08));
+  box-shadow:
+    inset 0 -2px 0 rgba(98, 215, 245, .42),
+    0 0 22px rgba(98, 215, 245, .035);
+}
+
+.office-shell-focus .office-context-rail,
+.office-shell-focus .office-operations-dock,
+.office-shell-focus .office-composer {
+  border-color: rgba(95, 169, 196, .17);
+  background:
+    linear-gradient(180deg, rgba(10, 26, 36, .95), rgba(6, 17, 25, .97));
+  backdrop-filter: blur(16px) saturate(112%);
+  box-shadow:
+    0 18px 48px rgba(0, 0, 0, .18),
+    inset 0 1px 0 rgba(255, 255, 255, .022);
+}
+
+.office-shell-focus .office-context-rail-header {
+  border-bottom-color: rgba(91, 161, 188, .13);
+  background:
+    linear-gradient(90deg, rgba(98, 215, 245, .04), transparent 58%),
+    rgba(10, 25, 35, .92);
+}
+
+.office-shell-focus .office-context-tabs button.active {
+  color: #c2eefe;
+  background: rgba(68, 166, 201, .1);
+  box-shadow: inset 0 -1px 0 rgba(98, 215, 245, .5);
+}
+
+.office-shell-focus .office-composer-input {
+  border-color: rgba(94, 166, 192, .22);
+  background: rgba(4, 14, 21, .74);
+}
+
+.office-shell-focus .office-composer-input:focus {
+  border-color: rgba(98, 215, 245, .4);
+  box-shadow:
+    0 0 0 2px rgba(98, 215, 245, .055),
+    0 0 28px rgba(98, 215, 245, .035);
+}
+
+.office-shell-focus .office-scene-heading-workspace {
+  border-bottom-color: rgba(86, 157, 183, .12);
+  background:
+    linear-gradient(90deg, rgba(72, 176, 212, .05), transparent 36%),
+    rgba(7, 20, 29, .95);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .office-shell-focus .office-command-mark {
+    animation: rc1-office-mark-breathe 5.2s ease-in-out infinite;
+  }
+}
+
+@keyframes rc1-office-mark-breathe {
+  0%, 100% {
+    box-shadow:
+      0 0 24px rgba(98, 215, 245, .08),
+      inset 0 1px 0 rgba(255, 255, 255, .07);
+  }
+  50% {
+    box-shadow:
+      0 0 32px rgba(98, 215, 245, .16),
+      inset 0 1px 0 rgba(255, 255, 255, .07);
+  }
+}
+
+@media (max-width: 760px) {
+  .office-shell-focus .office-renderer {
+    border-radius: 9px;
+  }
+
+  .office-shell-focus .office-three-host::before {
+    opacity: .18;
+  }
+}
