@@ -17,6 +17,7 @@ from agent_office.application.planning import (
 )
 from agent_office.application.projects import ProjectService
 from agent_office.application.recovery import RecoveryService
+from agent_office.application.results import ResultReviewService
 from agent_office.application.review import FindingService
 from agent_office.application.runs import RunService, RunStageService
 from agent_office.application.tasks import TaskService
@@ -180,6 +181,13 @@ def get_verification_service(request: Request) -> VerificationService:
     _database(request).initialize()
 
     return cast(VerificationService, request.app.state.verification_service)
+
+
+def get_result_review_service(request: Request) -> ResultReviewService:
+    """Return the human result-review and managed-delivery service."""
+
+    _database(request).initialize()
+    return cast(ResultReviewService, request.app.state.result_review_service)
 
 
 def get_composer_thread_service(request: Request) -> ComposerThreadService:
