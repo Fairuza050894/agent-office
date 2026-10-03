@@ -1,129 +1,198 @@
 # Agent Office
 
-Agent Office is a local-first, multi-project engineering control plane for orchestrating AI-assisted software development across multiple repositories and multiple executor runtimes.
+Agent Office is a local-first engineering control plane for coordinating
+AI-assisted software development across projects, workflows, and executor
+runtimes while keeping human decisions, Git safety, and execution evidence
+explicit.
 
-The product is designed to coordinate engineering roles such as Architect, Explorer, Backend Developer, Frontend Developer, QA Reviewer, Security Reviewer, UX Reviewer, and Documentation Writer while keeping executor-specific behavior behind provider adapters.
-
-Agent Office is an engineering operations product first. The virtual Office View is an optional projection of real execution state, not the source of truth.
+The product combines an operational control plane with a living 3D Office.
+The 3D Office is a projection of real application state and explicitly labelled
+presentation-only ambience; it is never the source of workflow truth.
 
 ## Product Principles
 
-Agent Office is built around several non-negotiable principles:
+Non-negotiable principles:
 
-- truthful execution state
-- provider-neutral orchestration
-- multi-project isolation
-- controlled parallelism
-- isolated Git worktrees for write-capable agents
-- durable Run, AgentRun, Event, Finding, and Evidence history
-- independent review and remediation
-- explicit executor capabilities
-- no destructive Git operations by default
-- no silent executor fallback for high-risk work
-- no fabricated progress, test results, quota, cost, or agent activity
-- operations UI before Office visualization
+- canonical Task / Run / AgentRun / Event / Evidence / ResultReview truth;
+- provider-neutral orchestration through executor adapters;
+- multi-project isolation;
+- isolated Git worktrees for write-capable AgentRuns;
+- durable execution, review, audit, and evidence history;
+- independent verification and human result decisions;
+- explicit executor capabilities and failure behavior;
+- no fabricated progress, tests, KPI, cost, dialogue, meetings, or agent work;
+- no destructive Git operations by default;
+- no silent executor fallback for high-risk work;
+- no automatic push or merge to a user's project default branch from Agent Office runtime behavior;
+- operational accessibility remains usable if 3D rendering is unavailable.
+
+## Product Value Loop
+
+```text
+Describe outcome
+  -> Plan / requirements / team
+  -> explicit promotion
+  -> isolated agent work
+  -> verification + review
+  -> human result decision
+  -> managed local delivery
+  -> accepted change dossier / outcome KPI
+```
+
+Technical completion and human delivery remain distinct states.
 
 ## Conceptual Architecture
 
 ```text
-                         Agent Office
-
-                  Engineering Control Plane
-                            │
-        ┌───────────────────┼───────────────────┐
-        │                   │                   │
-        ▼                   ▼                   ▼
-     Project A           Project B           Project C
-        │                   │                   │
-        ▼                   ▼                   ▼
-      Tasks               Tasks               Tasks
-        │                   │                   │
-        ▼                   ▼                   ▼
-       Runs                Runs                Runs
-        │                   │                   │
-        └──────────────┬────┴────┬──────────────┘
-                       │         │
-                       ▼         ▼
-                 Workflow    AgentRuns
-                       │         │
-                       ▼         ▼
-                   Events   Executor Port
-                               │
-                 ┌─────────────┼─────────────┐
-                 ▼             ▼             ▼
-             CodexAdapter  Antigravity   OpenClaw
-                              Adapter       Adapter
-                 │             │             │
-                 ▼             ▼             ▼
-               Codex      Antigravity     OpenClaw
-
-Write-capable AgentRuns
-        │
-        ▼
-Isolated Git Worktrees
+                           Agent Office
+                     Engineering Control Plane
+                                |
+           +--------------------+--------------------+
+           |                    |                    |
+           v                    v                    v
+        Project A            Project B            Project C
+           |                    |                    |
+           v                    v                    v
+          Task                 Task                 Task
+           |                    |                    |
+           v                    v                    v
+          Run                  Run                  Run
+           |                    |                    |
+           +--------------------+--------------------+
+                                |
+                 +--------------+--------------+
+                 |                             |
+                 v                             v
+        Workflow / AgentRuns               Event / Evidence
+                 |
+                 v
+           Executor Port
+       +---------+---------+
+       |         |         |
+       v         v         v
+     Codex   Antigravity  OpenClaw
+    Adapter    Adapter    Adapter
+       |
+       v
+Isolated managed Git worktree
 ```
 
-## Core Domain
+## Canonical Domain
 
 ```text
 Project
-  └── Task
-       └── Run
-            ├── WorkflowSnapshot
-            ├── RunStageState
-            ├── AgentRun
-            │    ├── AgentProfile
-            │    ├── Executor
-            │    └── Workspace
-            ├── Event
-            ├── Finding
-            └── Evidence
+  -> Task
+      -> Run
+          |- WorkflowSnapshot
+          |- RunStageState
+          |- AgentRun
+          |    |- AgentProfile
+          |    |- Executor
+          |    `- Workspace
+          |- Event
+          |- Finding
+          |- Evidence
+          `- ResultReview
 ```
 
-A Task represents user intent.
+A Task represents user intent. A Run represents one execution attempt. An
+AgentProfile defines responsibility. An Executor defines how an AgentRun is
+executed. These concepts remain separate.
 
-A Run represents one execution attempt.
+## Primary Product Navigation
 
-An AgentProfile defines responsibility.
+The default RC1 navigation follows the user value loop:
 
-An Executor defines how an AgentRun is executed.
+```text
+Office
+Inbox
+Task Board
+Project KPI
+```
 
-These concepts must remain separate.
+Lower-frequency registries and controls remain available through **More tools**.
+No capability is removed merely because it is not primary navigation.
+
+## 3D Office Architecture
+
+Production rendering:
+
+```text
+Planning -> R3F
+Live     -> R3F
+Replay   -> R3F
+```
+
+Recovery order:
+
+```text
+R3F production renderer
+  -> Three.js recovery renderer
+  -> HTML operational fallback
+```
+
+The production scene composes:
+
+```text
+canonical environment
+  + premium floor architecture
+  + verified furniture/assets
+  + character runtime
+  + deterministic lighting
+  + semantic camera composition
+```
+
+RC1 uses a premium dark/futuristic engineering-control-room direction rather
+than a generic dashboard aesthetic. Commons, Build, and Strategy retain distinct
+room identity while sharing one product language.
+
+The premium architecture layer is presentation-only, adds no workflow state or
+new light truth, stays outside the walkable/collision volume, and batches
+repeated static geometry with `THREE.InstancedMesh` to preserve renderer
+headroom.
+
+Architecture reference:
+
+- `docs/architecture/RC1_PREMIUM_3D_ARCHITECTURE.md`
+- `docs/architecture/LIVING_OFFICE_TECHNICAL_DESIGN.md`
+- `docs/architecture/ADR-0004-office-renderer-evolution.md`
 
 ## Repository Structure
 
 ```text
 agent-office/
-├── README.md
-├── AGENTS.md
-├── backend/
-├── frontend/
-├── agents/
-├── executors/
-├── workflows/
-└── docs/
-    ├── product/
-    │   ├── PRD.md
-    │   └── MVP_ACCEPTANCE.md
-    ├── architecture/
-    │   ├── SYSTEM_ARCHITECTURE.md
-    │   └── DOMAIN_MODEL.md
-    ├── contracts/
-    │   ├── EVENT_CONTRACT.md
-    │   ├── EXECUTOR_ADAPTER.md
-    │   └── WORKFLOW_CONTRACT.md
-    ├── security/
-    │   ├── SECURITY_MODEL.md
-    │   └── WORKTREE_POLICY.md
-    └── ux/
-        └── INFORMATION_ARCHITECTURE.md
+|- README.md
+|- AGENTS.md
+|- backend/
+|- frontend/
+|- agents/
+|- executors/
+|- workflows/
+|- scripts/
+|- .agents/
+`- docs/
+   |- product/
+   |- architecture/
+   |- contracts/
+   |- security/
+   `- ux/
 ```
 
-The `agents/`, `executors/`, and `workflows/` directories are reserved for implementation assets and reusable definitions introduced during later phases.
+Important frontend 3D areas:
+
+```text
+frontend/src/components/R3FOfficeScene.tsx
+frontend/src/components/ThreeOfficeScene.tsx
+frontend/src/office3d/environment.ts
+frontend/src/office3d/premiumEnvironment.ts
+frontend/src/office3d/character.ts
+frontend/src/office3d/camera.ts
+frontend/src/office3d/lighting.ts
+frontend/src/office3d/livingOffice.ts
+frontend/src/office3d/runtimeProjection.ts
+```
 
 ## Specification Map
-
-The specification set is an architecture authority, not a mandatory linear reading list for every task.
 
 For implementation work, start with:
 
@@ -134,40 +203,26 @@ For implementation work, start with:
 5. task-relevant tests and source symbols
 6. only the specification sections needed for the behavior being changed
 
-The full specification set remains available under `docs/`:
+Core architecture/specification references include:
 
 - `docs/product/PRD.md`
+- `docs/product/MVP_ACCEPTANCE.md`
 - `docs/architecture/SYSTEM_ARCHITECTURE.md`
 - `docs/architecture/DOMAIN_MODEL.md`
+- `docs/architecture/RC1_PREMIUM_3D_ARCHITECTURE.md`
+- `docs/architecture/LIVING_OFFICE_TECHNICAL_DESIGN.md`
+- `docs/architecture/ADR-0004-office-renderer-evolution.md`
 - `docs/contracts/WORKFLOW_CONTRACT.md`
 - `docs/contracts/EVENT_CONTRACT.md`
 - `docs/contracts/EXECUTOR_ADAPTER.md`
 - `docs/security/WORKTREE_POLICY.md`
 - `docs/security/SECURITY_MODEL.md`
 - `docs/ux/INFORMATION_ARCHITECTURE.md`
-- `docs/product/MVP_ACCEPTANCE.md`
 
-Use targeted heading/section lookup before reading any large contract end-to-end.
+Use targeted symbol/section lookup rather than reading every large specification
+for every change.
 
-`MVP_ACCEPTANCE.md` is the implementation acceptance gate. A phase is not complete merely because the application starts or a screen renders.
-
-## Implementation Phases
-
-```text
-Phase 0  Specification Baseline
-Phase 1  Application Foundation
-Phase 2  Project / Task / Run Persistence
-Phase 3  Workflow + ReferenceExecutor + Events
-Phase 4  Worktree Safety + Evidence + Review
-Phase 5  Operational Frontend
-Phase 6  First Real Executor
-Phase 7  Multi-Executor / Second Project Dogfood
-Phase 8  Office View
-```
-
-The first real AI executor must not be integrated for write-capable work until the ReferenceExecutor, workflow state model, events, worktree safety, cancellation handling, and security controls are established.
-
-## Initial Technical Direction
+## Technology
 
 Backend:
 
@@ -177,6 +232,8 @@ FastAPI
 Pydantic
 SQLite
 pytest
+Ruff
+MyPy
 ```
 
 Frontend:
@@ -187,6 +244,9 @@ TypeScript
 Vite
 Vitest
 React Testing Library
+React Three Fiber
+Three.js
+Playwright / Chromium renderer smoke
 ESLint
 ```
 
@@ -200,16 +260,52 @@ SSE for server-to-browser operational events
 Architecture:
 
 ```text
-Local-first modular monolith
-Adapter-based executor integration
-Git worktree isolation
+local-first modular monolith
+adapter-based executor integration
+isolated Git worktrees
+R3F production Office projection
 ```
 
-Distributed infrastructure such as Kafka, Redis, Celery, Kubernetes, or microservices is intentionally outside the initial architecture unless measured requirements justify it later.
+Distributed infrastructure such as Kafka, Redis, Celery, Kubernetes, or a
+microservice split is not introduced without measured requirements.
+
+## Development
+
+Backend:
+
+```bash
+cd backend
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e '.[dev]'
+pytest
+ruff check .
+ruff format --check .
+mypy src
+```
+
+Frontend:
+
+```bash
+cd frontend
+npm ci
+npm test
+npm run typecheck
+npm run lint
+npm run build
+```
+
+Full repository gate:
+
+```bash
+./scripts/verify.sh
+```
+
+GitHub Actions verification is accepted only when the runner starts and the real
+repository, backend, and frontend steps execute and pass. A pre-run platform
+failure with missing steps/logs is not green evidence.
 
 ## Safety Defaults
-
-MVP defaults:
 
 ```text
 bind host                127.0.0.1
@@ -223,95 +319,30 @@ production deployment    out of scope
 risk acceptance          human only
 ```
 
-The user's main working tree must never be cleaned, reset, stashed, committed, or overwritten automatically.
+The user's project main working tree must never be cleaned, reset, stashed,
+committed, pushed, or merged automatically by Agent Office runtime behavior.
 
-## Operations View
+## Dependency Hardening
 
-The primary Run detail is expected to expose:
+Dependency updates are treated as a release-hardening lane rather than silently
+mixed into active product slices.
 
-```text
-Overview
-Workflow
-Agents
-Activity
-Changes
-Tests
-Findings
-Evidence
-Office
-```
-
-The first eight operational surfaces are authoritative product functionality.
-
-Office View is optional presentation over the same canonical Run, AgentRun, and Event state.
-
-## Executor Model
-
-Initial executor kinds:
-
-```text
-REFERENCE
-CODEX
-ANTIGRAVITY
-OPENCLAW
-```
-
-Executor capability support is explicit:
-
-```text
-SUPPORTED
-UNSUPPORTED
-UNKNOWN
-```
-
-Missing capability data must never be fabricated.
-
-## Development Foundation
-
-Phase 1A establishes the backend and frontend development toolchains only.
-
-### Backend
-
-```bash
-cd backend
-
-python3.12 -m venv .venv
-source .venv/bin/activate
-
-python -m pip install -e '.[dev]'
-
-pytest
-ruff check .
-ruff format --check .
-mypy src
-```
-
-### Frontend
-
-```bash
-cd frontend
-
-npm install
-
-npm test
-npm run lint
-npm run typecheck
-npm run build
-npm run dev
-```
-
-Real Agent Office domain behavior, persistence, orchestration, executor integrations, and Office View are intentionally deferred to later milestones.
+Renderer/runtime/toolchain changes such as Three.js, Uvicorn, TypeScript, or
+test/lint major versions require fresh verification against the current `main`.
+A historical green run against an older base does not authorize a later merge.
 
 ## Development Status
 
-The canonical milestone status is maintained in:
+The authoritative checkpoint, exact PR heads, verification run numbers, merge
+SHAs, active branch, dependency lane, and known limitations live in:
 
 `.agents/skills/ao-milestone/references/current-phase.md`
 
-Do not copy the active phase number into README. The milestone reference must be checked against committed code, Git state, tests, and verification evidence before implementation.
+README intentionally does not duplicate the active phase number. Check the
+milestone reference against committed code, Git state, and verification evidence
+before starting implementation.
 
 ## Contribution and Agent Instructions
 
-All coding agents must read `AGENTS.md` before modifying this repository.
-
-The implementation must remain consistent with the specifications under `docs/`.
+All coding agents must read `AGENTS.md` before changing the repository and must
+keep implementation, tests, architecture documents, and milestone truth in sync.
