@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 
+import { disposeObject } from './environment'
 import type { OfficeFloorKey } from './livingOffice'
 import { mountPremiumSceneKit } from './premiumSceneKit'
 
@@ -38,21 +39,48 @@ export function premiumOfficeIdentity(
 }
 
 /**
+ * The legacy environment module still owns canonical spatial facts such as
+ * workstation coordinates, navigation routes, zone placements and collision
+ * policy. `createOfficeEnvironment()` materializes those facts together with
+ * the historical primitive diorama because the Three.js recovery renderer
+ * still needs it.
+ *
+ * Production R3F must not keep rendering that historical shell underneath the
+ * premium scene. By the time this function runs, R3F has already received the
+ * station map returned by `createOfficeEnvironment()`, so the primitive visual
+ * objects can be safely disposed while the canonical spatial data remains in
+ * normal TypeScript structures. The recovery renderer is untouched because it
+ * never mounts this premium layer.
+ */
+function replaceLegacyVisualShell(parent: THREE.Group): void {
+  for (const child of [...parent.children]) {
+    disposeObject(child)
+    parent.remove(child)
+  }
+  parent.userData.visualShell = 'premium-r3f'
+  parent.userData.legacyVisualShellMounted = false
+}
+
+/**
  * Presentation-only premium Office composition.
  *
- * This layer deliberately changes the spatial design system rather than adding
- * decorative neon to the legacy diorama. It may provide materials, floor
- * surfaces, glass rooms, furniture masses, planters, wall displays and
- * practical-light geometry, but it never creates canonical workflow truth.
+ * This is a spatial replacement, not a decorative overlay. Production R3F
+ * keeps canonical station/navigation/collision facts from `environment.ts`,
+ * removes the historical primitive render shell, then mounts this premium
+ * visual scene. It may provide materials, floor surfaces, glass rooms,
+ * furniture masses, planters, wall displays and practical-light geometry, but
+ * it never creates canonical workflow truth.
  *
- * No THREE.Light objects are created here. Real renderer lighting remains owned
- * by R3FOfficeScene/lighting.ts. Navigation, collision, occupancy and character
- * stations remain owned by the canonical environment/runtime projection.
+ * No THREE.Light objects are created here. Renderer lighting remains owned by
+ * R3FOfficeScene/lighting.ts. Navigation, collision, occupancy and character
+ * stations remain owned by canonical environment/runtime projection code.
  */
 export function mountPremiumOfficeArchitecture(
   parent: THREE.Group,
   floor: OfficeFloorKey,
 ): THREE.Group {
+  replaceLegacyVisualShell(parent)
+
   const group = mountPremiumSceneKit(parent, floor)
   const identity = FLOOR_IDENTITY[floor]
 
@@ -60,9 +88,10 @@ export function mountPremiumOfficeArchitecture(
   group.userData.presentationOnly = true
   group.userData.floor = floor
   group.userData.identity = identity.signature
-  group.userData.visualRevision = 'spatial-overhaul-v1'
+  group.userData.visualRevision = 'spatial-overhaul-v2'
   group.userData.roomSpanningOverheadFrame = false
   group.userData.canonicalStateOwner = false
+  group.userData.replacesLegacyVisualShell = true
 
   return group
 }
