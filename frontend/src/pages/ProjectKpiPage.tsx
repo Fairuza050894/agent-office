@@ -1,10 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { api, type Project, type ResultReview, type Run, type Task } from '../api'
-import {
-  acceptedChangeMetrics,
-  type ResultReviewWithDecisionTimes,
-} from '../analytics/acceptedChangeKpi'
+import { acceptedChangeMetrics } from '../analytics/acceptedChangeKpi'
 import { projectKpiSnapshot } from '../analytics/projectKpi'
 import { EmptyState } from '../components/EmptyState'
 import { PageHeader } from '../components/PageHeader'
@@ -16,7 +13,7 @@ interface ProjectFactState {
   projectId: string
   tasks: Task[]
   runs: Run[]
-  reviews: ResultReviewWithDecisionTimes[]
+  reviews: ResultReview[]
   error: string | null
 }
 
@@ -115,14 +112,7 @@ export function ProjectKpiPage() {
         const loadedRuns = runGroups.flat()
         const completedRuns = loadedRuns.filter((run) => run.status === 'COMPLETED')
         const loadedReviews = await Promise.all(
-          completedRuns.map(async (run): Promise<ResultReviewWithDecisionTimes> => {
-            const review = await api.getResultReview(run.id)
-            return review as ResultReview & {
-              changes_requested_at?: string | null
-              approved_at?: string | null
-              delivered_at?: string | null
-            }
-          }),
+          completedRuns.map((run) => api.getResultReview(run.id)),
         )
         return { loadedTasks, loadedRuns, loadedReviews }
       })
