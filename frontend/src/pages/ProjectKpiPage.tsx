@@ -191,7 +191,7 @@ export function ProjectKpiPage() {
     <div className="page-view overview-view">
       <PageHeader
         title="Project KPI"
-        description="Commercially useful delivery metrics derived only from canonical Task and Run facts—no invented productivity score."
+        description="Canonical execution metrics. Run COMPLETED means technical completion; human acceptance and delivery are separate result decisions."
       />
 
       <section className="dashboard-section" aria-labelledby="kpi-project-context">
@@ -252,9 +252,9 @@ export function ProjectKpiPage() {
               detail={`${snapshot.unstartedTasks} not started`}
             />
             <KpiItem
-              value={formatPercent(snapshot.taskDeliveryRate)}
-              label="Task delivery"
-              detail={`${snapshot.deliveredTasks} latest runs completed`}
+              value={snapshot.completedRuns}
+              label="Runs completed"
+              detail="technical completion, not human delivery"
             />
             <KpiItem
               value={formatPercent(snapshot.runSuccessRate)}
@@ -298,7 +298,7 @@ export function ProjectKpiPage() {
           <section className="dashboard-section" aria-labelledby="kpi-task-report">
             <div className="section-header">
               <h2 id="kpi-task-report" className="section-title">
-                Task delivery report
+                Task execution report
               </h2>
               <span className="section-meta">
                 {snapshot.tasksWithRuns}/{snapshot.totalTasks} tasks have execution history
@@ -320,11 +320,11 @@ export function ProjectKpiPage() {
                     'Task',
                     'Attempts',
                     'Latest Run',
-                    'State',
+                    'Technical state',
                     'Cycle',
                     'Completed',
                   ]}
-                  caption="Canonical task KPI report"
+                  caption="Canonical task execution report"
                   emptyTitle="No task KPI rows."
                   emptyMessage="No canonical Task exists for this Project."
                 >
@@ -367,7 +367,7 @@ export function ProjectKpiPage() {
           </section>
 
           <p className="cell-secondary">
-            KPI is descriptive, not evaluative. It does not rank agents or infer individual productivity.
+            KPI is descriptive, not evaluative. COMPLETED is not DELIVERED, and no individual agent productivity ranking is inferred.
           </p>
         </>
       )}
