@@ -45,21 +45,21 @@ const EVENING: OfficeLightingProfile = {
   hemisphereSky: 0xb3ccd9,
   hemisphereGround: 0x211a17,
   hemisphereIntensity: 1.68,
-  keyColor: 0xffad68,
-  keyIntensity: 1.95,
+  keyColor: 0xe8b27f,
+  keyIntensity: 1.82,
   exposure: 0.995,
 }
 
 const NIGHT: OfficeLightingProfile = {
   key: 'night',
   label: 'Night office',
-  background: 0x050d14,
-  hemisphereSky: 0x86a9bd,
-  hemisphereGround: 0x111c23,
-  hemisphereIntensity: 1.5,
-  keyColor: 0xffa762,
-  keyIntensity: 1.68,
-  exposure: 0.98,
+  background: 0x06111a,
+  hemisphereSky: 0x91b8cf,
+  hemisphereGround: 0x0c171f,
+  hemisphereIntensity: 1.62,
+  keyColor: 0x9fc3d9,
+  keyIntensity: 1.52,
+  exposure: 1.005,
 }
 
 export function officeLightingForHour(hour: number): OfficeLightingProfile {
