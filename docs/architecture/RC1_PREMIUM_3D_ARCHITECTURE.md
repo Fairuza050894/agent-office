@@ -140,7 +140,37 @@ L3 Strategy
 
 No decorative signal bar is allowed to masquerade as live telemetry.
 
-## 6. Performance architecture
+## 6. Room richness baseline
+
+RC1 room richness deepens spatial identity without adding a second source of
+business truth. The same presentation-only architecture layer now establishes
+recognizable sub-zones while keeping repeated geometry batched:
+
+```text
+Commons
+  -> arrival/social zones at the room edges
+  -> warmer lounge-like architectural masses
+
+Build
+  -> paired operations bays
+  -> denser control-room framing around engineering work areas
+
+Strategy
+  -> central decision forum
+  -> briefing-platform geometry with balanced sight lines
+```
+
+The zone geometry is deliberately abstract. It does not represent occupancy,
+workload, progress, service health, KPI, meeting state, evidence, or dialogue.
+It also remains outside canonical character navigation/collision truth.
+
+Acceptance guards require every floor to expose its expected richness group
+while retaining zero added `THREE.Light` objects, at least nine instanced mesh
+groups, and no more than sixteen renderable meshes in the premium layer. This
+keeps richer room identity within the established renderer-safe architecture
+rather than solving visual quality by multiplying draw calls.
+
+## 7. Performance architecture
 
 Premium architecture uses `THREE.InstancedMesh` for repeated box geometry.
 This is deliberate: adding dozens of independent decorative meshes would
@@ -165,7 +195,7 @@ The premium layer therefore:
 - remains outside the walkable/collision volume;
 - is disposed with the normal environment lifecycle.
 
-## 7. Lighting and materials
+## 8. Lighting and materials
 
 Lighting remains owned by `lighting.ts` plus established room-level environment
 lights.
@@ -183,7 +213,7 @@ RC1 lighting goals:
 - no bloom-heavy or post-processing-first look;
 - no effect that obscures status/nameplate legibility.
 
-## 8. Camera composition
+## 9. Camera composition
 
 Camera policy is semantic rather than free-fly.
 
@@ -191,7 +221,7 @@ Users may inspect the Office through bounded overview/focus views. The camera
 may follow selection/replay focus briefly, but camera motion must not become a
 second navigation system or change AgentRun movement truth.
 
-## 9. Character presentation boundary
+## 10. Character presentation boundary
 
 Character work in later RC1 slices may improve:
 
@@ -209,11 +239,11 @@ It may not:
 - rank people or agents by synthetic productivity;
 - relabel ambient presence as factual execution.
 
-## 10. Quality and fallback roadmap
+## 11. Quality and fallback roadmap
 
 Remaining RC1 hardening includes:
 
-1. richer verified character/environment presentation;
+1. richer verified character presentation;
 2. Composer-first zero-friction interaction refinements;
 3. Decision Inbox / Board / KPI / Dossier polish;
 4. adaptive rendering quality based on measured capability;
@@ -224,14 +254,14 @@ Remaining RC1 hardening includes:
 
 Three.js fallback retirement is not part of this architecture slice.
 
-## 11. Dependency rule
+## 12. Dependency rule
 
 Renderer/toolchain dependency upgrades are isolated from product slices.
 In particular, a Three.js upgrade must be validated on the latest RC1 state
 with Planning, Live, Replay, screenshot, build, and renderer-smoke evidence.
 Historical green CI from an older `main` is not sufficient.
 
-## 12. Acceptance rule
+## 13. Acceptance rule
 
 A premium 3D slice is mergeable only when:
 
@@ -245,7 +275,7 @@ A premium 3D slice is mergeable only when:
 Infrastructure failures with absent job steps/logs are retriable failures, not
 successful verification.
 
-## 13. Activation evidence
+## 14. Activation evidence
 
 The first production activation of this architecture was accepted through:
 
