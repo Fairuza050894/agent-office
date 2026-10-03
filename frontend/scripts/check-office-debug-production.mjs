@@ -21,6 +21,7 @@ const requiredProductionMarkers = [
   'office-three-host-r3f',
   'R3F Planning Office 3D scene',
   'R3F Live Office 3D scene',
+  'R3F Replay Office 3D scene',
 ]
 
 async function filesUnder(directory) {
@@ -136,5 +137,5 @@ if (failures.length > 0) {
   }
   process.exitCode = 1
 } else {
-  console.log('Production bundle contains no Diorama debug/pilot leakage, includes verified Office furniture assets, and contains the production R3F Planning + Live renderer paths.')
+  console.log('Production bundle contains no Diorama debug/pilot leakage, includes verified Office furniture assets, and contains the production R3F Planning + Live + Replay renderer paths.')
 }
