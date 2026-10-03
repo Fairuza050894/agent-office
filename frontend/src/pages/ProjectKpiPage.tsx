@@ -8,6 +8,20 @@ import { TableShell } from '../components/TableShell'
 import { Link } from '../router/Link'
 import { useRouter } from '../router/useRouter'
 
+interface ProjectFactState {
+  projectId: string
+  tasks: Task[]
+  runs: Run[]
+  error: string | null
+}
+
+const EMPTY_FACTS: ProjectFactState = {
+  projectId: '',
+  tasks: [],
+  runs: [],
+  error: null,
+}
+
 function formatPercent(value: number | null): string {
   return value === null ? '—' : `${value.toFixed(1)}%`
 }
@@ -48,14 +62,13 @@ export function ProjectKpiPage() {
   )
   const [projects, setProjects] = useState<Project[]>([])
   const [selectedProjectId, setSelectedProjectId] = useState('')
-  const [tasks, setTasks] = useState<Task[]>([])
-  const [runs, setRuns] = useState<Run[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [facts, setFacts] = useState<ProjectFactState>(EMPTY_FACTS)
+  const [isLoadingRegistry, setIsLoadingRegistry] = useState(true)
+  const [registryError, setRegistryError] = useState<string | null>(null)
 
   const loadRegistry = useCallback(async () => {
-    setIsLoading(true)
-    setError(null)
+    setIsLoadingRegistry(true)
+    setRegistryError(null)
     try {
       const loadedProjects = await api.listProjects()
       setProjects(loadedProjects)
@@ -69,13 +82,13 @@ export function ProjectKpiPage() {
         null
       setSelectedProjectId(initial?.id ?? '')
     } catch (reason) {
-      setError(
+      setRegistryError(
         reason instanceof Error
           ? reason.message
           : 'Project KPI registry is unavailable.',
       )
     } finally {
-      setIsLoading(false)
+      setIsLoadingRegistry(false)
     }
   }, [requestedProjectId])
 
@@ -84,38 +97,40 @@ export function ProjectKpiPage() {
   }, [loadRegistry])
 
   useEffect(() => {
-    let active = true
-    if (!selectedProjectId) {
-      setTasks([])
-      setRuns([])
-      return () => {
-        active = false
-      }
-    }
+    if (!selectedProjectId) return undefined
 
-    setIsLoading(true)
-    setError(null)
+    let active = true
     api
       .listTasks(selectedProjectId)
       .then(async (loadedTasks) => {
         const runGroups = await Promise.all(
           loadedTasks.map((task) => api.listRuns(task.id)),
         )
-        if (!active) return
-        setTasks(loadedTasks)
-        setRuns(runGroups.flat())
+        return { loadedTasks, loadedRuns: runGroups.flat() }
       })
-      .catch((reason) => {
-        if (!active) return
-        setError(
-          reason instanceof Error
-            ? reason.message
-            : 'Project KPI facts are unavailable.',
-        )
-      })
-      .finally(() => {
-        if (active) setIsLoading(false)
-      })
+      .then(
+        ({ loadedTasks, loadedRuns }) => {
+          if (!active) return
+          setFacts({
+            projectId: selectedProjectId,
+            tasks: loadedTasks,
+            runs: loadedRuns,
+            error: null,
+          })
+        },
+        (reason: unknown) => {
+          if (!active) return
+          setFacts({
+            projectId: selectedProjectId,
+            tasks: [],
+            runs: [],
+            error:
+              reason instanceof Error
+                ? reason.message
+                : 'Project KPI facts are unavailable.',
+          })
+        },
+      )
 
     return () => {
       active = false
@@ -125,9 +140,11 @@ export function ProjectKpiPage() {
   const selectedProject = projects.find(
     (project) => project.id === selectedProjectId,
   )
+  const factsReady = Boolean(selectedProjectId) && facts.projectId === selectedProjectId
+  const visibleFacts = factsReady ? facts : EMPTY_FACTS
   const snapshot = useMemo(
-    () => projectKpiSnapshot(tasks, runs),
-    [runs, tasks],
+    () => projectKpiSnapshot(visibleFacts.tasks, visibleFacts.runs),
+    [visibleFacts.runs, visibleFacts.tasks],
   )
 
   const changeProject = (projectId: string) => {
@@ -135,7 +152,7 @@ export function ProjectKpiPage() {
     navigate(projectId ? `/kpi?project=${encodeURIComponent(projectId)}` : '/kpi')
   }
 
-  if (isLoading && projects.length === 0) {
+  if (isLoadingRegistry && projects.length === 0) {
     return (
       <div className="page-view overview-view">
         <PageHeader
@@ -149,7 +166,7 @@ export function ProjectKpiPage() {
     )
   }
 
-  if (error && projects.length === 0) {
+  if (registryError && projects.length === 0) {
     return (
       <div className="page-view overview-view">
         <PageHeader
@@ -157,7 +174,7 @@ export function ProjectKpiPage() {
           description="Task and Run performance derived from canonical execution facts."
         />
         <div className="status-feedback" role="alert">
-          <p className="status-error-text">{error}</p>
+          <p className="status-error-text">{registryError}</p>
           <button
             type="button"
             className="btn btn-secondary"
@@ -215,6 +232,17 @@ export function ProjectKpiPage() {
         >
           <Link href="/projects">Register project</Link>
         </EmptyState>
+      ) : !factsReady ? (
+        <div className="status-feedback" role="status">
+          <span className="status-spinner" /> Loading project delivery facts...
+        </div>
+      ) : visibleFacts.error ? (
+        <div className="status-feedback" role="alert">
+          <p className="status-error-text">{visibleFacts.error}</p>
+          <span className="cell-secondary">
+            Select another project and return to retry this report.
+          </span>
+        </div>
       ) : (
         <>
           <div className="overview-summary" aria-label="Project KPI summary">
