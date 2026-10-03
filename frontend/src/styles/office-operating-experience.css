@@ -1,0 +1,412 @@
+/* Phase 24 — Office operating experience polish.
+ * Presentation only: no workflow state or operational truth is created here.
+ */
+
+.office-structure-v2 .office-command-rail {
+  min-height: 58px;
+  padding: 8px 10px 8px 9px;
+  border: 1px solid rgba(83, 199, 240, .17);
+  border-radius: 9px;
+  background:
+    linear-gradient(90deg, rgba(83, 199, 240, .055), transparent 32%),
+    linear-gradient(180deg, rgba(14, 29, 40, .98), rgba(8, 18, 27, .98));
+  box-shadow:
+    0 12px 34px rgba(0, 0, 0, .2),
+    inset 0 1px 0 rgba(255, 255, 255, .025);
+}
+
+.office-command-context {
+  gap: 10px;
+}
+
+.office-command-mark {
+  position: relative;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  place-items: center;
+  border: 1px solid rgba(83, 199, 240, .28);
+  border-radius: 9px;
+  background:
+    radial-gradient(circle at 35% 28%, rgba(130, 223, 255, .2), transparent 42%),
+    linear-gradient(145deg, rgba(23, 83, 108, .72), rgba(12, 37, 50, .72));
+  box-shadow:
+    0 0 22px rgba(83, 199, 240, .08),
+    inset 0 1px 0 rgba(255, 255, 255, .05);
+}
+
+.office-command-mark::before,
+.office-command-mark::after,
+.office-command-mark > span {
+  position: absolute;
+  content: '';
+  border-radius: 2px;
+  background: #86d9f3;
+  box-shadow: 0 0 9px rgba(83, 199, 240, .3);
+}
+
+.office-command-mark::before {
+  width: 14px;
+  height: 3px;
+  transform: translateY(-6px);
+}
+
+.office-command-mark::after {
+  width: 9px;
+  height: 3px;
+  transform: translate(3px, 0);
+  opacity: .72;
+}
+
+.office-command-mark > span {
+  width: 14px;
+  height: 3px;
+  transform: translateY(6px);
+  opacity: .45;
+}
+
+.office-command-copy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.office-command-heading-row,
+.office-command-subrow {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.office-command-title {
+  color: #eef6fa;
+  font-size: .86rem;
+  font-weight: 760;
+  letter-spacing: -.025em;
+}
+
+.office-command-project {
+  max-width: 300px;
+  color: #9db1c0;
+  font-size: .61rem;
+  font-weight: 650;
+}
+
+.office-mode-indicator {
+  padding: 3px 7px;
+  border-color: rgba(83, 199, 240, .2);
+  background: rgba(83, 199, 240, .07);
+  color: #90d9f1;
+  font-size: .49rem;
+  letter-spacing: .07em;
+}
+
+.office-command-status {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 5px;
+  color: #71899a;
+  font-family: var(--ao-mono);
+  font-size: .5rem;
+  white-space: nowrap;
+}
+
+.office-command-status > i {
+  width: 5px;
+  height: 5px;
+  flex: 0 0 5px;
+  border-radius: 999px;
+  background: var(--ao-success);
+  box-shadow: 0 0 8px rgba(72, 199, 142, .36);
+}
+
+.office-command-status > span {
+  max-width: 380px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.office-command-meta-chip {
+  display: inline-flex;
+  max-width: 230px;
+  min-height: 26px;
+  align-items: center;
+  overflow: hidden;
+  padding: 0 8px;
+  border: 1px solid #263d4b;
+  border-radius: 999px;
+  background: rgba(13, 29, 40, .82);
+  color: #71899a;
+  font-family: var(--ao-mono);
+  font-size: .49rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.office-structure-v2 .office-command-actions {
+  gap: 5px;
+}
+
+.office-structure-v2 .office-command-actions .btn,
+.office-structure-v2 .office-command-actions a.btn {
+  min-height: 28px;
+  border-radius: 6px;
+}
+
+.office-structure-v2 .office-renderer {
+  overflow: hidden;
+  border-radius: 9px;
+  border-color: #203642;
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, .18),
+    inset 0 1px 0 rgba(255, 255, 255, .018);
+}
+
+.office-structure-v2 .office-scene-heading-workspace {
+  padding: 8px 10px 9px;
+  background:
+    linear-gradient(90deg, rgba(83, 199, 240, .035), transparent 36%),
+    #0b1720;
+}
+
+.office-structure-v2 .office-scene-title-group strong {
+  color: #dce8ef;
+  font-size: .65rem;
+}
+
+.office-structure-v2 .office-scene-title-group span {
+  color: #647d8e;
+}
+
+.office-structure-v2 .office-world-hud {
+  display: grid;
+  grid-template-columns: 1.2fr repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
+  margin: 7px 0 2px;
+}
+
+.office-structure-v2 .office-world-stat {
+  position: relative;
+  min-width: 0;
+  padding: 7px 9px 8px;
+  overflow: hidden;
+  border: 1px solid #1f3441;
+  border-radius: 7px;
+  background:
+    linear-gradient(145deg, rgba(18, 37, 49, .86), rgba(10, 24, 34, .86));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .018);
+}
+
+.office-structure-v2 .office-world-stat::after {
+  position: absolute;
+  inset: auto 8px 0;
+  height: 1px;
+  content: '';
+  background: linear-gradient(90deg, rgba(83, 199, 240, .28), transparent 82%);
+}
+
+.office-structure-v2 .office-world-stat > span {
+  display: block;
+  margin-bottom: 3px;
+  color: #5f7788;
+  font-family: var(--ao-mono);
+  font-size: .44rem;
+  font-weight: 700;
+  letter-spacing: .085em;
+  text-transform: uppercase;
+}
+
+.office-structure-v2 .office-world-stat > strong {
+  display: block;
+  overflow: hidden;
+  color: #c9d9e3;
+  font-size: .61rem;
+  font-weight: 720;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.office-structure-v2 .office-world-stat > small {
+  display: block;
+  margin-top: 2px;
+  overflow: hidden;
+  color: #647c8d;
+  font-size: .48rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.office-structure-v2 .office-world-clock-card {
+  border-color: rgba(83, 199, 240, .24);
+  background:
+    radial-gradient(circle at 18% -30%, rgba(83, 199, 240, .15), transparent 55%),
+    linear-gradient(145deg, rgba(17, 43, 57, .94), rgba(10, 25, 35, .9));
+}
+
+.office-structure-v2 .office-world-clock-card > strong {
+  color: #dff5ff;
+  font-family: var(--ao-mono);
+  font-size: .78rem;
+  letter-spacing: .02em;
+}
+
+.office-structure-v2 .office-world-hud.mode-lunch .office-world-clock-card,
+.office-structure-v2 .office-world-hud.mode-coffee_break .office-world-clock-card {
+  border-color: rgba(227, 179, 65, .25);
+}
+
+.office-structure-v2 .office-world-hud.mode-night_quiet .office-world-clock-card,
+.office-structure-v2 .office-world-hud.mode-weekend_quiet .office-world-clock-card {
+  border-color: rgba(125, 112, 196, .28);
+  background:
+    radial-gradient(circle at 18% -30%, rgba(125, 112, 196, .13), transparent 55%),
+    linear-gradient(145deg, rgba(23, 29, 48, .92), rgba(10, 20, 31, .9));
+}
+
+.office-structure-v2 .office-floor-switcher-workspace {
+  gap: 5px;
+}
+
+.office-structure-v2 .office-floor-switcher-workspace button {
+  min-height: 31px;
+  border-radius: 6px;
+  border-color: #233a48;
+  background: #0d1b25;
+}
+
+.office-structure-v2 .office-floor-switcher-workspace button:hover {
+  border-color: #355567;
+  background: #122531;
+}
+
+.office-structure-v2 .office-floor-switcher-workspace button.active {
+  border-color: rgba(83, 199, 240, .34);
+  background:
+    linear-gradient(180deg, rgba(83, 199, 240, .105), rgba(83, 199, 240, .045));
+  box-shadow: inset 0 -2px 0 rgba(83, 199, 240, .45);
+}
+
+.office-structure-v2 .office-floor-chip-code {
+  color: #69b8d7;
+  font-family: var(--ao-mono);
+}
+
+.office-structure-v2 .office-floor-chip-name {
+  color: #aebfca;
+}
+
+.office-structure-v2 .office-floor-chip-count {
+  min-width: 18px;
+  padding: 2px 5px;
+  border-radius: 999px;
+  background: #152a36;
+  color: #7f98a8;
+  font-style: normal;
+}
+
+.office-structure-v2 .office-context-rail {
+  overflow: hidden;
+  border: 1px solid #203642;
+  border-radius: 9px;
+  background:
+    linear-gradient(180deg, rgba(12, 26, 36, .98), rgba(8, 18, 27, .98));
+  box-shadow: 0 16px 40px rgba(0, 0, 0, .13);
+}
+
+.office-structure-v2 .office-context-rail-header {
+  background:
+    linear-gradient(90deg, rgba(83, 199, 240, .035), transparent 50%),
+    #0d1a24;
+}
+
+.office-structure-v2 .office-context-rail-header > div > span {
+  color: #5f788a;
+  font-family: var(--ao-mono);
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+
+.office-structure-v2 .office-context-rail-header > div > strong {
+  color: #d5e2ea;
+}
+
+.office-structure-v2 .office-context-tabs {
+  padding: 4px;
+  gap: 2px;
+  background: #09151e;
+}
+
+.office-structure-v2 .office-context-tabs button {
+  border-radius: 5px;
+}
+
+.office-structure-v2 .office-context-tabs button.active {
+  background: rgba(83, 199, 240, .075);
+  color: #a8dcf0;
+  box-shadow: inset 0 -1px 0 rgba(83, 199, 240, .35);
+}
+
+.office-structure-v2 .office-operations-dock {
+  border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .12);
+}
+
+.office-structure-v2 .office-composer {
+  border-radius: 7px;
+  background:
+    linear-gradient(180deg, rgba(14, 31, 42, .98), rgba(8, 19, 28, .98));
+}
+
+.office-structure-v2 .office-composer-input {
+  border-radius: 7px;
+}
+
+.office-structure-v2 .office-composer-input:focus {
+  box-shadow: 0 0 0 2px rgba(83, 199, 240, .06);
+}
+
+.office-structure-v2 .office-three-host {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(43, 95, 118, .08), transparent 42%),
+    #08131b;
+}
+
+@media (max-width: 1180px) {
+  .office-command-status,
+  .office-command-meta-chip {
+    display: none;
+  }
+
+  .office-structure-v2 .office-world-hud {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .office-structure-v2 .office-command-rail {
+    min-height: 52px;
+    border-radius: 7px;
+  }
+
+  .office-command-mark {
+    width: 30px;
+    height: 30px;
+    flex-basis: 30px;
+  }
+
+  .office-command-project {
+    max-width: 180px;
+  }
+
+  .office-structure-v2 .office-world-hud {
+    grid-template-columns: 1fr;
+  }
+
+  .office-structure-v2 .office-world-stat:not(.office-world-clock-card) {
+    display: none;
+  }
+}
