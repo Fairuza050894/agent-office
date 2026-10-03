@@ -1,11 +1,5 @@
 import type { ResultReview, Run } from '../api'
 
-export type ResultReviewWithDecisionTimes = ResultReview & {
-  changes_requested_at?: string | null
-  approved_at?: string | null
-  delivered_at?: string | null
-}
-
 export interface AcceptedChangeMetrics {
   acceptedChanges: number
   acceptedChangesLast7Days: number
@@ -21,7 +15,7 @@ function validTime(value: string | null | undefined): number | null {
 
 export function acceptedChangeMetrics(
   runs: Run[],
-  reviews: ResultReviewWithDecisionTimes[],
+  reviews: ResultReview[],
   now: Date = new Date(),
 ): AcceptedChangeMetrics {
   const completedRuns = runs.filter((run) => run.status === 'COMPLETED')
