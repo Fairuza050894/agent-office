@@ -2,7 +2,16 @@
 
 ## Status
 
-Product-presentation checkpoint stacked after Phase 24 Office Operating Experience.
+**COMPLETE / MERGED**
+
+```text
+PR: #52
+exact verified head: 6d065cb52586c2830ce3a426258c5a46f3770d93
+GitHub Actions verify #1593: SUCCESS
+merge commit: 8c6f94d259be27093b02d9017dbb1722bd956d31
+```
+
+Acceptance evidence is a real exact-head GitHub-hosted run: frontend tests/typecheck/lint/build, production dependency audit, Office production guard, Chromium Planning/Live/Replay R3F smoke, backend full verification, and repository whitespace verification all passed before merge.
 
 ## Goal
 
@@ -77,11 +86,10 @@ Existing Decision Center and KPI tests remain the behavioral regression contract
 ## Acceptance gates
 
 ```text
-frontend tests / typecheck / lint / build
-production Office guard
-Chromium Planning / Live / Replay smoke
-backend full verification (stack integration)
-repository whitespace verification
+frontend tests / typecheck / lint / build: PASS
+production dependency audit: PASS
+production Office guard: PASS
+Chromium Planning / Live / Replay smoke: PASS
+backend full verification (stack integration): PASS
+repository whitespace verification: PASS
 ```
-
-This checkpoint may merge only after an exact-head CI run actually starts and passes. A GitHub Actions check with `steps=null` is infrastructure failure, not acceptance evidence.

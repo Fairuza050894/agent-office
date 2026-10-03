@@ -2,7 +2,16 @@
 
 ## Status
 
-Visual/product-experience checkpoint stacked after Phase 23 release hardening.
+**COMPLETE / MERGED**
+
+```text
+PR: #50
+exact verified head: 5940cdd9d623d0b826e4148fdd2cfcf139b97da8
+GitHub Actions verify #1592: SUCCESS
+merge commit: e0090ed405bc36522a562b75d066b750418d3dd7
+```
+
+Acceptance evidence is a real exact-head GitHub-hosted run: frontend tests/typecheck/lint/build, production dependency audit, Office production guard, Chromium Planning/Live/Replay R3F smoke, backend full verification, and repository whitespace verification all passed before merge.
 
 ## Goal
 
@@ -22,7 +31,7 @@ The Office command rail now has a stronger product identity and visual hierarchy
 - registry/meta context is shown as a compact chip;
 - existing actions keep their original behavior.
 
-No status is parsed or inferred inside the command rail. It renders only the values supplied by the Office workspace.
+No status is parsed or inferred inside the command rail. It renders only the values supplied by the Office workspace. The status marker is intentionally presentation-neutral and does not imply healthy/success when the underlying status text does not support that claim.
 
 ### Operating HUD refinement
 
@@ -81,14 +90,13 @@ This avoids modifying the large `OfficeWorkspacePage.tsx` orchestration surface 
 ## Acceptance gates
 
 ```text
-frontend unit tests
-TypeScript typecheck
-ESLint
-production build
-Office production guard
-Chromium Planning / Live / Replay R3F smoke
-backend full verification (stack integration)
-repository whitespace verification
+frontend unit tests: PASS
+TypeScript typecheck: PASS
+ESLint: PASS
+production dependency audit: PASS
+production build: PASS
+Office production guard: PASS
+Chromium Planning / Live / Replay R3F smoke: PASS
+backend full verification (stack integration): PASS
+repository whitespace verification: PASS
 ```
-
-The checkpoint may merge only after a real exact-head CI run executes and passes. GitHub Actions jobs that fail before runner startup (`steps=null`) are infrastructure failures, not acceptable verification evidence.
