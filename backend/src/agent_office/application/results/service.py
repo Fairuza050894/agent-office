@@ -264,7 +264,8 @@ class ResultReviewService:
     def _require_reviewable(self, run: Run) -> None:
         if run.status is not RunStatus.COMPLETED:
             raise ResultNotReviewableError(
-                f"Run {run.id} is {run.status.value}; only a technically COMPLETED Run can be reviewed."
+                f"Run {run.id} is {run.status.value}; "
+                "only a technically COMPLETED Run can be reviewed."
             )
         if run.candidate_workspace_id is None:
             raise ResultNotReviewableError(
