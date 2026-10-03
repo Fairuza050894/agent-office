@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "renderer": "r3f",
+  "status": "candidate-until-visual-overhaul-acceptance",
+  "notes": "The historical V0 budget was paired with the legacy diorama harness. RC1 visual acceptance now captures the production R3F path, including rigged characters and the Build furniture kit. These are hard candidate ceilings for the overhaul; final accepted ceilings must be tightened from the complete measured matrix before merge.",
+  "floors": {
+    "commons": {
+      "1440": { "calls": 189, "triangles": 90000, "geometries": 195, "textures": 40 },
+      "390": { "calls": 160, "triangles": 90000, "geometries": 195, "textures": 40 }
+    },
+    "build": {
+      "1440": { "calls": 276, "triangles": 110000, "geometries": 274, "textures": 50 },
+      "390": { "calls": 240, "triangles": 110000, "geometries": 274, "textures": 50 }
+    },
+    "strategy": {
+      "1440": { "calls": 190, "triangles": 95000, "geometries": 195, "textures": 40 },
+      "390": { "calls": 165, "triangles": 95000, "geometries": 195, "textures": 40 }
+    }
+  }
+}
