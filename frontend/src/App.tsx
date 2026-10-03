@@ -3,6 +3,7 @@ import './office.css'
 import './styles/tokens.css'
 import './styles/control-room.css'
 import './styles/decision-center.css'
+import './styles/office-operating-experience.css'
 
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { AppShell } from './layouts/AppShell'
