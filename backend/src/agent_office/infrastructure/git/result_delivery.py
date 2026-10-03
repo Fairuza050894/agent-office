@@ -45,7 +45,9 @@ class GitManagedResultDelivery:
 
         current = self._git(path, "branch", "--show-current").stdout.strip()
         if current != current_managed_branch:
-            raise ResultDeliveryError("Candidate Worktree is no longer on its recorded managed branch")
+            raise ResultDeliveryError(
+                "Candidate Worktree is no longer on its recorded managed branch"
+            )
 
         status = self._git(path, "status", "--porcelain=v1", "--untracked-files=all").stdout
         if status.strip():
@@ -75,7 +77,9 @@ class GitManagedResultDelivery:
         existing = self._run(path, "show-ref", "--hash", "--verify", accepted_ref)
         if existing.returncode == 0:
             if existing.stdout.strip() != commit:
-                raise ResultDeliveryError("Accepted managed branch already points to another commit")
+                raise ResultDeliveryError(
+                    "Accepted managed branch already points to another commit"
+                )
         elif existing.returncode == 1:
             created = self._run(path, "branch", accepted_branch, commit)
             if created.returncode != 0:
