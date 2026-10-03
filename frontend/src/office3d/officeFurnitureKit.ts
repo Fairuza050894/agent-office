@@ -73,15 +73,19 @@ const templateCache = new Map<
   Promise<FurnitureAssetTemplate>
 >()
 
+// Phase 14 keeps the low-poly readability of the existing asset kit while
+// moving away from flat game-prototype colors. The palette intentionally
+// matches the dark control-room shell rather than introducing a new theme.
 const BUILD_PALETTE = {
-  wood: 0x73533d,
-  metal: 0x52636d,
-  chairFrame: 0x344650,
-  chairCushion: 0x3d5d70,
-  deviceDark: 0x17262f,
-  deviceMid: 0x526b76,
-  screen: 0x3f91ad,
-  screenEmissive: 0x17485d,
+  wood: 0x654936,
+  woodEmissive: 0x120b07,
+  metal: 0x465963,
+  chairFrame: 0x293942,
+  chairCushion: 0x344f60,
+  deviceDark: 0x101d25,
+  deviceMid: 0x455f6b,
+  screen: 0x3d91ad,
+  screenEmissive: 0x14506a,
 } as const
 
 export function styleOfficeFurnitureMaterial(
@@ -92,17 +96,28 @@ export function styleOfficeFurnitureMaterial(
   if (!(styled instanceof THREE.MeshStandardMaterial)) return styled
 
   const materialName = styled.name.toLowerCase()
-  styled.roughness = 0.76
-  styled.metalness = 0.08
+  styled.roughness = 0.72
+  styled.metalness = 0.06
+  styled.envMapIntensity = 0.55
 
   if (key === 'desk') {
-    styled.color.setHex(materialName.includes('wood') ? BUILD_PALETTE.wood : BUILD_PALETTE.metal)
+    const wood = materialName.includes('wood')
+    styled.color.setHex(wood ? BUILD_PALETTE.wood : BUILD_PALETTE.metal)
+    styled.roughness = wood ? 0.66 : 0.52
+    styled.metalness = wood ? 0.02 : 0.26
+    if (wood) {
+      styled.emissive.setHex(BUILD_PALETTE.woodEmissive)
+      styled.emissiveIntensity = 0.08
+    }
   } else if (key === 'chair') {
+    const cushion = materialName.includes('carpet')
     styled.color.setHex(
-      materialName.includes('carpet')
+      cushion
         ? BUILD_PALETTE.chairCushion
         : BUILD_PALETTE.chairFrame,
     )
+    styled.roughness = cushion ? 0.88 : 0.58
+    styled.metalness = cushion ? 0.01 : 0.18
   } else if (key === 'screen') {
     const isDisplaySurface =
       materialName === 'metal' || materialName.includes('medium')
@@ -111,8 +126,12 @@ export function styleOfficeFurnitureMaterial(
     )
     if (isDisplaySurface) {
       styled.emissive.setHex(BUILD_PALETTE.screenEmissive)
-      styled.emissiveIntensity = 0.42
-      styled.roughness = 0.38
+      styled.emissiveIntensity = 0.58
+      styled.roughness = 0.24
+      styled.metalness = 0.1
+    } else {
+      styled.roughness = 0.46
+      styled.metalness = 0.2
     }
   } else if (key === 'keyboard') {
     styled.color.setHex(
@@ -120,8 +139,12 @@ export function styleOfficeFurnitureMaterial(
         ? BUILD_PALETTE.deviceMid
         : BUILD_PALETTE.deviceDark,
     )
+    styled.roughness = 0.54
+    styled.metalness = 0.12
   } else {
     styled.color.setHex(BUILD_PALETTE.deviceDark)
+    styled.roughness = 0.5
+    styled.metalness = 0.14
   }
 
   styled.needsUpdate = true
