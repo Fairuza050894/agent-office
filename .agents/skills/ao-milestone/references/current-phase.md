@@ -3,8 +3,7 @@
 ## Current checkpoint
 
 ```text
-repository main: c00447a809fa020eef496786c481699bda5c194b
-product behavior through: f0f35c17b777f867866c41c480fbacb9bf810f4c
+accepted main: b132e4667b0ef24c6c89053af939a1b04efa2d89
 Phase 22 Enterprise Trust Layer — COMPLETE / MERGED
 Phase 23 Release Hardening — COMPLETE / MERGED
 Phase 24 Office Operating Experience — COMPLETE / MERGED
@@ -15,8 +14,8 @@ RC1 Slice 2B Camera Composition — COMPLETE / MERGED
 RC1 Zero-Friction Navigation — COMPLETE / MERGED
 RC1 Premium Environment & Floor Identity — COMPLETE / MERGED
 RC1 Premium Character Presentation — COMPLETE / MERGED
-RC1 Premium Room Richness — FUNCTIONALLY MERGED / VISUAL ACCEPTANCE REOPENED
-RC1 Visual Composition Reset — IN DEVELOPMENT
+RC1 Premium Room Richness — FUNCTIONALLY MERGED / CORRECTED BY #71
+RC1 Visual Composition Reset — COMPLETE / MERGED / VISUALLY REVIEWED
 ```
 
 Canonical full verification remains:
@@ -30,7 +29,8 @@ starts and the repository, backend, and frontend jobs execute their real steps.
 A pre-run infrastructure failure with missing steps/logs is not green evidence.
 
 For visual Office work, functional CI is necessary but no longer sufficient.
-The PR must also produce and inspect Office screenshot artifacts before merge.
+The exact PR head must also generate an Office screenshot matrix that is
+inspected before merge.
 
 ## Phase 22–25 exact evidence
 
@@ -118,7 +118,7 @@ post-sync main verify #1618: SUCCESS
 ### Premium Character Presentation — PR #67
 
 ```text
-exact verified head: a2459708392d61ee010bf954769ab0d3c61c3790
+head: a2459708392d61ee010bf954769ab0d3c61c3790
 verify #1619: SUCCESS
 merge: 8e17a248dca02b5a9e07c7b602b806ab6ca3c8a8
 post-merge main verify #1621: SUCCESS
@@ -138,61 +138,70 @@ Accepted state:
 ```text
 superseded PR: #68 — CLOSED / NOT MERGED / NO FORCE-PUSH
 successor PR: #69
-exact verified head: 8114de89033b70064d36c5a55c9550da186ef5b5
+head: 8114de89033b70064d36c5a55c9550da186ef5b5
 verify #1623: SUCCESS
 merge: f0f35c17b777f867866c41c480fbacb9bf810f4c
-post-merge main verify #1624: SUCCESS
+post-merge verify #1624: SUCCESS
 
-milestone sync PR: #70
+milestone sync PR #70
 head: 6f0522dc0ab4df48e4f052eac26a42cdd74f52cb
 verify #1625: SUCCESS
 merge: c00447a809fa020eef496786c481699bda5c194b
-post-sync main verify #1626: SUCCESS
+post-sync verify #1626: SUCCESS
 ```
 
-Functional state from #69 remains valid: renderer selection, build, typecheck,
-tests, renderer smoke, canonical truth boundaries, and Git/runtime safety all
-passed. However, manual production visual inspection on 2026-10-04 exposed a
-serious composition regression that automated smoke did not catch:
+The functional evidence above remains valid, but manual production screenshots
+on 2026-10-04 showed that the visual composition itself was not acceptable:
+room-spanning beams looked like a debug cage, signal rails dominated the room,
+overview cameras were too distant, and night lighting produced an excessive
+orange/brown wash. That finding is retained as historical evidence rather than
+being hidden by the corrective work.
 
-- room-spanning overhead beams read as a wireframe/debug cage;
-- cyan/violet signal strips dominated the room instead of supporting it;
-- overview cameras were still too distant for furniture/character readability;
-- night lighting pushed the Office too warm/orange;
-- room identity relied too heavily on decorative rails rather than believable
-  wall-adjacent architecture and furniture composition.
-
-Therefore **RC1 Premium Room Richness is not considered visually accepted** even
-though its functional CI evidence is valid. Visual acceptance is explicitly
-reopened until the corrective slice below passes both functional and screenshot
-review.
-
-## Active corrective checkpoint — RC1 Visual Composition Reset
+### Visual Composition Reset — PR #71
 
 ```text
-branch: fix/rc1-visual-composition-reset
-base: main@c00447a809fa020eef496786c481699bda5c194b
-status: IN DEVELOPMENT / MUST PASS EXACT-HEAD FULL CI + VISUAL ARTIFACT REVIEW
+PR: #71
+exact verified head: 643b83cb4cb36b9aad4726173676d0305c8b6e45
+GitHub Actions verify #1627: SUCCESS
+visual artifact: office-visual-acceptance / artifact 11280457999
+visual artifact digest: sha256:45c4e4075c000333fee9000561fe608ec2a482b8f8afab29d61035594b99ae20
+merge commit: b132e4667b0ef24c6c89053af939a1b04efa2d89
+post-merge main verify #1628: SUCCESS
 ```
 
-Corrective scope:
+Accepted corrective state:
 
-- remove room-spanning overhead framing and suspended beacon geometry;
-- replace cage-like beams with short perimeter/wall-adjacent architectural
-  anchors;
-- reduce emissive signal intensity and keep accents local;
-- preserve distinct Commons / Build / Strategy identity through wall panels and
-  restrained architectural treatment rather than giant rails;
-- tighten overview/focus camera distances;
-- rebalance night lighting toward a cooler neutral control-room palette;
-- add a regression test that caps decorative horizontal spans so a full-room
-  cage cannot return silently;
-- add `office:shots` to GitHub Actions and upload the screenshot matrix as an
-  `office-visual-acceptance` artifact for manual visual inspection before merge.
+- room-spanning decorative overhead beams are removed;
+- the suspended command beacon is removed;
+- full-room neon framing is replaced with short wall/perimeter anchors;
+- Commons, Build, and Strategy keep distinct identity through restrained
+  wall-adjacent architecture and their existing furniture composition;
+- decorative emissive intensity is reduced and primary sight lines remain open;
+- overview/focus cameras use a tighter semantic envelope;
+- night lighting uses a cooler neutral key instead of the previous orange-heavy
+  treatment;
+- premium architecture remains presentation-only, instanced, and adds no
+  `THREE.Light` ownership or canonical workflow/collision/occupancy truth;
+- regression tests cap decorative horizontal spans at 9 scene units so the
+  room-spanning cage cannot silently return;
+- GitHub Actions now runs `office:shots` and uploads `office-visual-acceptance`
+  after renderer smoke for visual Office changes.
 
-No canonical Task / Run / AgentRun / Event / Evidence / ResultReview behavior,
-collision truth, occupancy truth, or Agent Office runtime Git delivery behavior
-may change in this corrective slice.
+Visual review evidence:
+
+- the #1627 artifact contained 24 PNG captures covering Commons / Build /
+  Strategy, morning / day / evening / night, and desktop 1440x1000 / mobile
+  390x844 viewports, plus renderer metrics;
+- the desktop matrix and representative mobile captures were manually inspected
+  before merge;
+- the cage/grid regression is absent across the inspected matrix;
+- furniture and characters are materially more readable because the camera is
+  closer and the decorative framing no longer crosses the room;
+- night scenes are darker/cooler and no longer dominated by the previous orange
+  key or neon rails;
+- mobile remains a focused/cropped isometric presentation rather than a full-room
+  overview; broader device-specific composition work remains part of the later
+  browser/device QA phase and is not falsely claimed complete here.
 
 ## Current product value loop
 
@@ -211,7 +220,7 @@ Technical `COMPLETED` and human `DELIVERED` remain distinct.
 
 ## Dependency / release-hardening lane
 
-Dependency updates remain isolated from active RC1 product/visual correction.
+Dependency updates remain isolated from active RC1 product work.
 
 ```text
 #53 httpx        historical verify #1596 SUCCESS — requires fresh latest-main verification
@@ -240,17 +249,30 @@ Agent Office is not yet claiming enterprise-complete:
 - a generic cross-domain business-workflow step model;
 - Three.js fallback retirement;
 - a custom first-party production environment/character asset pack;
-- completed RC1 browser/device visual-regression matrix and adaptive-quality
+- deterministic pixel/image-diff visual baselines;
+- completed cross-browser/device visual-regression matrix and adaptive-quality
   release gate.
 
-## Remaining RC1 sequence
-
-Composer-first work is paused until the visual composition reset is genuinely
-accepted.
+## Next RC1 checkpoint
 
 ```text
-Visual Composition Reset
-  -> Composer-First Zero-Friction UX
+Agent Office RC1 — Composer-First Zero-Friction UX
+accepted base: main@b132e4667b0ef24c6c89053af939a1b04efa2d89
+scope: make Composer the primary low-friction entry point while preserving explicit promotion and canonical workflow truth
+status: READY after this milestone-sync PR itself passes exact-head CI and merges
+```
+
+The next product slice may resume because the visual composition regression is
+now corrected and explicitly guarded. It should reduce user setup/form burden
+and improve outcome-first interaction, project/context selection, plan preview,
+and handoff into the existing Task/Run lifecycle without silently starting
+high-risk work, inventing requirements, auto-approving, auto-delivering, or
+bypassing human promotion/decision boundaries.
+
+Remaining sequence:
+
+```text
+Composer-First Zero-Friction UX
   -> Decision Inbox / Board / KPI / Dossier polish
   -> adaptive quality / performance
   -> deterministic visual regression + browser/device QA
