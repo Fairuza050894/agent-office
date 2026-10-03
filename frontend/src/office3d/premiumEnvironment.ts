@@ -10,6 +10,11 @@ interface PremiumPalette {
   warm: number
 }
 
+interface BoxSpec {
+  size: [number, number, number]
+  position: [number, number, number]
+}
+
 export interface PremiumOfficeIdentity {
   floor: OfficeFloorKey
   label: string
@@ -90,16 +95,32 @@ function material(
   })
 }
 
-function box(
+function batchedBoxes(
   parent: THREE.Object3D,
-  size: [number, number, number],
-  position: [number, number, number],
+  name: string,
+  specs: BoxSpec[],
   meshMaterial: THREE.Material,
-): THREE.Mesh {
-  const mesh = new THREE.Mesh(new THREE.BoxGeometry(...size), meshMaterial)
-  mesh.position.set(...position)
+): THREE.InstancedMesh | null {
+  if (specs.length === 0) return null
+
+  const geometry = new THREE.BoxGeometry(1, 1, 1)
+  const mesh = new THREE.InstancedMesh(geometry, meshMaterial, specs.length)
+  mesh.name = name
   mesh.castShadow = false
   mesh.receiveShadow = false
+
+  const matrix = new THREE.Matrix4()
+  const position = new THREE.Vector3()
+  const quaternion = new THREE.Quaternion()
+  const scale = new THREE.Vector3()
+
+  specs.forEach((spec, index) => {
+    position.set(...spec.position)
+    scale.set(...spec.size)
+    matrix.compose(position, quaternion, scale)
+    mesh.setMatrixAt(index, matrix)
+  })
+  mesh.instanceMatrix.needsUpdate = true
   parent.add(mesh)
   return mesh
 }
@@ -119,23 +140,31 @@ function addPerimeterArchitecture(
     roughness: 0.26,
   })
 
-  // Structural framing stays above or outside the walkable envelope. It is
-  // visual architecture only and never participates in path/collision truth.
+  const frameSpecs: BoxSpec[] = []
+  const stripSpecs: BoxSpec[] = []
+
   for (const x of [-9.25, 9.25]) {
-    box(group, [0.12, 2.84, 0.18], [x, 1.52, -6.35], frameMaterial.clone())
-    box(group, [0.12, 2.84, 0.18], [x, 1.52, 6.2], frameMaterial.clone())
-    box(group, [0.08, 2.05, 0.06], [x * 0.995, 1.56, -2.15], stripMaterial.clone())
-    box(group, [0.08, 2.05, 0.06], [x * 0.995, 1.56, 2.15], stripMaterial.clone())
+    frameSpecs.push(
+      { size: [0.12, 2.84, 0.18], position: [x, 1.52, -6.35] },
+      { size: [0.12, 2.84, 0.18], position: [x, 1.52, 6.2] },
+    )
+    stripSpecs.push(
+      { size: [0.08, 2.05, 0.06], position: [x * 0.995, 1.56, -2.15] },
+      { size: [0.08, 2.05, 0.06], position: [x * 0.995, 1.56, 2.15] },
+    )
   }
 
   for (const x of [-6.2, -2.05, 2.05, 6.2]) {
-    box(group, [0.055, 0.055, 12.2], [x, 3.02, -0.1], frameMaterial.clone())
-    box(group, [0.035, 0.025, 8.8], [x, 2.96, -0.15], stripMaterial.clone())
+    frameSpecs.push({ size: [0.055, 0.055, 12.2], position: [x, 3.02, -0.1] })
+    stripSpecs.push({ size: [0.035, 0.025, 8.8], position: [x, 2.96, -0.15] })
   }
 
   for (const z of [-4.55, 0, 4.55]) {
-    box(group, [17.6, 0.05, 0.05], [0, 3.02, z], frameMaterial.clone())
+    frameSpecs.push({ size: [17.6, 0.05, 0.05], position: [0, 3.02, z] })
   }
+
+  batchedBoxes(group, 'office-premium-perimeter-frame', frameSpecs, frameMaterial)
+  batchedBoxes(group, 'office-premium-perimeter-signals', stripSpecs, stripMaterial)
 }
 
 function addRearCommandWall(
@@ -162,26 +191,50 @@ function addRearCommandWall(
     roughness: 0.2,
   })
 
-  box(group, [7.8, 1.72, 0.12], [0, 1.68, -6.78], backing)
-  box(group, [7.22, 1.28, 0.035], [0, 1.68, -6.69], glass)
+  batchedBoxes(
+    group,
+    'office-premium-command-wall-shell',
+    [{ size: [7.8, 1.72, 0.12], position: [0, 1.68, -6.78] }],
+    backing,
+  )
+  batchedBoxes(
+    group,
+    'office-premium-command-wall-glass',
+    [{ size: [7.22, 1.28, 0.035], position: [0, 1.68, -6.69] }],
+    glass,
+  )
 
-  // These are deliberately abstract signal bars. They do not encode task
-  // progress, KPI values, dialogue, test state, or any other operational fact.
+  // Abstract geometry only: these bars never encode progress, KPI, dialogue,
+  // test state, availability, or live telemetry.
+  const signalSpecs: BoxSpec[] = []
   for (const x of [-2.45, -0.82, 0.82, 2.45]) {
-    box(group, [1.18, 0.045, 0.026], [x, 2.08, -6.64], accent.clone())
-    box(group, [0.78, 0.025, 0.026], [x, 1.74, -6.64], accent.clone())
-    box(group, [0.48, 0.025, 0.026], [x, 1.42, -6.64], accent.clone())
-  }
-
-  const floorIndex = floor === 'commons' ? 0 : floor === 'build' ? 1 : 2
-  for (let index = 0; index < 3; index += 1) {
-    box(
-      group,
-      [0.58, 0.07, 0.035],
-      [-0.72 + index * 0.72, 0.63, -6.64],
-      index === floorIndex ? accent.clone() : backing.clone(),
+    signalSpecs.push(
+      { size: [1.18, 0.045, 0.026], position: [x, 2.08, -6.64] },
+      { size: [0.78, 0.025, 0.026], position: [x, 1.74, -6.64] },
+      { size: [0.48, 0.025, 0.026], position: [x, 1.42, -6.64] },
     )
   }
+  const floorIndex = floor === 'commons' ? 0 : floor === 'build' ? 1 : 2
+  signalSpecs.push({
+    size: [0.58, 0.07, 0.035],
+    position: [-0.72 + floorIndex * 0.72, 0.63, -6.64],
+  })
+  batchedBoxes(group, 'office-premium-command-wall-signals', signalSpecs, accent)
+
+  const dormantFloorSpecs: BoxSpec[] = []
+  for (let index = 0; index < 3; index += 1) {
+    if (index === floorIndex) continue
+    dormantFloorSpecs.push({
+      size: [0.58, 0.07, 0.035],
+      position: [-0.72 + index * 0.72, 0.63, -6.64],
+    })
+  }
+  batchedBoxes(
+    group,
+    'office-premium-command-wall-floor-context',
+    dormantFloorSpecs,
+    material(palette.wall, { metalness: 0.26, roughness: 0.46 }),
+  )
 }
 
 function addSuspendedCommandBeacon(
@@ -227,11 +280,12 @@ function addSuspendedCommandBeacon(
   const core = new THREE.Mesh(new THREE.SphereGeometry(0.24, 20, 14), coreMaterial)
   beacon.add(core)
 
-  const stemMaterial = material(palette.metal, {
-    metalness: 0.5,
-    roughness: 0.3,
-  })
-  box(beacon, [0.035, 0.62, 0.035], [0, 0.62, 0], stemMaterial)
+  batchedBoxes(
+    beacon,
+    'office-premium-command-beacon-stem',
+    [{ size: [0.035, 0.62, 0.035], position: [0, 0.62, 0] }],
+    material(palette.metal, { metalness: 0.5, roughness: 0.3 }),
+  )
 
   group.add(beacon)
 }
@@ -247,12 +301,17 @@ function addFloorEdgeLighting(
     roughness: 0.3,
   })
 
-  for (const z of [-6.32, 6.32]) {
-    box(group, [16.9, 0.025, 0.035], [0, 0.045, z], edge.clone())
-  }
-  for (const x of [-9.42, 9.42]) {
-    box(group, [0.035, 0.025, 11.85], [x, 0.045, 0], edge.clone())
-  }
+  batchedBoxes(
+    group,
+    'office-premium-floor-edge-signals',
+    [
+      { size: [16.9, 0.025, 0.035], position: [0, 0.045, -6.32] },
+      { size: [16.9, 0.025, 0.035], position: [0, 0.045, 6.32] },
+      { size: [0.035, 0.025, 11.85], position: [-9.42, 0.045, 0] },
+      { size: [0.035, 0.025, 11.85], position: [9.42, 0.045, 0] },
+    ],
+    edge,
+  )
 }
 
 function addCommonsIdentity(
@@ -261,23 +320,32 @@ function addCommonsIdentity(
 ): void {
   const identity = new THREE.Group()
   identity.name = FLOOR_IDENTITY.commons.architectureGroupName
-  const metal = material(palette.metal, { metalness: 0.38, roughness: 0.36 })
-  const warm = material(0x6f573f, {
-    emissive: palette.warm,
-    emissiveIntensity: 0.38,
-    metalness: 0.12,
-    roughness: 0.32,
-  })
 
-  // Hospitality portal and ceiling ribbons make Commons read as arrival/social
-  // space without inserting people, conversations, or schedule claims.
-  for (const x of [-7.9, 7.9]) {
-    box(identity, [0.14, 2.35, 0.14], [x, 1.22, -5.75], metal.clone())
-    box(identity, [1.9, 0.07, 0.14], [x > 0 ? 7.0 : -7.0, 2.38, -5.75], warm.clone())
-  }
-  for (const z of [-2.7, 2.7]) {
-    box(identity, [5.2, 0.045, 0.09], [0, 2.82, z], warm.clone())
-  }
+  batchedBoxes(
+    identity,
+    'office-premium-commons-frame',
+    [
+      { size: [0.14, 2.35, 0.14], position: [-7.9, 1.22, -5.75] },
+      { size: [0.14, 2.35, 0.14], position: [7.9, 1.22, -5.75] },
+    ],
+    material(palette.metal, { metalness: 0.38, roughness: 0.36 }),
+  )
+  batchedBoxes(
+    identity,
+    'office-premium-commons-warm-ribbons',
+    [
+      { size: [1.9, 0.07, 0.14], position: [-7.0, 2.38, -5.75] },
+      { size: [1.9, 0.07, 0.14], position: [7.0, 2.38, -5.75] },
+      { size: [5.2, 0.045, 0.09], position: [0, 2.82, -2.7] },
+      { size: [5.2, 0.045, 0.09], position: [0, 2.82, 2.7] },
+    ],
+    material(0x6f573f, {
+      emissive: palette.warm,
+      emissiveIntensity: 0.38,
+      metalness: 0.12,
+      roughness: 0.32,
+    }),
+  )
 
   group.add(identity)
 }
@@ -288,26 +356,40 @@ function addBuildIdentity(
 ): void {
   const identity = new THREE.Group()
   identity.name = FLOOR_IDENTITY.build.architectureGroupName
-  const rack = material(palette.metal, { metalness: 0.56, roughness: 0.28 })
-  const signal = material(palette.accentSoft, {
-    emissive: palette.accent,
-    emissiveIntensity: 1.15,
-    metalness: 0.16,
-    roughness: 0.2,
-  })
+  const rackSpecs: BoxSpec[] = []
+  const signalSpecs: BoxSpec[] = []
 
-  // Engineering bus/telemetry rails are abstract spatial identity only. They
-  // intentionally carry no numbers, health state, or implied live telemetry.
   for (const x of [-8.95, 8.95]) {
     for (const y of [0.7, 1.2, 1.7, 2.2]) {
-      box(identity, [0.08, 0.04, 3.8], [x, y, 1.45], rack.clone())
-      box(identity, [0.045, 0.025, 2.8], [x * 0.994, y, 1.45], signal.clone())
+      rackSpecs.push({ size: [0.08, 0.04, 3.8], position: [x, y, 1.45] })
+      signalSpecs.push({
+        size: [0.045, 0.025, 2.8],
+        position: [x * 0.994, y, 1.45],
+      })
     }
   }
   for (const x of [-4.2, 0, 4.2]) {
-    box(identity, [0.08, 0.08, 4.8], [x, 2.76, 1.2], rack.clone())
-    box(identity, [0.04, 0.035, 3.2], [x, 2.7, 1.2], signal.clone())
+    rackSpecs.push({ size: [0.08, 0.08, 4.8], position: [x, 2.76, 1.2] })
+    signalSpecs.push({ size: [0.04, 0.035, 3.2], position: [x, 2.7, 1.2] })
   }
+
+  batchedBoxes(
+    identity,
+    'office-premium-build-control-frame',
+    rackSpecs,
+    material(palette.metal, { metalness: 0.56, roughness: 0.28 }),
+  )
+  batchedBoxes(
+    identity,
+    'office-premium-build-control-signals',
+    signalSpecs,
+    material(palette.accentSoft, {
+      emissive: palette.accent,
+      emissiveIntensity: 1.15,
+      metalness: 0.16,
+      roughness: 0.2,
+    }),
+  )
 
   group.add(identity)
 }
@@ -318,30 +400,43 @@ function addStrategyIdentity(
 ): void {
   const identity = new THREE.Group()
   identity.name = FLOOR_IDENTITY.strategy.architectureGroupName
-  const frame = material(palette.metal, { metalness: 0.42, roughness: 0.34 })
-  const accent = material(palette.accentSoft, {
-    emissive: palette.accent,
-    emissiveIntensity: 1.05,
-    metalness: 0.18,
-    roughness: 0.24,
-  })
-  const warm = material(0x6c513a, {
-    emissive: palette.warm,
-    emissiveIntensity: 0.32,
-    metalness: 0.08,
-    roughness: 0.38,
-  })
 
-  // A symmetrical briefing frame differentiates Strategy from the engineering
-  // floor while remaining outside the canonical planning/decision state model.
-  for (const x of [-7.7, 7.7]) {
-    box(identity, [0.12, 2.45, 0.12], [x, 1.28, -5.9], frame.clone())
-    box(identity, [1.5, 0.06, 0.12], [x > 0 ? 7.0 : -7.0, 2.48, -5.9], accent.clone())
-  }
-  for (const x of [-3.4, 3.4]) {
-    box(identity, [0.055, 2.15, 0.08], [x, 1.46, 6.18], accent.clone())
-  }
-  box(identity, [6.9, 0.05, 0.08], [0, 2.78, 5.95], warm)
+  batchedBoxes(
+    identity,
+    'office-premium-strategy-frame',
+    [
+      { size: [0.12, 2.45, 0.12], position: [-7.7, 1.28, -5.9] },
+      { size: [0.12, 2.45, 0.12], position: [7.7, 1.28, -5.9] },
+    ],
+    material(palette.metal, { metalness: 0.42, roughness: 0.34 }),
+  )
+  batchedBoxes(
+    identity,
+    'office-premium-strategy-signals',
+    [
+      { size: [1.5, 0.06, 0.12], position: [-7.0, 2.48, -5.9] },
+      { size: [1.5, 0.06, 0.12], position: [7.0, 2.48, -5.9] },
+      { size: [0.055, 2.15, 0.08], position: [-3.4, 1.46, 6.18] },
+      { size: [0.055, 2.15, 0.08], position: [3.4, 1.46, 6.18] },
+    ],
+    material(palette.accentSoft, {
+      emissive: palette.accent,
+      emissiveIntensity: 1.05,
+      metalness: 0.18,
+      roughness: 0.24,
+    }),
+  )
+  batchedBoxes(
+    identity,
+    'office-premium-strategy-warm-line',
+    [{ size: [6.9, 0.05, 0.08], position: [0, 2.78, 5.95] }],
+    material(0x6c513a, {
+      emissive: palette.warm,
+      emissiveIntensity: 0.32,
+      metalness: 0.08,
+      roughness: 0.38,
+    }),
+  )
 
   group.add(identity)
 }
@@ -359,10 +454,12 @@ function addFloorIdentity(
 /**
  * Presentation-only architecture layer for RC1.
  *
- * The group intentionally stays outside the walkable volume. It never creates
- * Office presence, Run state, progress, agent activity, KPI, dialogue, or
- * collision truth. It also adds no THREE.Light objects; cinematic light budget
- * remains owned by the normal Office lighting/environment policies.
+ * Geometry is batched with InstancedMesh where shapes repeat so the premium
+ * layer remains compatible with the accepted Diorama draw-call budget. The
+ * layer stays outside the walkable volume and never creates Office presence,
+ * Run state, progress, agent activity, KPI, dialogue, telemetry, or collision
+ * truth. It also adds no THREE.Light objects; light ownership stays with the
+ * canonical Office lighting/environment policies.
  */
 export function mountPremiumOfficeArchitecture(
   parent: THREE.Group,
