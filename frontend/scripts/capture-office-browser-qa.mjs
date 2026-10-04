@@ -29,7 +29,18 @@ const browserTargets = [
   {
     key: 'firefox',
     type: firefox,
-    launchOptions: { headless: true },
+    launchOptions: {
+      headless: true,
+      firefoxUserPrefs: {
+        'webgl.disabled': false,
+        'webgl.force-enabled': true,
+      },
+      env: {
+        ...process.env,
+        LIBGL_ALWAYS_SOFTWARE: '1',
+        MOZ_WEBRENDER: '1',
+      },
+    },
   },
   {
     key: 'webkit',
