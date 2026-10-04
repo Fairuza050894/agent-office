@@ -12,10 +12,7 @@
 }
 
 .app-sidebar {
-  position: fixed;
-  top: 0;
-  left: -10000px;
-  display: flex;
+  display: none;
 }
 
 .target-topbar {
@@ -248,7 +245,8 @@
   cursor: pointer;
 }
 
-.target-search-result:hover {
+.target-search-result:hover,
+.target-search-result.active {
   background: var(--ao-surface-2);
 }
 

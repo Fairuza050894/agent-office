@@ -64,7 +64,9 @@ export function Header({
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
   const [isSearchLoading, setIsSearchLoading] = useState(false)
   const [searchError, setSearchError] = useState<string | null>(null)
+  const [activeSearchIndex, setActiveSearchIndex] = useState<number | null>(null)
   const searchIndexRef = useRef<SearchResult[] | null>(null)
+  const searchInputRef = useRef<HTMLInputElement | null>(null)
   const searchLoadRef = useRef<Promise<SearchResult[]> | null>(null)
   const searchSequenceRef = useRef(0)
 
@@ -253,9 +255,11 @@ export function Header({
   const closeSearch = () => {
     searchSequenceRef.current += 1
     setQuery('')
+    setActiveSearchIndex(null)
     setSearchResults([])
     setSearchError(null)
     setIsSearchLoading(false)
+    searchInputRef.current?.focus()
   }
 
   const handleSearchChange = (value: string) => {
@@ -266,12 +270,14 @@ export function Header({
 
     if (normalized.length < 2) {
       setSearchResults([])
+      setActiveSearchIndex(null)
       setSearchError(null)
       setIsSearchLoading(false)
       return
     }
 
     setIsSearchLoading(true)
+    setActiveSearchIndex(null)
     setSearchError(null)
     void buildSearchIndex()
       .then((index) => {
@@ -283,6 +289,7 @@ export function Header({
       .catch(() => {
         if (searchSequenceRef.current !== sequence) return
         setSearchResults([])
+        setActiveSearchIndex(null)
         setSearchError('Search data is temporarily unavailable.')
       })
       .finally(() => {
@@ -290,6 +297,37 @@ export function Header({
           setIsSearchLoading(false)
         }
       })
+  }
+
+  const handleSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Escape') {
+      closeSearch()
+      return
+    }
+
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault()
+      if (searchResults.length === 0) return
+
+      const direction = event.key === 'ArrowDown' ? 1 : -1
+      const nextIndex =
+        activeSearchIndex === null
+          ? direction === 1
+            ? 0
+            : searchResults.length - 1
+          : (activeSearchIndex + direction + searchResults.length) % searchResults.length
+      setActiveSearchIndex(nextIndex)
+      return
+    }
+
+    if (event.key === 'Enter' && activeSearchIndex !== null) {
+      const selected = searchResults[activeSearchIndex]
+      if (selected) {
+        event.preventDefault()
+        closeSearch()
+        navigate(selected.path)
+      }
+    }
   }
 
   return (
@@ -328,7 +366,7 @@ export function Header({
           ))}
 
           <details className="target-more-menu" open={secondaryRouteActive ? true : undefined}>
-            <summary>
+            <summary aria-haspopup="menu">
               <span className="sr-only">More tools</span>
               <span aria-hidden="true">More</span>
             </summary>
@@ -356,6 +394,7 @@ export function Header({
             </label>
             <input
               id="global-target-search"
+              ref={searchInputRef}
               type="search"
               value={query}
               autoComplete="off"
@@ -363,9 +402,7 @@ export function Header({
               aria-expanded={query.trim().length >= 2}
               aria-controls="global-target-search-results"
               onChange={(event) => handleSearchChange(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Escape') closeSearch()
-              }}
+              onKeyDown={handleSearchKeyDown}
             />
             {query.trim().length >= 2 && (
               <div
@@ -381,13 +418,15 @@ export function Header({
                 ) : searchResults.length === 0 ? (
                   <span className="target-search-state">No matching records</span>
                 ) : (
-                  searchResults.map((result) => (
+                  searchResults.map((result, index) => (
                     <button
                       key={result.id}
+                      id={`global-target-search-result-${result.id}`}
                       type="button"
-                      className="target-search-result"
+                      className={`target-search-result${index === activeSearchIndex ? ' active' : ''}`}
                       role="option"
-                      aria-selected="false"
+                      aria-selected={index === activeSearchIndex}
+                      onMouseEnter={() => setActiveSearchIndex(index)}
                       onClick={() => {
                         closeSearch()
                         navigate(result.path)
