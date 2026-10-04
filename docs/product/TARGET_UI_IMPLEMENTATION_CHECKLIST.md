@@ -29,73 +29,73 @@
   no fake Design zone, stylized RC1 hero;
 - [x] add Product/UX plan;
 - [x] add this implementation checklist;
-- [ ] add coding-agent execution brief.
+- [x] add coding-agent execution brief (`docs/product/TARGET_UI_CODING_AGENT_BRIEF.md`).
 
 ### Tokens / CSS
 
-- [ ] add `--ao-radius-lg: 12px` to the active token layer;
-- [ ] add a target-shell stylesheet loaded after existing product styles;
-- [ ] desktop shell must have no permanent left sidebar;
-- [ ] mobile drawer remains available;
-- [ ] no decorative gradient is introduced to 2D decision surfaces;
-- [ ] visible `:focus-visible` treatment for top-nav/search/menu/buttons;
-- [ ] `prefers-reduced-motion` covered.
+- [x] add `--ao-radius-lg: 12px` to the active token layer (`frontend/src/styles/tokens.css`);
+- [x] add a target-shell stylesheet loaded after existing product styles (`frontend/src/styles/target-ui-shell.css`);
+- [x] desktop shell has no permanent left sidebar (removed/desktop-hidden; drawer only);
+- [x] mobile drawer remains available;
+- [x] no decorative gradient is introduced to 2D decision surfaces;
+- [x] visible `:focus-visible` treatment for top-nav/search/menu/buttons;
+- [x] `prefers-reduced-motion` covered.
 
 ### Desktop top bar
 
-- [ ] brand + compact AO mark;
-- [ ] primary routes in exact order: Office, Board, Inbox, KPI, Projects;
-- [ ] active route uses `aria-current="page"`;
-- [ ] More menu exposes all remaining `NAV_ITEMS` routes;
-- [ ] compact factual backend health status;
-- [ ] generic `Local owner` affordance only;
-- [ ] mobile hamburger remains keyboard accessible.
+- [x] brand + compact AO mark;
+- [x] primary routes in exact order: Office, Board, Inbox, KPI, Projects;
+- [x] active route uses `aria-current="page"`;
+- [x] More menu exposes all remaining `NAV_ITEMS` routes;
+- [x] compact factual backend health status;
+- [x] generic `Local owner` affordance only;
+- [x] mobile hamburger remains keyboard accessible.
 
 ### Global search
 
 Client-only, no search backend/index.
 
-- [ ] lazy-load Projects, Tasks, Runs, AgentProfiles;
-- [ ] minimum query threshold avoids unnecessary N+1 calls;
-- [ ] cache loaded search projection for the session;
-- [ ] search Task title/id -> `/tasks/:id`;
-- [ ] search Run id/status/task title -> `/runs/:id`;
-- [ ] search role/profile -> `/agents`;
-- [ ] empty/unavailable registries degrade to no results, not fake entries;
-- [ ] keyboard-operable results list;
-- [ ] Escape closes result panel;
-- [ ] result click clears query and navigates.
+- [x] lazy-load Projects, Tasks, Runs, AgentProfiles;
+- [x] minimum query threshold avoids unnecessary N+1 calls;
+- [x] cache loaded search projection for the session;
+- [x] search Task title/id -> `/tasks/:id`;
+- [x] search Run id/status/task title -> `/runs/:id`;
+- [x] search role/profile -> `/agents`;
+- [x] empty/unavailable registries degrade to no results, not fake entries;
+- [x] keyboard-operable results list;
+- [x] Escape closes result panel;
+- [x] result click clears query and navigates.
 
 ### Global New Task
 
-- [ ] reuse `CreateTaskModal`;
-- [ ] load active Projects through existing API;
-- [ ] create through existing `api.createTask`;
-- [ ] after success navigate to canonical `/tasks/:id`;
-- [ ] no hidden Run creation or execution start.
+- [x] reuse `CreateTaskModal`;
+- [x] load active Projects through existing API;
+- [x] create through existing `api.createTask`;
+- [x] after success navigate to canonical `/tasks/:id`;
+- [x] no hidden Run creation or execution start.
 
 ### Demo seed
 
-- [ ] copy demo seeding concept into `scripts/seed_ui_demo.py`;
-- [ ] PUBLIC HTTP API only for Agent Office records;
-- [ ] temporary/local Git repository only;
-- [ ] no `shell=True` command interpolation;
-- [ ] no destructive `rm -rf` reset;
-- [ ] refuse unsafe/existing destination unless explicitly empty;
-- [ ] use Enterprise Engineering workflow as documented;
-- [ ] accepted records rely on fixed real managed delivery.
+- [x] copy demo seeding concept into `scripts/seed_ui_demo.py`;
+- [x] PUBLIC HTTP API only for Agent Office records;
+- [x] temporary/local Git repository only;
+- [x] no `shell=True` command interpolation;
+- [x] no destructive `rm -rf` reset;
+- [x] refuse unsafe/existing destination unless explicitly empty;
+- [x] use Enterprise Engineering workflow as documented;
+- [x] accepted records rely on fixed real managed delivery.
 
 ### U1 tests
 
-- [ ] shell landmarks and top nav;
-- [ ] primary route order;
-- [ ] More contains low-frequency routes;
-- [ ] active route `aria-current`;
-- [ ] Local owner contains no person/email data;
-- [ ] New Task opens existing modal and routes after success;
-- [ ] search matches Task/Run/AgentProfile with mocked canonical API data;
-- [ ] no desktop sidebar dependency in Office tests;
-- [ ] existing Office, Inbox, Board, KPI routes remain reachable.
+- [x] shell landmarks and top nav;
+- [x] primary route order;
+- [x] More contains low-frequency routes;
+- [x] active route `aria-current`;
+- [x] Local owner contains no person/email data;
+- [x] New Task opens existing modal and routes after success;
+- [x] search matches Task/Run/AgentProfile with mocked canonical API data;
+- [x] no desktop sidebar dependency in Office tests;
+- [x] existing Office, Inbox, Board, KPI routes remain reachable.
 
 ## U2 — Task Detail
 

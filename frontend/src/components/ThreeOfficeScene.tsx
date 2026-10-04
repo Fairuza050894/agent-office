@@ -786,7 +786,7 @@ export function ThreeOfficeScene({
       }
     })
 
-    sceneMembers.forEach((member) => {
+    sceneMembers.forEach((member, memberIndex) => {
       // ponytail: same role-anchor policy as the R3F path; live AgentRuns
       // carry no zone/placement so stageCenter fallback clustered the crowd.
       const station =
