@@ -41,6 +41,7 @@ export interface OfficeEnvironmentMember {
   agent_profile_key: string
   zone?: OfficeZoneKey
   placementIndex?: number
+  status?: string
 }
 
 interface Obstacle {
@@ -142,6 +143,14 @@ const ROLE_STATIONS: Record<string, string> = {
   verifier: 'desk-b3',
   'documentation-writer': 'desk-b4',
   'ux-reviewer': 'desk-b4',
+  'product-manager': 'desk-a1',
+  'system-analyst': 'desk-a4',
+  'principal-engineer': 'desk-a1',
+  'product-designer': 'desk-b4',
+  'backend-engineer': 'desk-a2',
+  'frontend-engineer': 'desk-a3',
+  'qa-engineer': 'desk-b1',
+  'technical-writer': 'desk-b3',
 }
 
 const ZONE_PLACEMENTS: Record<OfficeZoneKey, StationPlacement[]> = {
@@ -926,9 +935,88 @@ function addSphere(
   return mesh
 }
 
+/**
+ * Screen glow follows canonical AgentRun status only. No animation, no
+ * progress, no invented activity: RUNNING reads green, WAITING amber,
+ * BLOCKED/FAILED red, everything else keeps the neutral display tone.
+ * ponytail: zone-level wall displays follow this too when a caller owns the
+ * floor status feed; per-desk tint here keys off the desk occupant only.
+ */
+export type OfficeScreenStatusKind =
+  | 'RUNNING'
+  | 'WAITING'
+  | 'BLOCKED'
+  | 'FAILED'
+  | 'NEUTRAL'
+
+export function officeScreenStatusKind(
+  status: string | null | undefined,
+): OfficeScreenStatusKind {
+  switch ((status ?? '').toUpperCase()) {
+    case 'RUNNING':
+    case 'WORKING':
+    case 'STARTING':
+      return 'RUNNING'
+    case 'WAITING':
+    case 'WAITING_WORK':
+    case 'WAITING_USER':
+    case 'PENDING':
+      return 'WAITING'
+    case 'BLOCKED':
+      return 'BLOCKED'
+    case 'FAILED':
+      return 'FAILED'
+    default:
+      return 'NEUTRAL'
+  }
+}
+
+const OFFICE_SCREEN_EMISSIVE: Record<OfficeScreenStatusKind, number> = {
+  RUNNING: 0x2f9e6e,
+  WAITING: 0xc78a3a,
+  BLOCKED: 0xc04a3e,
+  FAILED: 0xc04a3e,
+  NEUTRAL: 0x183c52,
+}
+
+const OFFICE_SCREEN_EMISSIVE_INTENSITY: Record<
+  OfficeScreenStatusKind,
+  number
+> = {
+  RUNNING: 0.85,
+  WAITING: 0.7,
+  BLOCKED: 0.8,
+  FAILED: 0.8,
+  NEUTRAL: 0.65,
+}
+
+export function officeScreenEmissive(status: string | null | undefined): {
+  color: number
+  intensity: number
+} {
+  const kind = officeScreenStatusKind(status)
+  return {
+    color: OFFICE_SCREEN_EMISSIVE[kind],
+    intensity: OFFICE_SCREEN_EMISSIVE_INTENSITY[kind],
+  }
+}
+
+function applyDeskScreenStatus(
+  screen: THREE.Mesh,
+  status: string | null | undefined,
+): void {
+  const material = screen.material as THREE.MeshStandardMaterial
+  // Every desk screen owns its material via addBox, so per-desk tinting is
+  // a safe local mutation. Status comes from canonical AgentRun state only.
+  const { color, intensity } = officeScreenEmissive(status)
+  material.emissive.setHex(color)
+  material.emissiveIntensity = intensity
+}
+
 function createStandingDesk(
   position: THREE.Vector3,
   yaw: number,
+  occupantStatus: string | null = null,
 ): THREE.Group {
   const desk = new THREE.Group()
   desk.position.copy(position)
@@ -943,7 +1031,8 @@ function createStandingDesk(
   }
 
   addBox(desk, [0.72, 0.43, 0.055], [0, 1.32, 0.09], 0x141b24)
-  addBox(desk, [0.62, 0.33, 0.018], [0, 1.32, 0.055], 0x477ca4)
+  const screen = addBox(desk, [0.62, 0.33, 0.018], [0, 1.32, 0.055], 0x477ca4)
+  applyDeskScreenStatus(screen, occupantStatus)
   addBox(desk, [0.045, 0.3, 0.045], [0, 1.14, 0.03], 0x485562)
   addBox(desk, [0.48, 0.035, 0.2], [0, 1.04, -0.2], 0x65727d)
   addBox(desk, [0.34, 0.018, 0.13], [-0.08, 1.055, -0.31], 0x252e38)
@@ -971,7 +1060,7 @@ function createDeskChair(
 function createPlant(position: THREE.Vector3, scale = 1): THREE.Group {
   const plant = new THREE.Group()
   plant.position.copy(position)
-  plant.scale.setScalar(scale)
+  plant.scale.setScalar(scale * 0.72)
 
   addCylinder(plant, 0.22, 0.34, [0, 0.17, 0], 0xa37b5b)
   addSphere(plant, 0.38, [0, 0.72, 0], 0x3f7657)
@@ -1400,6 +1489,7 @@ function createWoodFloor(parent: THREE.Group): void {
 function createWorkArea(
   parent: THREE.Group,
   presentation: EngineeringPodPresentation = 'primitive',
+  deskStatusByWorkstation: ReadonlyMap<string, string> = new Map(),
 ): void {
   const area = new THREE.Group()
   area.name = 'office-engineering-pod'
@@ -1412,7 +1502,13 @@ function createWorkArea(
     primitive.name = 'office-engineering-pod-primitive'
 
     WORKSTATIONS.forEach((workstation, index) => {
-      primitive.add(createStandingDesk(workstation.desk, workstation.yaw))
+      primitive.add(
+        createStandingDesk(
+          workstation.desk,
+          workstation.yaw,
+          deskStatusByWorkstation.get(workstation.id) ?? null,
+        ),
+      )
 
       const chairOffset = workstation.yaw === 0 ? 0.6 : -0.6
       const chair = createDeskChair(
@@ -1858,8 +1954,13 @@ function createBuildFloor(
   environment: THREE.Group,
   mode: OfficeModeKey | null,
   engineeringPodPresentation: EngineeringPodPresentation,
+  deskStatusByWorkstation: ReadonlyMap<string, string> = new Map(),
 ): void {
-  createWorkArea(environment, engineeringPodPresentation)
+  createWorkArea(
+    environment,
+    engineeringPodPresentation,
+    deskStatusByWorkstation,
+  )
   createReviewWall(environment)
   createQaLab(environment)
   createPairingIsland(environment)
@@ -1908,7 +2009,31 @@ export function createOfficeEnvironment(
 
   if (floor === 'commons') createCommonsFloor(environment, officeMode)
   else if (floor === 'strategy') createStrategyFloor(environment, officeMode)
-  else createBuildFloor(environment, officeMode, engineeringPodPresentation)
+  else {
+    // Screen tint follows the seeded desk occupant, then stations reuse the
+    // same deterministic desk assignment so characters sit at lit desks.
+    const seedUsed = new Set<string>()
+    const seedDeskByMember = new Map<string, string>()
+    members.forEach((member) => {
+      if (member.zone) return
+      const workstation = roleWorkstation(member.agent_profile_key, seedUsed)
+      seedUsed.add(workstation.id)
+      seedDeskByMember.set(member.id, workstation.id)
+    })
+    const deskStatusByWorkstation = new Map<string, string>()
+    members.forEach((member) => {
+      const deskId = seedDeskByMember.get(member.id)
+      if (deskId && member.status) {
+        deskStatusByWorkstation.set(deskId, member.status)
+      }
+    })
+    createBuildFloor(
+      environment,
+      officeMode,
+      engineeringPodPresentation,
+      deskStatusByWorkstation,
+    )
+  }
 
   environment.add(createPlant(point(-4.65, -1.7), 0.9))
   environment.add(createPlant(point(4.65, -1.7), 0.9))

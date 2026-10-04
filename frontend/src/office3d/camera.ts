@@ -31,8 +31,9 @@ export interface OfficeCameraView {
  *
  * Presets stay deterministic and bounded, but sit lower and closer than the
  * earlier premium pass so people and room identity read as an operating space
- * rather than a miniature diorama. Every view preserves a useful foreground,
- * midground and architectural background without enabling free orbit or pan.
+ * rather than a miniature diorama. Overviews trade the old high>=wide survey
+ * for a Sims-iso read: foreground occlusion stays small, midground stations
+ * stay legible, architectural background stays in frame. No free orbit or pan.
  */
 const FLOOR_CAMERA_VIEWS: Record<
   OfficeFloorKey,
@@ -43,7 +44,7 @@ const FLOOR_CAMERA_VIEWS: Record<
       key: 'overview',
       label: 'Overview',
       shortcut: '1',
-      position: [8.2, 4.65, 9.35],
+      position: [7.0, 4.0, 8.0],
       target: [-0.1, 1.02, 1.35],
     },
     {
@@ -66,7 +67,7 @@ const FLOOR_CAMERA_VIEWS: Record<
       key: 'overview',
       label: 'Overview',
       shortcut: '1',
-      position: [8.05, 4.6, 9.15],
+      position: [6.9, 4.0, 7.9],
       target: [0.35, 1.0, 1.15],
     },
     {
@@ -89,7 +90,7 @@ const FLOOR_CAMERA_VIEWS: Record<
       key: 'overview',
       label: 'Overview',
       shortcut: '1',
-      position: [8.15, 4.65, 9.2],
+      position: [7.0, 4.0, 7.9],
       target: [0, 1.02, 0.95],
     },
     {

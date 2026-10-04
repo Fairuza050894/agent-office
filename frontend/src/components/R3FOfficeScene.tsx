@@ -28,7 +28,7 @@ import {
   createOfficeEnvironment,
   disposeObject,
   entrancePosition,
-  stageCenter,
+  officeRoleStation,
 } from '../office3d/environment'
 import type { OfficeDioramaPilotMode } from '../office3d/dioramaDebug'
 import { officeFurniturePolicy } from '../office3d/furniturePolicy'
@@ -396,23 +396,16 @@ function AdaptiveOfficeQuality({
 
 function stationForMember(
   member: OfficeSceneMember,
-  memberIndex: number,
   stages: RunStage[],
   stations: Map<string, StationPlacement>,
 ): StationPlacement {
-  const stageIndex = member.stageKey
-    ? Math.max(
-        0,
-        stages.findIndex((stage) => stage.stage_key === member.stageKey),
-      )
-    : memberIndex
+  const station = stations.get(member.id)
+  if (station) return station
 
-  return (
-    stations.get(member.id) ?? {
-      position: stageCenter(stageIndex),
-      yaw: stageIndex < 3 ? Math.PI : 0,
-    }
-  )
+  // ponytail: live AgentRuns carry no zone/placement, so role-anchored desks
+  // beat stageCenter clustering; stages stay a last-resort index only.
+  void stages
+  return officeRoleStation(member.agent_profile_key)
 }
 
 function applyCharacterInteraction(
@@ -547,7 +540,6 @@ function SceneContents({
     members.forEach((member, memberIndex) => {
       const station = stationForMember(
         member,
-        memberIndex,
         currentStages,
         stations,
       )

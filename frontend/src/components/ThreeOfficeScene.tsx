@@ -15,13 +15,12 @@ import {
   setCharacterStatus,
   workspaceCandidateBlockedByPeer,
   type RuntimeAgent,
-  type StationPlacement,
 } from '../office3d/character'
 import {
   entrancePosition,
   createOfficeEnvironment,
   disposeObject,
-  stageCenter,
+  officeRoleStation,
 } from '../office3d/environment'
 import type { OfficeDioramaPilotMode } from '../office3d/dioramaDebug'
 import { officeFurniturePolicy } from '../office3d/furniturePolicy'
@@ -787,18 +786,12 @@ export function ThreeOfficeScene({
       }
     })
 
-    sceneMembers.forEach((member, memberIndex) => {
-      const stageIndex = member.stageKey
-        ? Math.max(
-            0,
-            stages.findIndex((stage) => stage.stage_key === member.stageKey),
-          )
-        : memberIndex
-      const fallback: StationPlacement = {
-        position: stageCenter(stageIndex),
-        yaw: stageIndex < 3 ? Math.PI : 0,
-      }
-      const station = stations.get(member.id) ?? fallback
+    sceneMembers.forEach((member) => {
+      // ponytail: same role-anchor policy as the R3F path; live AgentRuns
+      // carry no zone/placement so stageCenter fallback clustered the crowd.
+      const station =
+        stations.get(member.id) ??
+        officeRoleStation(member.agent_profile_key)
 
       let runtime = engine.runtimes.get(member.id)
 

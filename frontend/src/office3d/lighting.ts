@@ -27,49 +27,49 @@ export interface OfficePracticalLight {
 const MORNING: OfficeLightingProfile = {
   key: 'morning',
   label: 'Morning light',
-  background: 0x0a1822,
+  background: 0x0e202c,
   hemisphereSky: 0xd7ebf2,
-  hemisphereGround: 0x223039,
-  hemisphereIntensity: 2.1,
+  hemisphereGround: 0x2a3a44,
+  hemisphereIntensity: 2.35,
   keyColor: 0xf7cfa7,
-  keyIntensity: 2.48,
-  exposure: 1.13,
+  keyIntensity: 2.62,
+  exposure: 1.2,
 }
 
 const DAY: OfficeLightingProfile = {
   key: 'day',
   label: 'Daylight',
-  background: 0x0b1b25,
+  background: 0x10242f,
   hemisphereSky: 0xe0f1f6,
-  hemisphereGround: 0x263640,
-  hemisphereIntensity: 2.28,
+  hemisphereGround: 0x2e404a,
+  hemisphereIntensity: 2.55,
   keyColor: 0xffe4bf,
-  keyIntensity: 2.72,
-  exposure: 1.17,
+  keyIntensity: 2.9,
+  exposure: 1.25,
 }
 
 const EVENING: OfficeLightingProfile = {
   key: 'evening',
   label: 'Evening light',
-  background: 0x0a151e,
+  background: 0x0d1a24,
   hemisphereSky: 0xc0d3dc,
-  hemisphereGround: 0x26231f,
-  hemisphereIntensity: 1.94,
+  hemisphereGround: 0x2c2822,
+  hemisphereIntensity: 2.08,
   keyColor: 0xe6b37f,
-  keyIntensity: 2.18,
-  exposure: 1.1,
+  keyIntensity: 2.3,
+  exposure: 1.16,
 }
 
 const NIGHT: OfficeLightingProfile = {
   key: 'night',
   label: 'Night office',
-  background: 0x07121a,
+  background: 0x0a1720,
   hemisphereSky: 0xa6c5d6,
-  hemisphereGround: 0x17232a,
-  hemisphereIntensity: 1.82,
+  hemisphereGround: 0x1e2c34,
+  hemisphereIntensity: 1.95,
   keyColor: 0xa9c8d9,
-  keyIntensity: 1.86,
-  exposure: 1.08,
+  keyIntensity: 1.98,
+  exposure: 1.12,
 }
 
 const FLOOR_PRACTICALS: Record<

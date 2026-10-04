@@ -7,6 +7,7 @@ import {
   officeMovementYaw,
   shouldShowOfficeNameplate,
   workspaceCandidateBlockedByPeer,
+  nameplateLabel,
   workspaceIdlePose,
 } from './character'
 import { LIVING_OFFICE_CORE_ROLES } from './livingOffice'
@@ -175,6 +176,26 @@ describe('officeCharacterAppearance', () => {
         },
       ]),
     ).toBe(false)
+  })
+
+  it('keeps WORK nameplates factual and break labels activity-neutral', () => {
+    expect(
+      nameplateLabel({
+        status: 'RUNNING',
+        behavior: 'DESK_FOCUS',
+        taskTitle: 'Implement payment retry',
+        stageKey: 'IMPLEMENTATION',
+      }),
+    ).toBe('Running · Implement payment retry · IMPLEMENTATION')
+    expect(
+      nameplateLabel({ status: 'RUNNING', behavior: 'DESK_FOCUS' }),
+    ).toBe('Focus')
+    expect(
+      nameplateLabel({ status: 'AVAILABLE', behavior: null }),
+    ).toBe('On standby')
+    expect(
+      nameplateLabel({ status: 'SOCIAL_BREAK', behavior: 'GAME_BREAK' }),
+    ).toBe('On break')
   })
 
   it('keeps unknown-role fallback deterministic', () => {

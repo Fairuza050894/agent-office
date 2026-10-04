@@ -63,8 +63,8 @@ jobs:
         run: npm run build
       - name: Production Office guard
         run: npm run office:debug:prod-check
-      - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium firefox webkit
       - name: Production Office renderer split smoke
         run: npm run office:production-r3f-smoke
       - name: Office visual acceptance capture
@@ -75,6 +75,16 @@ jobs:
         with:
           name: office-visual-acceptance
           path: artifacts/office-shots
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Office browser and device compatibility capture
+        run: npm run office:browser-qa
+      - name: Upload Office browser and device QA artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: office-browser-device-qa
+          path: artifacts/office-browser-qa
           if-no-files-found: warn
           retention-days: 14
 

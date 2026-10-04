@@ -404,8 +404,8 @@ function addPlanters(
   namePrefix: string,
 ): void {
   const planterBoxes = positions.map(([x, z]) => ({
-    size: [0.72, 0.55, 0.72] as [number, number, number],
-    position: [x, 0.31, z] as [number, number, number],
+    size: [0.6, 0.46, 0.6] as [number, number, number],
+    position: [x, 0.26, z] as [number, number, number],
   }))
   addBoxes(
     group,
@@ -419,11 +419,11 @@ function addPlanters(
 
   const foliage: SphereSpec[] = []
   positions.forEach(([x, z], index) => {
-    const spread = index % 2 === 0 ? 0.18 : -0.18
+    const spread = index % 2 === 0 ? 0.15 : -0.15
     foliage.push(
-      { radius: 0.48, position: [x, 0.98, z], scale: [0.5, 0.68, 0.5] },
-      { radius: 0.34, position: [x + spread, 1.08, z + 0.1], scale: [0.34, 0.48, 0.34] },
-      { radius: 0.3, position: [x - spread, 0.92, z - 0.14], scale: [0.3, 0.44, 0.3] },
+      { radius: 0.4, position: [x, 0.82, z], scale: [0.42, 0.57, 0.42] },
+      { radius: 0.28, position: [x + spread, 0.9, z + 0.08], scale: [0.28, 0.4, 0.28] },
+      { radius: 0.25, position: [x - spread, 0.77, z - 0.12], scale: [0.25, 0.37, 0.25] },
     )
   })
   addSpheres(
@@ -553,12 +553,12 @@ function addCommons(
     identity,
     palette,
     [
-      [-7.8, 4.95],
-      [-6.65, 4.95],
-      [6.8, -5.25],
-      [7.95, -5.25],
-      [6.55, 2.4],
-      [7.7, 2.4],
+      [-8.35, 4.95],
+      [-7.3, 4.95],
+      [6.8, -5.7],
+      [7.95, -5.7],
+      [6.55, 1.1],
+      [7.7, 1.1],
     ],
     'office-premium-commons',
   )
@@ -661,12 +661,12 @@ function addBuild(
     identity,
     palette,
     [
-      [-3.85, 4.9],
-      [-2.7, 4.9],
-      [2.7, 4.9],
-      [3.85, 4.9],
-      [-8.35, 2.15],
-      [8.35, 2.15],
+      [-4.4, 5.6],
+      [-3.25, 5.6],
+      [3.25, 5.6],
+      [4.4, 5.6],
+      [-8.8, 0.6],
+      [8.8, 0.6],
     ],
     'office-premium-build',
   )
@@ -766,12 +766,12 @@ function addStrategy(
     identity,
     palette,
     [
-      [-3.75, -0.3],
-      [-3.75, 1.45],
-      [3.75, -0.3],
-      [3.75, 1.45],
-      [4.0, 5.0],
-      [7.8, 5.0],
+      [-4.4, -0.9],
+      [-4.4, 1.9],
+      [4.4, -0.9],
+      [4.4, 1.9],
+      [2.9, 5.6],
+      [7.8, 5.6],
     ],
     'office-premium-strategy',
   )

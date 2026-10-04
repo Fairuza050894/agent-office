@@ -23,6 +23,7 @@ export interface OfficeSceneMember extends OfficeCharacterSource {
   zone?: OfficeZoneKey
   placementIndex?: number
   stageKey?: string
+  taskTitle?: string
 }
 
 export function officeSceneMembers(
@@ -49,6 +50,8 @@ export function officeSceneMembers(
           agent.agent_profile_key,
         status: agent.status,
         stageKey: agent.stage_key,
+        taskTitle: agent.result_summary ?? undefined,
+        truth: 'WORK' as const,
         zone:
           floor !== 'build' && home.floor === floor
             ? home.zone
@@ -61,6 +64,9 @@ export function officeSceneMembers(
       name: member.name,
       status: member.status,
       behavior: member.behavior,
+      truth: member.truth,
+      taskTitle: member.taskTitle,
+      stageKey: member.stageKey,
       zone: member.zone,
       placementIndex: member.placementIndex,
     })),

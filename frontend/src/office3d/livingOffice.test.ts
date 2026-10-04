@@ -168,9 +168,10 @@ describe('living office presentation labels', () => {
   it('humanizes internal workday states without exposing raw enum names', () => {
     expect(officePresenceStatusLabel('WAITING_WORK')).toBe('Waiting')
     expect(officePresenceStatusLabel('WORKING')).toBe('Working')
-    expect(officePresenceStatusLabel('PRAYER_BREAK')).toBe(
-      'Prayer / quiet break',
-    )
+    expect(officePresenceStatusLabel('LUNCH_BREAK')).toBe('On break')
+    expect(officePresenceStatusLabel('COFFEE_BREAK')).toBe('On break')
+    expect(officePresenceStatusLabel('SOCIAL_BREAK')).toBe('On break')
+    expect(officePresenceStatusLabel('PRAYER_BREAK')).toBe('Quiet break')
   })
 })
 
@@ -506,6 +507,12 @@ describe('living office model', () => {
     expect(
       officeBehaviorFor('PLANNING', 'planning-table', 'PLANNING'),
     ).toBe('PLANNING_MEETING')
+    expect(officeBehaviorLabel('PLANNING_MEETING')).toBe('Planning session')
+    expect(officeBehaviorLabel('COFFEE_CHAT')).toBe('On break')
+    expect(officeBehaviorLabel('LUNCH')).toBe('On break')
+    expect(officeBehaviorLabel('SOCIAL_CHAT')).toBe('On break')
+    expect(officeBehaviorLabel('GAME_BREAK')).toBe('On break')
+    expect(officeBehaviorLabel('PRAYER_QUIET')).toBe('Quiet break')
     expect(
       officeBehaviorFor('WAITING_USER', 'planning-table', 'PLANNING'),
     ).toBe('WAITING_DECISION')
@@ -515,7 +522,6 @@ describe('living office model', () => {
     expect(
       officeBehaviorFor('PRAYER_BREAK', 'quiet-room', 'AMBIENT'),
     ).toBe('PRAYER_QUIET')
-    expect(officeBehaviorLabel('GAME_BREAK')).toBe('Game break')
   })
 
   it('assigns deterministic role-personality behavior during late-evening ambience', () => {
@@ -531,6 +537,11 @@ describe('living office model', () => {
       ),
     ).toBe(true)
     expect(first.every((member) => member.floor === 'commons')).toBe(true)
+  })
+
+  it('keeps break and session labels activity-neutral in the nameplate', () => {
+    expect(officeBehaviorLabel('GAME_BREAK')).toBe('On break')
+    expect(officeBehaviorLabel('AVAILABLE')).toBe('On standby')
   })
 
   it('changes ambient placement deterministically across three-minute beats', () => {

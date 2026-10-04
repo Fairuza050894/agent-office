@@ -12,6 +12,8 @@ import {
   incidentPosition,
   officePathHasFurnitureClearance,
   officeRoleStation,
+  officeScreenEmissive,
+  officeScreenStatusKind,
   officeWorkspacePathHasFurnitureClearance,
   officeZoneCapacity,
   officeZonePlacement,
@@ -229,6 +231,47 @@ describe('office navigation clearance', () => {
       expect(candidate.position.toArray()).toEqual(control.position.toArray())
       expect(candidate.yaw).toBe(control.yaw)
     }
+  })
+
+  it('tints desk screens from canonical occupant status without inventing activity', () => {
+    expect(officeScreenStatusKind('RUNNING')).toBe('RUNNING')
+    expect(officeScreenStatusKind('WORKING')).toBe('RUNNING')
+    expect(officeScreenStatusKind('WAITING_USER')).toBe('WAITING')
+    expect(officeScreenStatusKind('BLOCKED')).toBe('BLOCKED')
+    expect(officeScreenStatusKind('FAILED')).toBe('FAILED')
+    expect(officeScreenStatusKind('AVAILABLE')).toBe('NEUTRAL')
+    expect(officeScreenStatusKind(null)).toBe('NEUTRAL')
+
+    expect(officeScreenEmissive('RUNNING').color).toBe(0x2f9e6e)
+    expect(officeScreenEmissive('BLOCKED').color).toBe(0xc04a3e)
+    expect(officeScreenEmissive('AVAILABLE').color).toBe(0x183c52)
+
+    const occupied = new THREE.Group()
+    createOfficeEnvironment(
+      occupied,
+      [],
+      [
+        {
+          id: 'blocked-backend',
+          agent_profile_key: 'backend-developer',
+          status: 'BLOCKED',
+        },
+      ],
+      'build',
+      'CORE_WORK',
+      'primitive',
+    )
+    const screens: number[] = []
+    occupied.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) return
+      const material = object.material as THREE.MeshStandardMaterial
+      if (!('emissive' in material)) return
+      if (material.emissive.getHex() === 0xc04a3e) {
+        screens.push(material.emissiveIntensity)
+      }
+    })
+    expect(screens.length).toBeGreaterThan(0)
+    expect(screens.every((intensity) => intensity === 0.8)).toBe(true)
   })
 
   it('exposes eight deterministic pilot furniture placements for the existing pod', () => {
