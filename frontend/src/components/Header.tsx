@@ -305,6 +305,7 @@ export function Header({
         </div>
 
         <nav className="target-primary-nav" aria-label="Primary Navigation">
+          <span className="sr-only">Core</span>
           {primaryItems.map((item) => (
             <Link
               key={item.id}
@@ -317,7 +318,10 @@ export function Header({
           ))}
 
           <details className="target-more-menu" open={secondaryRouteActive ? true : undefined}>
-            <summary>More</summary>
+            <summary>
+              <span className="sr-only">More tools</span>
+              <span aria-hidden="true">More</span>
+            </summary>
             <div className="target-more-popover">
               {secondaryItems.map((item) => (
                 <Link
