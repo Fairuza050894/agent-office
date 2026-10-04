@@ -20,6 +20,7 @@
   --ao-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --ao-radius-sm: 4px;
   --ao-radius-md: 7px;
+  --ao-radius-lg: 12px;
   --ao-shadow-panel: 0 18px 45px rgba(0, 0, 0, .24);
 
   /* Legacy visual-foundation aliases.
