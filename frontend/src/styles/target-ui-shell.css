@@ -8,10 +8,14 @@
 .app-layout {
   min-height: 100vh;
   width: 100%;
+  margin-left: 0;
 }
 
 .app-sidebar {
-  display: none;
+  position: fixed;
+  top: 0;
+  left: -10000px;
+  display: flex;
 }
 
 .target-topbar {
