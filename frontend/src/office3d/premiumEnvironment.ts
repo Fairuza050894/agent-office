@@ -2,6 +2,7 @@ import * as THREE from 'three'
 
 import { disposeObject } from './environment'
 import type { OfficeFloorKey } from './livingOffice'
+import { mountPremiumCinematicDetails } from './premiumCinematicDetails'
 import { mountPremiumSceneEnhancements } from './premiumSceneEnhancements'
 import { mountPremiumSceneKit } from './premiumSceneKit'
 
@@ -68,8 +69,7 @@ function replaceLegacyVisualShell(parent: THREE.Group): void {
  * This is a spatial replacement, not a decorative overlay. Production R3F
  * keeps canonical station/navigation/collision facts from `environment.ts`,
  * removes the historical primitive render shell, then mounts a premium spatial
- * kit plus a small practical-detail layer. The practical layer is capped at two
- * local point lights; global hemisphere/key lighting remains renderer-owned.
+ * kit plus localized cinematic detail and a small practical-light layer.
  *
  * Navigation, collision, occupancy, workflow, KPI, activity and character
  * stations remain owned by canonical environment/runtime projection code.
@@ -82,17 +82,19 @@ export function mountPremiumOfficeArchitecture(
 
   const group = mountPremiumSceneKit(parent, floor)
   mountPremiumSceneEnhancements(group, floor, 'evening')
+  mountPremiumCinematicDetails(group, floor)
   const identity = FLOOR_IDENTITY[floor]
 
   group.name = 'office-premium-architecture'
   group.userData.presentationOnly = true
   group.userData.floor = floor
   group.userData.identity = identity.signature
-  group.userData.visualRevision = 'spatial-overhaul-v3'
+  group.userData.visualRevision = 'cinematic-composition-v1'
   group.userData.roomSpanningOverheadFrame = false
   group.userData.canonicalStateOwner = false
   group.userData.replacesLegacyVisualShell = true
   group.userData.localPracticalLightCount = 2
+  group.userData.cinematicComposition = true
 
   return group
 }

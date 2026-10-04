@@ -30,10 +30,10 @@ const MORNING: OfficeLightingProfile = {
   background: 0x0a1822,
   hemisphereSky: 0xd7ebf2,
   hemisphereGround: 0x223039,
-  hemisphereIntensity: 2.05,
+  hemisphereIntensity: 2.1,
   keyColor: 0xf7cfa7,
-  keyIntensity: 2.38,
-  exposure: 1.12,
+  keyIntensity: 2.48,
+  exposure: 1.13,
 }
 
 const DAY: OfficeLightingProfile = {
@@ -42,10 +42,10 @@ const DAY: OfficeLightingProfile = {
   background: 0x0b1b25,
   hemisphereSky: 0xe0f1f6,
   hemisphereGround: 0x263640,
-  hemisphereIntensity: 2.25,
+  hemisphereIntensity: 2.28,
   keyColor: 0xffe4bf,
-  keyIntensity: 2.68,
-  exposure: 1.16,
+  keyIntensity: 2.72,
+  exposure: 1.17,
 }
 
 const EVENING: OfficeLightingProfile = {
@@ -54,10 +54,10 @@ const EVENING: OfficeLightingProfile = {
   background: 0x0a151e,
   hemisphereSky: 0xc0d3dc,
   hemisphereGround: 0x26231f,
-  hemisphereIntensity: 1.86,
+  hemisphereIntensity: 1.94,
   keyColor: 0xe6b37f,
-  keyIntensity: 2.08,
-  exposure: 1.08,
+  keyIntensity: 2.18,
+  exposure: 1.1,
 }
 
 const NIGHT: OfficeLightingProfile = {
@@ -66,10 +66,10 @@ const NIGHT: OfficeLightingProfile = {
   background: 0x07121a,
   hemisphereSky: 0xa6c5d6,
   hemisphereGround: 0x17232a,
-  hemisphereIntensity: 1.68,
+  hemisphereIntensity: 1.82,
   keyColor: 0xa9c8d9,
-  keyIntensity: 1.68,
-  exposure: 1.03,
+  keyIntensity: 1.86,
+  exposure: 1.08,
 }
 
 const FLOOR_PRACTICALS: Record<
@@ -139,7 +139,14 @@ export function officePracticalLights(
   floor: OfficeFloorKey,
   lightingKey: OfficeLightingKey,
 ): readonly [OfficePracticalLight, OfficePracticalLight] {
-  const scale = lightingKey === 'day' ? 0.82 : lightingKey === 'morning' ? 0.9 : 1
+  const scale =
+    lightingKey === 'day'
+      ? 0.72
+      : lightingKey === 'morning'
+        ? 0.86
+        : lightingKey === 'evening'
+          ? 1.04
+          : 1.16
   const [warm, cool] = FLOOR_PRACTICALS[floor]
 
   return [
