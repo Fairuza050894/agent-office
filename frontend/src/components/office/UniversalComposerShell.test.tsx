@@ -141,4 +141,54 @@ describe('UniversalComposerShell Phase 19 structure', () => {
     expect(screen.getByLabelText('Composer intent')).toHaveValue('BRAINSTORM')
     expect(screen.getByLabelText('Composer executor')).toHaveValue(EXECUTOR_2.id)
   })
+
+  it('submits the default AUTO composer with Enter', () => {
+    const onSubmit = vi.fn()
+
+    render(
+      <UniversalComposerShell
+        projects={[PROJECT]}
+        selectedProjectId={PROJECT.id}
+        executors={[EXECUTOR]}
+        selectedExecutorId={EXECUTOR.id}
+        onSubmit={onSubmit}
+      />,
+    )
+
+    const input = screen.getByLabelText('Ask Agent Office')
+    fireEvent.change(input, {
+      target: { value: 'Polish the accepted Office experience.' },
+    })
+    fireEvent.keyDown(input, { key: 'Enter' })
+
+    expect(onSubmit).toHaveBeenCalledTimes(1)
+    expect(onSubmit).toHaveBeenCalledWith({
+      intent: 'AUTO',
+      instruction: 'Polish the accepted Office experience.',
+      executorId: EXECUTOR.id,
+    })
+  })
+
+  it('keeps Shift+Enter available for multiline instructions', () => {
+    const onSubmit = vi.fn()
+
+    render(
+      <UniversalComposerShell
+        projects={[PROJECT]}
+        selectedProjectId={PROJECT.id}
+        executors={[EXECUTOR]}
+        selectedExecutorId={EXECUTOR.id}
+        onSubmit={onSubmit}
+      />,
+    )
+
+    const input = screen.getByLabelText('Ask Agent Office')
+    fireEvent.change(input, {
+      target: { value: 'First outcome\nSecond constraint' },
+    })
+    fireEvent.keyDown(input, { key: 'Enter', shiftKey: true })
+
+    expect(onSubmit).not.toHaveBeenCalled()
+    expect(input).toHaveValue('First outcome\nSecond constraint')
+  })
 })
