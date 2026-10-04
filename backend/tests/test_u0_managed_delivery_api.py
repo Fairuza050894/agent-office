@@ -33,9 +33,7 @@ def test_approve_and_deliver_api_uses_real_git_repository(
     assert response.status_code == 200, response.text
     delivered = response.json()
     assert delivered["state"] == "DELIVERED"
-    assert delivered["delivered_branch"].startswith(
-        f"agent-office/{run['id']}/accepted-"
-    )
+    assert delivered["delivered_branch"].startswith(f"agent-office/{run['id']}/accepted-")
     assert len(delivered["delivered_commit"]) == 40
 
     repeated = harness.client.post(
