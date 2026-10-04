@@ -16,7 +16,7 @@ const SECTION_LABELS: Record<NavSection, string> = {
   CONTROL: 'Control',
 }
 
-const CORE_NAV_IDS = ['office', 'inbox', 'board', 'kpi'] as const
+const CORE_NAV_IDS = ['office', 'board', 'inbox', 'kpi', 'projects'] as const
 const CORE_NAV_ID_SET = new Set<string>(CORE_NAV_IDS)
 
 export function Navigation({
@@ -78,7 +78,7 @@ export function Navigation({
           )}
         </div>
 
-        <nav className="sidebar-nav" aria-label="Primary Navigation">
+        <nav className="sidebar-nav" aria-label="Mobile Navigation">
           <div className="nav-section">
             <div className="nav-section-title">Core</div>
             <ul className="nav-list">
@@ -90,7 +90,13 @@ export function Navigation({
                     activeClassName="active"
                     onClick={onClose}
                   >
-                    <span className="nav-label">{item.label}</span>
+                    <span className="nav-label">
+                      {item.label === 'Task Board'
+                        ? 'Board'
+                        : item.label === 'Project KPI'
+                          ? 'KPI'
+                          : item.label}
+                    </span>
                   </Link>
                 </li>
               ))}

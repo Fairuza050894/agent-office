@@ -6,6 +6,7 @@ import './styles/decision-center.css'
 import './styles/office-operating-experience.css'
 import './styles/product-cockpit.css'
 import './styles/rc1-premium-office.css'
+import './styles/target-ui-shell.css'
 
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { AppShell } from './layouts/AppShell'
