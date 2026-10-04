@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from '../router/useRouter'
 import { Navigation } from '../components/Navigation'
 import { Header } from '../components/Header'
@@ -22,48 +22,15 @@ import { ProjectKpiPage } from '../pages/ProjectKpiPage'
 import { DecisionCenterPage } from '../pages/DecisionCenterPage'
 import { TaskDecisionPage } from '../pages/TaskDecisionPage'
 
-const OFFICE_SIDEBAR_STORAGE_KEY = 'agent-office.office-sidebar-collapsed'
-
-function readOfficeSidebarCollapsed(): boolean {
-  if (typeof window === 'undefined') return false
-
-  try {
-    const stored = window.localStorage.getItem(OFFICE_SIDEBAR_STORAGE_KEY)
-    return stored === null ? true : stored === 'true'
-  } catch {
-    return true
-  }
-}
-
-function storeOfficeSidebarCollapsed(collapsed: boolean): void {
-  try {
-    window.localStorage.setItem(OFFICE_SIDEBAR_STORAGE_KEY, String(collapsed))
-  } catch {
-    // Local storage is a convenience only; navigation remains fully usable without it.
-  }
-}
-
 export function AppShell() {
   const { currentPath } = useRouter()
   const [isNavOpen, setIsNavOpen] = useState(false)
-  const [isOfficeSidebarCollapsed, setIsOfficeSidebarCollapsed] = useState(
-    readOfficeSidebarCollapsed,
-  )
   const isOfficeFocus =
     currentPath === '/office' || /^\/runs\/[^/]+\/office$/.test(currentPath)
-  const sidebarCollapsed = isOfficeFocus && isOfficeSidebarCollapsed
-
-  const toggleOfficeSidebar = () => {
-    setIsOfficeSidebarCollapsed((current) => {
-      const next = !current
-      storeOfficeSidebarCollapsed(next)
-      return next
-    })
-  }
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isNavOpen) {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isNavOpen) {
         setIsNavOpen(false)
       }
     }
@@ -139,17 +106,12 @@ export function AppShell() {
         Skip to main content
       </a>
 
-      <Navigation
-        isOpen={isNavOpen}
-        onClose={() => setIsNavOpen(false)}
-        isCollapsed={sidebarCollapsed}
-        onToggleCollapsed={isOfficeFocus ? toggleOfficeSidebar : undefined}
-      />
+      <Navigation isOpen={isNavOpen} onClose={() => setIsNavOpen(false)} />
 
       <div className="app-layout">
         <Header
           isNavOpen={isNavOpen}
-          onToggleNav={() => setIsNavOpen((prev) => !prev)}
+          onToggleNav={() => setIsNavOpen((previous) => !previous)}
         />
 
         <main id="main-content" className="app-main" tabIndex={-1}>
