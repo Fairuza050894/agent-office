@@ -4,10 +4,7 @@ import { CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js'
 
 import { officeAgentState } from '../officeProjection'
-import {
-  officeBehaviorLabel,
-  type OfficeBehaviorKey,
-} from './livingOffice'
+import { officeBehaviorLabel, type OfficeBehaviorKey } from './livingOffice'
 
 export type CharacterVariantKey = 'suit' | 'casual' | 'hoodie' | 'dress' | 'smart'
 
@@ -21,6 +18,9 @@ export interface OfficeCharacterSource {
   agent_profile_key: string
   status: string
   behavior?: OfficeBehaviorKey
+  truth?: 'PLANNING' | 'AMBIENT' | 'WORK'
+  taskTitle?: string
+  stageKey?: string
 }
 
 export interface CharacterAppearance {
@@ -242,6 +242,39 @@ export interface StationPlacement {
   yaw: number
 }
 
+export interface OfficeNameplateSource {
+  status: string
+  behavior?: OfficeBehaviorKey | null
+  taskTitle?: string | null
+  stageKey?: string | null
+}
+
+/**
+ * ponytail: behavior labels stay clip-neutral; richer WORK context (task/stage)
+ * enters the nameplate secondary line only when canonical fields exist.
+ */
+export function nameplateLabel(source: OfficeNameplateSource): string {
+  const normalized = source.status.toUpperCase()
+  const factual =
+    normalized === 'RUNNING' ||
+    normalized === 'WORKING' ||
+    normalized === 'STARTING' ||
+    normalized === 'WAITING' ||
+    normalized === 'WAITING_WORK' ||
+    normalized === 'BLOCKED' ||
+    normalized === 'FAILED'
+  if (factual && (source.taskTitle || source.stageKey)) {
+    const task = (source.taskTitle ?? '').trim().slice(0, 42)
+    const stage = (source.stageKey ?? '').trim().slice(0, 24)
+    const detail = [task, stage].filter((part) => part.length > 0).join(' · ')
+    if (detail.length > 0) {
+      return `${officeAgentState(source.status).label} · ${detail}`
+    }
+  }
+  if (source.behavior) return officeBehaviorLabel(source.behavior)
+  return officeAgentState(source.status).label
+}
+
 export interface RuntimeAgent {
   agentId: string
   name: string
@@ -258,6 +291,8 @@ export interface RuntimeAgent {
   targetYaw: number
   finalStatus: string
   currentStatus: string
+  sourceTaskTitle: string | null
+  sourceStageKey: string | null
   behavior: OfficeBehaviorKey | null
   moving: boolean
   pendingStatus: string | null
@@ -821,11 +856,10 @@ export function createCharacterRuntime(
 
   const { object: label, element: labelElement } = createNameplate(
     name,
-    agent.behavior
-      ? officeBehaviorLabel(agent.behavior)
-      : officeAgentState(agent.status).label,
+    nameplateLabel(agent),
     agent.agent_profile_key,
   )
+  labelElement.dataset.officeTruth = agent.truth ?? 'WORK'
   root.add(label)
 
   setInteractive(fallback, agent.id)
@@ -846,6 +880,8 @@ export function createCharacterRuntime(
     targetYaw: station.yaw,
     finalStatus: agent.status,
     currentStatus: agent.status,
+    sourceTaskTitle: agent.taskTitle ?? null,
+    sourceStageKey: agent.stageKey ?? null,
     behavior: agent.behavior ?? null,
     moving: false,
     pendingStatus: null,
@@ -880,9 +916,12 @@ export function setCharacterStatus(
 
   const secondary = runtime.labelElement.querySelector('span')
   if (secondary) {
-    secondary.textContent = runtime.behavior
-      ? officeBehaviorLabel(runtime.behavior)
-      : officeAgentState(status).label
+    secondary.textContent = nameplateLabel({
+      behavior: runtime.behavior,
+      status: runtime.currentStatus,
+      taskTitle: runtime.sourceTaskTitle,
+      stageKey: runtime.sourceStageKey,
+    })
   }
 
   const selected = runtime.labelElement.classList.contains('is-selected')
@@ -901,11 +940,37 @@ export function setCharacterBehavior(
   runtime.behavior = behavior
   const secondary = runtime.labelElement.querySelector('span')
   if (secondary) {
-    secondary.textContent = behavior
-      ? officeBehaviorLabel(behavior)
-      : officeAgentState(runtime.currentStatus).label
+    secondary.textContent = nameplateLabel({
+      behavior,
+      status: runtime.currentStatus,
+      taskTitle: runtime.sourceTaskTitle,
+      stageKey: runtime.sourceStageKey,
+    })
   }
   playRigged(runtime, true)
+}
+
+/**
+ * ponytail: WORK context follows the runtime; call when scene membership moves
+ * an agent across assignments so the nameplate never shows a stale task.
+ * Currently only the initial assignment context is wired through
+ * createCharacterRuntime; refresh is a one-liner when a caller owns it.
+ */
+export function setCharacterSourceContext(
+  runtime: RuntimeAgent,
+  source: { taskTitle?: string | null; stageKey?: string | null },
+): void {
+  runtime.sourceTaskTitle = source.taskTitle ?? null
+  runtime.sourceStageKey = source.stageKey ?? null
+  const secondary = runtime.labelElement.querySelector('span')
+  if (secondary) {
+    secondary.textContent = nameplateLabel({
+      behavior: runtime.behavior,
+      status: runtime.currentStatus,
+      taskTitle: runtime.sourceTaskTitle,
+      stageKey: runtime.sourceStageKey,
+    })
+  }
 }
 
 export function setCharacterSelected(

@@ -21,15 +21,15 @@ export function officeAgentState(status: string): OfficeState {
     case 'PLANNING':
       return { key: 'running', label: 'Planning' }
     case 'AVAILABLE':
-      return { key: 'completed', label: 'Available' }
+      return { key: 'completed', label: 'On standby' }
     case 'COFFEE_BREAK':
-      return { key: 'waiting', label: 'Coffee break' }
+      return { key: 'waiting', label: 'On break' }
     case 'LUNCH_BREAK':
-      return { key: 'waiting', label: 'Lunch break' }
+      return { key: 'waiting', label: 'On break' }
     case 'SOCIAL_BREAK':
-      return { key: 'waiting', label: 'Social break' }
+      return { key: 'waiting', label: 'On break' }
     case 'PRAYER_BREAK':
-      return { key: 'waiting', label: 'Prayer break' }
+      return { key: 'waiting', label: 'Quiet break' }
     case 'WAITING_USER':
       return { key: 'waiting', label: 'Waiting for you' }
     case 'WAITING':

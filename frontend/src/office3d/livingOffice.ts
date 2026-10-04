@@ -32,19 +32,17 @@ export function officePresenceStatusLabel(
     case 'WAITING_USER':
       return 'Waiting for you'
     case 'LUNCH_BREAK':
-      return 'Lunch break'
     case 'COFFEE_BREAK':
-      return 'Coffee break'
-    case 'PRAYER_BREAK':
-      return 'Prayer / quiet break'
     case 'SOCIAL_BREAK':
-      return 'Social break'
+      return 'On break'
+    case 'PRAYER_BREAK':
+      return 'Quiet break'
     case 'WORKING':
       return 'Working'
     case 'PLANNING':
       return 'Planning'
     case 'AVAILABLE':
-      return 'Available'
+      return 'On standby'
     case 'ARRIVING':
       return 'Arriving'
     case 'OFFLINE':
@@ -301,16 +299,16 @@ export const OFFICE_AMBIENT_ZONE_CAPACITY: Record<
 
 const OFFICE_BEHAVIOR_LABELS: Record<OfficeBehaviorKey, string> = {
   ARRIVAL: 'Arriving',
-  AVAILABLE: 'Available',
+  AVAILABLE: 'On standby',
   DESK_FOCUS: 'Focus',
-  PLANNING_MEETING: 'Planning',
+  PLANNING_MEETING: 'Planning session',
   WAITING_DECISION: 'Waiting for you',
   WORK_WAITING: 'Waiting',
-  COFFEE_CHAT: 'Coffee break',
-  LUNCH: 'Lunch break',
-  SOCIAL_CHAT: 'Social break',
-  GAME_BREAK: 'Game break',
-  PRAYER_QUIET: 'Prayer break',
+  COFFEE_CHAT: 'On break',
+  LUNCH: 'On break',
+  SOCIAL_CHAT: 'On break',
+  GAME_BREAK: 'On break',
+  PRAYER_QUIET: 'Quiet break',
   OFFLINE: 'Offline',
 }
 

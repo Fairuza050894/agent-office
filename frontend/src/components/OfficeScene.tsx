@@ -543,7 +543,10 @@ export function OfficeScene({
           <div className="office-member-inspector-head">
             <div>
               <strong>{selectedWorkspaceMember.name}</strong>
-              <span>{officeBehaviorLabel(selectedWorkspaceMember.behavior)}</span>
+              <span>
+                {selectedWorkspaceMember.truth} ·{' '}
+                {officeBehaviorLabel(selectedWorkspaceMember.behavior)}
+              </span>
             </div>
             <button
               type="button"
@@ -558,6 +561,20 @@ export function OfficeScene({
               <dt>Role</dt>
               <dd>{selectedWorkspaceMember.agent_profile_key}</dd>
             </div>
+            {selectedWorkspaceMember.taskTitle ||
+            selectedWorkspaceMember.stageKey ? (
+              <div>
+                <dt>Assignment</dt>
+                <dd>
+                  {[
+                    selectedWorkspaceMember.taskTitle,
+                    selectedWorkspaceMember.stageKey,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </dd>
+              </div>
+            ) : null}
             <div>
               <dt>Location</dt>
               <dd>

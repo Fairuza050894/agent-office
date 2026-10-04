@@ -210,7 +210,7 @@ describe('OfficeScene workspace presence', () => {
     })
 
     expect(inspector).toHaveTextContent('Backend Engineer')
-    expect(inspector).toHaveTextContent('Game break')
+    expect(inspector).toHaveTextContent('On break')
     expect(inspector).toHaveTextContent('Commons · game corner')
     expect(inspector).toHaveTextContent('Ambient presentation')
     expect(
