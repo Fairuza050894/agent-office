@@ -43,6 +43,10 @@ function shortId(value: string): string {
   return value.slice(0, 8)
 }
 
+function projectArray(value: unknown): Project[] {
+  return Array.isArray(value) ? (value as Project[]) : []
+}
+
 export function Header({
   onToggleNav,
   isNavOpen,
@@ -95,23 +99,6 @@ export function Header({
   }, [])
 
   useEffect(() => {
-    let active = true
-
-    api
-      .listProjects()
-      .then((loaded) => {
-        if (active) setProjects(loaded)
-      })
-      .catch(() => {
-        if (active) setProjects([])
-      })
-
-    return () => {
-      active = false
-    }
-  }, [])
-
-  useEffect(() => {
     if (initialStatus !== undefined) {
       return
     }
@@ -158,7 +145,16 @@ export function Header({
 
     const load = (async () => {
       const loadedProjects =
-        projects.length > 0 ? projects : await api.listProjects().catch(() => [])
+        projects.length > 0
+          ? projects
+          : await api
+              .listProjects()
+              .then(projectArray)
+              .catch(() => [] as Project[])
+      if (projects.length === 0 && loadedProjects.length > 0) {
+        setProjects(loadedProjects)
+      }
+
       const projectName = new Map(
         loadedProjects.map((project) => [project.id, project.name]),
       )
@@ -275,6 +271,16 @@ export function Header({
 
   const createTask = (projectId: string, data: CreateTaskRequest) =>
     api.createTask(projectId, data)
+
+  const openNewTask = () => {
+    setIsTaskModalOpen(true)
+    if (projects.length > 0) return
+
+    void api
+      .listProjects()
+      .then((loaded) => setProjects(projectArray(loaded)))
+      .catch(() => setProjects([]))
+  }
 
   const closeSearch = () => {
     setQuery('')
@@ -396,8 +402,7 @@ export function Header({
           <button
             type="button"
             className="btn btn-primary target-new-task"
-            onClick={() => setIsTaskModalOpen(true)}
-            disabled={projects.filter((project) => project.status === 'ACTIVE').length === 0}
+            onClick={openNewTask}
           >
             + New Task
           </button>
@@ -414,6 +419,11 @@ export function Header({
           >
             <span className={`status-dot ${status}`} aria-hidden="true" />
             <span className="sr-only">{statusText}</span>
+            <span className="sr-only">
+              {checkedAgeSeconds === null
+                ? 'Not checked yet'
+                : `checked ${checkedAgeSeconds}s ago`}
+            </span>
             {status === 'disconnected' && (
               <button
                 type="button"
