@@ -27,12 +27,12 @@ export interface OfficeCameraView {
 }
 
 /**
- * RC1 premium camera policy.
+ * RC1 cinematic camera policy.
  *
- * The overview presets intentionally move closer than the legacy diorama angle
- * so people, furniture and command-room surfaces read as product UI rather than
- * miniature decoration. Semantic close views preserve deterministic navigation
- * while building stronger foreground / midground / background depth.
+ * Presets stay deterministic and bounded, but sit lower and closer than the
+ * earlier premium pass so people and room identity read as an operating space
+ * rather than a miniature diorama. Every view preserves a useful foreground,
+ * midground and architectural background without enabling free orbit or pan.
  */
 const FLOOR_CAMERA_VIEWS: Record<
   OfficeFloorKey,
@@ -43,22 +43,22 @@ const FLOOR_CAMERA_VIEWS: Record<
       key: 'overview',
       label: 'Overview',
       shortcut: '1',
-      position: [8.8, 5.1, 10.2],
-      target: [0, 1.05, 1.3],
+      position: [8.2, 4.65, 9.35],
+      target: [-0.1, 1.02, 1.35],
     },
     {
       key: 'primary',
       label: 'Lounge',
       shortcut: '2',
-      position: [6.8, 4.35, 7.5],
-      target: [-3.7, 1.0, 2.9],
+      position: [6.45, 3.95, 7.05],
+      target: [-3.55, 1.02, 3.05],
     },
     {
       key: 'secondary',
       label: 'Pantry',
       shortcut: '3',
-      position: [9.0, 4.25, 2.9],
-      target: [5.45, 1.0, -3.75],
+      position: [8.25, 3.95, 2.65],
+      target: [5.25, 1.0, -3.65],
     },
   ],
   build: [
@@ -66,22 +66,22 @@ const FLOOR_CAMERA_VIEWS: Record<
       key: 'overview',
       label: 'Overview',
       shortcut: '1',
-      position: [8.7, 5.0, 9.8],
-      target: [0.3, 1.05, 1.0],
+      position: [8.05, 4.6, 9.15],
+      target: [0.35, 1.0, 1.15],
     },
     {
       key: 'primary',
       label: 'Engineering',
       shortcut: '2',
-      position: [7.2, 4.25, 7.6],
-      target: [0.4, 1.02, 1.55],
+      position: [6.65, 3.9, 7.0],
+      target: [0.45, 1.0, 1.6],
     },
     {
       key: 'secondary',
       label: 'QA / Review',
       shortcut: '3',
-      position: [1.7, 4.2, 5.9],
-      target: [-5.4, 0.98, -2.8],
+      position: [1.55, 3.95, 5.75],
+      target: [-5.25, 1.0, -2.7],
     },
   ],
   strategy: [
@@ -89,22 +89,22 @@ const FLOOR_CAMERA_VIEWS: Record<
       key: 'overview',
       label: 'Overview',
       shortcut: '1',
-      position: [8.9, 5.1, 10.0],
-      target: [0, 1.05, 0.9],
+      position: [8.15, 4.65, 9.2],
+      target: [0, 1.02, 0.95],
     },
     {
       key: 'primary',
       label: 'Planning',
       shortcut: '2',
-      position: [6.9, 4.3, 7.5],
-      target: [0.1, 1.05, 0.65],
+      position: [6.45, 3.95, 6.95],
+      target: [0.1, 1.02, 0.7],
     },
     {
       key: 'secondary',
       label: 'Meeting',
       shortcut: '3',
-      position: [1.3, 4.2, 2.8],
-      target: [-6.2, 1.0, -3.55],
+      position: [1.25, 3.95, 2.65],
+      target: [-6.0, 1.0, -3.45],
     },
   ],
 }
