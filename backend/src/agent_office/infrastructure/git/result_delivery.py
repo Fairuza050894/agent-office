@@ -74,7 +74,13 @@ class GitManagedResultDelivery:
             raise ResultDeliveryError("Accepted delivery has no resolvable commit")
 
         accepted_ref = f"refs/heads/{accepted_branch}"
-        existing = self._run(path, "show-ref", "--hash", "--verify", accepted_ref)
+        existing = self._run(
+            path,
+            "rev-parse",
+            "--verify",
+            "--quiet",
+            f"{accepted_ref}^{{commit}}",
+        )
         if existing.returncode == 0:
             if existing.stdout.strip() != commit:
                 raise ResultDeliveryError(
