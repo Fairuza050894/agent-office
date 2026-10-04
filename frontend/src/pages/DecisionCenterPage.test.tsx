@@ -1,7 +1,15 @@
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import type { Project, ResultReview, Run, Task } from '../api'
+import type {
+  ComposerThread,
+  Project,
+  RequirementCandidate,
+  ResultReview,
+  Run,
+  Task,
+  TeamProposal,
+} from '../api'
 import { Router } from '../router/Router'
 import { DecisionCenterPage } from './DecisionCenterPage'
 
@@ -66,6 +74,49 @@ const REVIEW: ResultReview = {
   can_request_changes: true,
 }
 
+const THREAD: ComposerThread = {
+  id: '55555555-5555-4555-8555-555555555555',
+  project_id: PROJECT.id,
+  requested_intent: 'AUTO',
+  resolved_intent: 'PLAN',
+  status: 'ACTIVE',
+  title: 'Plan delivery',
+  timezone: 'Asia/Jakarta',
+  executor_id: null,
+  workflow_id: null,
+  created_at: '2026-10-03T04:00:00Z',
+  updated_at: '2026-10-03T04:00:00Z',
+  completed_at: null,
+}
+
+const REQUIREMENT: RequirementCandidate = {
+  id: '66666666-6666-4666-8666-666666666666',
+  thread_id: THREAD.id,
+  project_id: PROJECT.id,
+  title: 'Require verification evidence',
+  problem: 'Delivery needs evidence.',
+  requirement: 'Require recorded verification evidence before acceptance.',
+  rationale: 'Keep acceptance factual.',
+  acceptance_hint: null,
+  source_roles: ['tech-lead'],
+  status: 'PROPOSED',
+  created_at: '2026-10-03T05:00:00Z',
+  updated_at: '2026-10-03T05:00:00Z',
+  approved_at: null,
+  decided_at: null,
+}
+
+const TEAM: TeamProposal = {
+  id: '77777777-7777-4777-8777-777777777777',
+  thread_id: THREAD.id,
+  phase: 'REVIEW',
+  status: 'PROPOSED',
+  rationale_summary: 'Add a reviewer for the verification gate.',
+  created_at: '2026-10-03T05:30:00Z',
+  decided_at: null,
+  members: [],
+}
+
 function response(body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status: 200,
@@ -73,7 +124,7 @@ function response(body: unknown): Response {
   })
 }
 
-function installFetch(): void {
+function installFetch({ planning = false }: { planning?: boolean } = {}): void {
   vi.stubGlobal(
     'fetch',
     vi.fn((input: RequestInfo | URL) => {
@@ -84,14 +135,18 @@ function installFetch(): void {
             ? input.toString()
             : input.url
       if (url === '/api/projects') return Promise.resolve(response([PROJECT]))
-      if (url === `/api/projects/${PROJECT.id}/tasks`) {
-        return Promise.resolve(response([TASK]))
+      if (url === `/api/projects/${PROJECT.id}/tasks`) return Promise.resolve(response([TASK]))
+      if (url === `/api/tasks/${TASK.id}/runs`) return Promise.resolve(response([RUN]))
+      if (url === `/api/runs/${RUN.id}/result-review`) return Promise.resolve(response(REVIEW))
+      if (url === `/api/runs/${RUN.id}/agents`) return Promise.resolve(response([]))
+      if (url === `/api/projects/${PROJECT.id}/composer/threads`) {
+        return Promise.resolve(response(planning ? [THREAD] : []))
       }
-      if (url === `/api/tasks/${TASK.id}/runs`) {
-        return Promise.resolve(response([RUN]))
+      if (url === `/api/composer/threads/${THREAD.id}/requirements`) {
+        return Promise.resolve(response(planning ? [REQUIREMENT] : []))
       }
-      if (url === `/api/runs/${RUN.id}/result-review`) {
-        return Promise.resolve(response(REVIEW))
+      if (url === `/api/composer/threads/${THREAD.id}/team-proposals`) {
+        return Promise.resolve(response(planning ? [TEAM] : []))
       }
       throw new Error(`Unexpected request: ${url}`)
     }),
@@ -115,13 +170,33 @@ describe('DecisionCenterPage', () => {
     expect(await screen.findByText('Close delivery loop')).toBeInTheDocument()
     expect(screen.getByText('Review and accept the completed result')).toBeInTheDocument()
     expect(screen.getByText('Needs you')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Open Task decision' })).toHaveAttribute(
+    expect(screen.getByText('0 AgentRuns')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Open decision' })).toHaveAttribute(
       'href',
       `/tasks/${TASK.id}`,
     )
   })
 
-  it('derives Needs you from canonical state and exposes no draggable cards', async () => {
+  it('projects proposed requirements and teams into Approvals without inventing activity', async () => {
+    installFetch({ planning: true })
+    render(
+      <Router initialPath="/inbox">
+        <DecisionCenterPage mode="inbox" />
+      </Router>,
+    )
+
+    expect(await screen.findByText('Require verification evidence')).toBeInTheDocument()
+    expect(screen.getByText('Review team proposal')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Approvals' }))
+
+    expect(screen.queryByText('Close delivery loop')).not.toBeInTheDocument()
+    expect(screen.getByText('Require verification evidence')).toBeInTheDocument()
+    expect(screen.getByText('Review team proposal')).toBeInTheDocument()
+    expect(screen.queryByText(/mark all read/i)).not.toBeInTheDocument()
+  })
+
+  it('derives Needs you from canonical state and exposes read-only board filters', async () => {
     installFetch()
     render(
       <Router initialPath="/board">
@@ -135,7 +210,19 @@ describe('DecisionCenterPage', () => {
       .closest('section')
     expect(needsYou).not.toBeNull()
     expect(within(needsYou as HTMLElement).getByText('Close delivery loop')).toBeInTheDocument()
-    expect(screen.getByText(/cards cannot be dragged/i)).toBeInTheDocument()
     expect(board.querySelector('[draggable="true"]')).toBeNull()
+
+    fireEvent.change(screen.getByLabelText('Filter board by status'), {
+      target: { value: 'Accepted' },
+    })
+    expect(within(needsYou as HTMLElement).queryByText('Close delivery loop')).not.toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('Filter board by status'), {
+      target: { value: 'all' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('Task, Run, project...'), {
+      target: { value: 'no-match' },
+    })
+    expect(screen.getByText('0 tasks')).toBeInTheDocument()
   })
 })
