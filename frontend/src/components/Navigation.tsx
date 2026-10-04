@@ -47,7 +47,7 @@ export function Navigation({
       )}
       <aside
         className={`app-sidebar ${isOpen ? 'open' : ''} ${isCollapsed ? 'sidebar-collapsed' : ''}`}
-        aria-label="Navigation drawer"
+        aria-label="Sidebar Navigation"
       >
         <div className="sidebar-brand">
           <div className="brand-mark" aria-hidden="true">AO</div>
