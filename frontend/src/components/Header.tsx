@@ -66,6 +66,7 @@ export function Header({
   const [searchError, setSearchError] = useState<string | null>(null)
   const searchIndexRef = useRef<SearchResult[] | null>(null)
   const searchLoadRef = useRef<Promise<SearchResult[]> | null>(null)
+  const searchSequenceRef = useRef(0)
 
   const primaryItems = useMemo(
     () =>
@@ -224,39 +225,6 @@ export function Header({
     }
   }, [projects])
 
-  useEffect(() => {
-    const normalized = query.trim().toLowerCase()
-    if (normalized.length < 2) {
-      setSearchResults([])
-      setSearchError(null)
-      return
-    }
-
-    let active = true
-    setIsSearchLoading(true)
-    setSearchError(null)
-
-    void buildSearchIndex()
-      .then((index) => {
-        if (!active) return
-        setSearchResults(
-          index.filter((item) => item.searchText.includes(normalized)).slice(0, 8),
-        )
-      })
-      .catch(() => {
-        if (!active) return
-        setSearchResults([])
-        setSearchError('Search data is temporarily unavailable.')
-      })
-      .finally(() => {
-        if (active) setIsSearchLoading(false)
-      })
-
-    return () => {
-      active = false
-    }
-  }, [buildSearchIndex, query])
-
   const checkedAgeSeconds =
     lastCheckedAt === null
       ? null
@@ -283,9 +251,45 @@ export function Header({
   }
 
   const closeSearch = () => {
+    searchSequenceRef.current += 1
     setQuery('')
     setSearchResults([])
     setSearchError(null)
+    setIsSearchLoading(false)
+  }
+
+  const handleSearchChange = (value: string) => {
+    setQuery(value)
+    const normalized = value.trim().toLowerCase()
+    const sequence = searchSequenceRef.current + 1
+    searchSequenceRef.current = sequence
+
+    if (normalized.length < 2) {
+      setSearchResults([])
+      setSearchError(null)
+      setIsSearchLoading(false)
+      return
+    }
+
+    setIsSearchLoading(true)
+    setSearchError(null)
+    void buildSearchIndex()
+      .then((index) => {
+        if (searchSequenceRef.current !== sequence) return
+        setSearchResults(
+          index.filter((item) => item.searchText.includes(normalized)).slice(0, 8),
+        )
+      })
+      .catch(() => {
+        if (searchSequenceRef.current !== sequence) return
+        setSearchResults([])
+        setSearchError('Search data is temporarily unavailable.')
+      })
+      .finally(() => {
+        if (searchSequenceRef.current === sequence) {
+          setIsSearchLoading(false)
+        }
+      })
   }
 
   return (
@@ -358,7 +362,7 @@ export function Header({
               placeholder="Search tasks, runs, agents…"
               aria-expanded={query.trim().length >= 2}
               aria-controls="global-target-search-results"
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={(event) => handleSearchChange(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === 'Escape') closeSearch()
               }}
