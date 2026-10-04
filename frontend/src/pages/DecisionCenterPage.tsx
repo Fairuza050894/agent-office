@@ -105,7 +105,7 @@ function proposalTitle(proposal: TeamProposal): string {
 }
 
 async function loadApprovals(project: Project): Promise<PlanningApproval[]> {
-  let threads: ComposerThread[] = []
+  let threads: ComposerThread[]
   try {
     threads = await api.listProjectComposerThreads(project.id)
   } catch {
