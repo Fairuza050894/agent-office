@@ -298,7 +298,7 @@ export function Header({
             <span className="nav-toggle-bar" />
           </button>
 
-          <Link href="/office" className="target-brand" aria-label="Agent Office home">
+          <Link href="/office" className="target-brand">
             <span className="target-brand-mark" aria-hidden="true">AO</span>
             <strong>Agent Office</strong>
           </Link>
@@ -329,6 +329,7 @@ export function Header({
                   href={item.path}
                   className="target-more-link"
                   activeClassName="active"
+                  aria-label={item.label}
                 >
                   <strong>{item.label}</strong>
                   <span>{item.description}</span>
