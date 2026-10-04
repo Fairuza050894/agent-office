@@ -1,7 +1,7 @@
 /* Target UI U1 shell. Scoped to navigation/search framing only. */
 
 .app-shell {
-  display: block;
+  display: flex;
   min-height: 100vh;
 }
 
