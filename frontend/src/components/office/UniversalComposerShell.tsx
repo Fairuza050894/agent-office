@@ -93,9 +93,6 @@ export function UniversalComposerShell({
   const selectedProjectName =
     projects.find((project) => project.id === selectedProjectId)?.name ??
     'No Project'
-  const selectedExecutorName =
-    executors.find((executor) => executor.id === executorId)?.name ??
-    (executorId ? 'Configured executor' : 'Auto-resolve')
 
   const canSend =
     Boolean(onSubmit) &&
@@ -154,9 +151,7 @@ export function UniversalComposerShell({
         <summary>
           <span>Context</span>
           <strong>{selectedProjectName}</strong>
-          <span>{activeThread ? `Thread ${activeThread.id.slice(0, 8)}` : 'New thread'}</span>
-          <span>{intent === 'AUTO' ? 'Auto orchestration' : intent}</span>
-          <span>{selectedExecutorName}</span>
+          <span>{intent === 'AUTO' ? 'AUTO' : intent}</span>
         </summary>
         <div className="office-composer-context-controls">
           <select
@@ -261,14 +256,23 @@ export function UniversalComposerShell({
             setInstructionDraft({ contextKey, value: event.target.value })
           }
           onKeyDown={(event) => {
-            if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
-              event.preventDefault()
-              void submit()
+            if (
+              event.key !== 'Enter' ||
+              event.shiftKey ||
+              event.repeat ||
+              event.nativeEvent.isComposing
+            ) {
+              return
             }
+            event.preventDefault()
+            if (canSend) void submit()
           }}
-          placeholder="Describe the outcome you want. Agent Office will plan the team, workflow and execution context."
+          placeholder="What do you want Agent Office to accomplish?"
         />
         <div className="office-composer-actions">
+          <span className="office-composer-key-hint">
+            Enter to send · Shift+Enter for newline
+          </span>
           <button
             type="button"
             className="btn btn-primary btn-sm"
