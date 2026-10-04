@@ -44,6 +44,16 @@ import { officeLightingForHour } from '../office3d/lighting'
 import type { OfficeModeKey } from '../office3d/officeWorld'
 import { mountPremiumOfficeArchitecture } from '../office3d/premiumEnvironment'
 import {
+  OFFICE_QUALITY_SAMPLE_FRAMES,
+  OFFICE_QUALITY_WARMUP_FRAMES,
+  nextOfficeRenderQualityTier,
+  officeAdaptiveQualityEnabled,
+  officeFrameWindowSummary,
+  officeRenderQualityProfile,
+  officeTargetDpr,
+  type OfficeRenderQualityTier,
+} from '../office3d/renderQuality'
+import {
   officeReplayPlan,
   type OfficeReplayRange,
 } from '../office3d/replay'
@@ -325,6 +335,74 @@ function RendererEvidence({
 
   useFrame(() => {
     publishRendererInfo(gl, scene, runtimes.current)
+  })
+
+  return null
+}
+
+function AdaptiveOfficeQuality({ enabled }: { enabled: boolean }) {
+  const { gl, scene, setDpr } = useThree()
+  const tierRef = useRef<OfficeRenderQualityTier>('premium')
+  const warmupFramesRef = useRef(0)
+  const frameTimesRef = useRef<number[]>([])
+
+  const applyTier = useCallback(
+    (tier: OfficeRenderQualityTier) => {
+      const profile = officeRenderQualityProfile(tier)
+      const devicePixelRatio =
+        typeof window === 'undefined' ? 1 : window.devicePixelRatio
+
+      tierRef.current = tier
+      frameTimesRef.current = []
+      warmupFramesRef.current = 0
+      setDpr(officeTargetDpr(devicePixelRatio, tier))
+      gl.domElement.dataset.officeQuality = tier
+
+      scene.traverse((object) => {
+        if (!(object instanceof THREE.DirectionalLight) || !object.castShadow) {
+          return
+        }
+        object.shadow.mapSize.set(
+          profile.shadowMapSize,
+          profile.shadowMapSize,
+        )
+        object.shadow.map?.setSize(
+          profile.shadowMapSize,
+          profile.shadowMapSize,
+        )
+      })
+    },
+    [gl, scene, setDpr],
+  )
+
+  useEffect(() => {
+    applyTier('premium')
+    return () => {
+      delete gl.domElement.dataset.officeQuality
+    }
+  }, [applyTier, gl])
+
+  useFrame((_state, frameDelta) => {
+    if (!enabled) return
+    if (
+      typeof document !== 'undefined' &&
+      document.visibilityState === 'hidden'
+    ) {
+      return
+    }
+
+    if (warmupFramesRef.current < OFFICE_QUALITY_WARMUP_FRAMES) {
+      warmupFramesRef.current += 1
+      return
+    }
+
+    frameTimesRef.current.push(frameDelta * 1000)
+    if (frameTimesRef.current.length < OFFICE_QUALITY_SAMPLE_FRAMES) return
+
+    const summary = officeFrameWindowSummary(frameTimesRef.current)
+    frameTimesRef.current = []
+    const nextTier = nextOfficeRenderQualityTier(tierRef.current, summary)
+    if (nextTier !== tierRef.current) applyTier(nextTier)
   })
 
   return null
@@ -890,6 +968,9 @@ export function R3FOfficeScene(props: R3FOfficeSceneProps) {
   const preset = officeCameraView(props.floor, props.cameraView)
   const lighting = officeLightingForHour(props.officeHour)
   const label = scopeLabel(props.scope)
+  const adaptiveQualityEnabled =
+    typeof window !== 'undefined' &&
+    officeAdaptiveQualityEnabled(window.location.search)
 
   return (
     <div
@@ -934,6 +1015,7 @@ export function R3FOfficeScene(props: R3FOfficeSceneProps) {
           // The HTML roster remains the complete non-3D selection path.
         }}
       >
+        <AdaptiveOfficeQuality enabled={adaptiveQualityEnabled} />
         <SceneContents {...props} />
       </Canvas>
     </div>
