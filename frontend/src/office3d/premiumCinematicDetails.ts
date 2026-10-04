@@ -100,10 +100,12 @@ function buildShell(): readonly DetailSpec[] {
 }
 
 function buildGlow(): readonly DetailSpec[] {
-  const rackIndicators = [-4.15, -3.55, -1.4, -0.8].flatMap((z) => [
-    { position: [-8.43, 1.55, z], scale: [0.035, 0.14, 0.38] },
-    { position: [8.43, 1.55, z], scale: [0.035, 0.14, 0.38] },
-  ])
+  const rackIndicators: DetailSpec[] = [-4.15, -3.55, -1.4, -0.8].flatMap(
+    (z): DetailSpec[] => [
+      { position: [-8.43, 1.55, z], scale: [0.035, 0.14, 0.38] },
+      { position: [8.43, 1.55, z], scale: [0.035, 0.14, 0.38] },
+    ],
+  )
 
   return [
     ...rackIndicators,
