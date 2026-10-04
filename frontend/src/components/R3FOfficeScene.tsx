@@ -4,6 +4,7 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
   type MutableRefObject,
 } from 'react'
 import * as THREE from 'three'
@@ -43,6 +44,16 @@ import {
 import { officeLightingForHour } from '../office3d/lighting'
 import type { OfficeModeKey } from '../office3d/officeWorld'
 import { mountPremiumOfficeArchitecture } from '../office3d/premiumEnvironment'
+import {
+  OFFICE_QUALITY_SAMPLE_FRAMES,
+  OFFICE_QUALITY_WARMUP_FRAMES,
+  nextOfficeRenderQualityTier,
+  officeAdaptiveQualityEnabled,
+  officeFrameWindowSummary,
+  officeRenderQualityProfile,
+  officeTargetDpr,
+  type OfficeRenderQualityTier,
+} from '../office3d/renderQuality'
 import {
   officeReplayPlan,
   type OfficeReplayRange,
@@ -98,6 +109,16 @@ interface ReplayCameraFocus {
 interface SelectionCameraFocus {
   agentId: string
   until: number
+}
+
+interface AdaptiveOfficeQualityProps {
+  enabled: boolean
+  tier: OfficeRenderQualityTier
+  onTierChange: (tier: OfficeRenderQualityTier) => void
+}
+
+interface SceneContentsProps extends R3FOfficeSceneProps {
+  qualityTier: OfficeRenderQualityTier
 }
 
 type DioramaWindow = Window & {
@@ -330,6 +351,49 @@ function RendererEvidence({
   return null
 }
 
+function AdaptiveOfficeQuality({
+  enabled,
+  tier,
+  onTierChange,
+}: AdaptiveOfficeQualityProps) {
+  const { setDpr } = useThree()
+  const warmupFramesRef = useRef(0)
+  const frameTimesRef = useRef<number[]>([])
+
+  useEffect(() => {
+    const devicePixelRatio =
+      typeof window === 'undefined' ? 1 : window.devicePixelRatio
+    frameTimesRef.current = []
+    warmupFramesRef.current = 0
+    setDpr(officeTargetDpr(devicePixelRatio, tier))
+  }, [setDpr, tier])
+
+  useFrame((_state, frameDelta) => {
+    if (!enabled) return
+    if (
+      typeof document !== 'undefined' &&
+      document.visibilityState === 'hidden'
+    ) {
+      return
+    }
+
+    if (warmupFramesRef.current < OFFICE_QUALITY_WARMUP_FRAMES) {
+      warmupFramesRef.current += 1
+      return
+    }
+
+    frameTimesRef.current.push(frameDelta * 1000)
+    if (frameTimesRef.current.length < OFFICE_QUALITY_SAMPLE_FRAMES) return
+
+    const summary = officeFrameWindowSummary(frameTimesRef.current)
+    frameTimesRef.current = []
+    const nextTier = nextOfficeRenderQualityTier(tier, summary)
+    if (nextTier !== tier) onTierChange(nextTier)
+  })
+
+  return null
+}
+
 function stationForMember(
   member: OfficeSceneMember,
   memberIndex: number,
@@ -396,7 +460,8 @@ function SceneContents({
   officeMode,
   dioramaPilot,
   labelsVisible,
-}: R3FOfficeSceneProps) {
+  qualityTier,
+}: SceneContentsProps) {
   const { invalidate } = useThree()
   const environment = useMemo(() => new THREE.Group(), [])
   const agentLayer = useMemo(() => new THREE.Group(), [])
@@ -442,6 +507,7 @@ function SceneContents({
     [scope, stages],
   )
   const lighting = officeLightingForHour(officeHour)
+  const renderQuality = officeRenderQualityProfile(qualityTier)
 
   const refreshInteractionPresentation = useCallback(() => {
     runtimesRef.current.forEach((runtime) => {
@@ -849,8 +915,8 @@ function SceneContents({
         intensity={lighting.keyIntensity}
         position={[-7, 15, 10]}
         castShadow
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
+        shadow-mapSize-width={renderQuality.shadowMapSize}
+        shadow-mapSize-height={renderQuality.shadowMapSize}
         shadow-camera-left={-16}
         shadow-camera-right={16}
         shadow-camera-top={14}
@@ -890,12 +956,18 @@ export function R3FOfficeScene(props: R3FOfficeSceneProps) {
   const preset = officeCameraView(props.floor, props.cameraView)
   const lighting = officeLightingForHour(props.officeHour)
   const label = scopeLabel(props.scope)
+  const [qualityTier, setQualityTier] =
+    useState<OfficeRenderQualityTier>('premium')
+  const adaptiveQualityEnabled =
+    typeof window !== 'undefined' &&
+    officeAdaptiveQualityEnabled(window.location.search)
 
   return (
     <div
       className="office-three-host office-three-host-r3f"
       data-office-renderer="r3f"
       data-office-scope={props.scope}
+      data-office-quality={qualityTier}
       data-office-visual-evolution="phase-14"
     >
       <Canvas
@@ -934,7 +1006,12 @@ export function R3FOfficeScene(props: R3FOfficeSceneProps) {
           // The HTML roster remains the complete non-3D selection path.
         }}
       >
-        <SceneContents {...props} />
+        <AdaptiveOfficeQuality
+          enabled={adaptiveQualityEnabled}
+          tier={qualityTier}
+          onTierChange={setQualityTier}
+        />
+        <SceneContents {...props} qualityTier={qualityTier} />
       </Canvas>
     </div>
   )
