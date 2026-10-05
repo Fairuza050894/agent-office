@@ -158,17 +158,18 @@ Client-only, no search backend/index.
 
 ## U7 — Office HUD / focus interaction
 
-- [ ] zone navigator: Reception, Engineering, QA, Strategy, Focus Rooms,
-  Game Room, Pantry, Lounge;
-- [ ] no Design zone until a real zone exists;
-- [ ] zone click only moves/focuses camera;
-- [ ] office clock + day/night mode, no weather;
-- [ ] active AgentRun counts by canonical status, no fake idle count;
-- [ ] recent redacted AgentEvent activity;
-- [ ] executor health and latest managed delivery only for System Status;
-- [ ] focused Task/Run card with `N of M stages` instead of percentage;
-- [ ] Open Task / Watch Run only when canonical targets exist;
-- [ ] only render focus-card tabs backed by data.
+- [x] zone navigator: Reception, Engineering, QA, Planning (= Strategy floor,
+  labeled Planning to avoid duplicating the L3 Strategy floor chip),
+  Focus Rooms, Game Room, Pantry, Lounge;
+- [x] no Design zone until a real zone exists;
+- [x] zone click only moves/focuses camera;
+- [x] office clock + day/night mode, no weather;
+- [x] active AgentRun counts by canonical status, no fake idle count;
+- [x] recent redacted AgentEvent activity;
+- [x] executor health and latest managed delivery only for System Status;
+- [x] focused Task/Run card with `N of M stages` instead of percentage;
+- [x] Open Task / Watch Run only when canonical targets exist;
+- [x] only render focus-card tabs backed by data.
 
 ## Visual regression program
 

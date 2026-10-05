@@ -150,7 +150,7 @@ function addCommonsFurniture(group: THREE.Group): void {
     group,
     'office-premium-refined-commons-cushions',
     roundedGeometry(0.2),
-    material(0x5e7890, { roughness: 0.96, metalness: 0 }),
+    material(palette.accentSoft, { roughness: 0.96, metalness: 0 }),
     [
       { position: [-6.0, 0.88, 3.43], scale: [0.52, 0.42, 0.18] },
       { position: [-4.8, 0.88, 3.43], scale: [0.52, 0.42, 0.18] },
@@ -177,7 +177,7 @@ function addBuildFurniture(group: THREE.Group): void {
     group,
     'office-premium-refined-build-consoles',
     roundedGeometry(0.1),
-    material(0x27343d, { metalness: 0.28, roughness: 0.42 }),
+    material(0xd8d3c8, { metalness: 0.12, roughness: 0.52 }),
     [
       { position: [-7.85, 0.7, -4.25], scale: [2.25, 1.2, 0.78] },
       { position: [-7.85, 0.7, -1.5], scale: [2.25, 1.2, 0.78] },
@@ -190,10 +190,10 @@ function addBuildFurniture(group: THREE.Group): void {
     group,
     'office-premium-refined-build-screen-glow',
     roundedGeometry(0.08),
-    material(0x0a2230, {
+    material(0xdcebf3, {
       emissive: palette.accentSoft,
-      emissiveIntensity: 0.62,
-      roughness: 0.2,
+      emissiveIntensity: 0.35,
+      roughness: 0.3,
     }),
     [
       { position: [-7.85, 1.22, -4.7], scale: [1.75, 0.78, 0.045] },

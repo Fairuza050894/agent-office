@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 import {
   api,
+  type AgentEvent,
   type AgentProfile,
   type AgentRun,
   type ComposerMessage,
@@ -14,12 +15,15 @@ import {
   type PlanningEvent,
   type Project,
   type RequirementCandidate,
+  type ResultReview,
   type Run,
   type RunStage,
   type Task,
   type TeamProposal,
 } from '../api'
 import { BottomOperationsDock } from '../components/office/BottomOperationsDock'
+import { OfficeHud } from '../components/office/OfficeHud'
+import { OfficeFocusCard } from '../components/office/OfficeFocusCard'
 import { ContextualOperationsRail } from '../components/office/ContextualOperationsRail'
 import { OfficeCommandRail } from '../components/office/OfficeCommandRail'
 import { AgentOfficeScopeSwitcher } from '../components/office/AgentOfficeScopeSwitcher'
@@ -129,6 +133,11 @@ export function OfficeWorkspacePage() {
   const [latestProjectRun, setLatestProjectRun] = useState<Run | null>(null)
   const [projectRuns, setProjectRuns] = useState<Run[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
+  const [latestRunEvents, setLatestRunEvents] = useState<AgentEvent[]>([])
+  const [latestRunAgents, setLatestRunAgents] = useState<AgentRun[]>([])
+  const [latestRunStages, setLatestRunStages] = useState<RunStage[]>([])
+  const [latestRunReview, setLatestRunReview] = useState<ResultReview | null>(null)
+  const [latestRunReviewAvailable, setLatestRunReviewAvailable] = useState(false)
   const [workAssignments, setWorkAssignments] = useState<OfficeWorkAssignment[]>([])
   const [taskActionBusy, setTaskActionBusy] = useState(false)
   const [taskActionMessage, setTaskActionMessage] = useState<string | null>(null)
@@ -291,6 +300,11 @@ export function OfficeWorkspacePage() {
         setTasks(loadedTasks)
         setProjectRuns(allRuns)
         setWorkAssignments(assignments)
+        setLatestRunEvents([])
+        setLatestRunAgents([])
+        setLatestRunStages([])
+        setLatestRunReview(null)
+        setLatestRunReviewAvailable(false)
         const latest =
           allRuns
             .slice()
@@ -298,12 +312,47 @@ export function OfficeWorkspacePage() {
               right.updated_at.localeCompare(left.updated_at),
             )[0] ?? null
         setLatestProjectRun(latest)
+        if (latest) {
+          try {
+            const [eventPage, agentList, stageList, review] = await Promise.all([
+              api.getRunEvents(latest.id),
+              api.getRunAgents(latest.id),
+              api.getRunStages(latest.id),
+              api.getResultReview(latest.id),
+            ])
+            if (!active) return
+            setLatestRunEvents(
+              eventPage.events
+                .slice()
+                .sort((left, right) =>
+                  right.occurred_at.localeCompare(left.occurred_at),
+                )
+                .slice(0, 5),
+            )
+            setLatestRunAgents(agentList)
+            setLatestRunStages(stageList)
+            setLatestRunReview(review)
+            setLatestRunReviewAvailable(true)
+          } catch {
+            if (!active) return
+            setLatestRunEvents([])
+            setLatestRunAgents([])
+            setLatestRunStages([])
+            setLatestRunReview(null)
+            setLatestRunReviewAvailable(false)
+          }
+        }
       } catch {
         if (active) {
           setTasks([])
           setProjectRuns([])
           setWorkAssignments([])
           setLatestProjectRun(null)
+          setLatestRunEvents([])
+          setLatestRunAgents([])
+          setLatestRunStages([])
+          setLatestRunReview(null)
+          setLatestRunReviewAvailable(false)
         }
       } finally {
         refreshing = false
@@ -932,6 +981,16 @@ export function OfficeWorkspacePage() {
         className={`office-workspace-scene office-context-layout ${contextCollapsed ? 'context-collapsed' : ''}`}
       >
         <div className="office-workspace-stage">
+          <OfficeHud
+            agents={latestRunAgents}
+            events={latestRunEvents}
+            executors={executors}
+            review={latestRunReview}
+            reviewAvailable={latestRunReviewAvailable}
+            taskId={latestProjectRun?.task_id ?? null}
+            runId={latestProjectRun?.id ?? null}
+            compact
+          />
           <OfficeRendererBoundary operationalHref="/overview">
             <OfficeScene
               stages={EMPTY_OFFICE_STAGES}
@@ -985,6 +1044,19 @@ export function OfficeWorkspacePage() {
           onToggleCollapsed={() => setContextCollapsed((current) => !current)}
           discussion={
             <div className="office-context-stack">
+              {latestProjectRun && (
+                <OfficeFocusCard
+                  taskId={latestProjectRun.task_id}
+                  taskTitle={
+                    tasks.find((task) => task.id === latestProjectRun.task_id)
+                      ?.title ?? null
+                  }
+                  run={latestProjectRun}
+                  stages={latestRunStages}
+                  agent={null}
+                  agentProfileName={null}
+                />
+              )}
               {selectedOfficeMember &&
                 selectedOfficeMember.truth === 'WORK' && (
                   <div className="office-context-callout">
