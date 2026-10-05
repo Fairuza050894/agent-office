@@ -976,7 +976,7 @@ export function R3FOfficeScene(props: R3FOfficeSceneProps) {
         gl={{
           antialias: true,
           alpha: false,
-          powerPreference: 'high-performance',
+          powerPreference: 'default',
           outputColorSpace: THREE.SRGBColorSpace,
           toneMapping: THREE.ACESFilmicToneMapping,
           toneMappingExposure: lighting.exposure,
