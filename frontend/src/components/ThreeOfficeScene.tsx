@@ -527,7 +527,7 @@ export function ThreeOfficeScene({
       renderer.outputColorSpace = THREE.SRGBColorSpace
       renderer.toneMapping = THREE.ACESFilmicToneMapping
       renderer.toneMappingExposure = 1.05
-      renderer.setClearColor(0x111820, 1)
+      renderer.setClearColor(0xcfdbe3, 1)
       renderer.domElement.className = 'office-three-canvas'
       renderer.domElement.setAttribute(
         'aria-label',
@@ -542,7 +542,7 @@ export function ThreeOfficeScene({
       host.appendChild(labels.domElement)
 
       const scene = new THREE.Scene()
-      scene.background = new THREE.Color(0x111820)
+      scene.background = new THREE.Color(0xcfdbe3)
 
       const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100)
       camera.position.set(13.65, 10.75, 15.2)

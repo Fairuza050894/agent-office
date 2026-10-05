@@ -1429,13 +1429,13 @@ function createReviewWall(parent: THREE.Group): void {
 
 function createWindowWall(parent: THREE.Group): void {
   const glass = new THREE.MeshStandardMaterial({
-    color: 0x315b78,
-    emissive: 0x10283c,
-    emissiveIntensity: 0.72,
-    roughness: 0.24,
-    metalness: 0.05,
+    color: 0xbcd6e4,
+    emissive: 0xdcecf5,
+    emissiveIntensity: 0.55,
+    roughness: 0.12,
+    metalness: 0.02,
     transparent: true,
-    opacity: 0.68,
+    opacity: 0.5,
   })
 
   for (let index = 0; index < 4; index += 1) {
@@ -1463,14 +1463,14 @@ function createWoodFloor(parent: THREE.Group): void {
     parent,
     [OFFICE_WIDTH, 0.16, OFFICE_DEPTH],
     [0, -0.04, 0],
-    0x6b4f3c,
+    0xc9a878,
   )
   floor.receiveShadow = true
 
   const lineMaterial = new THREE.LineBasicMaterial({
-    color: 0x4d382d,
+    color: 0xa8824f,
     transparent: true,
-    opacity: 0.38,
+    opacity: 0.3,
   })
   const vertices: number[] = []
 
@@ -1636,19 +1636,19 @@ const FLOOR_ACCENT: Record<
   { wall: number; accent: number; trim: number }
 > = {
   commons: {
-    wall: 0x4a5757,
-    accent: 0x536a5b,
-    trim: 0x8a6a4e,
+    wall: 0xe8e4da,
+    accent: 0x7ba05b,
+    trim: 0xa8824f,
   },
   build: {
-    wall: 0x46545f,
-    accent: 0x3d6172,
-    trim: 0x536f7d,
+    wall: 0xe6e3db,
+    accent: 0x4f7ba0,
+    trim: 0x8a9aa5,
   },
   strategy: {
-    wall: 0x4d515f,
-    accent: 0x62586f,
-    trim: 0x7c6754,
+    wall: 0xe9e5dc,
+    accent: 0x7a6a9b,
+    trim: 0xa07c4e,
   },
 }
 
@@ -1661,12 +1661,12 @@ function createLiftCore(
   lift.name = 'office-lift-core'
   lift.position.set(LIFT_CORE_X, 0, 0)
 
-  addBox(lift, [3.15, 2.75, 0.14], [0, 1.42, LIFT_FRAME_Z], 0x2d3942)
-  addBox(lift, [1.2, 2.2, 0.06], [-0.7, 1.12, -6.66], 0x56636b)
-  addBox(lift, [1.2, 2.2, 0.06], [0.7, 1.12, -6.66], 0x56636b)
-  addBox(lift, [0.05, 2.16, 0.075], [0, 1.12, -6.61], 0x26333b)
+  addBox(lift, [3.15, 2.75, 0.14], [0, 1.42, LIFT_FRAME_Z], 0xd8d3c8)
+  addBox(lift, [1.2, 2.2, 0.06], [-0.7, 1.12, -6.66], 0xb9c2c9)
+  addBox(lift, [1.2, 2.2, 0.06], [0.7, 1.12, -6.66], 0xb9c2c9)
+  addBox(lift, [0.05, 2.16, 0.075], [0, 1.12, -6.61], 0x8a949b)
 
-  addBox(lift, [0.72, 0.34, 0.08], [0, 2.66, -6.6], 0x17252e)
+  addBox(lift, [0.72, 0.34, 0.08], [0, 2.66, -6.6], 0xe8e2d5)
   for (let index = 0; index < 3; index += 1) {
     const active = index === floorIndex
     const lamp = addCylinder(
@@ -1691,7 +1691,7 @@ function createOfficeShell(
   environment: THREE.Group,
   floor: OfficeFloorKey,
 ): void {
-  addBox(environment, [20.5, 0.34, 14.5], [0, -0.22, 0], 0x111821)
+  addBox(environment, [20.5, 0.34, 14.5], [0, -0.22, 0], 0xb8b2a6)
   createWoodFloor(environment)
   const palette = FLOOR_ACCENT[floor]
   addBox(environment, [20, 3.2, 0.16], [0, 1.56, -6.98], palette.wall)

@@ -4789,3 +4789,197 @@ button.office-scope-link {
     max-height: 300px;
   }
 }
+
+/* U7 — Office HUD: zone navigator + status strip + focus card (honest values only) */
+
+.office-zone-navigator {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.office-zone-navigator-label,
+.office-hud-label {
+  color: #7790a0;
+  font-family: var(--ao-mono);
+  font-size: .45rem;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.office-zone-navigator-list {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.office-zone-navigator-list button {
+  padding: 3px 8px;
+  border: 1px solid #263b49;
+  border-radius: 4px;
+  background: rgba(11, 24, 33, .9);
+  color: #9db4c2;
+  font-size: .5rem;
+  cursor: pointer;
+}
+
+.office-zone-navigator-list button:hover,
+.office-zone-navigator-list button:focus-visible {
+  border-color: #406071;
+  color: #cfdee7;
+  outline: none;
+}
+
+.office-zone-navigator-list button.active {
+  border-color: #53c7f0;
+  color: #e1edf4;
+}
+
+.office-hud {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 1px solid #263b49;
+  border-radius: 5px;
+  background: rgba(11, 24, 33, .9);
+}
+
+.office-hud-strip {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.office-hud-block {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+  flex: 1 1 160px;
+}
+
+.office-hud-block small {
+  color: #718796;
+  font-size: .5rem;
+}
+
+.office-hud-counts {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  color: #cfdee7;
+  font-size: .55rem;
+}
+
+.office-hud-counts em {
+  font-style: normal;
+  padding: 1px 6px;
+  border: 1px solid #314a59;
+  border-radius: 3px;
+  background: #10212b;
+}
+
+.office-hud-counts a {
+  color: #83d8f2;
+  font-size: .55rem;
+}
+
+.office-hud-events {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.office-hud-events li {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 6px;
+  color: #cfdee7;
+  font-size: .52rem;
+}
+
+.office-hud-events time {
+  color: #718796;
+  font-family: var(--ao-mono);
+  font-size: .48rem;
+}
+
+.office-hud-events small {
+  color: #718796;
+}
+
+.office-focus-card {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid #263b49;
+  border-radius: 5px;
+  background: rgba(11, 24, 33, .9);
+}
+
+.office-focus-head {
+  display: grid;
+  gap: 2px;
+}
+
+.office-focus-head strong {
+  color: #dce8ee;
+  font-size: .62rem;
+}
+
+.office-focus-facts {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+}
+
+.office-focus-facts > div {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.office-focus-facts dt {
+  min-width: 64px;
+  color: #718796;
+  font-size: .48rem;
+}
+
+.office-focus-facts dd {
+  margin: 0;
+  color: #cfdee7;
+  font-size: .55rem;
+}
+
+.office-focus-links {
+  display: flex;
+  gap: 8px;
+}
+
+.office-focus-links a {
+  color: #83d8f2;
+  font-size: .55rem;
+}
+
+@media (max-width: 920px) {
+  .office-hud-strip {
+    gap: 8px;
+  }
+
+  .office-hud-block {
+    flex-basis: 100%;
+  }
+}

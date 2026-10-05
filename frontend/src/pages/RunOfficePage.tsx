@@ -11,6 +11,7 @@ import {
   type Executor,
   type Finding,
   type Project,
+  type ResultReview,
   type Run,
   type RunStage,
   type Task,
@@ -19,6 +20,8 @@ import {
 } from '../api'
 import { EmptyState } from '../components/EmptyState'
 import { BottomOperationsDock } from '../components/office/BottomOperationsDock'
+import { OfficeHud } from '../components/office/OfficeHud'
+import { OfficeFocusCard } from '../components/office/OfficeFocusCard'
 import { ContextualOperationsRail } from '../components/office/ContextualOperationsRail'
 import { OfficeCommandRail } from '../components/office/OfficeCommandRail'
 import { AgentOfficeScopeSwitcher } from '../components/office/AgentOfficeScopeSwitcher'
@@ -70,6 +73,8 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
   const [evidence, setEvidence] = useState<Evidence[]>([])
   const [findings, setFindings] = useState<Finding[]>([])
   const [auditRecords, setAuditRecords] = useState<AuditRecord[]>([])
+  const [review, setReview] = useState<ResultReview | null>(null)
+  const [reviewAvailable, setReviewAvailable] = useState(false)
   const [workspaceStatuses, setWorkspaceStatuses] = useState<WorkspaceStatusResponse[]>([])
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null)
   const [contextCollapsed, setContextCollapsed] = useState(false)
@@ -170,6 +175,13 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
       )
       setExecutors(loadedExecutors)
       setProfiles(loadedProfiles)
+      try {
+        setReview(await api.getResultReview(runId))
+        setReviewAvailable(true)
+      } catch {
+        setReview(null)
+        setReviewAvailable(false)
+      }
       setError(null)
       setSelectedAgentId((current) => {
         if (current && loadedAgents.some((agent) => agent.id === current)) {
@@ -618,6 +630,16 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
         className={`office-workspace-scene office-context-layout ${contextCollapsed ? 'context-collapsed' : ''}`}
       >
         <div className="office-workspace-stage">
+          <OfficeHud
+            agents={agents}
+            events={recentSignals}
+            executors={executors}
+            review={review}
+            reviewAvailable={reviewAvailable}
+            taskId={run.task_id}
+            runId={run.id}
+            compact
+          />
           <OfficeRendererBoundary operationalHref={`/runs/${run.id}`}>
             <OfficeScene
               stages={stages}
@@ -659,6 +681,14 @@ export function RunOfficePage({ runId }: RunOfficePageProps) {
           onToggleCollapsed={() => setContextCollapsed((current) => !current)}
           discussion={
             <div className="office-context-stack">
+              <OfficeFocusCard
+                taskId={run.task_id}
+                taskTitle={tasks.find((task) => task.id === run.task_id)?.title ?? null}
+                run={run}
+                stages={stages}
+                agent={selectedAgent}
+                agentProfileName={selectedProfile?.name ?? null}
+              />
               <div className="office-context-callout">
                 <strong>
                   {selectedAgent ? 'Factual agent activity' : 'Factual Run activity'}

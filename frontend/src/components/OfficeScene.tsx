@@ -20,6 +20,10 @@ import {
   type OfficeFloorKey,
   type OfficePresenceMember,
 } from '../office3d/livingOffice'
+import {
+  OFFICE_ZONE_NAVIGATOR,
+  type OfficeZoneNavigatorEntry,
+} from '../office3d/officeZones'
 import type {
   OfficeDioramaPilotMode,
   OfficeDioramaRendererMode,
@@ -81,6 +85,37 @@ function nextEventCountdown(minutes: number): string {
   return remainingHours > 0
     ? `in ${days}d ${remainingHours}h`
     : `in ${days}d`
+}
+
+interface ZoneNavigatorProps {
+  activeFloor: OfficeFloorKey
+  activeView: OfficeCameraViewKey
+  onSelectZone: (entry: OfficeZoneNavigatorEntry) => void
+}
+
+function ZoneNavigator({ activeFloor, activeView, onSelectZone }: ZoneNavigatorProps) {
+  return (
+    <nav className="office-zone-navigator" aria-label="Office zone navigator">
+      <span className="office-zone-navigator-label">Zones</span>
+      <div className="office-zone-navigator-list" role="group" aria-label="Office zones">
+        {OFFICE_ZONE_NAVIGATOR.map((entry) => {
+          const active = entry.floor === activeFloor && entry.view === activeView
+          return (
+            <button
+              key={entry.key}
+              type="button"
+              className={active ? 'active' : ''}
+              aria-pressed={active}
+              title={`${entry.label} · ${entry.hint} — moves camera only`}
+              onClick={() => onSelectZone(entry)}
+            >
+              {entry.label}
+            </button>
+          )
+        })}
+      </div>
+    </nav>
+  )
 }
 
 interface SceneControlsProps {
@@ -231,6 +266,21 @@ export function OfficeScene({
     setCameraResetNonce((current) => current + 1)
   }
 
+  const selectZone = (entry: OfficeZoneNavigatorEntry) => {
+    if (entry.floor !== floor) {
+      setCameraView(entry.view)
+      setFloorTransition((current) => ({
+        floor: entry.floor,
+        key: (current?.key ?? 0) + 1,
+      }))
+      onFloorChange?.(entry.floor)
+      setCameraResetNonce((current) => current + 1)
+      return
+    }
+
+    selectCameraView(entry.view)
+  }
+
   const handleSceneKeyDown = (event: KeyboardEvent<HTMLElement>) => {
     if (event.altKey || event.ctrlKey || event.metaKey) return
 
@@ -345,6 +395,11 @@ export function OfficeScene({
               </div>
             )}
 
+            <ZoneNavigator
+              activeFloor={floor}
+              activeView={cameraView}
+              onSelectZone={selectZone}
+            />
             <div className="office-scene-navigation office-scene-navigation-workspace">
               {onFloorChange && (
                 <div
@@ -405,6 +460,11 @@ export function OfficeScene({
                 onToggleLabels={() => setLabelsVisible((visible) => !visible)}
               />
             </div>
+            <ZoneNavigator
+              activeFloor={floor}
+              activeView={cameraView}
+              onSelectZone={selectZone}
+            />
             <div className="office-scene-navigation">
               {onFloorChange && (
                 <div className="office-floor-switcher" aria-label="Office floor">

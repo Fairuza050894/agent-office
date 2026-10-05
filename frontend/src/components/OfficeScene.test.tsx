@@ -449,6 +449,41 @@ describe('OfficeScene workspace presence', () => {
     expect(renderer).toHaveAttribute('data-labels-visible', 'false')
   })
 
+  it('moves camera only when a zone navigator entry is selected', () => {
+    const onFloorChange = vi.fn()
+    render(
+      <OfficeScene
+        stages={[]}
+        agents={[]}
+        profiles={[]}
+        selectedAgentId={null}
+        onSelectAgent={vi.fn()}
+        motionPaused={false}
+        mode="live"
+        replayNonce={0}
+        replayStartedAt={null}
+        replayRange={null}
+        showRoster={false}
+        presentation="workspace"
+        floor="commons"
+        workspaceMembers={[member]}
+        onFloorChange={onFloorChange}
+        officeHour={20}
+      />,
+    )
+
+    const navigator = screen.getByRole('navigation', {
+      name: 'Office zone navigator',
+    })
+    expect(within(navigator).getAllByRole('button')).toHaveLength(8)
+    expect(
+      within(navigator).queryByRole('button', { name: /^Design$/ }),
+    ).not.toBeInTheDocument()
+
+    fireEvent.click(within(navigator).getByRole('button', { name: 'Engineering' }))
+    expect(onFloorChange).toHaveBeenCalledWith('build')
+  })
+
   it('keeps every floor name contained inside its switcher card', () => {
     render(
       <OfficeScene
