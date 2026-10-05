@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { api, type VerificationStatus } from '../api'
+import { api, type Evidence, type VerificationStatus } from '../api'
 import { EmptyState } from './EmptyState'
 import { TableShell } from './TableShell'
 
@@ -7,8 +7,25 @@ export interface RunTestsTabProps {
   runId: string
 }
 
+function metadataInt(metadata: Record<string, string> | undefined, key: string): number | null {
+  if (!metadata) return null
+  const raw = metadata[key]
+  if (raw === undefined) return null
+  const parsed = Number.parseInt(raw, 10)
+  return Number.isNaN(parsed) ? null : parsed
+}
+
+function formatDuration(durationMs: number | null): string {
+  if (durationMs === null) return 'Unavailable'
+  if (durationMs < 1000) return `${durationMs} ms`
+  const seconds = durationMs / 1000
+  if (seconds < 60) return `${seconds.toFixed(1)} s`
+  return `${Math.floor(seconds / 60)}m ${Math.round(seconds % 60)}s`
+}
+
 export function RunTestsTab({ runId }: RunTestsTabProps) {
   const [verification, setVerification] = useState<VerificationStatus | null>(null)
+  const [evidenceById, setEvidenceById] = useState<Map<string, Evidence>>(new Map())
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -16,9 +33,13 @@ export function RunTestsTab({ runId }: RunTestsTabProps) {
     let active = true
     const load = async () => {
       try {
-        const loaded = await api.getRunVerification(runId)
+        const [loaded, loadedEvidence] = await Promise.all([
+          api.getRunVerification(runId),
+          api.getRunEvidence(runId).catch(() => [] as Evidence[]),
+        ])
         if (!active) return
         setVerification(loaded)
+        setEvidenceById(new Map(loadedEvidence.map((item) => [item.id, item])))
       } catch (err) {
         if (!active) return
         setError(err instanceof Error ? err.message : 'Test verification state is unavailable.')
@@ -57,21 +78,26 @@ export function RunTestsTab({ runId }: RunTestsTabProps) {
         <span><strong>Evidence records</strong> {verification.evidence_count}</span>
       </div>
       <TableShell
-        columns={['Check', 'Type', 'Required', 'Command status', 'Satisfied', 'Evidence']}
+        columns={['Check', 'Type', 'Required', 'Command', 'Exit code', 'Duration', 'Satisfied', 'Evidence']}
         caption="Verification checks"
         emptyTitle="No checks declared."
         emptyMessage="This workflow has no verification checks."
       >
-        {verification.checks.map((check) => (
-          <tr key={check.check_key}>
-            <td><strong>{check.check_key}</strong></td>
-            <td>{check.check_type}</td>
-            <td>{check.required ? 'Required' : 'Optional'}</td>
-            <td>{check.command_status ?? 'Unavailable'}</td>
-            <td>{check.satisfied ? 'Yes' : 'No'}</td>
-            <td>{check.evidence_id ? <code className="mono-badge">{check.evidence_id.slice(0, 8)}</code> : 'Unavailable'}</td>
-          </tr>
-        ))}
+        {verification.checks.map((check) => {
+          const record = check.evidence_id ? evidenceById.get(check.evidence_id) : undefined
+          return (
+            <tr key={check.check_key}>
+              <td><strong>{check.check_key}</strong></td>
+              <td>{check.check_type}</td>
+              <td>{check.required ? 'Required' : 'Optional'}</td>
+              <td><code className="mono-badge">{record?.metadata?.['command_status'] ?? check.command_status ?? 'Unavailable'}</code></td>
+              <td>{metadataInt(record?.metadata, 'exit_code') ?? 'Unavailable'}</td>
+              <td>{formatDuration(metadataInt(record?.metadata, 'duration_ms'))}</td>
+              <td>{check.satisfied ? 'Yes' : 'No'}</td>
+              <td>{check.evidence_id ? <code className="mono-badge">{check.evidence_id.slice(0, 8)}</code> : 'Unavailable'}</td>
+            </tr>
+          )
+        })}
       </TableShell>
     </div>
   )

@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
-
-import { api, type ResultReview, type Run } from '../api'
+import type { ResultReview, Run } from '../api'
 import { Link } from '../router/Link'
+import type { ResultReviewController } from './useResultReview'
+import { useResultReview } from './useResultReview'
 
 export interface RunResultReviewPanelProps {
   run: Run
+  controller?: ResultReviewController
 }
 
 function stateLabel(state: ResultReview['state']): string {
@@ -22,61 +23,11 @@ function stateLabel(state: ResultReview['state']): string {
   }
 }
 
-export function RunResultReviewPanel({ run }: RunResultReviewPanelProps) {
-  const [review, setReview] = useState<ResultReview | null>(null)
-  const [feedback, setFeedback] = useState('')
-  const [note, setNote] = useState('')
-  const [isWorking, setIsWorking] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const load = useCallback(async () => {
-    try {
-      const result = await api.getResultReview(run.id)
-      setReview(result)
-      setError(null)
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Result review is unavailable.')
-    }
-  }, [run.id])
-
-  useEffect(() => {
-    void Promise.resolve().then(load)
-  }, [load])
-
-  const requestChanges = async () => {
-    const normalized = feedback.trim()
-    if (!normalized || isWorking) return
-
-    setIsWorking(true)
-    setError(null)
-    try {
-      const result = await api.requestResultChanges(run.id, { feedback: normalized })
-      setReview(result)
-      setFeedback('')
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Changes could not be requested.')
-    } finally {
-      setIsWorking(false)
-    }
-  }
-
-  const approveAndDeliver = async () => {
-    if (isWorking) return
-
-    setIsWorking(true)
-    setError(null)
-    try {
-      const result = await api.approveAndDeliverResult(run.id, {
-        note: note.trim() || null,
-      })
-      setReview(result)
-      setNote('')
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Result could not be delivered.')
-    } finally {
-      setIsWorking(false)
-    }
-  }
+export function RunResultReviewPanel({ run, controller: external }: RunResultReviewPanelProps) {
+  const internal = useResultReview(run.id)
+  const controller = external ?? internal
+  const { review, feedback, note, isWorking, error } = controller
+  const { setFeedback, setNote, requestChanges, approveAndDeliver, reload: load } = controller
 
   if (!review && !error) {
     return (

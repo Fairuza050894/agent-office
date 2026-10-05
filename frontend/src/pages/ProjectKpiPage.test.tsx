@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { Project, ResultReview, Run, Task } from '../api'
@@ -130,5 +130,52 @@ describe('ProjectKpiPage', () => {
     expect(
       screen.getByText(/COMPLETED is not DELIVERED/i),
     ).toBeInTheDocument()
+  })
+
+  it('switches accepted-change windows with series and prior delta', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: RequestInfo | URL) => {
+        const url =
+          typeof input === 'string'
+            ? input
+            : input instanceof URL
+              ? input.toString()
+              : input.url
+        if (url === '/api/projects') return Promise.resolve(response([PROJECT]))
+        if (url === `/api/projects/${PROJECT.id}/tasks`) {
+          return Promise.resolve(response([TASK]))
+        }
+        if (url === `/api/tasks/${TASK.id}/runs`) {
+          return Promise.resolve(response([RUN]))
+        }
+        if (url === `/api/runs/${RUN.id}/result-review`) {
+          return Promise.resolve(response(REVIEW))
+        }
+        throw new Error(`Unexpected request: ${url}`)
+      }),
+    )
+
+    render(
+      <Router initialPath={`/kpi?project=${PROJECT.id}`}>
+        <ProjectKpiPage />
+      </Router>,
+    )
+
+    const windowed = await screen.findByLabelText('Windowed accepted change')
+    expect(within(windowed).getByText('Accepted · 30d')).toBeInTheDocument()
+    expect(within(windowed).getByText('Time to decision')).toBeInTheDocument()
+    expect(within(windowed).getByText('Avg remediation cycles')).toBeInTheDocument()
+
+    const pipeline = screen.getByLabelText('Board pipeline overview')
+    expect(within(pipeline).getByText('Accepted')).toBeInTheDocument()
+    expect(within(pipeline).getByText('Needs you')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: '7D' }))
+    expect(screen.getByLabelText('Windowed accepted change')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '7D' })).toHaveAttribute('aria-pressed', 'true')
+
+    fireEvent.click(screen.getByRole('button', { name: '90D' }))
+    expect(screen.getByRole('button', { name: '90D' })).toHaveAttribute('aria-pressed', 'true')
   })
 })
