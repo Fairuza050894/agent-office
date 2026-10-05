@@ -99,62 +99,62 @@ Client-only, no search backend/index.
 
 ## U2 — Task Detail
 
-- [ ] move Request Changes / Approve Result to header;
-- [ ] enable only from `can_request_changes` / `can_approve`;
-- [ ] show disabled reason when unavailable;
-- [ ] Task summary card: status/id/title/objective/requirements/agents/base revision;
-- [ ] implement five visual steps: Plan, Work, Verify, Review, Deliver;
-- [ ] document mapping from detailed canonical lifecycle to five-step view;
-- [ ] Changes / Findings / Evidence / Checks / Timeline tabs with factual counts;
-- [ ] file +/- only from captured change summary;
-- [ ] verification table from recorded command, exit code, duration;
-- [ ] remove stale "next human gate" copy once delivered;
-- [ ] keyboard and narrow-layout tests.
+- [x] move Request Changes / Approve Result to header;
+- [x] enable only from `can_request_changes` / `can_approve`;
+- [x] show disabled reason when unavailable;
+- [x] Task summary card: status/id/title/objective/requirements/agents/base revision;
+- [x] implement five visual steps: Plan, Work, Verify, Review, Deliver;
+- [x] document mapping from detailed canonical lifecycle to five-step view (`docs/product/TARGET_UI_TASK_DETAIL_MAPPING.md`);
+- [x] Changes / Findings / Evidence / Checks / Timeline tabs with factual counts;
+- [x] file +/- only from captured change summary;
+- [x] verification table from recorded command, exit code, duration;
+- [x] remove stale "next human gate" copy once delivered;
+- [x] keyboard and narrow-layout tests.
 
 ## U3 — Task Board
 
-- [ ] six canonical columns visible at 1440px;
-- [ ] 1024/390 use horizontal column scrolling rather than clipping;
-- [ ] Project + Status filters;
-- [ ] client-side search;
-- [ ] no Team filter without domain entity;
-- [ ] no priority chip without domain field;
-- [ ] factual AgentRun count/avatar mapping;
-- [ ] read-only: no drag/drop status mutation;
-- [ ] per-column semantic token accents + text labels.
+- [x] six canonical columns visible at 1440px;
+- [x] 1024/390 use horizontal column scrolling rather than clipping;
+- [x] Project + Status filters;
+- [x] client-side search;
+- [x] no Team filter without domain entity;
+- [x] no priority chip without domain field;
+- [x] factual AgentRun count/avatar mapping;
+- [x] read-only: no drag/drop status mutation;
+- [x] per-column semantic token accents + text labels.
 
 ## U4 — Inbox
 
-- [ ] row layout rather than generic card grid;
-- [ ] filters: All / Result Review / Approvals / Blocked;
-- [ ] project proposed RequirementCandidate and pending TeamProposal into Approval;
-- [ ] age from canonical timestamps;
-- [ ] factual AgentRun count;
-- [ ] no "mark all read";
-- [ ] preserve "Nothing needs you" empty state.
+- [x] row layout rather than generic card grid;
+- [x] filters: All / Result Review / Approvals / Blocked;
+- [x] project proposed RequirementCandidate and pending TeamProposal into Approval;
+- [x] age from canonical timestamps;
+- [x] factual AgentRun count;
+- [x] no "mark all read";
+- [x] preserve "Nothing needs you" empty state.
 
 ## U5 — Accepted-change KPI
 
-- [ ] 7D / 30D / 90D selector;
-- [ ] daily accepted series from `delivered_at`;
-- [ ] prior-window delta or `—` when no comparison base;
-- [ ] Acceptance Rate from existing definition;
-- [ ] Completion -> Delivery duration;
-- [ ] Time to Decision, not fake human-minutes metric;
-- [ ] average Remediation Cycles;
-- [ ] Board pipeline overview counts;
-- [ ] deterministic tests for timezone/window boundaries.
+- [x] 7D / 30D / 90D selector;
+- [x] daily accepted series from `delivered_at`;
+- [x] prior-window delta or `—` when no comparison base;
+- [x] Acceptance Rate from existing definition;
+- [x] Completion -> Delivery duration;
+- [x] Time to Decision, not fake human-minutes metric;
+- [x] average Remediation Cycles;
+- [x] Board pipeline overview counts;
+- [x] deterministic tests for timezone/window boundaries.
 
 ## U6 — Dossier viewer
 
-- [ ] reuse existing dossier projection/export source;
-- [ ] in-app sections: Overview / Changes / Verification / Evidence /
+- [x] reuse existing dossier projection/export source;
+- [x] in-app sections: Overview / Changes / Verification / Evidence /
   Human Decisions / Timeline / Security facts;
-- [ ] Download keeps existing Markdown export;
-- [ ] phrase delivery as "Delivered to managed branch";
-- [ ] approver identity omitted or generic Local owner only;
-- [ ] Evidence types listed only when actually present;
-- [ ] Security facts are facts, never compliance certification.
+- [x] Download keeps existing Markdown export;
+- [x] phrase delivery as "Delivered to managed branch";
+- [x] approver identity omitted or generic Local owner only;
+- [x] Evidence types listed only when actually present;
+- [x] Security facts are facts, never compliance certification.
 
 ## U7 — Office HUD / focus interaction
 

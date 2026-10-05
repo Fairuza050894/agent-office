@@ -10,6 +10,7 @@ import {
   type Task,
   type TeamProposal,
 } from '../api'
+import { columnForTask, type BoardColumn } from '../components/taskBoardProjection'
 import { EmptyState } from '../components/EmptyState'
 import { PageHeader } from '../components/PageHeader'
 import { Link } from '../router/Link'
@@ -34,7 +35,6 @@ interface PlanningApproval {
   createdAt: string
 }
 
-type BoardColumn = 'Planning' | 'Ready' | 'Running' | 'In review' | 'Needs you' | 'Accepted'
 type InboxFilter = 'all' | 'result' | 'approvals' | 'blocked'
 
 const BOARD_COLUMNS: BoardColumn[] = [
@@ -59,17 +59,7 @@ function latestRun(runs: Run[]): Run | null {
 }
 
 function columnFor(item: DecisionTask): BoardColumn {
-  const run = item.latestRun
-  if (!run) return 'Planning'
-  if (item.review?.state === 'DELIVERED') return 'Accepted'
-  if (item.review?.state === 'AWAITING_REVIEW') return 'Needs you'
-  if (run.status === 'BLOCKED' || run.status === 'FAILED') return 'Needs you'
-  if (run.status === 'CREATED' || run.status === 'READY') return 'Ready'
-  if (['REVIEWING', 'VERIFYING', 'REMEDIATING', 'COMPLETED'].includes(run.status)) {
-    return 'In review'
-  }
-  if (['PLANNING', 'RUNNING'].includes(run.status)) return 'Running'
-  return 'Planning'
+  return columnForTask({ latestRun: item.latestRun, review: item.review })
 }
 
 function decisionKind(item: DecisionTask): Exclude<InboxFilter, 'all' | 'approvals'> | null {

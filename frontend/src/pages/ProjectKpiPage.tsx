@@ -2,6 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { api, type Project, type ResultReview, type Run, type Task } from '../api'
 import { acceptedChangeMetrics } from '../analytics/acceptedChangeKpi'
+import {
+  windowedAcceptedMetrics,
+  type KpiWindow,
+} from '../analytics/acceptedChangeWindows'
 import { projectKpiSnapshot } from '../analytics/projectKpi'
 import { EmptyState } from '../components/EmptyState'
 import { PageHeader } from '../components/PageHeader'
@@ -37,6 +41,12 @@ function formatMinutes(value: number | null): string {
   return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`
 }
 
+function formatDelta(value: number | null): string {
+  if (value === null) return '—'
+  if (value === 0) return '±0 vs prior'
+  return `${value > 0 ? '+' : ''}${value} vs prior`
+}
+
 function KpiItem({
   value,
   label,
@@ -68,6 +78,7 @@ export function ProjectKpiPage() {
   const [facts, setFacts] = useState<ProjectFactState>(EMPTY_FACTS)
   const [isLoadingRegistry, setIsLoadingRegistry] = useState(true)
   const [registryError, setRegistryError] = useState<string | null>(null)
+  const [kpiWindow, setKpiWindow] = useState<KpiWindow>(30)
 
   const loadRegistry = useCallback(async () => {
     setIsLoadingRegistry(true)
@@ -160,6 +171,17 @@ export function ProjectKpiPage() {
     () => acceptedChangeMetrics(visibleFacts.runs, visibleFacts.reviews),
     [visibleFacts.reviews, visibleFacts.runs],
   )
+  const windowed = useMemo(
+    () =>
+      windowedAcceptedMetrics(
+        visibleFacts.runs,
+        visibleFacts.reviews,
+        visibleFacts.tasks,
+        kpiWindow,
+      ),
+    [visibleFacts.reviews, visibleFacts.runs, visibleFacts.tasks, kpiWindow],
+  )
+  const seriesMax = Math.max(1, ...windowed.series.map((point) => point.accepted))
 
   const changeProject = (projectId: string) => {
     setSelectedProjectId(projectId)
@@ -281,6 +303,92 @@ export function ProjectKpiPage() {
               detail="technical completion → managed delivery"
             />
           </div>
+
+          <section className="dashboard-section" aria-labelledby="kpi-window-heading">
+            <div className="section-header">
+              <div>
+                <h2 id="kpi-window-heading" className="section-title">
+                  Accepted-change window
+                </h2>
+                <span className="section-meta">
+                  daily accepted series from delivered_at · prior-window delta · — when unmeasurable
+                </span>
+              </div>
+              <div className="decision-filter-tabs" role="group" aria-label="KPI window">
+                {([7, 30, 90] as KpiWindow[]).map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    className={kpiWindow === option ? 'active' : ''}
+                    aria-pressed={kpiWindow === option}
+                    onClick={() => setKpiWindow(option)}
+                  >
+                    {option}D
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="section-body">
+              <div className="overview-summary" aria-label="Windowed accepted change">
+                <KpiItem
+                  value={windowed.acceptedInWindow}
+                  label={`Accepted · ${kpiWindow}d`}
+                  detail={formatDelta(windowed.delta)}
+                />
+                <KpiItem
+                  value={formatPercent(windowed.acceptanceRate)}
+                  label="Acceptance rate"
+                  detail="delivered / completed in window"
+                />
+                <KpiItem
+                  value={formatMinutes(windowed.averageCompletionToDeliveryMinutes)}
+                  label="Completion → delivery"
+                  detail="technical completion to managed delivery"
+                />
+                <KpiItem
+                  value={formatMinutes(windowed.averageTimeToDecisionMinutes)}
+                  label="Time to decision"
+                  detail="completion to human acceptance"
+                />
+                <KpiItem
+                  value={
+                    windowed.averageRemediationCycles === null
+                      ? '—'
+                      : windowed.averageRemediationCycles.toFixed(1)
+                  }
+                  label="Avg remediation cycles"
+                  detail="canonical Run remediation count"
+                />
+              </div>
+              <div
+                className="kpi-series"
+                role="img"
+                aria-label={`Daily accepted changes over ${kpiWindow} days, peak ${seriesMax} per day`}
+              >
+                {windowed.series.map((point) => (
+                  <span
+                    key={point.day}
+                    className="kpi-series-bar"
+                    data-active={point.accepted > 0}
+                    style={{ height: `${Math.max(4, Math.round((point.accepted / seriesMax) * 56))}px` }}
+                    title={`${point.day}: ${point.accepted} accepted`}
+                  />
+                ))}
+              </div>
+              <p className="cell-secondary">
+                {windowed.series[0].day} → {windowed.series[windowed.series.length - 1].day} ·
+                peak {seriesMax}/day · prior window {windowed.acceptedPrior}
+              </p>
+              <div className="overview-summary" aria-label="Board pipeline overview">
+                <KpiItem value={windowed.boardPipeline.planning} label="Planning" detail="no Run yet" />
+                <KpiItem value={windowed.boardPipeline.ready} label="Ready" detail="created, not started" />
+                <KpiItem value={windowed.boardPipeline.running} label="Running" detail="active execution" />
+                <KpiItem value={windowed.boardPipeline.inReview} label="In review" detail="verifying or completed" />
+                <KpiItem value={windowed.boardPipeline.needsYou} label="Needs you" detail="blocked or awaiting review" />
+                <KpiItem value={windowed.boardPipeline.accepted} label="Accepted" detail="delivered to managed branch" />
+              </div>
+            </div>
+          </section>
 
           <div className="overview-summary" aria-label="Project KPI summary">
             <KpiItem

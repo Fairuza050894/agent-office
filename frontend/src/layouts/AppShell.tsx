@@ -21,6 +21,7 @@ import { OfficeWorkspacePage } from '../pages/OfficeWorkspacePage'
 import { ProjectKpiPage } from '../pages/ProjectKpiPage'
 import { DecisionCenterPage } from '../pages/DecisionCenterPage'
 import { TaskDecisionPage } from '../pages/TaskDecisionPage'
+import { TaskDossierPage } from '../pages/TaskDossierPage'
 
 const OFFICE_SIDEBAR_STORAGE_KEY = 'agent-office.office-sidebar-collapsed'
 
@@ -82,6 +83,9 @@ export function AppShell() {
 
     if (currentPath.startsWith('/tasks/')) {
       const parts = currentPath.split('/')
+      if (parts.length === 4 && parts[3] === 'dossier') {
+        return <TaskDossierPage taskId={parts[2]} />
+      }
       if (parts.length === 3) {
         return <TaskDecisionPage taskId={parts[2]} />
       }
