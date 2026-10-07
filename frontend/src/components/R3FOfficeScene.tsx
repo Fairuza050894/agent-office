@@ -34,6 +34,7 @@ import type { OfficeDioramaPilotMode } from '../office3d/dioramaDebug'
 import { officeFurniturePolicy } from '../office3d/furniturePolicy'
 import {
   OFFICE_CAMERA_CONTROL_POLICY,
+  attachControlledZoom,
   officeCameraView,
   type OfficeCameraViewKey,
 } from '../office3d/camera'
@@ -144,6 +145,12 @@ type DioramaWindow = Window & {
     }
     error?: string
   }
+  __AGENT_OFFICE_CAMERA_PROBE__?: {
+    position: [number, number, number]
+    target: [number, number, number]
+    distance: number
+    zoomEnabled: boolean
+  }
 }
 
 function publishRendererInfo(
@@ -225,13 +232,24 @@ function CameraRig({
     controls.dampingFactor = 0.075
     controls.enablePan = OFFICE_CAMERA_CONTROL_POLICY.enablePan
     controls.enableRotate = OFFICE_CAMERA_CONTROL_POLICY.enableRotate
+    // ponytail: policy keeps OrbitControls zoom off so plain wheel always
+    // scrolls the page. Bounded zoom is re-added manually for Ctrl/Cmd+wheel
+    // only via attachControlledZoom below.
     controls.enableZoom = OFFICE_CAMERA_CONTROL_POLICY.enableZoom
     controls.screenSpacePanning = false
     controls.minDistance = OFFICE_CAMERA_CONTROL_POLICY.minDistance
     controls.maxDistance = OFFICE_CAMERA_CONTROL_POLICY.maxDistance
     controlsRef.current = controls
 
+    const detachZoom = attachControlledZoom(
+      gl.domElement,
+      camera,
+      () => controls.target,
+      () => controls.update(),
+    )
+
     return () => {
+      detachZoom()
       controls.dispose()
       controlsRef.current = null
     }
@@ -298,6 +316,26 @@ function CameraRig({
     }
 
     controls.update()
+  })
+
+  useFrame(({ camera }) => {
+    if (!import.meta.env.DEV || typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('cameraProbe') !== '1') return
+    const controls = controlsRef.current
+    if (!controls) return
+    const position = camera.position
+    const target = controls.target
+    ;(window as DioramaWindow).__AGENT_OFFICE_CAMERA_PROBE__ = {
+      position: [position.x, position.y, position.z],
+      target: [target.x, target.y, target.z],
+      distance: Math.hypot(
+        position.x - target.x,
+        position.y - target.y,
+        position.z - target.z,
+      ),
+      zoomEnabled: controls.enableZoom,
+    }
   })
 
   return null

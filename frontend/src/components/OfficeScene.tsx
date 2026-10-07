@@ -158,7 +158,7 @@ function SceneControls({
         <div className="office-scene-control-hints">
           <span><kbd>1–3</kbd> snap view</span>
           <span><kbd>Click</kbd> focus agent</span>
-          <span><kbd>Wheel</kbd> bounded zoom</span>
+          <span><kbd>Ctrl/⌘ + wheel</kbd> bounded zoom</span>
         </div>
         <button
           type="button"

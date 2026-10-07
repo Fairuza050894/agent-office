@@ -29,7 +29,8 @@
     "office:furniture-assets": "node scripts/fetch-office-furniture-assets.mjs",
     "preoffice:renderer-shots": "npm run office:assets && npm run office:furniture-assets && npm run office:character-guard",
     "office:renderer-shots": "node scripts/capture-office-renderer-pilot.mjs",
-    "office:production-r3f-smoke": "node scripts/check-office-r3f-production.mjs"
+    "office:production-r3f-smoke": "node scripts/check-office-r3f-production.mjs",
+    "office:probe:camera-drift": "node scripts/probe-office-camera-drift.mjs"
   },
   "dependencies": {
     "react": "^19.2.8",

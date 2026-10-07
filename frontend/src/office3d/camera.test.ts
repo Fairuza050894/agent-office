@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import {
   OFFICE_CAMERA_CONTROL_POLICY,
+  attachControlledZoom,
   officeCameraView,
   officeCameraViews,
   officeRendererViewport,
@@ -23,11 +24,11 @@ describe('office camera presets', () => {
     }
   })
 
-  it('uses snap views with bounded zoom instead of free orbit or pan', () => {
+  it('disables OrbitControls input so plain wheel scrolls the page', () => {
     expect(OFFICE_CAMERA_CONTROL_POLICY).toEqual({
       enablePan: false,
       enableRotate: false,
-      enableZoom: true,
+      enableZoom: false,
       minDistance: 7.5,
       maxDistance: 18.5,
     })
@@ -112,5 +113,84 @@ describe('office camera presets', () => {
         expect(Math.abs(tz)).toBeLessThanOrEqual(7)
       }
     }
+  })
+
+  it('zoom helpers only dolly on Ctrl/Cmd+wheel and stay inside the envelope', () => {
+    const makeVector = (x: number, y: number, z: number) => ({
+      x,
+      y,
+      z,
+      clone() {
+        return makeVector(this.x, this.y, this.z)
+      },
+      sub(other: { x: number; y: number; z: number }) {
+        this.x -= other.x
+        this.y -= other.y
+        this.z -= other.z
+        return this
+      },
+      add(other: { x: number; y: number; z: number }) {
+        this.x += other.x
+        this.y += other.y
+        this.z += other.z
+        return this
+      },
+      multiplyScalar(ratio: number) {
+        this.x *= ratio
+        this.y *= ratio
+        this.z *= ratio
+        return this
+      },
+      copy(other: { x: number; y: number; z: number }) {
+        this.x = other.x
+        this.y = other.y
+        this.z = other.z
+        return this
+      },
+      length() {
+        return Math.hypot(this.x, this.y, this.z)
+      },
+    })
+    const canvas = document.createElement('canvas')
+    const camera = { position: makeVector(0, 0, 10) }
+    const target = makeVector(0, 0, 0)
+    const onChange = vi.fn()
+    const detach = attachControlledZoom(
+      canvas,
+      camera,
+      () => target,
+      onChange,
+    )
+
+    const distance = () =>
+      Math.hypot(
+        camera.position.x - target.x,
+        camera.position.y - target.y,
+        camera.position.z - target.z,
+      )
+
+    // Plain wheel must be ignored so the page can scroll.
+    canvas.dispatchEvent(new WheelEvent('wheel', { deltaY: 100 }))
+    expect(distance()).toBeCloseTo(10)
+    expect(onChange).not.toHaveBeenCalled()
+
+    // Pinch zoom in stays bounded.
+    for (let i = 0; i < 30; i += 1) {
+      canvas.dispatchEvent(new WheelEvent('wheel', { deltaY: -100, ctrlKey: true }))
+    }
+    expect(distance()).toBeGreaterThanOrEqual(
+      OFFICE_CAMERA_CONTROL_POLICY.minDistance,
+    )
+    expect(onChange).toHaveBeenCalled()
+
+    // Pinch zoom out stays bounded.
+    for (let i = 0; i < 60; i += 1) {
+      canvas.dispatchEvent(new WheelEvent('wheel', { deltaY: 100, ctrlKey: true }))
+    }
+    expect(distance()).toBeLessThanOrEqual(
+      OFFICE_CAMERA_CONTROL_POLICY.maxDistance,
+    )
+
+    detach()
   })
 })

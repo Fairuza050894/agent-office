@@ -13,9 +13,58 @@ export interface OfficeCameraControlPolicy {
 export const OFFICE_CAMERA_CONTROL_POLICY: OfficeCameraControlPolicy = {
   enablePan: false,
   enableRotate: false,
-  enableZoom: true,
+  // OrbitControls' own zoom listener runs on the canvas and hijacks page
+  // scroll (camera drifts to min/max while the user scrolls). Keep it off and
+  // dolly through attachControlledZoom instead; bounded-zoom capability is
+  // still expressed by minDistance/maxDistance below.
+  enableZoom: false,
   minDistance: 7.5,
   maxDistance: 18.5,
+}
+
+interface DollyVector {
+  clone(): DollyVector
+  sub(other: unknown): DollyVector
+  add(other: unknown): DollyVector
+  multiplyScalar(ratio: number): DollyVector
+  copy(other: unknown): DollyVector
+  length(): number
+}
+
+/**
+ * Controlled dolly used by both office renderers.
+ *
+ * OrbitControls zoom must stay off: its wheel listener runs on the canvas
+ * and hijacks page scroll (camera drifts to min/max distance while the user
+ * scrolls the page). Callers keep `controls.enableZoom = false` and use this
+ * helper so only Ctrl/Cmd+wheel (pinch gesture) dollies the camera within
+ * the same bounded envelope. Returns a detach function.
+ */
+export function attachControlledZoom(
+  canvas: HTMLCanvasElement,
+  camera: { position: DollyVector },
+  getTarget: () => DollyVector,
+  onChange: () => void,
+): () => void {
+  const handleWheel = (event: WheelEvent) => {
+    if (!event.ctrlKey && !event.metaKey) return
+    event.preventDefault()
+    const target = getTarget()
+    const offset = camera.position.clone().sub(target)
+    const distance = offset.length()
+    const next = Math.min(
+      OFFICE_CAMERA_CONTROL_POLICY.maxDistance,
+      Math.max(
+        OFFICE_CAMERA_CONTROL_POLICY.minDistance,
+        distance * (event.deltaY > 0 ? 1.08 : 0.92),
+      ),
+    )
+    if (!Number.isFinite(distance) || Math.abs(next - distance) < 1e-4) return
+    camera.position.copy(offset.multiplyScalar(next / distance).add(target))
+    onChange()
+  }
+  canvas.addEventListener('wheel', handleWheel, { passive: false })
+  return () => canvas.removeEventListener('wheel', handleWheel)
 }
 
 export interface OfficeCameraView {
