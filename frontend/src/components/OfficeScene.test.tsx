@@ -127,6 +127,7 @@ describe('OfficeScene operational scope', () => {
     expect(screen.getByText(/snap view/i)).toBeInTheDocument()
     expect(screen.getByText(/focus agent/i)).toBeInTheDocument()
     expect(screen.getByText(/bounded zoom/i)).toBeInTheDocument()
+    expect(screen.getByText(/Ctrl.*wheel/i)).toBeInTheDocument()
     expect(screen.queryByText(/orbit/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/right-drag/i)).not.toBeInTheDocument()
 

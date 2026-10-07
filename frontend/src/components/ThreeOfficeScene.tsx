@@ -36,6 +36,7 @@ import {
 } from '../office3d/runtimeProjection'
 import {
   OFFICE_CAMERA_CONTROL_POLICY,
+  attachControlledZoom,
   officeCameraView,
   officeRendererViewport,
   type OfficeCameraViewKey,
@@ -554,6 +555,8 @@ export function ThreeOfficeScene({
       controls.dampingFactor = 0.075
       controls.enablePan = OFFICE_CAMERA_CONTROL_POLICY.enablePan
       controls.enableRotate = OFFICE_CAMERA_CONTROL_POLICY.enableRotate
+      // ponytail: policy keeps OrbitControls zoom off so plain wheel always
+      // scrolls the page; bounded zoom is re-added for Ctrl/Cmd+wheel only.
       controls.enableZoom = OFFICE_CAMERA_CONTROL_POLICY.enableZoom
       controls.screenSpacePanning = false
       controls.minDistance = OFFICE_CAMERA_CONTROL_POLICY.minDistance
@@ -623,6 +626,13 @@ export function ThreeOfficeScene({
         startLoop()
       }
 
+      const detachZoom = attachControlledZoom(
+        renderer.domElement,
+        camera,
+        () => controls.target,
+        () => renderEngine(engine!),
+      )
+
       controls.addEventListener('change', render)
       controls.addEventListener('start', handleControlsStart)
 
@@ -651,6 +661,7 @@ export function ThreeOfficeScene({
 
       return () => {
         resizeObserver?.disconnect()
+        detachZoom()
         controls.removeEventListener('change', render)
         controls.removeEventListener('start', handleControlsStart)
         renderer.domElement.removeEventListener('click', handleClick)
