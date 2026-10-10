@@ -71,7 +71,7 @@ jobs:
         run: npm run office:shots
       - name: Upload Office visual acceptance artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: office-visual-acceptance
           path: artifacts/office-shots
@@ -81,7 +81,7 @@ jobs:
         run: npm run office:browser-qa
       - name: Upload Office browser and device QA artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: office-browser-device-qa
           path: artifacts/office-browser-qa
