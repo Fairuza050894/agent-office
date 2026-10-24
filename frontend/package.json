@@ -33,10 +33,10 @@
     "office:probe:camera-drift": "node scripts/probe-office-camera-drift.mjs"
   },
   "dependencies": {
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "three": "^0.181.2",
-    "@react-three/fiber": "9.8.1"
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "three": "^0.186.1",
+    "@react-three/fiber": "9.8.2"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
